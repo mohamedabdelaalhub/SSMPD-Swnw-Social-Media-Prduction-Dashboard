@@ -12142,6 +12142,46 @@
       "reviewed": true
     },
     {
+      "title": "بحث",
+      "labels": [
+        "بحث",
+        "بحث عن مادة"
+      ],
+      "text": "اكتب اسم القسم أو جزءًا من اسم السجل المطلوب. النتائج تعتمد على صلاحية حسابك والبيانات المتاحة، والبحث لا يغير السجلات.",
+      "article": "personal",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ابحث باسم الخدمة عند الجهة أو عندنا…",
+      "labels": [
+        "ابحث باسم الخدمة عند الجهة أو عندنا…"
+      ],
+      "text": "اكتب جزء من اسم الخدمة زي ما هو مكتوب في لائحة الجهة أو زي ما هو عندنا. الأسماء اللي فيها الكلام ده بس هتفضل ظاهرة، ومش فارقة أ/ا ولا ة/ه ولا ى/ي.",
+      "article": "price-name-review",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ابحث في خدماتنا",
+      "labels": [
+        "ابحث في خدماتنا"
+      ],
+      "text": "اكتب جزء من اسم الخدمة عندنا أو كودها، واختار الخدمة الصح من النتايج. الاختيار بيربط الاسم بالخدمة دي في كل اللوايح اللي فيها الاسم.",
+      "article": "price-name-review",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اسم المريض من كلمتين على الأقل",
       "labels": [
         "اسم المريض من كلمتين على الأقل"
@@ -13704,6 +13744,72 @@
       "forms": [
         "طريقة الدفع / الخصم (قبل التحصيل)"
       ],
+      "reviewed": true
+    },
+    {
+      "title": "اختار الطبيب",
+      "labels": [
+        "اختار الطبيب"
+      ],
+      "text": "طبيب المركز اللي حوّل المريض.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "د. …",
+      "labels": [
+        "د. …",
+        "اسم الطبيب"
+      ],
+      "text": "اسم الطبيب اللي حوّل المريض من بره المركز — إجباري لو اخترت «من بره المركز».",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تخصص الطبيب المحوِّل",
+      "labels": [
+        "تخصص الطبيب المحوِّل"
+      ],
+      "text": "تخصص الطبيب اللي حوّل المريض (اختياري) — بيطلع جنب اسمه في الفاتورة.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "العيادة / المستشفى",
+      "labels": [
+        "العيادة / المستشفى"
+      ],
+      "text": "عيادة أو مستشفى الطبيب المحوِّل (اختياري).",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تليفون الطبيب المحوِّل",
+      "labels": [
+        "تليفون الطبيب المحوِّل"
+      ],
+      "text": "رقم الطبيب المحوِّل لو معاك (اختياري) — مش بيطلع في الفاتورة.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
       "reviewed": true
     },
     {
@@ -21685,19 +21791,6 @@
       "reviewed": true
     },
     {
-      "title": "بحث عن مادة",
-      "labels": [
-        "بحث عن مادة"
-      ],
-      "text": "اكتب اسم القسم أو جزءًا من اسم السجل المطلوب. النتائج تعتمد على صلاحية حسابك والبيانات المتاحة، والبحث لا يغير السجلات.",
-      "article": "personal",
-      "tabs": [
-        "production"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "حالة السوشيال",
       "labels": [
         "حالة السوشيال"
@@ -22947,9 +23040,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1978,
-    "labels": 1441,
-    "files": 154,
-    "groups": 1554
+    "definitions": 1987,
+    "labels": 1448,
+    "files": 156,
+    "groups": 1561
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

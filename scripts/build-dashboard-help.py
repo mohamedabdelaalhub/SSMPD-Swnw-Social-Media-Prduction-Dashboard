@@ -1061,6 +1061,12 @@ frule('reception-payer-kind.js','النقابة / النادي|اسم النقا
 frule('reception-payer-kind.js','رقم كارنيه النقابة / النادي','رقم كارنيه النقابة أو النادي — إجباري.','reception-payer-kind')
 frule('reception-payer-kind.js','كارنيه النقابة / النادي ساري لحد','آخر يوم الكارنيه ساري فيه — لازم يكون يوم الزيارة أو بعده.','reception-payer-kind')
 frule('reception-payer-kind.js','صورة الكارنيه','صوّر كارنيه النقابة أو النادي — إجباري.','reception-payer-kind')
+frule('reception-referrer.js','الطبيب المحوِّل','اختياري: لو المريض جاي محوَّل من دكتور. «من جوه المركز» تختاره من القايمة، «من بره المركز» تكتب اسمه. بيطلع في الفاتورة.','reception-referring-doctor')
+frule('reception-referrer.js','اختار الطبيب','طبيب المركز اللي حوّل المريض.','reception-referring-doctor')
+frule('reception-referrer.js','اسم الطبيب|د. …','اسم الطبيب اللي حوّل المريض من بره المركز — إجباري لو اخترت «من بره المركز».','reception-referring-doctor')
+frule('reception-referrer.js','تخصص الطبيب المحوِّل','تخصص الطبيب اللي حوّل المريض (اختياري) — بيطلع جنب اسمه في الفاتورة.','reception-referring-doctor')
+frule('reception-referrer.js','العيادة / المستشفى','عيادة أو مستشفى الطبيب المحوِّل (اختياري).','reception-referring-doctor')
+frule('reception-referrer.js','تليفون الطبيب المحوِّل','رقم الطبيب المحوِّل لو معاك (اختياري) — مش بيطلع في الفاتورة.','reception-referring-doctor')
 frule('service-select-search.js','ابحث باسم الخدمة أو الكود أو القسم|ابحث عن الخدمة','اكتب جزء من اسم الخدمة أو كودها أو قسمها — القايمة تحتها بتصغر للنتايج، ولو نتيجة واحدة بتتختار لوحدها.','reception-service-search')
 frule('reception-booking-discount.js','اسم النقابة|مثلاً نقابة المهندسين','اسم الجهة اللي المريض جاي بخصمها (نقابة أو نادي أو جهة تانية). بيظهر على كارت الموعد والفاتورة.','reception-booking-discount')
 frule('reception-booking-discount.js','رقم الكارنيه','رقم كارنيه النقابة أو النادي — إجباري.','reception-booking-discount')
@@ -1151,6 +1157,8 @@ frule('reception-legacy-package.js','جلسات','عدد جلسات الخدمة
 frule('reception-legacy-package.js','المبلغ المدفوع','المبلغ اللي المريض دفعه في الخدمة دي (كل الجلسات).','reception-legacy-package')
 frule('reception-legacy-package.js','رقم الإيصال القديم أو صورته (لو موجود)','رقم أو مكان الإيصال الورق القديم — بيساعد اللي بيعتمد يراجع.','reception-legacy-package')
 frule('reception-legacy-package.js','خصم من باكج المريض','الخدمة دي تاخد جلسة من باكج المريض — المريض يدفع 0.','reception-legacy-package')
+frule('price-name-review.js','ابحث باسم الخدمة عند الجهة أو عندنا…','اكتب جزء من اسم الخدمة زي ما هو مكتوب في لائحة الجهة أو زي ما هو عندنا. الأسماء اللي فيها الكلام ده بس هتفضل ظاهرة، ومش فارقة أ/ا ولا ة/ه ولا ى/ي.','price-name-review')
+frule('price-name-review.js','ابحث في خدماتنا','اكتب جزء من اسم الخدمة عندنا أو كودها، واختار الخدمة الصح من النتايج. الاختيار بيربط الاسم بالخدمة دي في كل اللوايح اللي فيها الاسم.','price-name-review')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'

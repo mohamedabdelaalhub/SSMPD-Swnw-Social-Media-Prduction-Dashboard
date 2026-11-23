@@ -47,3 +47,11 @@ letterhead image loads; open the window synchronously in the click handler (`P.b
   `tests/entity-claims-document-contract.test.cjs`).
 - Internal reports (statements, shift movements, inventory lists) are not money documents; they may keep their own layout
   until the owner asks, but must not carry the old «سونو — …» titles either.
+- **Modern Standard Arabic only (owner 2026-11-23, verbatim: «نستخدم اللغة العربية الفصحى في الفواتير والمستندات الرسمية، لا يليق
+  استخدام العامية بأي شكل في المستندات»).** Every printed word — invoice, receipt, claim, statement, notes and empty states on them —
+  is فصحى: «لا توجد مدفوعات» not «مفيش مدفوعات», «هذه الدفعة» not «الدفعة دي», «طُبع من لوحة التحكم بتاريخ» not «اتطبع من الداشبورد يوم».
+  The on-screen reception UI may stay colloquial; anything printed may not.
+- Edit the approved form directly for print changes (owner 2026-11-23: «احنا عندنا فورم للفواتير … شوف الفاتورة فورم المعتمد وخليه يعدل
+  عليه») — no new mockup round for a field added to an existing invoice / receipt.
+- Referring doctor on the visit invoice: «تحويل طبيب داخلي: د. … — التخصص» / «تحويل طبيب خارجي: د. … — التخصص (العيادة)», under «الطبيب»
+  in the header data block; hidden when there is none.
