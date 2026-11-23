@@ -20505,6 +20505,20 @@
       "reviewed": true
     },
     {
+      "title": "ابحث عن الخدمة",
+      "labels": [
+        "ابحث عن الخدمة",
+        "ابحث باسم الخدمة أو الكود أو القسم"
+      ],
+      "text": "اكتب جزء من اسم الخدمة أو كودها أو قسمها — القايمة تحتها بتصغر للنتايج، ولو نتيجة واحدة بتتختار لوحدها.",
+      "article": "reception-service-search",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الصورة",
       "labels": [
         "الصورة"
@@ -22867,9 +22881,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1969,
-    "labels": 1434,
-    "files": 152,
-    "groups": 1548
+    "definitions": 1971,
+    "labels": 1436,
+    "files": 153,
+    "groups": 1549
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
