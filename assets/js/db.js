@@ -841,6 +841,10 @@
       return handle(client.from("contracting_entity_contracts").update(patch)
         .eq("id", contractId).eq("entity_id", entityId).select().single());
     },
+    // تفعيل العقد + اعتماد قائمة أسعاره المرتبطة (لو فيه) في خطوة واحدة — السوبر أدمن أو المدير المالي
+    activateContractingEntityContract: function (contractId) {
+      return handle(client.rpc("contracting_contract_activate", { p_contract_id: contractId }));
+    },
     addContractActivity: function (row) { return handle(client.from("contracting_entity_activities").insert(row).select().single()); },
     linkPatientToContract: function (row) { return handle(client.from("contract_patient_links").insert(row).select().single()); },
     uploadContractingEntityContract: function (formData) {
