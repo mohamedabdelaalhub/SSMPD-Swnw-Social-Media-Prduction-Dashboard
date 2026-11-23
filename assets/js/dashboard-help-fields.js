@@ -13400,9 +13400,9 @@
       "reviewed": true
     },
     {
-      "title": "المبلغ",
+      "title": "المبلغ المدفوع",
       "labels": [
-        "المبلغ"
+        "المبلغ المدفوع"
       ],
       "text": "المبلغ اللي المريض دفعه في الخدمة دي (كل الجلسات).",
       "article": "reception-legacy-package",
@@ -22948,7 +22948,7 @@
   "coverage": {
     "version": "20261117-1",
     "definitions": 1978,
-    "labels": 1440,
+    "labels": 1441,
     "files": 154,
     "groups": 1554
   }

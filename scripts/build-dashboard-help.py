@@ -1148,7 +1148,7 @@ frule('reception-legacy-package.js','باكج مدفوع قبل السيستم',
 frule('reception-legacy-package.js','اسم الباكج|مثلاً ليزر نص إيد + منطقة تانية','اسم يوضح الباكج، مثلاً «12 جلسة علاج طبيعي».','reception-legacy-package')
 frule('reception-legacy-package.js','دفع يوم','اليوم اللي المريض دفع فيه الباكج — لازم يكون قبل النهارده.','reception-legacy-package')
 frule('reception-legacy-package.js','جلسات','عدد جلسات الخدمة دي في الباكج.','reception-legacy-package')
-frule('reception-legacy-package.js','المبلغ','المبلغ اللي المريض دفعه في الخدمة دي (كل الجلسات).','reception-legacy-package')
+frule('reception-legacy-package.js','المبلغ المدفوع','المبلغ اللي المريض دفعه في الخدمة دي (كل الجلسات).','reception-legacy-package')
 frule('reception-legacy-package.js','رقم الإيصال القديم أو صورته (لو موجود)','رقم أو مكان الإيصال الورق القديم — بيساعد اللي بيعتمد يراجع.','reception-legacy-package')
 frule('reception-legacy-package.js','خصم من باكج المريض','الخدمة دي تاخد جلسة من باكج المريض — المريض يدفع 0.','reception-legacy-package')
 def explain(row):

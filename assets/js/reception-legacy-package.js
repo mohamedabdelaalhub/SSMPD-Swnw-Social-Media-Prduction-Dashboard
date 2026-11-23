@@ -16,7 +16,7 @@ function cairoDay(dt){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/C
 function svcOptions(d){return (d.services||[]).filter(function(s){return s.active!==false;}).map(function(s){return '<option value="'+esc(s.id)+'" data-code="'+esc(s.code||'')+'">'+esc(s.name)+(s.department?' — '+esc(s.department):'')+'</option>';}).join('');}
 function lineHtml(d){return '<div class="rlp-line" data-rlp-line><label class="rlp-f rlp-svc">الخدمة<select name="rlp_service" data-service-select required><option value="">اختار الخدمة</option>'+svcOptions(d)+'</select></label>'+
  '<label class="rlp-f">جلسات<input name="rlp_sessions" type="number" min="1" max="50" step="1" inputmode="numeric" dir="ltr" required></label>'+
- '<label class="rlp-f">المبلغ<input name="rlp_amount" type="number" min="1" step="0.01" inputmode="decimal" dir="ltr" required></label>'+
+ '<label class="rlp-f">المبلغ المدفوع<input name="rlp_amount" type="number" min="1" step="0.01" inputmode="decimal" dir="ltr" required></label>'+
  '<button type="button" class="btn rlp-x" data-rlp-del aria-label="شيل الخدمة">×</button></div>';}
 /* 1) register */
 function openRequest(patientId,c){var d=c.data||{},p=(d.patients||[]).find(function(x){return x.id===patientId;})||{};
