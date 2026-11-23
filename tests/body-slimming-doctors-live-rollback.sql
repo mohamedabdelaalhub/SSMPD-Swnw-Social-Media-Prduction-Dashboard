@@ -10,10 +10,9 @@ begin
   if to_regclass('clinic_reception.provider_departments') is null then raise exception 'apply 20261121170000_reception_lab_units first'; end if;
 
   -- the 12: pricing rows whose section / category is «التغذية والتخسيس», bookable, not the 3 nutrition consults
+  -- the 12 (explicit pricing_services ids from the live apply at 21:13Z; INBODY = ebae4501…)
   select array_agg(ps.booking_code order by ps.booking_code) into codes from public.pricing_services ps
-   where ps.booking_enabled and coalesce(ps.booking_code, '') <> ''
-     and ps.booking_code not in ('0001388', '0001389', '0001397')
-     and exists (select 1 from jsonb_each_text(to_jsonb(ps)) kv where kv.key not in ('booking_department', 'name') and kv.value = 'التغذية والتخسيس');
+   where ps.id = any(array['512bc9ed-cf76-43a6-9673-1dcef7b976b4', 'b54865b4-324e-4bdc-85fd-d1be349b69e4', 'd8e5a46e-b23c-42d0-85b1-0c9c7b124ccf', 'ebae4501-a32d-4096-be3d-3e46dbc8ae15', '2f364296-4623-49a3-a843-43ee64c9e598', 'd09df168-af96-415a-99bd-bcd3999751f3', 'c361d97e-72d2-4a05-a00d-0a278dd5f00f', '78362136-0c50-4e13-95f6-6029089c0804', '4fdcd8a6-adf1-434b-b745-e9a8214f70b8', 'ffdf373a-acdf-4e49-bb64-6f522b462995', 'ac9798ca-467b-4626-b3b1-b3f5f26e37b3', 'b7f08ca4-4553-4bd1-b52d-7986d2989029']::uuid[]) and coalesce(ps.booking_code, '') <> '';
   for r in select ps.booking_code, ps.name, ps.booking_department from public.pricing_services ps where ps.booking_code = any(codes) order by ps.booking_code loop
     raise notice 'service % — % (booking department now: %)', r.booking_code, r.name, r.booking_department;
   end loop;
