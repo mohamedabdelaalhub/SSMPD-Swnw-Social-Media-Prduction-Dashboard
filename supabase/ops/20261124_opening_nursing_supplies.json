@@ -1,0 +1,569 @@
+[
+ {
+  "name": "لتر كحل",
+  "unit": "زجاجة",
+  "units_per_pack": 1.0,
+  "quantity": 9.0,
+  "unit_cost": 95.0,
+  "expiry": null,
+  "desc": "زجاجة لتر"
+ },
+ {
+  "name": "لزق جروح مدور",
+  "unit": "قطعة",
+  "units_per_pack": 500.0,
+  "quantity": 300.0,
+  "unit_cost": 0.35,
+  "expiry": null,
+  "desc": "علبة 500 قطعة"
+ },
+ {
+  "name": "لولب نحاسي",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 3.0,
+  "unit_cost": 650.0,
+  "expiry": "2027-03-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "لولب فراشة",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 10.0,
+  "unit_cost": 200.0,
+  "expiry": "2027-03-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "بكرة رسم قلب",
+  "unit": "بكرة",
+  "units_per_pack": 1.0,
+  "quantity": 5.0,
+  "unit_cost": 42.5,
+  "expiry": null,
+  "desc": "بكر 10 سم"
+ },
+ {
+  "name": "لزق استري ستريب",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 9.0,
+  "unit_cost": 5.0,
+  "expiry": null,
+  "desc": "قطعة"
+ },
+ {
+  "name": "مشرط مقاس 15",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 48.0,
+  "unit_cost": 2.75,
+  "expiry": "2028-07-31",
+  "desc": "علبة 100 قطعة"
+ },
+ {
+  "name": "مشرط مقاس 20",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 4.0,
+  "unit_cost": 2.75,
+  "expiry": "2029-01-31",
+  "desc": "علبة 100 قطعة"
+ },
+ {
+  "name": "مشرط مقاس 11",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 29.0,
+  "unit_cost": 2.75,
+  "expiry": "2029-02-28",
+  "desc": "علبة 100 قطعة"
+ },
+ {
+  "name": "لزق قيصرية",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 9.0,
+  "unit_cost": 350.0,
+  "expiry": null,
+  "desc": "قطعة"
+ },
+ {
+  "name": "تيوبة رمادي",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 69.0,
+  "unit_cost": 2.0,
+  "expiry": "2027-02-28",
+  "desc": "قطعة"
+ },
+ {
+  "name": "تيوبة موف",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 80.0,
+  "unit_cost": 2.0,
+  "expiry": "2028-05-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "تيوبة لبني",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 75.0,
+  "unit_cost": 2.0,
+  "expiry": "2027-11-30",
+  "desc": "قطعة"
+ },
+ {
+  "name": "تيوبة احمر",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 81.0,
+  "unit_cost": 2.0,
+  "expiry": "2027-03-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "شاش فازلين 10 *10",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 20.0,
+  "unit_cost": 250.0,
+  "expiry": null,
+  "desc": "قطعة"
+ },
+ {
+  "name": "بكت شاش دريسينج 10*10",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 340.0,
+  "unit_cost": 0.65,
+  "expiry": null,
+  "desc": "علبة (100 قطعة)"
+ },
+ {
+  "name": "كيس قطن (100 جرام )",
+  "unit": "كيس",
+  "units_per_pack": 1.0,
+  "quantity": 13.0,
+  "unit_cost": 110.0,
+  "expiry": null,
+  "desc": "كيس 100 جرام"
+ },
+ {
+  "name": "قسطرة بولية مقاس 16",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 3.0,
+  "unit_cost": 500.0,
+  "expiry": "2028-01-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "قسطرة بولية مقاس 18",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 3.0,
+  "unit_cost": 500.0,
+  "expiry": "2028-01-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "جهاز وريد",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 168.0,
+  "unit_cost": 9.75,
+  "expiry": "2031-01-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "بكر لزق طبي",
+  "unit": "بكرة",
+  "units_per_pack": 1.0,
+  "quantity": 11.0,
+  "unit_cost": 62.0,
+  "expiry": null,
+  "desc": "بكر 10 سم"
+ },
+ {
+  "name": "اوفر شوز",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 200.0,
+  "unit_cost": 0.75,
+  "expiry": null,
+  "desc": "كيس (100 قطعة)"
+ },
+ {
+  "name": "جاون طبي",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 5.0,
+  "unit_cost": 250.0,
+  "expiry": null,
+  "desc": "قطعة"
+ },
+ {
+  "name": "تيوبة حنجرية",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 3.0,
+  "unit_cost": 600.0,
+  "expiry": "2029-03-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "خيط برولين 2.0",
+  "unit": "قطعة",
+  "units_per_pack": 12.0,
+  "quantity": 7.0,
+  "unit_cost": 35.4167,
+  "expiry": "2027-02-28",
+  "desc": "علبة 12 قطعة"
+ },
+ {
+  "name": "خيط برولين 4.0",
+  "unit": "قطعة",
+  "units_per_pack": 12.0,
+  "quantity": 3.0,
+  "unit_cost": 35.4167,
+  "expiry": "2030-08-31",
+  "desc": "علبة 12 قطعة"
+ },
+ {
+  "name": "خيط برولين 5.0",
+  "unit": "قطعة",
+  "units_per_pack": 12.0,
+  "quantity": 12.0,
+  "unit_cost": 35.4167,
+  "expiry": "2030-11-30",
+  "desc": "علبة 12 قطعة"
+ },
+ {
+  "name": "خيط برولين 6.0",
+  "unit": "قطعة",
+  "units_per_pack": 12.0,
+  "quantity": 17.0,
+  "unit_cost": 51.6667,
+  "expiry": "2031-01-31",
+  "desc": "علبة 12 قطعة"
+ },
+ {
+  "name": "خيط فكريل 3.0",
+  "unit": "قطعة",
+  "units_per_pack": 12.0,
+  "quantity": 3.0,
+  "unit_cost": 51.6667,
+  "expiry": "2029-05-31",
+  "desc": "علبة 12 قطعة"
+ },
+ {
+  "name": "خيط فكريل 4.0",
+  "unit": "قطعة",
+  "units_per_pack": 12.0,
+  "quantity": 2.0,
+  "unit_cost": 52.0833,
+  "expiry": "2029-05-31",
+  "desc": "علبة 12 قطعة"
+ },
+ {
+  "name": "خيط سكرل 3.0",
+  "unit": "قطعة",
+  "units_per_pack": 12.0,
+  "quantity": 9.0,
+  "unit_cost": 35.4167,
+  "expiry": "2027-06-30",
+  "desc": "علبة 12 قطعة"
+ },
+ {
+  "name": "لزق كانولا",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 9.0,
+  "unit_cost": 3.75,
+  "expiry": "2031-04-30",
+  "desc": "علبة 100 قطعة"
+ },
+ {
+  "name": "جاركن جل سونار (4 ليتر )",
+  "unit": "جاركن",
+  "units_per_pack": 1.0,
+  "quantity": 5.0,
+  "unit_cost": 75.0,
+  "expiry": "2031-05-31",
+  "desc": "جاركن 4 لتر"
+ },
+ {
+  "name": "رباط ضغط مقاس 15",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 16.0,
+  "unit_cost": 22.5,
+  "expiry": null,
+  "desc": "قطعة"
+ },
+ {
+  "name": "رباط ضغط مقاس 10",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 10.0,
+  "unit_cost": 16.5,
+  "expiry": null,
+  "desc": "قطعة"
+ },
+ {
+  "name": "جيبسونة مقاس 15",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 7.0,
+  "unit_cost": 42.0,
+  "expiry": "2027-05-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "جيبسونة مقاس 10",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 11.0,
+  "unit_cost": 34.0,
+  "expiry": "2027-10-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "ماسك كبار نيولايزر",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 20.0,
+  "unit_cost": 13.5,
+  "expiry": null,
+  "desc": "قطعة"
+ },
+ {
+  "name": "ماسك اطفال نيولايزر",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 20.0,
+  "unit_cost": 13.5,
+  "expiry": null,
+  "desc": "قطعة"
+ },
+ {
+  "name": "محلول رينجر",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 42.0,
+  "unit_cost": 25.0,
+  "expiry": "2028-08-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "محلول ملح",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 14.0,
+  "unit_cost": 24.5,
+  "expiry": "2029-09-30",
+  "desc": "قطعة"
+ },
+ {
+  "name": "محلول جلوكوز",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 19.0,
+  "unit_cost": 21.5,
+  "expiry": "2028-01-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "كيس كب حجامة (10 قطع )",
+  "unit": "قطعة",
+  "units_per_pack": 10.0,
+  "quantity": 160.0,
+  "unit_cost": 8.5,
+  "expiry": null,
+  "desc": "كيس 10 قطع"
+ },
+ {
+  "name": "خافض لسان",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 1120.0,
+  "unit_cost": 0.45,
+  "expiry": "2030-05-31",
+  "desc": "علبة (100 قطعة)"
+ },
+ {
+  "name": "شريحة سكر",
+  "unit": "قطعة",
+  "units_per_pack": 50.0,
+  "quantity": 415.0,
+  "unit_cost": 4.7,
+  "expiry": "2027-11-30",
+  "desc": "علبة (50 قطعة)"
+ },
+ {
+  "name": "شكاكة سكر",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 1425.0,
+  "unit_cost": 0.45,
+  "expiry": "2030-04-30",
+  "desc": "علبة (100 قطعة)"
+ },
+ {
+  "name": "تيوبة بلازما",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 14.0,
+  "unit_cost": 42.5,
+  "expiry": "2028-11-30",
+  "desc": "قطعة"
+ },
+ {
+  "name": "سرنجة 10 سم",
+  "unit": "قطعة",
+  "units_per_pack": 125.0,
+  "quantity": 99.0,
+  "unit_cost": 2.8,
+  "expiry": "2030-12-31",
+  "desc": "علبة 125 قطعة"
+ },
+ {
+  "name": "سرنجة 50 سم",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 5.0,
+  "unit_cost": 10.0,
+  "expiry": "2028-12-31",
+  "desc": "قطعة"
+ },
+ {
+  "name": "سرنجة 3 سم كبار",
+  "unit": "قطعة",
+  "units_per_pack": 250.0,
+  "quantity": 291.0,
+  "unit_cost": 1.58,
+  "expiry": "2030-12-31",
+  "desc": "علبة 250 قطعة"
+ },
+ {
+  "name": "سرنجة 3 سم اطفال",
+  "unit": "قطعة",
+  "units_per_pack": 250.0,
+  "quantity": 376.0,
+  "unit_cost": 1.58,
+  "expiry": "2031-09-30",
+  "desc": "علبة 250 قطعة"
+ },
+ {
+  "name": "سرنجة انسولين",
+  "unit": "قطعة",
+  "units_per_pack": 300.0,
+  "quantity": 254.0,
+  "unit_cost": 1.9333,
+  "expiry": "2030-06-30",
+  "desc": "علبة 300 قطعة"
+ },
+ {
+  "name": "رول ازرق",
+  "unit": "رول",
+  "units_per_pack": 1.0,
+  "quantity": 25.0,
+  "unit_cost": 85.0,
+  "expiry": null,
+  "desc": "رول 30 مفرش"
+ },
+ {
+  "name": "كانولا زرقاء",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 200.0,
+  "unit_cost": 8.5,
+  "expiry": "2030-05-31",
+  "desc": "كرتونة 100 قطعة"
+ },
+ {
+  "name": "سرنجة 5 سم",
+  "unit": "قطعة",
+  "units_per_pack": 200.0,
+  "quantity": 250.0,
+  "unit_cost": 2.05,
+  "expiry": "2031-06-30",
+  "desc": "علبة 200 قطعة"
+ },
+ {
+  "name": "كانيولا صفراء",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 206.0,
+  "unit_cost": 9.75,
+  "expiry": "2030-01-31",
+  "desc": "كرتونة 100 قطعة"
+ },
+ {
+  "name": "سيفتي بوكس",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 22.0,
+  "unit_cost": 18.5,
+  "expiry": null,
+  "desc": "1 لتر"
+ },
+ {
+  "name": "جلافز M",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 815.0,
+  "unit_cost": 2.1,
+  "expiry": "2029-06-30",
+  "desc": "علبة (100 قطعة)"
+ },
+ {
+  "name": "جلافز L",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 517.0,
+  "unit_cost": 2.1,
+  "expiry": "2031-04-30",
+  "desc": "علبة (100 قطعة)"
+ },
+ {
+  "name": "جلافز XL",
+  "unit": "قطعة",
+  "units_per_pack": 100.0,
+  "quantity": 1020.0,
+  "unit_cost": 2.1,
+  "expiry": "2031-05-31",
+  "desc": "علبة (100 قطعة)"
+ },
+ {
+  "name": "كب عينية بول",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 150.0,
+  "unit_cost": 3.25,
+  "expiry": null,
+  "desc": "قطعة"
+ },
+ {
+  "name": "كحول اسبراي 75 مللي",
+  "unit": "قطعة",
+  "units_per_pack": 12.0,
+  "quantity": 17.0,
+  "unit_cost": 14.5833,
+  "expiry": null,
+  "desc": "علبة 12 قطعة"
+ },
+ {
+  "name": "سحابة بول",
+  "unit": "قطعة",
+  "units_per_pack": 1.0,
+  "quantity": 0.0,
+  "unit_cost": 250.0,
+  "expiry": null,
+  "desc": ""
+ }
+]
