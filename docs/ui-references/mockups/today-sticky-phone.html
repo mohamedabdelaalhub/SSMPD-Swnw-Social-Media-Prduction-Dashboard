@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: الجزء الثابت في «تشغيل اليوم» على الموبايل</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--teal:#00B0BD;--pos:#2F7D5C;--neg:#D0402A;--gap:16px}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:var(--gap)}
+.card{background:#fff;border-radius:24px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:20px}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;background:#fff;border-radius:18px;padding:6px;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.seg button{min-height:44px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:600;white-space:nowrap}
+.seg button.on{background:var(--brand);color:#fff}
+.view{display:none;gap:var(--gap)}.view.on{display:grid}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+.tile{border:0;text-align:start;background:#fff;border-radius:20px;padding:16px;box-shadow:0 6px 24px rgba(15,54,157,.06);display:grid;gap:6px;min-width:0}
+.tile small{color:var(--muted);font-size:12px}.tile b{font-size:22px;color:var(--brand)}.tile span{font-size:12px;color:var(--muted)}
+.tile.warn b{color:#B4540A}.tile.ok b{color:var(--pos)}
+.tile:hover{outline:2px solid var(--tint)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.search{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:14px;padding:0 12px;height:44px;color:var(--muted)}
+.search input{border:0;background:none;outline:0;flex:1;min-width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{min-height:36px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 12px;font-size:12px;white-space:nowrap;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.chips button.on{background:var(--tint);border-color:#CFDCF8;color:var(--brand);font-weight:600}
+.chips i{font-style:normal;font-size:11px}
+.period{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.period .chips button{min-height:36px}
+.btn{min-height:44px;border-radius:14px;border:1px solid var(--line);background:#fff;padding:0 16px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-weight:600;color:var(--brand);justify-content:center}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff;transition:background-color .2s,border-color .2s,box-shadow .2s}
+.btn.main:hover,.btn.main:focus-visible{background:var(--accent);border-color:var(--accent);box-shadow:0 6px 16px rgba(241,90,34,.28)}
+.btn.main:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+.btn.sm{min-height:40px;padding:0 12px;font-size:13px}
+.btn.icon{width:44px;padding:0}
+.list{display:grid;gap:12px}
+.vcard{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;border:1px solid var(--line);border-radius:20px;padding:14px 16px;background:#fff;border-inline-start:4px solid var(--line)}
+.vcard.open{border-inline-start-color:var(--teal)}.vcard.wait{border-inline-start-color:#FF8800}.vcard.done{border-inline-start-color:var(--pos)}.vcard.closed{border-inline-start-color:#525B6F}
+.av{width:46px;height:46px;border-radius:50%;background:var(--tint);color:var(--brand);display:grid;place-items:center;flex:none}.av svg{width:22px;height:22px}
+.mid{display:grid;gap:6px;min-width:0}
+.top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.top b{font-size:15px}
+.sub{font-size:12px;color:var(--muted)}
+.svc{display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;white-space:nowrap}
+.pill.wait{background:#FFF1E0;color:#9A4E00}.pill.done{background:#E6F4EC;color:var(--pos)}.pill.cancel{background:var(--soft);color:var(--muted);text-decoration:line-through}
+.st{display:inline-flex;min-height:24px;align-items:center;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st.open{background:var(--teal);color:#fff}.st.closed{background:#525B6F;color:#fff}
+.end{display:grid;justify-items:end;gap:8px}
+.amt{font-weight:700;white-space:nowrap}.amt small{font-weight:400;color:var(--muted)}
+.due{font-size:12px;color:#B4540A;font-weight:600;white-space:nowrap}
+.empty{text-align:center;color:var(--muted);padding:24px}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;border:1px solid var(--line);border-radius:20px;padding:12px 16px}
+.pacts{display:flex;gap:8px;align-items:center}
+.menu{position:relative}
+.pop{position:absolute;top:50px;inset-inline-end:0;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(15,54,157,.18);padding:6px;display:none;z-index:5;min-width:200px}
+.pop.on{display:grid}
+.pop button{border:0;background:none;text-align:start;padding:10px 12px;border-radius:10px;white-space:nowrap;min-height:44px}
+.pop button:hover{background:var(--soft)}
+.pop button.danger{color:var(--neg)}
+/* modal */
+.bd{position:fixed;inset:0;background:rgba(22,33,46,.45);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.bd.on{display:flex}
+.modal{background:#fff;border-radius:24px;max-width:640px;width:100%;padding:20px;display:grid;gap:14px;max-height:88vh;overflow:auto}
+.mh{display:flex;align-items:flex-start;gap:12px}
+.mh .t{flex:1;min-width:0;display:grid;gap:6px}.mh h3{margin:0;font-size:18px}
+.x{width:44px;height:44px;border:0;border-radius:12px;background:var(--soft);flex:none}
+.orow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:12px 14px;border-radius:16px;background:var(--soft)}
+.orow .n{display:grid;gap:4px;min-width:0}.orow .n b{font-size:14px}.orow .n small{color:var(--muted);font-size:12px}
+.orow.cancel .n b{text-decoration:line-through;color:var(--muted)}
+.tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tot div{background:var(--soft);border-radius:14px;padding:10px 12px;display:grid;gap:2px}.tot small{font-size:12px;color:var(--muted)}.tot b{font-size:16px}
+.tot .rest b{color:#B4540A}
+.mf{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.conf{display:grid;gap:10px}.conf h3{margin:0}.conf p{margin:0;color:var(--muted);line-height:1.8}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:40}.toast.on{opacity:1}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){
+ :root{--gap:12px}.wrap{padding:0 12px}.bd{padding:12px}.note{padding:0 12px}.card{padding:16px;border-radius:20px}
+ .tile b{font-size:19px}
+ .vcard{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px}
+ .vcard .end{grid-column:1/-1;grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-items:stretch}
+ .prow{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px}
+ .prow .pacts{grid-column:1/-1}.prow .pacts .btn.main{flex:1}
+ .orow{grid-template-columns:minmax(0,1fr) auto;}.orow .amt{grid-column:2;grid-row:1}.orow .oa{grid-column:1/-1;display:flex;gap:8px}.orow .oa .btn.main{flex:1}
+ .tot b{font-size:14px}
+ .mf .btn{flex:1}
+ .search input{font-size:16px}
+}
+
+
+body{padding-bottom:90px}
+.top{background:rgba(247,248,252,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:10px 12px;display:grid;gap:10px;z-index:30;transition:box-shadow .2s}
+.top.stuck{box-shadow:0 8px 24px rgba(15,54,157,.12)}
+.titlerow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.titlerow h2{margin:0;font-size:20px;color:var(--brand);white-space:nowrap}
+.daterow{display:flex;gap:8px;align-items:center}
+.daterow .d{flex:1;min-height:44px;border:1px solid var(--line);border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--brand);font-size:14px;white-space:nowrap;padding:0 8px}
+.ib{width:44px;min-height:44px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--brand);display:grid;place-items:center;position:relative;flex:none}
+.ib em{position:absolute;top:-6px;inset-inline-start:-6px;background:var(--accent);color:#fff;font-style:normal;font-size:11px;border-radius:99px;min-width:20px;height:20px;display:grid;place-items:center;padding:0 5px}
+.today-b{min-height:44px;border-radius:14px;border:0;background:var(--brand);color:#fff;font-weight:700;padding:0 14px;white-space:nowrap}
+.searchrow input{width:100%;min-height:44px;border:1px solid var(--line);border-radius:14px;padding:0 12px;font:inherit;font-size:16px;background:#fff}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.filters select{min-height:44px;border:1px solid var(--line);border-radius:14px;padding:0 10px;font:inherit;background:#fff}
+.chipsx{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.chipsx::-webkit-scrollbar{display:none}
+.chipsx button{flex:none;min-height:38px;border-radius:999px;border:1px solid var(--line);background:#fff;padding:0 14px;font-weight:600;color:var(--muted);white-space:nowrap}
+.chipsx button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.chipsx b{margin-inline-start:6px}
+.tiles6{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.t6{border:1px solid var(--line);border-radius:16px;background:#fff;padding:10px;display:grid;gap:2px;text-align:start}
+.t6 b{font-size:22px;color:var(--brand)}.t6 span{font-size:12px;color:var(--ink)}.t6.hot{background:#FFF4EE;border-color:#F7C3A8}.t6.hot b{color:var(--accent)}
+.slim{display:none;align-items:center;gap:8px}
+.slim .d{flex:1;min-height:40px;font-size:13px}
+.content{padding:12px;display:grid;gap:12px}
+.hour{display:grid;gap:8px}.hour h4{margin:0;font-size:13px;color:var(--muted)}
+.pt{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;display:grid;gap:4px;border-inline-start:4px solid var(--teal)}
+.pt b{font-size:14px}.pt small{color:var(--muted);font-size:12px}
+.shift{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.switch{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:60;background:#16212E;color:#fff;border-radius:18px;padding:6px;display:flex;gap:4px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.switch button{border:0;background:none;color:#cfd6e4;font-weight:700;min-height:40px;padding:0 14px;border-radius:14px;white-space:nowrap}
+.switch button.on{background:var(--accent);color:#fff}
+.explain{margin:0 12px;background:#fff;border-radius:16px;padding:10px 12px;font-size:13px;color:var(--ink);border:1px dashed #C9D3E6}
+.sheet{position:fixed;inset:auto 0 0 0;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -12px 40px rgba(15,54,157,.2);padding:16px;display:none;gap:10px;z-index:70}
+.sheet.on{display:grid}
+/* A: only the slim bar is sticky; full header scrolls away */
+body.A .top{position:static}
+body.A .slimbar{position:fixed;top:0;left:0;right:0}
+/* B: header sticky but collapses to slim on scroll down, expands on scroll up */
+body.B .top{position:sticky;top:0}
+body.B .top.mini .full{display:none}
+body.B .top.mini .slim{display:flex}
+/* C: only title+date+chips sticky; tiles/filters/search scroll away */
+body.C #stickyC{position:sticky;top:0;z-index:30;padding:10px 12px;background:rgba(247,248,252,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+body.C .top{padding-top:0}
+.slimbar{display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(247,248,252,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:30;box-shadow:0 8px 24px rgba(15,54,157,.12)}
+.slimbar .d{flex:1;min-height:40px;font-size:13px}
+.hidden{display:none!important}
+</style>
+</head>
+<body class="A">
+<div class="note" style="padding:8px 12px"><b>تصور — «تشغيل اليوم» على الموبايل:</b> اعمل سكرول لتحت ولفوق، وغيّر بين «أ» و«ب» و«ج» من الشريط اللي تحت.</div>
+<p class="explain" id="explain"></p>
+<!-- slim sticky bar for option A -->
+<div class="slimbar" id="slimbar"><span class="ib" aria-hidden="true">☰</span><span class="d ib" style="width:auto">النهارده · الاثنين 23</span><button class="ib" data-sheet aria-label="بحث وفلتر">🔍<em>2</em></button><button class="today-b" style="min-height:40px" data-t="حجز جديد">+ حجز</button></div>
+<header class="top" id="top">
+ <div class="full">
+  <div class="stickyC" id="stickyC" style="display:grid;gap:10px;background:inherit">
+   <div class="titlerow"><h2>تشغيل اليوم</h2><div style="display:flex;gap:8px"><button class="ib" aria-label="أدوات">⋯</button><button class="today-b" data-t="حجز جديد">حجز جديد</button></div></div>
+   <div class="daterow"><button class="ib">→</button><span class="d">النهارده · الاثنين 23 نوفمبر</span><button class="ib">←</button></div>
+   <div class="chipsx"><button class="on">الكل<b>33</b></button><button>الحجوزات<b>14</b></button><button>متأخر<b>0</b></button><button>في الانتظار<b>1</b></button><button>جوه<b>2</b></button><button>خلص<b>9</b></button></div>
+  </div>
+  <div class="searchrow" style="margin-top:10px"><input placeholder="اسم المريض أو رقم الملف أو التليفون أو الدكتور"></div>
+  <div class="filters" style="margin-top:10px"><select><option>كل الأطباء</option></select><select><option>كل الحالات</option></select></div>
+  <div class="tiles6" style="margin-top:10px"><div class="t6"><b>7</b><span>الأطباء النهارده</span></div><div class="t6"><b>0</b><span>الغرف والطابور</span></div><div class="t6 hot"><b>3</b><span>حجوزات آلية</span></div><div class="t6"><b>0</b><span>مكالمات متابعة</span></div><div class="t6 hot"><b>208</b><span>رسائل مستنية</span></div><div class="t6"><b>2</b><span>إدارة الغرف</span></div></div>
+ </div>
+ <div class="slim"><span class="d ib" style="width:auto">النهارده · الاثنين 23</span><button class="ib" data-sheet aria-label="بحث وفلتر">🔍<em>2</em></button><button class="ib" data-expand aria-label="اعرض الكل">⌄</button><button class="today-b" style="min-height:40px" data-t="حجز جديد">+ حجز</button></div>
+</header>
+<main class="content" id="list"></main>
+<div class="sheet" id="sheet"><b>بحث وفلتر</b><input style="min-height:44px;border:1px solid var(--line);border-radius:14px;padding:0 12px;font:inherit;font-size:16px" placeholder="اسم المريض أو رقم الملف أو التليفون أو الدكتور"><div class="filters"><select><option>د. سارة علي</option></select><select><option>في الانتظار</option></select></div><div class="mf"><button class="btn" data-close-sheet>مسح الفلتر</button><button class="btn main" data-close-sheet>اعرض النتائج</button></div></div>
+<nav class="switch"><button data-opt="A" class="on">أ</button><button data-opt="B">ب</button><button data-opt="C">ج</button></nav>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),1600);}
+const EX={A:'<b>أ) شريط رفيع بس هو الثابت.</b> الجزء الكبير بيطلع لفوق مع السكرول، ويفضل فوق شريط فيه التاريخ وزرار «بحث وفلتر» (عليه عدد الفلاتر الشغالة) و«+ حجز».',B:'<b>ب) بيصغر لوحده.</b> وإنت نازل لتحت الجزء الكبير بينكمش لشريط رفيع، ولما تطلع لفوق ولو شوية بيرجع كامل. زرار ⌄ يفتحه كامل في أي وقت.',C:'<b>ج) الكروت والفلاتر برة الجزء الثابت.</b> بيفضل ثابت العنوان والتاريخ وصف الأرقام بس (حوالي ثلث الشاشة)، والبحث والفلاتر والكروت بيطلعوا لفوق مع السكرول.'};
+const names=['مريم عادل','يوسف أحمد','منى سعيد','كريم حسن','سلمى إبراهيم','عمر خالد','هدى سمير','نادية فؤاد','سامح فتحي','دعاء رضا','أحمد خالد','شروق محمد'];
+let h='';[['وردية مازن أحمد علي','خزينة مازن · مفتوحة من 21 نوفمبر'],['وردية منار موسى عريقي','خزينة منار · مفتوحة من 22 نوفمبر']].forEach(s=>h+=`<div class="shift"><div><b>${s[0]}</b><br><small class="sub">${s[1]}</small></div><b>0</b></div>`);
+for(let i=0;i<8;i++){h+=`<section class="hour"><h4>${10+i}:00 ${10+i<12?'ص':'م'}</h4>`;for(let j=0;j<3;j++){const n=names[(i*3+j)%names.length];h+=`<div class="pt"><b>${n}</b><small>د. سارة علي · كشف · ${['حضر','محجوز','في الانتظار'][j]}</small></div>`;}h+='</section>';}
+$('#list').innerHTML=h;
+let opt='A',lastY=0;
+function set(o){opt=o;const sc=$('#stickyC'),full=$('#top .full');if(o==='C'){document.body.insertBefore(sc,$('#top'));}else if(sc.parentNode!==full){full.insertBefore(sc,full.firstChild);}$('#slimbar').style.display='none';document.body.className=o;$$('.switch button').forEach(b=>b.classList.toggle('on',b.dataset.opt===o));$('#explain').innerHTML=EX[o];$('#top').classList.remove('mini');window.scrollTo({top:0});}
+window.addEventListener('scroll',()=>{const y=scrollY,top=$('#top');top.classList.toggle('stuck',y>10);
+ if(opt==='A'){const r=top.getBoundingClientRect();$('#slimbar').style.display=r.bottom<0?'flex':'none';}
+ if(opt==='B'){if(y>lastY+4&&y>120)top.classList.add('mini');else if(y<lastY-4)top.classList.remove('mini');}
+ lastY=y;},{passive:true});
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.opt){set(t.dataset.opt);return;}
+ if('sheet' in t.dataset){$('#sheet').classList.add('on');return;}
+ if('closeSheet' in t.dataset){$('#sheet').classList.remove('on');return;}
+ if('expand' in t.dataset){$('#top').classList.remove('mini');return;}
+ if(t.dataset.t)toast(t.dataset.t);});
+set('A');
+</script>
+</body>
+</html>
