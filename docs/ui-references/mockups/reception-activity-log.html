@@ -1,0 +1,92 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>سجل نشاط الاستقبال</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:20px 12px;color:#16212E}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:12px}
+.eyebrow{margin:0;font-size:12px;color:#8a93a3;line-height:1.7}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;min-width:0}
+.hd{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hd h3{margin:0;color:#0F369D;font-size:20px;flex:1;min-width:200px}
+.sub{font-size:12px;color:#5b6577;line-height:1.7}
+.btn2{font:inherit;font-size:13px;border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:7px 12px;min-height:38px;color:#16212E;cursor:pointer}
+.btn2.p{background:#16212E;border-color:#16212E;color:#fff}
+.filters{display:grid;gap:8px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.f{display:grid;gap:4px;font-size:12px;color:#5b6577;min-width:0}
+.f select,.f input{font:inherit;font-size:13px;min-height:40px;border:1px solid #BFCBE3;border-radius:10px;padding:4px 10px;background:#fff;color:#16212E;min-width:0}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:inherit;font-size:12px;border:1px solid #D5DEEE;border-radius:99px;padding:5px 12px;background:#fff;color:#16212E;cursor:pointer;min-height:34px}
+.chip.on{background:#0F369D;border-color:#0F369D;color:#fff}
+.lbl{font-size:12px;color:#5b6577;margin-inline-end:4px;align-self:center}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;text-align:start;border-bottom:1px solid #EEF1F6;white-space:nowrap}
+th{font-size:12px;color:#5b6577;font-weight:600;background:#F7F9FC}
+td.n{font-variant-numeric:tabular-nums;font-weight:700}
+tr.auto td{color:#5b6577;background:#FAFBFC}
+tr.tot td{font-weight:700;background:#F4F7FC}
+.tw{overflow-x:auto}
+.act{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:2px 9px;background:#EEF3FF;color:#0F369D}
+.act.visit{background:#E6F2EC;color:#2F7D5C}.act.pay{background:#FFF6E5;color:#8A5A00}.act.void{background:#FBE9E6;color:#D0402A}.act.auto{background:#F1F4F8;color:#5b6577}
+.log{display:grid;gap:0}
+.row{display:grid;grid-template-columns:64px 130px 120px minmax(0,1fr) 140px 90px;gap:10px;align-items:center;padding:9px 6px;border-bottom:1px solid #EEF1F6;font-size:13px}
+.row .t{font-weight:700;font-variant-numeric:tabular-nums}
+.row .amt{font-weight:700;text-align:end;font-variant-numeric:tabular-nums}
+.row .who b{display:block}
+.row .det{color:#3B4658;overflow-wrap:anywhere}
+.day{font-size:12px;font-weight:700;color:#5b6577;padding:8px 6px 4px}
+.more{justify-self:center}
+@media(max-width:760px){
+ .filters{grid-template-columns:1fr 1fr}
+ .row{grid-template-columns:52px minmax(0,1fr) auto;grid-template-areas:"t who amt" "t act act" "t det det";gap:2px 8px}
+ .row .t{grid-area:t;align-self:start}.row .who{grid-area:who}.row .a{grid-area:act}.row .det{grid-area:det;font-size:12px}.row .amt{grid-area:amt}.row .doc{display:none}
+ thead{display:none}
+ table,tbody,tr,td{display:block}
+ tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 8px;border:1px solid #EEF1F6;border-radius:12px;padding:8px 10px;margin-bottom:6px}
+ td{border:0;padding:2px 0;white-space:normal;font-size:13px}
+ td:first-child{grid-column:1/-1;font-size:14px}
+ td.n::before{content:attr(data-l);display:block;font-size:11px;font-weight:400;color:#5b6577}
+ td.hide{display:block}
+ tr.tot,tr.auto{background:#F4F7FC}
+ tr.tot td,tr.auto td{background:none}
+}
+</style></head><body><div class="wrap">
+<p class="eyebrow">تصور (أسماء وأرقام تجريبية). شاشة «سجل نشاط الاستقبال» للمدير العام والسوبر أدمن والمدير المالي، جوه الاستقبال. للقراية بس، من غير أي تعديل.</p>
+
+<section class="card">
+ <div class="hd"><h3>سجل نشاط الاستقبال</h3><button class="btn2">تصدير Excel (CSV)</button></div>
+ <div class="filters">
+  <label class="f">الموظف<select><option>كل الموظفين</option><option>سلمى حسن</option><option>نهى عادل</option><option>كريم سامي</option><option>الحجز التلقائي</option></select></label>
+  <label class="f">الدكتور<select><option>كل الدكاترة</option><option>د. أحمد يوسف</option></select></label>
+  <label class="f">المريض<input placeholder="الاسم أو رقم الملف أو التليفون"></label>
+  <label class="f">من — إلى<input value="21/11/2026 — 23/11/2026"></label>
+ </div>
+ <div class="seg"><span class="lbl">الفترة</span><button class="chip">النهارده</button><button class="chip on">آخر 3 أيام</button><button class="chip">آخر 7 أيام</button><button class="chip">آخر 30 يوم</button></div>
+ <div class="seg"><span class="lbl">العملية</span><button class="chip on">الكل</button><button class="chip">حجز</button><button class="chip">تعديل ميعاد</button><button class="chip">إلغاء</button><button class="chip">فتح زيارة</button><button class="chip">طلب خدمة</button><button class="chip">تحصيل</button><button class="chip">طلب إلغاء / تصحيح</button></div>
+</section>
+
+<section class="card">
+ <div class="hd"><h3 style="font-size:16px">ملخص الموظفين — آخر 3 أيام</h3><span class="sub">اضغط على اسم الموظف يفلتر السجل تحت عليه</span></div>
+ <div class="tw"><table>
+  <thead><tr><th>الموظف</th><th>زيارات</th><th>حجوزات</th><th>خدمات</th><th class="hide">إلغاء / تعديل</th><th>تحصيلات</th><th>المبلغ المحصّل</th></tr></thead>
+  <tbody>
+   <tr><td data-l="الموظف"><b>سلمى حسن</b></td><td data-l="زيارات" class="n">9</td><td data-l="حجوزات" class="n">29</td><td data-l="خدمات" class="n">9</td><td data-l="إلغاء / تعديل" class="n hide">4</td><td data-l="تحصيلات" class="n">8</td><td data-l="المبلغ المحصّل" class="n">3,450</td></tr>
+   <tr><td data-l="الموظف"><b>نهى عادل</b></td><td data-l="زيارات" class="n">8</td><td data-l="حجوزات" class="n">32</td><td data-l="خدمات" class="n">8</td><td data-l="إلغاء / تعديل" class="n hide">6</td><td data-l="تحصيلات" class="n">7</td><td data-l="المبلغ المحصّل" class="n">2,900</td></tr>
+   <tr><td data-l="الموظف"><b>كريم سامي</b></td><td data-l="زيارات" class="n">1</td><td data-l="حجوزات" class="n">26</td><td data-l="خدمات" class="n">1</td><td data-l="إلغاء / تعديل" class="n hide">2</td><td data-l="تحصيلات" class="n">1</td><td data-l="المبلغ المحصّل" class="n">300</td></tr>
+   <tr class="tot"><td data-l="الموظف">إجمالي الموظفين</td><td data-l="زيارات" class="n">18</td><td data-l="حجوزات" class="n">87</td><td data-l="خدمات" class="n">18</td><td data-l="إلغاء / تعديل" class="n hide">12</td><td data-l="تحصيلات" class="n">16</td><td data-l="المبلغ المحصّل" class="n">6,650</td></tr>
+   <tr class="auto"><td data-l="الموظف">الحجز التلقائي (ماسا والواتساب والموقع)</td><td data-l="زيارات" class="n">—</td><td data-l="حجوزات" class="n">75</td><td data-l="خدمات" class="n">—</td><td data-l="إلغاء / تعديل" class="n hide">—</td><td data-l="تحصيلات" class="n">—</td><td data-l="المبلغ المحصّل" class="n">—</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="card">
+ <div class="hd"><h3 style="font-size:16px">السجل — 214 عملية</h3><span class="sub">الأحدث فوق · كل سطر بيفتح ملف المريض أو الحجز</span></div>
+ <div class="log">
+  <div class="day">النهارده — الاتنين 23/11</div>
+  <div class="row"><span class="t">14:05</span><span class="who"><b>نهى عادل</b></span><span class="a"><span class="act pay">تحصيل</span></span><span class="det">منى سمير · P-2026-000412 · كشف جلدية · كاش</span><span class="doc sub">د. أحمد يوسف</span><span class="amt">350</span></div>
+  <div class="row"><span class="t">13:58</span><span class="who"><b>نهى عادل</b></span><span class="a"><span class="act visit">فتح زيارة</span></span><span class="det">منى سمير · P-2026-000412 · وصل الساعة 13:55</span><span class="doc sub">د. أحمد يوسف</span><span class="amt"></span></div>
+  <div class="row"><span class="t">13:40</span><span class="who"><b>كريم سامي</b></span><span class="a"><span class="act">تعديل ميعاد</span></span><span class="det">هالة مصطفى · من 30/11 22:00 لـ 2/12 22:10</span><span class="doc sub">د. أحمد يوسف</span><span class="amt"></span></div>
+  <div class="row"><span class="t">13:12</span><span class="who"><b>الحجز التلقائي</b></span><span class="a"><span class="act auto">حجز من ماسا</span></span><span class="det">كريم عادل · اتحط ميعاد لوحده 22:40</span><span class="doc sub">د. أحمد يوسف</span><span class="amt"></span></div>
+  <div class="row"><span class="t">12:30</span><span class="who"><b>سلمى حسن</b></span><span class="a"><span class="act void">طلب إلغاء خدمة</span></span><span class="det">عمر حسام · أشعة · السبب: اتطلبت بالغلط · مستني المراجعة</span><span class="doc sub">د. سارة علي</span><span class="amt">-200</span></div>
+  <div class="row"><span class="t">12:02</span><span class="who"><b>سلمى حسن</b></span><span class="a"><span class="act">حجز</span></span><span class="det">رنا فتحي · 25/11 18:00 · كشف</span><span class="doc sub">د. سارة علي</span><span class="amt"></span></div>
+  <button class="btn2 more">اعرض أكتر</button>
+ </div>
+</section>
+</div></body></html>
