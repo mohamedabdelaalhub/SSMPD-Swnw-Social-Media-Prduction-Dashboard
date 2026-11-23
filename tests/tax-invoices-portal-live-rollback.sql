@@ -211,9 +211,12 @@ grant execute on function public.clinic_finance_tax_settings_save(jsonb), public
 do $$
 declare acc uuid; fm uuid; v uuid; dk text; r jsonb; rep jsonb; sug jsonb; e0 bigint; d0 date := (now() at time zone 'Africa/Cairo')::date - 30;
 begin
-  select user_id into acc from public.admins where active and user_id is not null and role = 'accountant' order by id limit 1;
-  select user_id into fm from public.admins where active and user_id is not null and role in ('financial_manager', 'super_admin') and user_id is distinct from acc order by role, id limit 1;
-  if acc is null or fm is null then raise exception 'Need an active accountant and a financial manager / super admin with logins'; end if;
+  -- recorder: an accountant, else the financial manager (no accountant user yet); confirmer: another reviewer (owner / GM / FM)
+  select user_id into acc from public.admins where active and user_id is not null and role in ('accountant', 'financial_manager')
+   order by case role when 'accountant' then 0 else 1 end, id limit 1;
+  select user_id into fm from public.admins where active and user_id is not null and role in ('super_admin', 'general_manager', 'financial_manager') and user_id is distinct from acc
+   order by case role when 'super_admin' then 0 when 'general_manager' then 1 else 2 end, id limit 1;
+  if acc is null or fm is null then raise exception 'Need a recorder (accountant / financial manager) and another reviewer (owner / GM) with logins'; end if;
   select vv.id, p.doctor_key into v, dk from clinic_reception.visits vv join clinic_reception.workspaces w on w.id = vv.workspace_id and w.mode = 'live'
     join clinic_reception.orders o on o.visit_id = vv.id and o.status = 'completed' and o.doctor_fee > 0 join clinic_reception.providers p on p.id = o.provider_id
    where exists (select 1 from clinic_reception.invoices i where i.visit_id = vv.id) and p.doctor_key is not null order by vv.opened_at desc limit 1;
