@@ -1114,6 +1114,12 @@ frule('inventory-direct-invoice.js','رابط صورة الفاتورة (اخت�
 frule('inventory-direct-invoice.js','عدد العبوات','عدد العلب أو الأكياس زي الفاتورة. الرصيد بيزيد بعدد العبوات × عدد القطع في العبوة.','inventory-direct-invoice')
 frule('reception-visit-usage.js','من مخزن','المخزن اللي المستلزم اتصرف منه. الأسنان من رئيسي أسنان، والبشرة والعلاج الطبيعي والكشف من فرعي مستلزمات تمريض.','visit-usage-yesterday')
 frule('reception-visit-usage.js','تاريخ الزيارات','يوم الزيارات اللي هتسجل استهلاكها. بيبقى امبارح تلقائياً، وتقدر تختار أي يوم من آخر 14 يوم.','visit-usage-yesterday')
+frule('medicines-pricing.js','دوّر باسم الصنف','اكتب جزء من اسم الصنف والقايمة بتتفلتر وانت بتكتب.','medicines-pricing-discount')
+frule('medicines-pricing.js','نوع التسعير','مستلزمات = سعر الشراء + النسبة، دواء عادي = سعر الجمهور من غير نسبة، دواء ناقص = سعر الشراء + النسبة ومش بيدخل في خصم آخر الشهر.','medicines-pricing-discount')
+frule('medicines-pricing.js','الشهر','الشهر اللي عايز تشوف فواتيره أو خصمه أو تقريره. الفواتير بتتحسب بتاريخ فاتورة المورد.','medicines-pricing-discount')
+frule('medicines-pricing.js','نسبة الخصم %|مثلاً 12','نسبة خصم آخر الشهر على إجمالي فواتير المورد (من غير الأدوية الناقصة). اكتب النسبة أو المبلغ، واحد بس.','medicines-pricing-discount')
+frule('medicines-pricing.js','أو المبلغ (من إشعار المورد)','مبلغ الخصم زي ما هو مكتوب في إشعار المورد، بدل النسبة. مايزيدش عن إجمالي الفواتير اللي عليها الخصم.','medicines-pricing-discount')
+frule('medicines-pricing.js','رابط صورة إشعار الخصم (اختياري)','رابط صورة أو ملف إشعار الخصم من المورد عشان المدير المالي يراجعه. اختياري ومبيغيّرش المبلغ.','medicines-pricing-discount')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'

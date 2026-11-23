@@ -11688,6 +11688,125 @@
       "reviewed": true
     },
     {
+      "title": "دوّر باسم الصنف",
+      "labels": [
+        "دوّر باسم الصنف"
+      ],
+      "text": "اكتب جزء من اسم الصنف والقايمة بتتفلتر وانت بتكتب.",
+      "article": "medicines-pricing-discount",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "النوع",
+      "labels": [
+        "النوع"
+      ],
+      "text": "اختار النوع الصحيح للسجل وفق قائمة النموذج. في ملف المريض المقصود بيانات المريض، وفي طلب مالي المقصود نوع العملية.",
+      "article": "patient-records",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نوع التسعير",
+      "labels": [
+        "نوع التسعير"
+      ],
+      "text": "مستلزمات = سعر الشراء + النسبة، دواء عادي = سعر الجمهور من غير نسبة، دواء ناقص = سعر الشراء + النسبة ومش بيدخل في خصم آخر الشهر.",
+      "article": "medicines-pricing-discount",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المورد",
+      "labels": [
+        "المورد"
+      ],
+      "text": "اختر المورد المسجل صاحب الفاتورة ليرتبط الالتزام بحسابه. لا تكتب اسم مورد جديد بدل اختيار الموجود.",
+      "article": "purchases",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الشهر",
+      "labels": [
+        "الشهر"
+      ],
+      "text": "الشهر اللي عايز تشوف فواتيره أو خصمه أو تقريره. الفواتير بتتحسب بتاريخ فاتورة المورد.",
+      "article": "medicines-pricing-discount",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً 12",
+      "labels": [
+        "مثلاً 12",
+        "نسبة الخصم %"
+      ],
+      "text": "نسبة خصم آخر الشهر على إجمالي فواتير المورد (من غير الأدوية الناقصة). اكتب النسبة أو المبلغ، واحد بس.",
+      "article": "medicines-pricing-discount",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "أو المبلغ (من إشعار المورد)",
+      "labels": [
+        "أو المبلغ (من إشعار المورد)"
+      ],
+      "text": "مبلغ الخصم زي ما هو مكتوب في إشعار المورد، بدل النسبة. مايزيدش عن إجمالي الفواتير اللي عليها الخصم.",
+      "article": "medicines-pricing-discount",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رابط صورة إشعار الخصم (اختياري)",
+      "labels": [
+        "رابط صورة إشعار الخصم (اختياري)"
+      ],
+      "text": "رابط صورة أو ملف إشعار الخصم من المورد عشان المدير المالي يراجعه. اختياري ومبيغيّرش المبلغ.",
+      "article": "medicines-pricing-discount",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة",
+      "labels": [
+        "ملاحظة",
+        "ملاحظة (اختياري)"
+      ],
+      "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
+      "article": "personal",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "سبب الرفض",
       "labels": [
         "سبب الرفض"
@@ -11880,19 +11999,6 @@
       ],
       "text": "القيمة بالجنيه لهذا الإجراء فقط؛ راجع المستحق أو المعتمد والحدود قبل الحفظ، ولا تدخل إجمالي فاتورة إذا كنت تسدد جزءًا.",
       "article": "collections",
-      "tabs": [
-        "production"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "ملاحظة (اختياري)",
-      "labels": [
-        "ملاحظة (اختياري)"
-      ],
-      "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
-      "article": "personal",
       "tabs": [
         "production"
       ],
@@ -22497,9 +22603,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1932,
-    "labels": 1407,
-    "files": 147,
-    "groups": 1521
+    "definitions": 1942,
+    "labels": 1412,
+    "files": 148,
+    "groups": 1529
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
