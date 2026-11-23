@@ -197,7 +197,7 @@
     if (!r) { var s = d.querySelector('[data-rx-section="journey"]'); if (s && !s.__triJump) { s.__triJump = true; s.click(); } setTimeout(goInbox, 200); return; }
     var h = r.querySelector('[data-review-inbox]'); if (!h || h.hidden || !h.innerHTML) { setTimeout(goInbox, 200); return; }
     jump = 0;
-    var top = r.querySelector('.journey-top'), bar = d.querySelector('.topbar'), off = (top ? top.getBoundingClientRect().height : 0) + (bar ? bar.getBoundingClientRect().height : 0) + 8;
+    var top = r.querySelector('.journey-top'), bar = d.querySelector('.topbar'), off = (top && getComputedStyle(top).position === 'sticky' ? top.getBoundingClientRect().height : 0) + (bar ? bar.getBoundingClientRect().height : 0) + 8;
     try { w.scrollTo({ top: Math.max(0, h.getBoundingClientRect().top + (w.pageYOffset || 0) - off), behavior: reduced() ? 'auto' : 'smooth' }); } catch (_) { h.scrollIntoView(); }
     h.classList.add('tri-flash'); setTimeout(function () { h.classList.remove('tri-flash'); }, 2200);
   }
