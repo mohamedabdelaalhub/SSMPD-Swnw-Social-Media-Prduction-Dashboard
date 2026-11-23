@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1969,
-    "labels": 1434,
-    "files": 152,
-    "groups": 1548
+    "definitions": 1971,
+    "labels": 1436,
+    "files": 153,
+    "groups": 1549
   },
   "fields": [
     {
@@ -18902,6 +18902,26 @@
       "tab": "price_lists",
       "article": "price-lists",
       "text_sha256": "b1d1459fd5eeeb8271a40be29c53268a6bc8c27bd1dd5d9189fe29a6b1611077"
+    },
+    {
+      "file": "service-select-search.js",
+      "label": "ابحث عن الخدمة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "reception-service-search",
+      "text_sha256": "01a12ff45a1e047d0ed561e0881bf0252018a79d8fd24d38af25af6b7d19f45f"
+    },
+    {
+      "file": "service-select-search.js",
+      "label": "ابحث باسم الخدمة أو الكود أو القسم",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "reception-service-search",
+      "text_sha256": "01a12ff45a1e047d0ed561e0881bf0252018a79d8fd24d38af25af6b7d19f45f"
     },
     {
       "file": "staff-profile.js",
