@@ -1,6 +1,6 @@
 /* Reviewed operational help; no patient records, network calls or generated AI answers. */
 window.SSMPDHelpData={
-  "version": "20261118-2XX",
+  "version": "20261118-207",
   "articles": [
     {
       "id": "hr-employee-actions",

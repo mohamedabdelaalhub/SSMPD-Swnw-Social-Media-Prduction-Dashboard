@@ -1,4 +1,4 @@
-// «وردية الخزينة — قفل بعد ساعة» (20261122370000, owner «كل حاجة»): a reception account whose HR shift started more than an hour ago with
+// «وردية الخزينة — قفل بعد ساعة» (20261123020000, owner «كل حاجة»): a reception account whose HR shift started more than an hour ago with
 // no open cash shift (or with a shift left open from an earlier day) cannot book / register arrival / collect / request services until the
 // shift is opened; shift_open, reviews and other actions stay open; trial workspaces and managers are never locked; the manager watch list;
 // rollback. attendance_eval is stubbed from a table (the real one is covered by the HR tests). Sample data only.
@@ -18,7 +18,7 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     // a stand-in today-board journey command so its wrapper is exercised too
     await db.exec(`create or replace function public.clinic_reception_journey_command(p_workspace uuid, p_action text, p_payload jsonb, p_token uuid)
       returns jsonb language sql security definer as $$ select jsonb_build_object('done', p_action) $$; grant execute on function public.clinic_reception_journey_command(uuid,text,jsonb,uuid) to authenticated;`);
-    const M = fs.readFileSync('supabase/migrations/20261122370000_reception_shift_guard.sql', 'utf8');
+    const M = fs.readFileSync('supabase/migrations/20261123020000_reception_shift_guard.sql', 'utf8');
     await db.exec(M); await assert.rejects(() => db.exec(M), /تم تطبيق هذا الملف من قبل/); await db.exec('rollback');
     const rec = id(4);
     const person = (await owner("insert into clinic_people.people(full_name,admin_id,status,created_by) values('موظف استقبال',$1,'active',$2) returning id", [rec, id(1)]))[0].id;
@@ -79,7 +79,7 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     assert.equal(w.items[0].kind, 'after_end', 'open more than an hour after the HR shift end'); assert.equal(+w.items[0].expected, 850);
     await setEval(ago(300), ago(300), ago(-100)); assert.equal((await call('clinic_reception_shift_watch', [])).items.length, 0, 'normal open shift not listed');
     // rollback
-    await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261122370000_reception_shift_guard.rollback.sql', 'utf8'));
+    await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261123020000_reception_shift_guard.rollback.sql', 'utf8'));
     assert.equal((await owner("select to_regprocedure('public.clinic_reception_shift_guard()') r"))[0].r, null);
     await owner("delete from clinic_reception.shifts where cashier_id=$1", [rec]); await setEval(null, ago(70), ago(-410));
     await as(4); await notGuard(cmd('book', {}), 'after rollback'); assert.equal((await jc('arrive')).done, 'arrive');

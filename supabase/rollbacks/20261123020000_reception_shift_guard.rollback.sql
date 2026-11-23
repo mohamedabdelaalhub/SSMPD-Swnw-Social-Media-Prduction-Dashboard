@@ -1,4 +1,4 @@
--- Rollback of 20261122370000_reception_shift_guard.sql: desk actions no longer need an open shift.
+-- Rollback of 20261123020000_reception_shift_guard.sql: desk actions no longer need an open shift.
 begin;
 do $$ begin
   if to_regprocedure('clinic_reception.command_before_shift_guard(uuid,text,jsonb,uuid)') is null then raise exception 'لم يُطبّق الملف'; end if;

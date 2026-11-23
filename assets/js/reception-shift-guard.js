@@ -1,5 +1,5 @@
 /* «وردية الخزينة — قفل بعد ساعة» (owner 2026-11-23 «طبقه» + «كل حاجة»; mockup docs/ui-references/mockups/reception-shift-guard.*).
- * Server (20261122370000) is the source of truth: a reception / customer-service account whose HR shift started more than an hour ago
+ * Server (20261123020000) is the source of truth: a reception / customer-service account whose HR shift started more than an hour ago
  * with no open cash shift (or with a shift left open from an earlier day) cannot book, register arrival, collect or request services.
  * This layer mirrors it:
  *   - a lock card on top of «الاستقبال والخدمات» and «تشغيل اليوم» with «افتح وردية» (or «سلّم الوردية» for a stale shift);

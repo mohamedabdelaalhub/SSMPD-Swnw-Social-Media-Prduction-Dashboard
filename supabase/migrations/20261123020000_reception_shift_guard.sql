@@ -12,7 +12,7 @@
 -- Read-only RPCs: public.clinic_reception_shift_guard() (own state, for the lock card) and public.clinic_reception_shift_watch()
 -- (super admin / general manager / financial manager: who is locked, stale shifts, shifts open more than an hour after the HR shift end).
 -- Outer wrappers only (old bodies renamed into clinic_reception.*_before_shift_guard). Nothing moves money; nothing is deducted.
--- Rollback: supabase/rollbacks/20261122370000_reception_shift_guard.rollback.sql
+-- Rollback: supabase/rollbacks/20261123020000_reception_shift_guard.rollback.sql
 begin;
 
 do $$ begin
