@@ -1,0 +1,13 @@
+/* «باكج مدفوع قبل السيستم» (owner 2026-11-23 «طبقه», mockup legacy-package.html) */
+.rlp-lines{display:grid;gap:6px}.rlp-line{display:grid;grid-template-columns:minmax(0,1fr) 80px 110px auto;gap:6px;align-items:end;border:1px solid #E3E8F2;border-radius:10px;padding:8px}
+.rlp-f{display:grid;gap:4px;font-size:13px;min-width:0}.rlp-f select,.rlp-f input{min-width:0;max-width:100%}
+.rlp-x{min-width:36px}.rlp-add{justify-self:start;color:#0F369D}
+.rlp-sum{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:13px;background:#F6F8FC;border-radius:10px;padding:8px 10px}.rlp-sum:empty{display:none}.rlp-sum b{color:#0F369D}
+.rlp-note{font-size:12px;color:#5b6577;margin:0;line-height:1.7}
+.rlp-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:99px;background:#FFF6E5;color:#8A5A00;font-weight:700;font-style:normal}
+.rlp-appr{border:1px solid #F7D9A8;border-radius:14px;background:#FFFCF6;padding:12px 14px;display:grid;gap:8px;margin:0 0 12px}.rlp-appr h3{margin:0;font-size:15px;color:#8A5A00}
+.rlp-req{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid #E3E8F2;border-radius:10px;background:#fff;padding:8px 10px}.rlp-req small{display:block;color:#5b6577;font-size:12px;line-height:1.7}
+.rlp-btns{display:flex;gap:6px;flex-wrap:wrap}
+.rlp-ent{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;border:1.5px solid #CBD5E1;border-radius:12px;padding:9px 10px;font-size:13px;cursor:pointer}
+.rlp-ent:has(input:checked){border-color:#0F369D;background:#EAF0FF}.rlp-ent small{display:block;color:#5b6577;font-size:11px}
+@media (max-width:560px){.rlp-line{grid-template-columns:1fr 1fr}.rlp-line .rlp-svc{grid-column:1/-1}.rlp-req{grid-template-columns:1fr}}

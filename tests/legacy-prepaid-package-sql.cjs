@@ -64,6 +64,17 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  const fee=await q("select l.credit from clinic_reception.journal j join clinic_reception.journal_lines l on l.entry_id=j.id where j.source='doctor_fee' and j.source_id=$1 and l.credit>0",[o.id]);
  assert.equal(+fee[0].credit,66.67,'doctor fee on the session value');
  lp=await rpc('clinic_reception_legacy_packages',{p_workspace:w,p_patient:patient});assert.equal(lp.sessions.find(x=>x.service_id===hand).left,2);
+ // (owner case 2) a session ALREADY EXECUTED but unpaid (400) → the package pays it: 333.33 from 2151, 66.67 credited, doctor fee cut
+ await as(1);const ap2=(await cmd('book',{patient_id:patient,provider_id:provider,service_id:hand,starts_at:date+'T10:00:00Z',same_day_ok:true})).id;await as(3);
+ await cmd('arrive',{id:ap2});s=await snap();const v2=s.visits.find(v=>v.appointment_id===ap2);let o2=s.orders.find(x=>x.visit_id===v2.id);
+ await cmd('execute',{id:o2.id});s=await snap();let inv2=s.invoices.find(i=>i.order_id===o2.id);assert.equal(+inv2.amount,400);assert.equal(+inv2.due,400,'executed, unpaid');
+ const sess2=(await rpc('clinic_reception_legacy_packages',{p_workspace:w,p_patient:patient})).sessions.find(x=>x.service_id===hand);
+ const u2=await cmd('order_use_package',{order_id:o2.id,entitlement_id:sess2.entitlement_id});assert.equal(u2.executed,true);assert.equal(+u2.value,333.33);assert.equal(+u2.credited,66.67);
+ s=await snap();inv2=s.invoices.find(i=>i.order_id===o2.id);assert.equal(+inv2.due,0,'patient pays 0 after the package');
+ const lines=await q("select j.source,l.account,l.debit,l.credit from clinic_reception.journal j join clinic_reception.journal_lines l on l.entry_id=j.id where j.source_id=$1 and j.source in ('package_use','package_price_diff','package_price_diff_fee') order by j.source,l.debit desc",[o2.id]);
+ assert.deepEqual(lines.map(x=>[x.source,x.account,+x.debit,+x.credit]),[['package_price_diff','4192',66.67,0],['package_price_diff','1122',0,66.67],['package_price_diff_fee','2120',13.33,0],['package_price_diff_fee','5111',0,13.33],['package_use','2151',333.33,0],['package_use','1122',0,333.33]]);
+ await assert.rejects(()=>cmd('order_use_package',{order_id:o2.id,entitlement_id:sess2.entitlement_id}),/متخصومة من باكج بالفعل/);
+ assert.equal((await rpc('clinic_reception_legacy_packages',{p_workspace:w,p_patient:patient})).sessions.find(x=>x.service_id===hand).left,1);
  // rollback refused once approved
  await db.exec('reset role');await assert.rejects(()=>db.exec(fs.readFileSync('supabase/rollbacks/20261123110000_legacy_prepaid_package.rollback.sql','utf8')),/اتعتمد/);await db.exec('rollback');
  console.log('PASS legacy prepaid package: request (lines = total, past date, no duplicate) by reception, approval only by super admin / FM and never the requester, reject needs a reason, package + 6 sessions (333.33/333.34, 128.33/128.34), Dr 3198 / Cr 2151 with no shift, today\'s ordered session switched to the package (wrong service refused, once only), executed with patient due 0, 2151→1122 and doctor fee on 333.33.');

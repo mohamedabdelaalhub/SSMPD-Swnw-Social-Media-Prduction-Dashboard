@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1969,
-    "labels": 1434,
-    "files": 152,
-    "groups": 1548
+    "definitions": 1976,
+    "labels": 1438,
+    "files": 153,
+    "groups": 1553
   },
   "fields": [
     {
@@ -11727,6 +11727,76 @@
       "tab": "reception_services",
       "article": "follow-ups",
       "text_sha256": "c0edd5c53ed9c7c4bf2e18f784f76fe4c74a7aa96666563f1a27453b2f028ece"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "جلسات",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "a544dd605dcb7df2489aae16284d7701ffd6795f8dfdab9d37b9bd75887de308"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "المبلغ",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "39fca68dac850123cdd9979ad6784f4631c0f1d287864820d0e684926af7ad1d"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "مثلاً ليزر نص إيد + منطقة تانية",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "1c3d1df117453eb3b9b7e1fccdec7a621bdd28f121a2a42365cbd57ba5cba3f4"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "اسم الباكج",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "1c3d1df117453eb3b9b7e1fccdec7a621bdd28f121a2a42365cbd57ba5cba3f4"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "دفع يوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "ae114342ab75c8c6dafc92779b92cbd123ec5b779a9ffc7418651d1cc102d0bb"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "رقم الإيصال القديم أو صورته (لو موجود)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "06d153a4125dac472f2b0c119cd2ad3449287d7e0f2fbdf4ffcb9e9ee0f15d95"
     },
     {
       "file": "reception-manual-time.js",

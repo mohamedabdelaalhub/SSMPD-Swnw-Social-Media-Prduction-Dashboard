@@ -7,9 +7,9 @@
 --     last session absorbs the rounding), funded = total, and ONE entry on the approval day:
 --     Dr 3198 «مقبوضات قبل تشغيل الداشبورد تحت التسوية» / Cr 2151 — «مبلغ مقدم للباكج — مدفوع قبل التشغيل بتاريخ …».
 --     No shift, no cash account (1111), no cash case, opening balances (3199) untouched. Finance clears 3198 later against where the cash went.
---   * 'order_use_package' {order_id, entitlement_id} (reception): an «ordered» service on an open visit of the SAME patient and the SAME
---     service switches to that entitlement (price = session value, no discount) — the existing execution recognizes it from 2151 (patient
---     pays 0) and the doctor fee is computed on the session value.
+--   * 'order_use_package' {order_id, entitlement_id} (reception): a service of the SAME patient and the SAME service uses a session —
+--     «ordered»: the order takes the entitlement (price = session value); already executed but unpaid: the package pays the invoice
+--     (Dr 2151 / Cr 1122), the price difference is credited (Dr 4192 / Cr 1122) and the doctor fee reduced in proportion.
 --   * public.clinic_reception_legacy_packages(ws, patient): read-only — pending requests (approvers / the requester) and the patient's
 --     entitlements left.
 -- Outer wrapper on public.clinic_reception_command (previous body kept as clinic_reception.command_before_legacy_package).
@@ -143,31 +143,66 @@ end $$;
 revoke all on function public.clinic_reception_legacy_package_review(uuid, boolean, text) from public, anon;
 grant execute on function public.clinic_reception_legacy_package_review(uuid, boolean, text) to authenticated;
 
--- switch an «ordered» service to a package session of the same patient / service
+-- switch a service of the same patient / service to a package session:
+--   * «ordered» (not executed yet): the order takes the entitlement (price = session value); execution recognizes it from 2151.
+--   * already executed but NOT paid (owner case: completed 500, nothing collected): the package pays the invoice now —
+--     Dr 2151 / Cr 1122 for the session value (allocation 'package'), the rest of the invoice (price − session value) is a credit
+--     (Dr 4192 / Cr 1122, invoices.credit_amount) and the doctor fee is reduced in the same proportion (Dr 2120 / Cr 5111).
 create function clinic_reception.order_use_package(p_workspace uuid, p jsonb, p_me uuid) returns jsonb
 language plpgsql security definer set search_path = pg_catalog, public as $$
-declare o record; en clinic_reception.entitlements%rowtype; pkg clinic_reception.packages%rowtype; val numeric;
+declare o record; en clinic_reception.entitlements%rowtype; pkg clinic_reception.packages%rowtype; val numeric; i record; due numeric; covered numeric;
+  diff numeric := 0; fee numeric; dims jsonb; done boolean;
 begin
-  select ord.*, v.patient_id as visit_patient, v.status as visit_status into o from clinic_reception.orders ord join clinic_reception.visits v on v.id = ord.visit_id
+  select ord.*, v.patient_id as visit_patient into o from clinic_reception.orders ord join clinic_reception.visits v on v.id = ord.visit_id
    where ord.id = nullif(p->>'order_id', '')::uuid and ord.workspace_id = p_workspace for update of ord;
   if not found then raise exception 'الخدمة مش موجودة'; end if;
-  if o.status <> 'ordered' then raise exception 'الخدمة اتنفذت أو اتلغت — الخصم من الباكج قبل التنفيذ بس'; end if;
+  if o.status not in ('ordered', 'completed') then raise exception 'الخدمة دي اتلغت'; end if;
+  done := o.status = 'completed';
   if o.entitlement_id is not null then raise exception 'الخدمة دي متخصومة من باكج بالفعل'; end if;
-  if o.discount > 0 or exists (select 1 from clinic_reception.discount_requests dr where dr.order_id = o.id and dr.status in ('pending', 'approved')) then
+  if not done and (o.discount > 0 or exists (select 1 from clinic_reception.discount_requests dr where dr.order_id = o.id and dr.status in ('pending', 'approved'))) then
     raise exception 'الخدمة دي عليها خصم — شيله الأول'; end if;
-  if to_regclass('clinic_reception.order_quotes') is not null and exists (select 1 from clinic_reception.order_quotes q where q.order_id = o.id) then
-    raise exception 'الخدمة دي على تأمين / تعاقد'; end if;
+  if to_regclass('clinic_reception.order_quotes') is not null then
+    execute 'select exists (select 1 from clinic_reception.order_quotes q where q.order_id = $1)' into done using o.id;
+    if done then raise exception 'الخدمة دي على تأمين / تعاقد'; end if;
+    done := o.status = 'completed';
+  end if;
   select * into en from clinic_reception.entitlements where id = nullif(p->>'entitlement_id', '')::uuid for update;
-  select * into pkg from clinic_reception.packages where id = en.package_id and workspace_id = p_workspace;
+  select * into pkg from clinic_reception.packages where id = en.package_id and workspace_id = p_workspace for update;
   if en.id is null or pkg.id is null then raise exception 'جلسة الباكج مش موجودة'; end if;
   if pkg.patient_id <> o.visit_patient then raise exception 'الباكج ده لمريض تاني'; end if;
   if pkg.status <> 'active' or pkg.expires_on < (now() at time zone 'Africa/Cairo')::date then raise exception 'الباكج مش ساري'; end if;
   if en.service_id <> o.service_id then raise exception 'الجلسة دي لخدمة تانية'; end if;
-  if en.used + o.quantity > en.quantity or exists (select 1 from clinic_reception.orders x where x.entitlement_id = en.id and x.status = 'ordered') then
+  if en.used + o.quantity > en.quantity or exists (select 1 from clinic_reception.orders x where x.entitlement_id = en.id and x.status <> 'cancelled') then
     raise exception 'الجلسة دي اتستخدمت — اختار جلسة تانية'; end if;
   val := round(en.allocated_value * o.quantity / en.quantity, 2);
-  update clinic_reception.orders set entitlement_id = en.id, price = val, discount = 0 where id = o.id;
-  return jsonb_build_object('order_id', o.id, 'entitlement_id', en.id, 'value', val, 'patient_pays', 0,
+  if not done then
+    update clinic_reception.orders set entitlement_id = en.id, price = val, discount = 0 where id = o.id;
+    return jsonb_build_object('order_id', o.id, 'entitlement_id', en.id, 'value', val, 'patient_pays', 0, 'executed', false,
+      'left', (select count(*) from clinic_reception.entitlements e where e.package_id = pkg.id and e.service_id = en.service_id and e.used < e.quantity
+                 and not exists (select 1 from clinic_reception.orders x where x.entitlement_id = e.id and x.status <> 'cancelled')));
+  end if;
+  -- executed: the invoice must be unpaid (nothing collected, no insurer share)
+  select * into i from clinic_reception.invoices where order_id = o.id and kind = 'service' for update;
+  if i.id is null then raise exception 'فاتورة الخدمة مش موجودة'; end if;
+  due := clinic_reception.due(i.id);
+  if i.payer_amount > 0 or exists (select 1 from clinic_reception.allocations a where a.invoice_id = i.id) or due <> i.amount - i.credit_amount then
+    raise exception 'الخدمة دي اتدفع منها جزء — الخصم من الباكج للخدمات اللي ماتدفعش منها حاجة بس'; end if;
+  if due <= 0 then raise exception 'الفاتورة دي مفيش عليها مطلوب'; end if;
+  covered := least(val, due); diff := due - covered;
+  dims := jsonb_build_object('patient_id', i.patient_id, 'invoice_id', i.id, 'package_id', pkg.id, 'order_id', o.id);
+  perform clinic_reception.post(p_workspace, 'package_use', o.id, 'استخدام رصيد الباكج (بعد التنفيذ)', '2151', '1122', covered, dims);
+  insert into clinic_reception.allocations(workspace_id, invoice_id, source, amount) values (p_workspace, i.id, 'package', covered);
+  if diff > 0 then
+    perform clinic_reception.post(p_workspace, 'package_price_diff', o.id, 'فرق سعر الخدمة عن قيمة جلسة الباكج', '4192', '1122', diff, dims);
+    update clinic_reception.invoices set credit_amount = credit_amount + diff where id = i.id;
+    fee := round(coalesce(o.doctor_fee, 0) * diff / nullif(i.amount, 0), 2);
+    if fee > 0 then perform clinic_reception.post(p_workspace, 'package_price_diff_fee', o.id, 'تسوية أتعاب فرق سعر الباكج', '2120', '5111', fee,
+                       dims || jsonb_build_object('provider_id', o.provider_id)); end if;
+  end if;
+  update clinic_reception.entitlements set used = used + o.quantity, recognized = recognized + covered where id = en.id;
+  update clinic_reception.packages set recognized = recognized + covered where id = pkg.id;
+  update clinic_reception.orders set entitlement_id = en.id where id = o.id;
+  return jsonb_build_object('order_id', o.id, 'entitlement_id', en.id, 'value', covered, 'patient_pays', 0, 'executed', true, 'credited', diff,
     'left', (select count(*) from clinic_reception.entitlements e where e.package_id = pkg.id and e.service_id = en.service_id and e.used < e.quantity
                and not exists (select 1 from clinic_reception.orders x where x.entitlement_id = e.id and x.status <> 'cancelled')));
 end $$;
