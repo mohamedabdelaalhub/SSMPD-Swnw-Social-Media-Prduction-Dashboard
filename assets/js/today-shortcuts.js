@@ -47,7 +47,10 @@
   function paint() {
     var r = root(); if (!r) return;
     var host = r.querySelector('[data-tds-tiles]'); if (!host) return;
-    var h = tilesHtml(r); if (h !== host.innerHTML) host.innerHTML = h;
+    /* hotfix 2026-11-23 (tiles «مش شغالة»): compare with the HTML written last, never with host.innerHTML. ui-motion.js adds
+       «fx-pressed» / a ripple <span> to a tile on pointerdown, so the serialized DOM differed during every press and any page
+       mutation in that window rewrote the row, detaching the pressed button: the browser then fired no click (dead tap). */
+    var h = tilesHtml(r); if (h !== host.__tdsHtml) { host.innerHTML = h; host.__tdsHtml = h; }
     var key = r.dataset.tdsOpen;
     if (key) {
       var p = panel(r, key);

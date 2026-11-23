@@ -9,7 +9,7 @@
 (function (w, d) {
   "use strict";
   if (w.__SSMPDShiftGuard) return; w.__SSMPDShiftGuard = true;
-  var DESK = ["book", "walk_in", "overbook", "agent_booking_register", "booking_discount", "arrive", "collect", "collect_multi", "collect_split",
+  var DESK = ["book", "walk_in", "overbook", "agent_booking_register", "booking_discount", "order_discount", "set_payer", "order_payer", "arrive", "collect", "collect_multi", "collect_split",
     "credit_apply", "package_sell", "installment_bill", "order_add", "execute"];
   var JOURNEY = ["arrive", "request_service"];
   var LOCK_RE = /افتح وردية الخزينة الأول|ورديتك من يوم قبل كده لسه مفتوحة/;
@@ -36,7 +36,8 @@
       ".rsg-watch h3{margin:0;font-size:15px;color:#0F369D}.rsg-al{border:1px solid #E3E8F2;border-radius:12px;padding:10px 12px;display:grid;gap:4px}" +
       ".rsg-al.r{border-color:#F3C7BF;background:#FFFBFA}.rsg-al b{font-size:14px}.rsg-al span{font-size:12px;color:#5b6577;line-height:1.7}" +
       ".rsg-chip{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:#FBE9E6;color:#D0402A;margin-inline-start:6px}" +
-      ".rsg-chip.a{background:#FFF6E5;color:#8A5A00}";
+      ".rsg-chip.a{background:#FFF6E5;color:#8A5A00}" +
+      ".rsg-wait{background:#F4F7FC;border-color:#D5DEEE}.rsg-wait h4{color:#0F369D}.rsg-wait p{color:#3B4658}";
     d.head.appendChild(s);
   }
   function lockHtml(g) {
@@ -55,6 +56,16 @@
       '<div class="rsg-row"><button type="button" class="btn btn-primary" data-rsg-open>افتح وردية</button></div>' +
       '<div class="rsg-dim">حجز موعد · تسجيل وصول · تحصيل · طلب خدمة</div>' +
       '<p class="rsg-sub">اللي مفتوح: المواعيد والمرضى للقراية، ورسايل المرضى. أول ما الوردية تتفتح كل حاجة بترجع على طول.</p></section>';
+  }
+  /* handed over («سلّم الوردية» → end_shift): nothing is locked; a new shift opens only after the receipt + finance review */
+  function waitHtml(g) {
+    if (!g || (g.reason !== "awaiting_receipt" && g.reason !== "awaiting_review")) return "";
+    var rec = g.reason === "awaiting_receipt";
+    return '<section class="rsg-lock rsg-wait" data-rsg-lock="' + esc(g.reason) + '" role="status"><h4>' +
+      (rec ? "سلّمت ورديتك — مستني " + esc(g.receiver || "الخزينة الرئيسية") + " يأكد الاستلام" : "ورديتك اتقفلت — مستنية مراجعة الحسابات") + "</h4>" +
+      "<p>" + (g.ended_at ? "اتسلّمت يوم " + esc(day(g.ended_at)) + " الساعة " + esc(time(g.ended_at)) + ". " : "") +
+      "الشغل مش واقف عليك. وردية جديدة بتتفتح بعد " + (rec ? "تأكيد الاستلام ومراجعة الحسابات" : "مراجعة الحسابات") +
+      "، ولحد كده التحصيل الكاش مش متاح من حسابك.</p></section>";
   }
   function watchHtml(list) {
     if (!list || !list.length) return "";
@@ -84,7 +95,7 @@
   }
   function paint() {
     css();
-    place("data-rsg-lock", locked() ? lockHtml(st.data) : "");
+    place("data-rsg-lock", locked() ? lockHtml(st.data) : waitHtml(st.data));
     var a = admin(); place("data-rsg-watch", manager(a) && st.watch ? watchHtml(st.watch) : "");
   }
   /* Live desks open their cash shift from «خزينة الاستقبال والحجوزات» → «فتح وردية استقبال» (clinic_booking_shift 'open', verified on live

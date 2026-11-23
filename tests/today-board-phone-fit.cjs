@@ -22,6 +22,8 @@ const css=['styles','dashboard-theme','reception-workspace','today-operations'].
  for(const c of await p.locator('.journey-hour .journey-chip').all()){const r=await c.boundingBox();assert(r.x>=0&&r.x+r.width<=W+0.5,'pill inside the screen @'+width);}
  const top=await p.locator('.journey-top').boundingBox();assert(top.width>=W-40,'sticky top spans the screen @'+width);
  assert(await p.locator('.journey-chip-name').first().evaluate(e=>getComputedStyle(e).textOverflow==='ellipsis'),'long name ends with «…»');
+ assert.equal(await p.locator('.journey-top').evaluate(e=>getComputedStyle(e).position),'static','owner 2026-11-23: on phones the top scrolls away with the page @'+width);
+ await p.setViewportSize({width:1280,height:900});assert.equal(await p.locator('.journey-top').evaluate(e=>getComputedStyle(e).position),'sticky','desktop keeps the sticky top');
  assert.deepEqual(errs,[]);await p.close();}}finally{await b.close();}
- console.log('PASS «تشغيل اليوم» phone fit 360/390/412: long names shorten with «…», pills stay inside the screen, no sideways page scroll, sticky top full width.');
+ console.log('PASS «تشغيل اليوم» phone fit 360/390/412: long names shorten with «…», pills stay inside the screen, no sideways page scroll, top full width; the top scrolls away on phones (sticky on desktop).');
 })().catch(e=>{console.error(e);process.exit(1);});

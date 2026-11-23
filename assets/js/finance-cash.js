@@ -55,7 +55,9 @@ function fillMyShift(body){var db=window.SSMPDDb;/* was an undefined global (Ref
  call.then(function(r){if(!r||r.error)throw (r&&r.error)||Error("no data");if(!box.isConnected)return;var list=r.data||[];
   if(!list.length){box.remove();return;}
   box.innerHTML=list.map(function(sh){var total=(sh.methods||[]).reduce(function(n,m){return n+Number(m.amount||0);},0),count=(sh.methods||[]).reduce(function(n,m){return n+Number(m.receipts||0);},0);
-   return '<h5>اللي حصّلته في ورديتك — '+esc(sh.register_name)+'</h5><p class="fc-my-shift-sub">من '+stamp(sh.opened_at)+' · '+count+' إيصال</p><div class="fc-my-shift-grid">'+(sh.methods||[]).map(function(m){return '<div class="fc-my-shift-tile"><span>'+esc(MY_METHODS[m.method]||m.method)+'</span><strong>'+money(m.amount)+'</strong><small>'+esc(m.receipts)+' إيصال</small></div>';}).join('')+'<div class="fc-my-shift-tile is-total"><span>الإجمالي</span><strong>'+money(total)+'</strong></div></div>';}).join('')+'<p class="fc-my-shift-note">ده اللي إنت سجلته بس. رصيد الخزينة اللي استلمتها أول الوردية مش داخل في الرقم ده، والجرد في الآخر بيتعمل من غير رقم متوقع.</p>';
+   return '<h5>اللي حصّلته في ورديتك — '+esc(sh.register_name)+'</h5><p class="fc-my-shift-sub" data-fc-mp="'+esc(sh.shift_id)+'">من '+stamp(sh.opened_at)+' · '+count+' إيصال</p><div class="fc-my-shift-grid">'+(sh.methods||[]).map(function(m){return '<div class="fc-my-shift-tile"><span>'+esc(MY_METHODS[m.method]||m.method)+'</span><strong>'+money(m.amount)+'</strong><small>'+esc(m.receipts)+' إيصال</small></div>';}).join('')+'<div class="fc-my-shift-tile is-total"><span>الإجمالي</span><strong>'+money(total)+'</strong></div></div>';}).join('')+'<p class="fc-my-shift-note">ده اللي إنت سجلته بس. رصيد الخزينة اللي استلمتها أول الوردية مش داخل في الرقم ده، والجرد في الآخر بيتعمل من غير رقم متوقع.</p>';
+  /* owner 2026-11-23 (20261122390000): why receipts ≠ visits */
+  if(window.SSMPDMultiPay)box.querySelectorAll('[data-fc-mp]').forEach(function(el){window.SSMPDMultiPay.explain(el,{finance_shift:el.getAttribute('data-fc-mp')});});
  }).catch(function(){if(box.isConnected)box.remove();});
 }
 var movementsView=null;

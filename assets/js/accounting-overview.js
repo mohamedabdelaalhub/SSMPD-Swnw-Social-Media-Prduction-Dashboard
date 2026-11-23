@@ -43,6 +43,8 @@ function draw(root,d,opts){
  if(cards)html+='<div class="aco-grid">'+cards+'</div>';
  if(!tiles.length&&!cards)html+='<p class="aco-clear">الأرقام دي بتظهر للمدير المالي والإدارة. افتح القسم اللي محتاجه من القايمة.</p>';
  root.innerHTML=html;
+ /* owner 2026-11-23 (20261122390000): «تحصيل النهارده» says how many receipts covered more than one visit */
+ if(window.SSMPDMultiPay)window.SSMPDMultiPay.load({}).then(function(sum){var i=root.isConnected&&root.querySelector('[data-aco-go="payments"] i');if(!i||!sum||!Number(sum.multi))return;i.textContent+=' · '+sum.multi+(Number(sum.multi)===1?' دفعة':' دفعات')+' لأكتر من زيارة';i.title='الإيصال الواحد ممكن يغطي أكتر من زيارة — التفاصيل في «التحصيل»';});
  root.querySelectorAll('[data-aco-go]').forEach(function(b){if(!b.dataset.acoGo){b.disabled=true;return;}b.onclick=function(){if(opts.go)opts.go(b.dataset.acoGo);};});
  var rl=root.querySelector('[data-aco-reload]');if(rl)rl.onclick=function(){render(root.parentNode,opts);};
  animate(root,days);

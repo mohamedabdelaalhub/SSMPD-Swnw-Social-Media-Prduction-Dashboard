@@ -1,7 +1,7 @@
 -- «وردية الخزينة — قفل بعد ساعة» (owner 2026-11-23 «طبقه» + «كل حاجة»; mockup docs/ui-references/mockups/reception-shift-guard.*).
 -- A reception / customer-service account (not super admin / general manager) whose HR shift started more than ONE hour ago
 -- (punched or not) and who has no open reception cash shift is LOCKED out of desk work until the shift is opened:
---   booking   : book, walk_in, overbook, agent_booking_register, booking_discount
+--   booking   : book, walk_in, overbook, agent_booking_register, booking_discount, order_discount, set_payer, order_payer (payment type)
 --   arrival   : arrive (reception command and the today-board journey command)
 --   collection: collect, collect_multi, collect_split, credit_apply, package_sell, installment_bill
 --   services  : order_add, execute (reception command), request_service (journey command)
@@ -9,10 +9,12 @@
 -- Everything else stays open: reading, shift_open / shift_close / handovers, reviews (request_review, discount_review, shift_review,
 -- cross_payment_review …), rescheduling, cancel, patient edits, messages. Trial workspaces are never locked.
 -- Not locked when: no linked HR person, no schedule today, leave day, shift already over, punched out, or a shift closed today.
+-- Not locked either once the shift is handed over («سلّم الوردية» → end_shift) and waits for the main treasurer's receipt or the
+-- finance review: a new collection shift can't be opened before that review, so the card says «مستني الاستلام / المراجعة» instead.
 -- Read-only RPCs: public.clinic_reception_shift_guard() (own state, for the lock card) and public.clinic_reception_shift_watch()
 -- (super admin / general manager / financial manager: who is locked, stale shifts, shifts open more than an hour after the HR shift end).
 -- Outer wrappers only (old bodies renamed into clinic_reception.*_before_shift_guard). Nothing moves money; nothing is deducted.
--- Rollback: supabase/rollbacks/20261123020000_reception_shift_guard.rollback.sql
+-- Rollback: supabase/rollbacks/20261123090000_reception_shift_guard.rollback.sql
 begin;
 
 do $$ begin
@@ -33,13 +35,24 @@ begin
   -- clinic_reception.shifts is only a mirror that is synced later
   select sh.id, sh.opened_at, clinic_finance.shift_cash(sh.id) as expected, r.name as register into s from clinic_finance.shifts sh
     left join clinic_finance.registers r on r.id = sh.register_id
-   where sh.cashier_id = me and sh.status = 'open' order by sh.opened_at desc limit 1;
+   where sh.cashier_id = me and sh.status = 'open' and sh.ended_at is null and not coalesce(sh.is_main, false) order by sh.opened_at desc limit 1;
   if found then
     if s.opened_at < now() - interval '16 hours' then
       return jsonb_build_object('locked', true, 'reason', 'stale', 'shift_id', s.id, 'opened_at', s.opened_at, 'register', s.register,
         'expected', s.expected);
     end if;
     return jsonb_build_object('locked', false, 'reason', 'open');
+  end if;
+  -- handed over (end_shift → waiting for the main treasurer's receipt) or closed but not yet reviewed: a new collection shift
+  -- cannot be opened until finance reviews it (unique fin_cashier_collection_active), so this is never a lock — the card explains it
+  select sh.id, sh.status, sh.ended_at, sh.closed_at into s from clinic_finance.shifts sh
+   where sh.cashier_id = me and not coalesce(sh.is_main, false) and sh.status <> 'reviewed' and (sh.status <> 'open' or sh.ended_at is not null)
+   order by sh.opened_at desc limit 1;
+  if found then
+    return jsonb_build_object('locked', false, 'reason', case when s.status = 'open' then 'awaiting_receipt' else 'awaiting_review' end,
+      'shift_id', s.id, 'ended_at', coalesce(s.ended_at, s.closed_at),
+      'receiver', (select coalesce(nullif(trim(a.name), ''), a.email) from clinic_finance.shifts m join public.admins a on a.id = m.cashier_id
+                    where m.is_main and m.status = 'open' order by m.opened_at desc limit 1));
   end if;
   select p.id into pid from clinic_people.people p where p.admin_id = me and p.status <> 'ended' limit 1;
   if pid is null then return jsonb_build_object('locked', false, 'why', 'no_person'); end if;
@@ -90,7 +103,8 @@ revoke all on function clinic_reception.command_before_shift_guard(uuid, text, j
 create function public.clinic_reception_command(p_workspace uuid, p_action text, p_payload jsonb, p_token uuid)
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
-  if p_action in ('book', 'walk_in', 'overbook', 'agent_booking_register', 'booking_discount', 'arrive', 'collect', 'collect_multi',
+  if p_action in ('book', 'walk_in', 'overbook', 'agent_booking_register', 'booking_discount', 'order_discount', 'set_payer', 'order_payer',
+                  'arrive', 'collect', 'collect_multi',
                   'collect_split', 'credit_apply', 'package_sell', 'installment_bill', 'order_add', 'execute') then
     perform clinic_reception.shift_guard_check(p_workspace);
   end if;
@@ -139,7 +153,7 @@ begin
     end if;
     select sh.opened_at, clinic_finance.shift_cash(sh.id) as expected, r.name as register into s from clinic_finance.shifts sh
       left join clinic_finance.registers r on r.id = sh.register_id
-     where sh.cashier_id = a.id and sh.status = 'open' order by sh.opened_at desc limit 1;
+     where sh.cashier_id = a.id and sh.status = 'open' and sh.ended_at is null and not coalesce(sh.is_main, false) order by sh.opened_at desc limit 1;
     if found then
       stale := s.opened_at < now() - interval '16 hours';
       if stale or (e_end is not null and now() >= e_end + interval '1 hour' and s.opened_at < e_end) then
@@ -148,7 +162,8 @@ begin
       end if;
     elsif e_start is not null and coalesce(e_status, '') <> 'leave' and now() >= e_start + interval '1 hour'
           and (e_end is null or now() < e_end)
-          and not exists (select 1 from clinic_finance.shifts sh where sh.cashier_id = a.id and sh.opened_at >= now() - interval '16 hours') then
+          and not exists (select 1 from clinic_finance.shifts sh where sh.cashier_id = a.id and not coalesce(sh.is_main, false)
+                            and (sh.opened_at >= now() - interval '16 hours' or (sh.status <> 'reviewed' and (sh.status <> 'open' or sh.ended_at is not null)))) then
       rows := rows || jsonb_build_object('kind', 'missing', 'admin_id', a.id, 'name', a.name, 'exp_start', e_start, 'first_in', e_in);
     end if;
   end loop;

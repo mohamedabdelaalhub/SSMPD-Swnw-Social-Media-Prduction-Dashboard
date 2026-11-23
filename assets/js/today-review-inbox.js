@@ -91,7 +91,8 @@
   function decide(it, approve, note) {
     var tok = uuid();
     if (it.group === 'shift') {
-      if (it.rpc === 'clinic_reception_command') return rpc('clinic_reception_command', { p_workspace: it.workspace_id, p_action: 'shift_review', p_payload: { id: it.target_id, note: note }, p_token: tok });
+      // Every shift (reception-opened too) is reviewed on its finance row: the live reception workspace refuses
+      // clinic_reception_command 'shift_review' («استخدم النموذج الموجود في الحسابات…»), same as the accounts screen.
       return rpc('clinic_finance_review_shift', { p_shift: it.id, p_note: note });
     }
     if (it.group === 'handover') return rpc('clinic_finance_treasury_command', { p_action: 'transfer_review', p_payload: { id: it.id, approve: approve, note: note }, p_token: tok });
@@ -197,7 +198,7 @@
     if (!r) { var s = d.querySelector('[data-rx-section="journey"]'); if (s && !s.__triJump) { s.__triJump = true; s.click(); } setTimeout(goInbox, 200); return; }
     var h = r.querySelector('[data-review-inbox]'); if (!h || h.hidden || !h.innerHTML) { setTimeout(goInbox, 200); return; }
     jump = 0;
-    var top = r.querySelector('.journey-top'), bar = d.querySelector('.topbar'), off = (top ? top.getBoundingClientRect().height : 0) + (bar ? bar.getBoundingClientRect().height : 0) + 8;
+    var top = r.querySelector('.journey-top'), bar = d.querySelector('.topbar'), off = (top && getComputedStyle(top).position === 'sticky' ? top.getBoundingClientRect().height : 0) + (bar ? bar.getBoundingClientRect().height : 0) + 8;
     try { w.scrollTo({ top: Math.max(0, h.getBoundingClientRect().top + (w.pageYOffset || 0) - off), behavior: reduced() ? 'auto' : 'smooth' }); } catch (_) { h.scrollIntoView(); }
     h.classList.add('tri-flash'); setTimeout(function () { h.classList.remove('tri-flash'); }, 2200);
   }
