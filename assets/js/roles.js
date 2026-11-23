@@ -189,6 +189,11 @@
     canDeleteContractingEntity: function (adminOrRole) {
       return Roles.canModuleAction(adminOrRole,"contracting_entities","delete");
     },
+    // تفعيل عقود الجهات واعتماد قوائم أسعارها — السوبر أدمن أو المدير المالي بس (المالك 2026-11-23)،
+    // زي public.can_approve_contracts() في القاعدة. معتمد واحد كفاية.
+    canApproveContracts: function (adminOrRole) {
+      return Roles.hasAnyRole(adminOrRole, ["super_admin", "financial_manager"]);
+    },
 
     canApproveMediaBuyer: function (adminOrRole) {
       return Roles.hasAnyRole(adminOrRole, ["general_manager", "super_admin"]);
