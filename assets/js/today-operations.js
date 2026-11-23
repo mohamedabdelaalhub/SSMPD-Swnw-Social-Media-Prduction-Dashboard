@@ -5,7 +5,7 @@ if(window.__SWNWTodayOperationsV1)return;
 window.__SWNWTodayOperationsV1=true;
 
 var css=document.createElement('link');
-css.rel='stylesheet';css.href='assets/css/today-operations.css?v=today-phone-fit-20261122-1';css.dataset.todayOperations='1';
+css.rel='stylesheet';css.href='assets/css/today-operations.css?v=today-phone-scroll-20261123-1';css.dataset.todayOperations='1';
 if(!document.querySelector('link[data-today-operations]'))document.head.appendChild(css);
 /* Owner 2026-11-22 («طبق يلا», mockup today-shortcuts): shortcut tiles + sheets, «حجوزات آلية» by source. */
 ['today-shortcuts.css?v=masa-auto-time-20261123-1'].forEach(function(f){if(document.querySelector('link[data-today-shortcuts]'))return;var l=document.createElement('link');l.rel='stylesheet';l.href='assets/css/'+f;l.dataset.todayShortcuts='1';document.head.appendChild(l);});
