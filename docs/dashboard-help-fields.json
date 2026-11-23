@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1957,
-    "labels": 1424,
+    "definitions": 1958,
+    "labels": 1425,
     "files": 151,
-    "groups": 1539
+    "groups": 1540
   },
   "fields": [
     {
@@ -19268,6 +19268,16 @@
       "tab": "reception_services",
       "article": "queue-tickets",
       "text_sha256": "a8be314c453e7ff7ad63ea11eb4b81cdef5cf961459ded491c24b87636a6a33d"
+    },
+    {
+      "file": "today-operations-queue.js",
+      "label": "اختار العيادة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "queue-rooms",
+      "text_sha256": "6cc19f14cb5260eab9e9ecb079aa0eac608eb091cdfd80146b37a7e81d6440ab"
     },
     {
       "file": "today-operations-sandbox.js",
