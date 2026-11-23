@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1942,
-    "labels": 1412,
-    "files": 148,
-    "groups": 1529
+    "definitions": 1943,
+    "labels": 1413,
+    "files": 149,
+    "groups": 1530
   },
   "fields": [
     {
@@ -19574,6 +19574,18 @@
       "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "today-review-inbox.js",
+      "label": "مثلاً: راجعت الفاتورة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [
+        "<h3>"
+      ],
+      "tab": "production",
+      "article": "today-review-inbox",
+      "text_sha256": "bfcb6404768425368d1580a833aa84341e8b1e915880f9f702f4c50c7da6f8e9"
     },
     {
       "file": "training-evaluation.js",

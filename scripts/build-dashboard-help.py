@@ -1120,6 +1120,7 @@ frule('medicines-pricing.js','الشهر','الشهر اللي عايز تشوف
 frule('medicines-pricing.js','نسبة الخصم %|مثلاً 12','نسبة خصم آخر الشهر على إجمالي فواتير المورد (من غير الأدوية الناقصة). اكتب النسبة أو المبلغ، واحد بس.','medicines-pricing-discount')
 frule('medicines-pricing.js','أو المبلغ (من إشعار المورد)','مبلغ الخصم زي ما هو مكتوب في إشعار المورد، بدل النسبة. مايزيدش عن إجمالي الفواتير اللي عليها الخصم.','medicines-pricing-discount')
 frule('medicines-pricing.js','رابط صورة إشعار الخصم (اختياري)','رابط صورة أو ملف إشعار الخصم من المورد عشان المدير المالي يراجعه. اختياري ومبيغيّرش المبلغ.','medicines-pricing-discount')
+frule('today-review-inbox.js','سبب القرار (إجباري)|سبب الرفض (إجباري)|مثلاً: راجعت الفاتورة','اكتب سبب قرارك (3 حروف على الأقل) قبل اعتماد أو رفض الطلب أو استلام الوردية. السبب بيتسجل مع اسمك على الطلب، والطلب اللي إنت عامله لازم حد تاني يعتمده.','today-review-inbox')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'
