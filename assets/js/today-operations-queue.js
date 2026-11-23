@@ -11,7 +11,7 @@ function tm(v){return v?new Date(v).toLocaleTimeString('ar-EG-u-nu-latn',{timeZo
 function toast(msg,kind){if(window.SSMPDToast&&window.SSMPDToast.show)window.SSMPDToast.show(msg,kind||'success');}
 function ws(){return ctx&&ctx.workspace;}
 function q(action,payload){return window.SSMPDDb.client.rpc('clinic_reception_queue',{p_workspace:ws(),p_action:action,p_payload:payload||{}}).then(function(r){if(r.error)throw r.error;return r.data;});}
-function root(){return document.querySelector('[data-journey-root]');}
+function root(){/* hotfix 2026-11-23: the live, visible board (not a hidden / trial copy) */var all=Array.prototype.slice.call(document.querySelectorAll('[data-journey-root]')).filter(function(r){return r.dataset.journeyMode!=='trial';});return all.filter(function(r){return r.getClientRects().length>0;})[0]||all[0]||document.querySelector('[data-journey-root]');}
 function target(){var r=root();if(!r||r.dataset.journeyMode==='trial')return null;return r.querySelector('.journey-layout aside');}
 function canManage(){return !!(ctx&&ctx.data&&ctx.data.can_manage);}
 function css(){if(document.getElementById('swnw-queue-style'))return;var s=document.createElement('style');s.id='swnw-queue-style';s.textContent=
