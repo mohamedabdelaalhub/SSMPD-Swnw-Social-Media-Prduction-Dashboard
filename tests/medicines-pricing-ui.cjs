@@ -8,13 +8,13 @@ const report={month:'2026-11-01',discounts:1680,sales:{medicine:{revenue:12400,c
 (async()=>{const b=await chromium.launch({args:['--no-sandbox']});
 for(const width of [1280,390]){const p=await b.newPage({viewport:{width,height:900}});
  await p.setContent('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body></body></html>');
- for(const f of ['assets/css/styles.css','assets/css/reception-minicards.css','assets/css/medicines-pricing.css'])await p.addStyleTag({path:path.join(root,f)});
+ for(const f of ['assets/css/styles.css','assets/css/reception-minicards.css','assets/css/medicines-pricing.css','assets/css/inventory-look.css'])await p.addStyleTag({path:path.join(root,f)});
  await p.evaluate(([items,preview,list,report])=>{window.__c=[];window.SSMPDToast={show:(m,k)=>window.__c.push(['toast',m,k])};window.prompt=()=>'سبب تجريبي';
   window.SSMPDFinanceControls={panel:()=>'<p>base</p>',act:()=>false,due:()=>0};
   window.SSMPDDb={client:{rpc:(n,a)=>{window.__c.push([n,JSON.parse(JSON.stringify(a||{}))]);let d=null;
    if(n==='inventory_pricing_list')d=items;if(n==='inventory_set_pricing_kind')d={pricing_kind:a.p_kind,markup_percent:a.p_kind==='medicine'?0:a.p_markup,sale_price:a.p_kind==='medicine'?24:32.4};
    if(n==='clinic_finance_supplier_discount')d={preview,list,report,create:{amount:1680},review:{status:'approved'}}[a.p_action];return Promise.resolve({data:d});}}};},[items,preview,list,report]);
- for(const f of ['assets/js/reception-minicards.js','assets/js/medicines-pricing.js'])await p.addScriptTag({path:path.join(root,f)});
+ for(const f of ['assets/js/reception-minicards.js','assets/js/inventory-look.js','assets/js/medicines-pricing.js'])await p.addScriptTag({path:path.join(root,f)});
  // finance layer adds both buttons on «الموردون» only
  const panel=await p.evaluate(()=>window.SSMPDFinanceControls.panel('suppliers',{},{btn:(a,i,t)=>'<button data-fin-action="'+a+'">'+t+'</button>'}));assert.match(panel,/month-discount/);assert.match(panel,/medicines-report/);
  assert.equal(await p.evaluate(()=>window.SSMPDFinanceControls.panel('bank',{},{btn:()=>''})),'<p>base</p>');
@@ -32,7 +32,12 @@ for(const width of [1280,390]){const p=await b.newPage({viewport:{width,height:9
  if(out)await p.screenshot({path:path.join(out,'discount-'+width+'.png'),fullPage:true});
  await p.click('[data-mdd-create]');await p.waitForTimeout(150);
  c=(await p.evaluate(()=>window.__c)).find(x=>x[0]==='clinic_finance_supplier_discount'&&x[1].p_action==='create');assert.equal(c[1].p_payload.percent,12);assert.equal(c[1].p_payload.amount,null);assert.equal(c[1].p_payload.supplier_id,'s1');assert(c[1].p_payload.token);
- await p.click('[data-mdd-ok="d1"]');await p.waitForTimeout(100);
+ await p.click('[data-mdd-no="d1"]');await p.waitForSelector('[data-mdd-reason]');await p.click('[data-mdd-nocancel]');assert.equal(await p.locator('[data-mdd-reason]').count(),0,'رجوع restores the buttons');
+ await p.click('[data-mdd-no="d1"]');await p.click('[data-mdd-noyes="d1"]');await p.waitForTimeout(80);assert(!(await p.evaluate(()=>window.__c)).some(x=>x[0]==='clinic_finance_supplier_discount'&&x[1].p_action==='review'),'empty reason blocked');
+ await p.fill('[data-mdd-reason]','النسبة غلط');await p.click('[data-mdd-noyes="d1"]');await p.waitForTimeout(100);
+ c=(await p.evaluate(()=>window.__c)).find(x=>x[0]==='clinic_finance_supplier_discount'&&x[1].p_action==='review');assert.deepEqual(c[1].p_payload,{id:'d1',approve:false,note:'النسبة غلط'},'inline reject keeps the payload shape');
+ await p.evaluate(()=>{window.__c=window.__c.filter(x=>!(x[0]==='clinic_finance_supplier_discount'&&x[1].p_action==='review'));});
+ await p.waitForSelector('[data-mdd-ok="d1"]');await p.click('[data-mdd-ok="d1"]');await p.waitForTimeout(100);
  c=(await p.evaluate(()=>window.__c)).find(x=>x[0]==='clinic_finance_supplier_discount'&&x[1].p_action==='review');assert.deepEqual(c[1].p_payload,{id:'d1',approve:true,note:''});
  await p.click('[data-rx-sheet-close]');
  // report
