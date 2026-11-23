@@ -1,16 +1,15 @@
 -- «التغذية والتخسيس» body services bookable by every physio and cosmetic doctor (owner «موافق» 2026-11-23, relayed by the price-mapping
 -- chat / main chat 4): ALL physio doctors book the 12 services (11 body / cosmetic + INBODY), cosmetic doctors book them too.
--- Choice (main chat 4's caution): the 12 move to a DEDICATED booking department «جسم وتخسيس», NOT «التغذية والتخسيس» — that one also holds
--- the nutrition consults (0001388 كشف التغذية / 0001389 متابعة التغذية / 0001397 كشف استشاري تغذية), which must stay with the nutrition
--- doctors only. Then «جسم وتخسيس» is added as an extra department (clinic_reception.provider_departments, the same mechanism as «المعمل»)
--- for: every active provider of العلاج الطبيعي / الجلدية والتجميل / التغذية والتخسيس (nutrition doctors keep INBODY), plus named physio
--- doctors whose main department is different (د. سما نبيل عارف). Source of truth = public.pricing_services.booking_department, then
--- clinic_reception.sync_catalog() publishes it to the booking catalogue.
+-- Owner 2026-11-23: use the EXISTING booking department «التغذية والتخسيس» («ما هي تغذية وتخسيس يا علاج طبيعي») — no new name.
+-- The 12 get booking_department «التغذية والتخسيس» (INBODY already has it); every active physio (العلاج الطبيعي) and cosmetic
+-- (الجلدية والتجميل) provider, plus named physio doctors with another main department (د. سما نبيل عارف), gets «التغذية والتخسيس» as an
+-- extra department (clinic_reception.provider_departments). This also opens the 3 nutrition consults (0001388 / 0001389 / 0001397) to them —
+-- the owner was told and accepted. Source of truth = public.pricing_services.booking_department, then clinic_reception.sync_catalog().
 -- The 12 = an explicit list of pricing_services ids (main chat 4, captured from the live apply); the file stops unless all 12 have a booking code.
 -- Self-contained and idempotent; dry-run with ROLLBACK first and read the NOTICEs.
 begin;
 do $$
-declare ws uuid; n int; r record; dept constant text := 'جسم وتخسيس'; codes text[]; extra_names text[] := array['سما نبيل'];
+declare ws uuid; n int; r record; dept constant text := 'التغذية والتخسيس'; codes text[]; extra_names text[] := array['سما نبيل'];
 begin
   select id into ws from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
   if ws is null then raise exception 'no live reception workspace'; end if;
@@ -33,7 +32,7 @@ begin
   -- doctors: physio / cosmetic / nutrition (main or extra department) + named physio doctors
   for r in select p.id, p.name, p.department, p.active from clinic_reception.providers p
             where p.workspace_id = ws and p.active
-              and (p.department in ('العلاج الطبيعي', 'الجلدية والتجميل', 'التغذية والتخسيس')
+              and (p.department in ('العلاج الطبيعي', 'الجلدية والتجميل')
                    or exists (select 1 from clinic_reception.provider_departments pd where pd.provider_id = p.id and pd.department in ('العلاج الطبيعي', 'الجلدية والتجميل'))
                    or exists (select 1 from unnest(extra_names) x where p.name like '%' || x || '%'))
             order by p.department, p.name loop
@@ -44,8 +43,5 @@ begin
             where p.workspace_id = ws and not p.active and (p.department in ('العلاج الطبيعي', 'الجلدية والتجميل') or exists (select 1 from unnest(extra_names) x where p.name like '%' || x || '%')) loop
     raise notice 'inactive (not added): % (%)', r.name, r.department;
   end loop;
-  -- nothing else uses the new department
-  if exists (select 1 from clinic_reception.services s where s.workspace_id = ws and s.active and s.department = dept and not (s.code = any(codes))) then
-    raise exception 'another service already uses «%»', dept; end if;
 end $$;
 commit;
