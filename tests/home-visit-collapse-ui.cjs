@@ -5,6 +5,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{chromium}=require('
 (async()=>{const browser=await chromium.launch({...(process.env.PW_CHROMIUM?{executablePath:process.env.PW_CHROMIUM}:{}),args:['--no-sandbox']});try{
  const {db,rpc,as,id}=await boot(['reception_services_packages']);const w=await rpc('clinic_reception_bootstrap');
  await db.exec('reset role');await db.query("insert into clinic_reception.settings(id) values(true) on conflict do nothing");await db.query("update clinic_reception.settings set live_enabled=true,cutover_at=now() where id");await db.query("update clinic_reception.workspaces set mode='live' where id=$1",[w]);await as(1);
+ await rpc('clinic_reception_command',{p_workspace:w,p_action:'service',p_payload:{code:'NRS',name:'تعليق محلول',department:'التمريض',price:200,minutes:30,bom:[]},p_token:'62000000-0000-4000-8000-000000000002'});
  await rpc('clinic_reception_command',{p_workspace:w,p_action:'member',p_payload:{admin_id:id(3),capabilities:['view','book','execute','collect']},p_token:'62000000-0000-4000-8000-000000000001'});await as(3);
  const page=await browser.newPage({viewport:{width:1280,height:1400}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.exposeFunction('rxRpc',(n,a)=>rpc(n,a));
@@ -22,6 +23,11 @@ const fs=require('fs'),assert=require('node:assert/strict'),{chromium}=require('
  await page.locator('.rx-modal [data-rbp-mode="nurse_alone"]').click();assert.equal((await vis()).mode,'nurse_alone');
  if(process.env.SHOT)await page.locator('.rx-modal .modal').first().screenshot({path:process.env.SHOT+'/home-open.png'});
  await sw.click();assert.deepEqual(await vis(),{perf:false,addr:false,mode:'doctor'},'closed again, back to «الطبيب»');
+ // in-center nursing (main chat 4): a nursing service shows «مين اللي هينفّذ؟» without «زيارة منزلية» (address stays closed)
+ await page.evaluate(()=>{const s=document.querySelector('.rx-modal select[name="service_id"]'),o=[...s.options].find(x=>/تعليق محلول/.test(x.textContent));
+   if(!o){const n=document.createElement('option');n.value=(window.__nrs||'');s.appendChild(n);}s.value=o?o.value:'';s.dispatchEvent(new Event('change',{bubbles:true}));});
+ const nv=await vis();assert.equal(nv.perf,true,'nursing service → performer shown');assert.equal(nv.addr,false,'address stays closed');
+ await page.locator('.rx-modal [data-rbp-mode="nurse_alone"]').click();assert.equal((await vis()).mode,'nurse_alone','nurse selectable for an in-center nursing service');
  assert(!errors.length,errors.join('\n'));
- console.log('PASS home visit collapse (reception, live): «مين اللي هينفّذ؟» + address closed in «حجز موعد», open on «زيارة منزلية», closing resets to «الطبيب».');
+ console.log('PASS home visit collapse (reception, live): «مين اللي هينفّذ؟» + address closed in «حجز موعد», open on «زيارة منزلية», closing resets to «الطبيب»; in-center nursing service keeps «مين اللي هينفّذ؟».');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});
