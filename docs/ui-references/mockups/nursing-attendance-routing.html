@@ -16,6 +16,7 @@ body{background:#e9edf5;margin:0;padding:20px 12px;color:#16212E}
 .rt.r{background:#FFF1EC;color:#8A3A12}.rt.r i{background:#F15A22}
 .rt.a{background:#FFF8E8;color:#8A5A00}.rt.a i{background:#E0A100}
 .rt b{color:#16212E}
+.rt.g{background:#EEF7F2;color:#245E46}.rt.g i{background:#2F7D5C}
 .list{display:grid;gap:6px;margin-top:12px}
 .nr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 12px;border:1px solid #E6E8EE;border-radius:12px}
 .nr b{font-size:14px;overflow-wrap:anywhere}
@@ -36,13 +37,13 @@ details.ex summary{cursor:pointer;color:#0F369D;font-weight:700;font-size:13px;m
  <div class="hd"><h4>التمريض النهارده</h4><span class="chip b">من البصمة · اتحدث 11:42</span></div>
  <div class="route">
   <div class="rt r"><i></i><span><b>هبة محمد</b> (علاج طبيعي) غايبة النهارده، فحالات العلاج الطبيعي اتحولت للتمريض العام.</span></div>
-  <div class="rt a"><i></i><span><b>منى علي</b> (أسنان) لسه مابصمتش حضور، ورديتها بدأت 11:00. حالات الأسنان مع التمريض العام لحد ما تبصم.</span></div>
+  <div class="rt g"><i></i><span><b>دعاء سمير</b> (أسنان) بصمت 10:25 — متأخرة 25 دقيقة. رجعلها 3 حالات لسه محدش بدأ فيها، وحالتين فضلوا مع التمريض العام لأنهم بدأوا فيهم.</span></div>
  </div>
  <div class="list">
   <div class="nr"><b>نورا أحمد</b><div class="meta"><span class="chip b">تمريض عام</span><span class="chip g">حاضرة</span></div><span class="when">بصمت 9:56 · وردية 10:00–18:00</span></div>
-  <div class="nr"><b>دعاء سمير</b><div class="meta"><span class="chip b">تمريض عام</span><span class="chip g">حاضرة · متأخرة 25 د</span></div><span class="when">بصمت 10:25 · وردية 10:00–18:00</span></div>
+  <div class="nr"><b>دعاء سمير</b><div class="meta"><span class="chip b">أسنان</span><span class="chip g">حاضرة · متأخرة 25 د</span></div><span class="when">بصمت 10:25 · وردية 10:00–18:00</span></div>
   <div class="nr off"><b>هبة محمد</b><div class="meta"><span class="chip b">علاج طبيعي</span><span class="chip r">غايبة</span></div><span class="when">مابصمتش · وردية 10:00–18:00</span></div>
-  <div class="nr off"><b>منى علي</b><div class="meta"><span class="chip b">أسنان</span><span class="chip a">لسه ماوصلتش</span></div><span class="when">وردية 11:00–19:00 · بتتحسب غايبة بعد 11:10</span></div>
+  <div class="nr off"><b>منى علي</b><div class="meta"><span class="chip b">تمريض عام</span><span class="chip r">غايبة لحد ما تبصم</span></div><span class="when">مابصمتش · وردية 11:00–19:00</span></div>
   <div class="nr off"><b>رحاب حسن</b><div class="meta"><span class="chip b">تمريض عام</span><span class="chip">ورديتها 16:00</span></div><span class="when">ورديتها لسه مابدأتش</span></div>
   <div class="nr off"><b>إيمان خالد</b><div class="meta"><span class="chip b">أسنان</span><span class="chip">إجازة</span></div><span class="when">إجازة معتمدة من الموارد البشرية</span></div>
  </div>
@@ -53,5 +54,5 @@ details.ex summary{cursor:pointer;color:#0F369D;font-weight:700;font-size:13px;m
  </details>
 </section>
 
-<p class="legend"><b>حالات الحضور:</b> «حاضرة» = بصمت حضور · «لسه ماوصلتش» = ورديتها بدأت ولسه في وقت السماح (10 دقايق) · «غايبة» = عدّى وقت السماح ومابصمتش · «ورديتها لسه مابدأتش» · «إجازة» = إجازة معتمدة أو يوم إجازتها في الجدول · «خرجت» = بصمت انصراف. الحالات بتتحول للتمريض العام في أي حالة غير «حاضرة».</p>
+<p class="legend"><b>حالات الحضور:</b> «حاضرة» = بصمت حضور · «غايبة» = ورديتها بدأت ومابصمتش (من غير وقت سماح) · التأخير بيتحسب من أول الوردية لحد البصمة · «ورديتها لسه مابدأتش» · «إجازة» = إجازة معتمدة أو يوم إجازتها في الجدول · «خرجت» = بصمت انصراف. الحالات بتتحول للتمريض العام في أي حالة غير «حاضرة».</p>
 </div></body></html>
