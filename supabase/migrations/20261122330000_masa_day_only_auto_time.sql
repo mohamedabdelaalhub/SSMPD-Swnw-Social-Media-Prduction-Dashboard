@@ -11,7 +11,7 @@
 --     (day_only false) still reschedules; rows staff fixed by hand (pinned) keep their day/time (Masa cancellation still applies).
 --   * public.clinic_reception_auto_book:
 --       extras {ids}       → per row: free times that day, nearest free times on other days, the doctor's day capacity
---       capacity {provider_id, from, to} → per day: booked (incl. overbook) / capacity (availability minutes ÷ service minutes)
+--       capacity {provider_id, from, to} → per day: booked (incl. overbook) / capacity (availability ÷ (service minutes + the doctor's gap))
 --       set_time {id, starts_at, mode: normal | overbook | manual, reason_kind, reason}: any day; overbook / manual use the
 --                          existing reception commands (limits, reasons, one-off availability) ; the row is pinned
 --       told {id}          → «اتبلّغ المريض»
@@ -84,16 +84,20 @@ $$;
 
 create function clinic_reception.day_capacity(p_workspace uuid, p_provider uuid, p_day date) returns jsonb
 language plpgsql stable security definer set search_path = pg_catalog, public as $$
-declare mins int; avail numeric; booked int;
+declare mins int; avail numeric; booked int; gap numeric := 0;
 begin
+  if to_regprocedure('clinic_reception.provider_gap(uuid)') is not null then   -- the doctor's gap between bookings (20261117200000)
+    execute 'select extract(epoch from clinic_reception.provider_gap($1)) / 60' into gap using p_provider;
+  end if;
+  gap := coalesce(gap, 0);
   select s.minutes into mins from clinic_reception.services s where s.id = clinic_reception.auto_time_service(p_workspace, p_provider, null);
   mins := greatest(coalesce(mins, 15), 5);
   select coalesce(sum(extract(epoch from (a.ends_at - a.starts_at)) / 60), 0) into avail from clinic_reception.availability a
    where a.provider_id = p_provider and (a.starts_at at time zone 'Africa/Cairo')::date = p_day;
   select count(*) into booked from clinic_reception.appointments x where x.provider_id = p_provider
      and x.status not in ('cancelled', 'no_show') and (x.starts_at at time zone 'Africa/Cairo')::date = p_day;
-  return jsonb_build_object('day', p_day, 'booked', booked, 'capacity', floor(avail / mins)::int, 'minutes', mins,
-    'full', avail > 0 and booked >= floor(avail / mins));
+  return jsonb_build_object('day', p_day, 'booked', booked, 'capacity', case when avail > 0 then floor((avail + gap) / (mins + gap))::int else 0 end,
+    'minutes', mins, 'gap', gap, 'full', avail > 0 and booked >= floor((avail + gap) / (mins + gap)));
 end $$;
 
 create function clinic_reception.auto_book_place_day_only(p_id uuid, p_workspace uuid) returns text
