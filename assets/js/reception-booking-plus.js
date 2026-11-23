@@ -21,7 +21,11 @@ function performer(form,ctx,after){var ap=ctx.appointment||null,box=document.cre
   if(on&&sel.options.length<2)load();}
  function load(){sel.disabled=true;nurses(ctx.workspace).then(function(list){if(!form.isConnected)return;sel.innerHTML='<option value="">'+(list.length?'اختار الممرض/ة':'مفيش موظفين تمريض متسجلين')+'</option>'+list.map(function(n){return '<option value="'+esc(n.id)+'">'+esc(n.name)+(n.code?' — '+esc(n.code):'')+'</option>';}).join('');sel.disabled=false;if(want){sel.value=want;want='';}},function(e){sel.disabled=false;hint.hidden=false;hint.textContent=e&&e.message||'تعذر تحميل موظفين التمريض';});}
  box.querySelectorAll('[data-rbp-mode]').forEach(function(b){b.onclick=function(){set(b.getAttribute('data-rbp-mode'));};});
- set(ap&&ap.performer_mode&&ap.performer_mode!=='doctor'?ap.performer_mode:'doctor');}
+ set(ap&&ap.performer_mode&&ap.performer_mode!=='doctor'?ap.performer_mode:'doctor');
+ /* owner 2026-11-23: «مين اللي هينفّذ؟» stays closed until «زيارة منزلية» is ticked (a booking already on a nurse keeps it open) */
+ var homeCb=form.elements.x_home,stick=!!(ap&&ap.performer_mode&&ap.performer_mode!=='doctor');
+ function gate(){var on=homeCb.checked||stick;box.hidden=!on;if(!on&&hid.value!=='doctor')set('doctor');}
+ if(homeCb){box.style.order='6';homeCb.addEventListener('change',gate);form.addEventListener('rxe-home',gate);gate();}}
 function enhance(form,ctx){if(!form||form.querySelector('[data-rbp]'))return;var field=form.querySelector('.rx-combo-field');if(!field||!form.elements.service_id)return;
  var data=ctx.data||{},ap=ctx.appointment||null,live=ctx.mode!=='trial';
  var row=document.createElement('div');row.className='rbp-row';row.setAttribute('data-rbp','');row.setAttribute('data-wide','');field.parentNode.insertBefore(row,field);row.appendChild(field);
