@@ -100,3 +100,7 @@ html.tds-locked{overflow:hidden}
 .tds-reasons legend{font-size:13px;color:#3B4658;margin-bottom:4px}
 @media (prefers-reduced-motion:no-preference){[data-journey-root][data-tds-open] .tds-panel[data-tds-panel]{animation:tds-up .18s ease-out}}
 @keyframes tds-up{from{transform:translateY(16px);opacity:.6}to{transform:none;opacity:1}}
+/* Masa day-only bookings (owner 2026-11-23) */
+.tds-masa-alert{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;background:#FFF1EC;color:#8A3A12;border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:13px;line-height:1.7}
+.tds-masa-alert b{color:#16212E}.tds-masa-full{font-weight:700;color:#D0402A}
+.tds-masa-alert .btn{margin-inline-start:auto}

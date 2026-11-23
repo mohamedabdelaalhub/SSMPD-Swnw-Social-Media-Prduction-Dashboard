@@ -2,7 +2,7 @@
   "coverage": {
     "version": "20261117-1",
     "definitions": 1953,
-    "labels": 1422,
+    "labels": 1423,
     "files": 150,
     "groups": 1537
   },
@@ -10714,6 +10714,16 @@
     },
     {
       "file": "reception-auto-book.js",
+      "label": "وقت تاني في نفس اليوم",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "automatic-bookings",
+      "text_sha256": "2eead8b2325bfb0d59c66114eaf0656697a974d97af17c5b267c7c2f93cfff73"
+    },
+    {
+      "file": "reception-auto-book.js",
       "label": "مثلاً: الأخ، الجدة",
       "name": "",
       "kind": "placeholder",
@@ -10741,16 +10751,6 @@
       "tab": "reception_services",
       "article": "automatic-bookings",
       "text_sha256": "ab8f652685e53de8cf08addcb1dd84ddcb6269ffb07b85345855e905013883ef"
-    },
-    {
-      "file": "reception-auto-book.js",
-      "label": "الساعة",
-      "name": "",
-      "kind": "label",
-      "forms": [],
-      "tab": "reception_services",
-      "article": "patient-records",
-      "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
     },
     {
       "file": "reception-auto-book.js",

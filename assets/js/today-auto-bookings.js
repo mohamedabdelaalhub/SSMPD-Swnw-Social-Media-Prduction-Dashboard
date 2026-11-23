@@ -64,10 +64,14 @@
     return Promise.all([
       call('list', { date: d }),
       rpc('clinic_reception_fallback', { p_workspace: w, p_action: 'list', p_payload: {} }).then(function (x) { return (x && x.bookings) || []; }, function () { return []; }),
-      portal
+      portal,
+      /* owner 2026-11-23: Masa day-only bookings placed automatically / days already full (20261122330000) */
+      rpc('clinic_reception_auto_book', { p_workspace: w, p_action: 'list', p_payload: { from: today(), to: new Date(Date.parse(today() + 'T12:00:00Z') + 30 * 86400000).toISOString().slice(0, 10) } }).then(function (x) { return (x && x.rows) || []; }, function () { return null; })
     ]).then(function (r) {
       if (gen !== st.gen) return;
       st.data = { mirror: (r[0] && r[0].bookings) || [], canManage: !!(r[0] && r[0].can_manage), fallback: (r[1] || []).filter(function (b) { return b.appointment_date === d; }), portal: (r[2] || []).filter(function (p) { return (p.requested_date || p.appointment_date) === d; }) };
+      var ab = r[3], t0 = today();
+      st.data.masa = ab ? { told: ab.filter(function (x) { return x.state === 'booked' && x.auto_timed && !x.time_told_at && x.day >= t0; }).length, full: ab.filter(function (x) { return x.state === 'review' && x.review_kind === 'full_day'; }).length } : null;
       st.loading = false; paint();
     }).catch(function (e) { if (gen !== st.gen) return; st.loading = false; st.error = (e && e.message) || 'تعذر تحميل الحجوزات الآلية'; paint(); });
   }
@@ -141,14 +145,22 @@
     var inner;
     if (!st.data) inner = st.error ? '<p class="journey-error">' + esc(st.error) + '</p>' : '<p class="journey-loading">جاري التحميل…</p>';
     var src = st.data ? sourcesHtml() : { html: '', total: 0 };
-    if (st.data) inner = st.open ? listHtml(st.open) : src.html;
+    if (st.data) inner = st.open ? listHtml(st.open) : masaStrip() + src.html;
     var att = 0; if (st.data) SRC.forEach(function (s) { att += needCount(bySource(s[0])); });
+    if (st.data && st.data.masa) att += st.data.masa.told + st.data.masa.full;
     h.dataset.tdsCount = String(src.total); h.dataset.tdsAttention = String(att);
     var html = '<div class="journey-section-head"><h3>حجوزات آلية <small>(' + num(src.total) + ')</small></h3></div>' + inner;
     var keep = h.querySelector('[data-tds-close]');
     h.innerHTML = html;
     if (keep) { var hd = h.querySelector('.journey-section-head'); if (hd) hd.appendChild(keep); }
     if (st.open === 'portal') { var ph = h.querySelector('[data-tab-portal]'); if (ph && window.SSMPDPortalBookingRequests && window.SSMPDPortalBookingRequests.render) window.SSMPDPortalBookingRequests.render(ph); else if (ph) ph.innerHTML = '<p class="journey-empty">شاشة طلبات البوابة مش متاحة لحسابك.</p>'; }
+  }
+  function masaStrip() {
+    var m = st.data && st.data.masa; if (!m || !(m.told || m.full)) return '';
+    return '<div class="tds-masa-alert" data-tds-masa role="status"><b>حجوزات ماسا</b>' +
+      (m.full ? '<span class="tds-masa-full">' + num(m.full) + ' يوم الدكتور مليان — ملهاش مكان</span>' : '') +
+      (m.told ? '<span>' + num(m.told) + ' اتحطلها ساعة لوحدها — بلّغ المريض بالميعاد</span>' : '') +
+      '<button type="button" class="btn sm" data-tds-masa-go>افتح «المواعيد»</button></div>';
   }
   function find(id) { return ((st.data && st.data.mirror) || []).filter(function (b) { return b.id === id; })[0]; }
   function run(action, payload, ok) {
@@ -191,6 +203,8 @@
   function err(e) { toast((e && e.message) || 'تعذر تنفيذ الإجراء', 'error'); }
   function watchRegister() { var n = 0, t = setInterval(function () { n++; if (!document.querySelector('[data-qr-agmodal]') || n > 600) { clearInterval(t); load(true); } }, 500); }
   document.addEventListener('click', function (e) {
+    var mg = e.target.closest && e.target.closest('[data-tds-masa-go]');
+    if (mg) { e.preventDefault(); if (window.SSMPDTodayShortcuts) window.SSMPDTodayShortcuts.close(); var sb = document.querySelector('[data-rx-section="appointments"]'); if (sb) sb.click(); else toast('قسم المواعيد مش متاح حسب صلاحيتك', 'error'); return; }
     var h = host(); if (!h || !h.contains(e.target)) return;
     var s = e.target.closest('[data-tab-src]'); if (s) { e.preventDefault(); st.open = s.dataset.tabSrc; paint(); h.scrollTop = 0; return; }
     if (e.target.closest('[data-tab-back]')) { e.preventDefault(); st.open = ''; paint(); return; }

@@ -39,8 +39,9 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  m=doc.querySelector('.rx-ab-modal');const sv=[...m.querySelectorAll('.rx-ab-item')].find(x=>x.querySelector('[data-ab-svc]'));sv.querySelector('[data-ab-svc]').value='s1';sv.querySelector('[data-ab="service"]').click();await new Promise(r=>setTimeout(r,0));
  assert.deepEqual(calls.at(-1)[1].p_payload,{id:'e5',service_id:'s1'});
  doc.querySelector('[data-ab-close]').click();assert.equal(doc.querySelector('.rx-ab-modal'),null,'popup closes');
- m=open('times-new');const tm=m.querySelector('.rx-ab-time');tm.querySelector('[data-ab-time]').value='16:20';tm.querySelector('[data-ab="time"]').click();await new Promise(r=>setTimeout(r,0));
- assert.equal(calls.at(-1)[1].p_action,'set_time');assert.equal(new Date(calls.at(-1)[1].p_payload.starts_at).toISOString(),w.SSMPDReceptionAutoBook.cairoISO(T,'16:20'));
+ m=open('times-new');let tm=m.querySelector('.rx-ab-time');tm.querySelector('[data-ab-time]').value='16:20';tm.querySelector('[data-ab="pick"]').click();await new Promise(r=>setTimeout(r,0));
+ for(let i=0;i<20&&calls.at(-1)[1].p_action!=='set_time';i++)await new Promise(r=>setTimeout(r,10));
+ assert.equal(calls.at(-1)[1].p_action,'set_time');assert.equal(calls.at(-1)[1].p_payload.mode,'normal');assert.equal(new Date(calls.at(-1)[1].p_payload.starts_at).toISOString(),w.SSMPDReceptionAutoBook.cairoISO(T,'16:20'));
  // Cairo offset (winter +02:00, summer +03:00)
  assert.equal(w.SSMPDReceptionAutoBook.cairoISO('2026-01-15','10:00'),'2026-01-15T08:00:00.000Z');
  assert.equal(w.SSMPDReceptionAutoBook.cairoISO('2026-07-15','10:00'),'2026-07-15T07:00:00.000Z');
