@@ -187,7 +187,15 @@
 .pp>header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .pp h3{margin:0;font-size:17px;min-width:0;overflow-wrap:anywhere}
 .pp-x{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line,#E1E5EE);background:#fff;cursor:pointer;display:grid;place-items:center}
-.pp-back{border:0;background:none;color:#0F369D;font:inherit;cursor:pointer;padding:6px 0;min-height:44px}
+.pp-back{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line,#E1E5EE);background:#F3F6FB;color:#0F369D;cursor:pointer;display:grid;place-items:center;padding:0}
+.pp-back:hover{background:#EAF0FF}.pp-back:focus-visible,.pp-x:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+/* Owner 2026-11-23: one top row — back square (right) · «شرح النموذج» · ✕ (left); the title sits under it */
+.pp{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;column-gap:8px;align-content:start}
+.pp>*{grid-column:1/-1}
+.pp>.pp-back{grid-row:1;grid-column:1}
+.pp>.dh-form-help{grid-row:1;grid-column:2;margin:0;align-self:center;justify-self:start}
+.pp>.pp-x{grid-row:1;grid-column:4;justify-self:end}
+.pp>header{margin-top:10px}
 .pp-list{list-style:none;margin:0;padding:0}
 .pp-row{display:flex;align-items:center;gap:10px;width:100%;padding:10px 4px;border:0;border-bottom:1px solid var(--line,#E1E5EE);background:none;font:inherit;text-align:start;cursor:pointer;min-height:56px}
 .pp-list li:last-child .pp-row{border-bottom:0}.pp-row:hover,.pp-row:focus-visible{background:#F6F8FD;outline:none}

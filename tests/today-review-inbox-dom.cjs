@@ -58,10 +58,10 @@ async function submit(t,note){const f=t.d.querySelector('.tri-modal form');f.ele
  d.querySelector('[data-tri-key="fin_request:q2"][data-tri-do="approve"]').click();
  await submit(t,'مستند سليم');
  const fc=t.calls.find(c=>c[0]==='clinic_finance_review_request');assert.deepEqual(fc[1],{p_id:'q2',p_approve:true,p_note:'مستند سليم'});
- // receive the reception shift → reception shift_review with the reception shift id
+ // receive the reception shift → clinic_finance_review_shift on the finance shift id (live reception refuses shift_review)
  d.querySelector('[data-tri-key="shift:f1"][data-tri-do="approve"]').click();
  await submit(t,'استلمت الكاش');
- const sc=t.calls.filter(c=>c[0]==='clinic_reception_command').pop();assert.deepEqual([sc[1].p_action,sc[1].p_payload],['shift_review',{id:'r1',note:'استلمت الكاش'}]);
+  const sc=t.calls.filter(c=>c[0]==='clinic_finance_review_shift').pop();assert.deepEqual(sc[1],{p_shift:'f1',p_note:'استلمت الكاش'});assert(!t.calls.some(c=>c[0]==='clinic_reception_command'&&c[1].p_action==='shift_review'));
  // 20261122380000: «دفعة لأكتر من مريض» → «اطّلعت» / «عليها ملاحظة» through cross_payment_review
  {const v=fixture();v.requests=[{source:'rx_cross_payment',id:'cp1',kind:'cross_payment',amount:1000,reason:'يحيى دفع عن صاحبه محمود',by:'منار',at:now(),mine:false,patient:'يحيى تجريبي',patients:['يحيى تجريبي','محمود تجريبي'],workspace_id:WS},
    {source:'rx_cross_payment',id:'cp2',kind:'cross_payment',amount:300,by:'أنا',mine:true,patients:['أ','ب'],workspace_id:WS}];t.set(v);t.w.SSMPDReviewInbox.load(true);

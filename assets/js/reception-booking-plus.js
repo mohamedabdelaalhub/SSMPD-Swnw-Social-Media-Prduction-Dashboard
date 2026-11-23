@@ -21,7 +21,16 @@ function performer(form,ctx,after){var ap=ctx.appointment||null,box=document.cre
   if(on&&sel.options.length<2)load();}
  function load(){sel.disabled=true;nurses(ctx.workspace).then(function(list){if(!form.isConnected)return;sel.innerHTML='<option value="">'+(list.length?'اختار الممرض/ة':'مفيش موظفين تمريض متسجلين')+'</option>'+list.map(function(n){return '<option value="'+esc(n.id)+'">'+esc(n.name)+(n.code?' — '+esc(n.code):'')+'</option>';}).join('');sel.disabled=false;if(want){sel.value=want;want='';}},function(e){sel.disabled=false;hint.hidden=false;hint.textContent=e&&e.message||'تعذر تحميل موظفين التمريض';});}
  box.querySelectorAll('[data-rbp-mode]').forEach(function(b){b.onclick=function(){set(b.getAttribute('data-rbp-mode'));};});
- set(ap&&ap.performer_mode&&ap.performer_mode!=='doctor'?ap.performer_mode:'doctor');}
+ set(ap&&ap.performer_mode&&ap.performer_mode!=='doctor'?ap.performer_mode:'doctor');
+ /* owner 2026-11-23: «مين اللي هينفّذ؟» stays closed until «زيارة منزلية» is ticked (a booking already on a nurse keeps it open) */
+ /* in-center nursing (a nursing service or a nursing schedule, e.g. «تعليق محلول») keeps it open too */
+ var homeCb=form.elements.x_home,stick=!!(ap&&ap.performer_mode&&ap.performer_mode!=='doctor'),D=ctx.data||{};
+ function nursing(){var sv=form.elements.service_id&&form.elements.service_id.value,pv=form.elements.provider_id&&form.elements.provider_id.value,
+   s=(D.services||[]).find(function(x){return x.id===sv;}),p=(D.providers||[]).find(function(x){return x.id===pv;});
+   return /تمريض/.test([s&&s.department,s&&s.name,p&&p.department,p&&p.name].join(' '));}
+ function gate(){var on=homeCb.checked||stick||nursing();box.hidden=!on;if(!on&&hid.value!=='doctor')set('doctor');}
+ if(homeCb){box.style.order='6';homeCb.addEventListener('change',gate);form.addEventListener('rxe-home',gate);
+  form.addEventListener('change',function(e){if(e.target&&(e.target.name==='service_id'||e.target.name==='provider_id'))gate();});gate();}}
 function enhance(form,ctx){if(!form||form.querySelector('[data-rbp]'))return;var field=form.querySelector('.rx-combo-field');if(!field||!form.elements.service_id)return;
  var data=ctx.data||{},ap=ctx.appointment||null,live=ctx.mode!=='trial';
  var row=document.createElement('div');row.className='rbp-row';row.setAttribute('data-rbp','');row.setAttribute('data-wide','');field.parentNode.insertBefore(row,field);row.appendChild(field);

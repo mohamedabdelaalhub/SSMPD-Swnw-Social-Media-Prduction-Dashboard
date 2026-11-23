@@ -5,11 +5,11 @@ if(window.__SWNWTodayOperationsV1)return;
 window.__SWNWTodayOperationsV1=true;
 
 var css=document.createElement('link');
-css.rel='stylesheet';css.href='assets/css/today-operations.css?v=today-phone-fit-20261122-1';css.dataset.todayOperations='1';
+css.rel='stylesheet';css.href='assets/css/today-operations.css?v=today-phone-scroll-20261123-1';css.dataset.todayOperations='1';
 if(!document.querySelector('link[data-today-operations]'))document.head.appendChild(css);
 /* Owner 2026-11-22 («طبق يلا», mockup today-shortcuts): shortcut tiles + sheets, «حجوزات آلية» by source. */
 ['today-shortcuts.css?v=masa-auto-time-20261123-1'].forEach(function(f){if(document.querySelector('link[data-today-shortcuts]'))return;var l=document.createElement('link');l.rel='stylesheet';l.href='assets/css/'+f;l.dataset.todayShortcuts='1';document.head.appendChild(l);});
-[['__SWNWTodayShortcuts','today-shortcuts.js?v=today-rooms-fix-20261123-1'],['__SWNWTodayAutoBookings','today-auto-bookings.js?v=masa-auto-time-20261123-1']].forEach(function(x){if(window[x[0]]||document.querySelector('script[data-src="'+x[1]+'"]'))return;var sc=document.createElement('script');sc.src='assets/js/'+x[1];sc.async=false;sc.dataset.src=x[1];document.head.appendChild(sc);});
+[['__SWNWTodayShortcuts','today-shortcuts.js?v=today-tiles-tap-20261123-1'],['__SWNWTodayAutoBookings','today-auto-bookings.js?v=masa-auto-time-20261123-1']].forEach(function(x){if(window[x[0]]||document.querySelector('script[data-src="'+x[1]+'"]'))return;var sc=document.createElement('script');sc.src='assets/js/'+x[1];sc.async=false;sc.dataset.src=x[1];document.head.appendChild(sc);});
 
 var state={day:null,workspace:null,data:null,loading:false,error:null,refreshTimer:null,context:null,sandbox:null,owner:null,generation:0,query:'',doctor:'',status:'',filter:'all',open:null,staff:null};
 var base=window.SSMPDReceptionModules||{sections:function(){return[];},panel:function(){return'';},act:function(){return false;},bookingFields:function(){return'';},bookingWire:function(){}};
@@ -94,6 +94,10 @@ function cardActions(a,c){
  else if(s==='in_service'){main=action('visit_complete',a.id,'إنهاء الزيارة','btn-primary');rest=action('hold',a.id,'انتظار تحليل/إجراء')+action('request_service',a.id,'طلب خدمة')+detail;}
  else if(s==='on_hold'){main=action('resume',a.id,'عودة للطبيب','btn-primary');rest=action('request_service',a.id,'طلب خدمة')+detail+v2('finish',a.id,'إنهاء الزيارة وانتظار النتيجة')+action('help',a.id,'طلب دعم');}
  if(hasDue(a)&&can('collect')&&a.due_invoices&&a.due_invoices.length){if(!main)main=action('collect_due',a.id,'حصّل '+money(a.patient_due),'btn-primary journey-main-collect');else rest=action('collect_due',a.id,'تحصيل '+money(a.patient_due))+rest;}
+ /* owner 2026-11-23 (20261123060000): «خصم» on a booked card, «خصم على الزيارة» after arrival while the service is still ordered */
+ var PY=window.SSMPDReceptionPayer,BD=PY||window.SSMPDReceptionBookingDiscount,ra=!c.sandbox&&BD&&can('book')&&((c.data&&c.data.appointments)||[]).find(function(x){return x.id===a.id;});
+ if(ra&&['expected','on_the_way'].includes(s)&&BD.canBooking(ra))rest+=action('booking_discount',a.id,PY?PY.label(ra):ra.discount_kind?'تعديل / شيل الخصم':'خصم (نقابة / نادي / فيزيتا / العيلة / خاص)');
+ if(ra&&['waiting','called','in_service','on_hold'].includes(s)&&BD.canVisit(ra,c.data))rest+=action('visit_discount',a.id,PY?PY.label(ra)+' (قبل التحصيل)':'خصم على الزيارة (قبل التحصيل)');
  if(c.sandbox&&s==='completed')rest+=action('sandbox_feedback',a.id,'تقييم التجربة');
  /* «الزيارة اتسجلت غلط» (20261122040000): files the existing «إلغاء خدمة اتدخلت بالغلط» for the whole visit; finance approves */
  if(!c.sandbox&&s==='completed'&&a.visit_id&&can('collect'))rest+=action('visit_void',a.id,'الزيارة اتسجلت غلط');
@@ -149,7 +153,7 @@ function doctorStrip(data,c){
  var tabs=[['all','الكل'],['here','وصل'],['later','لسه'],['done','خلص']].map(function(t){return '<button type="button" class="tds-tab'+(tab===t[0]?' is-on':'')+'" data-tds-doctab="'+t[0]+'" aria-pressed="'+(tab===t[0])+'">'+t[1]+' '+num(counts[t[0]])+'</button>';}).join('');
  return '<section class="journey-section tds-panel tds-doctors" data-tds-panel="doctors" data-tds-count="'+ids.length+'" aria-label="الأطباء النهارده"'+(c&&!c.sandbox&&c.workspace?' data-doctor-pay-workspace="'+esc(c.workspace)+'" data-doctor-pay-day="'+esc(state.day||'')+'"':'')+'><div class="journey-section-head"><h3>الأطباء النهارده <small>('+num(ids.length)+')</small></h3></div>'+
   (ids.length?'<div class="tds-tabs" role="group" aria-label="فلترة الأطباء">'+tabs+'</div><div class="tds-docgrid">'+shown.map(function(id){var d=by[id],s=sessions[id]||{},status=s.status||'scheduled',p=prov[id]||{},h=hours(id),label=(labels[status]||status)+(status==='delayed'?' '+num(s.eta_minutes||0)+' د':'');
-   return '<article class="tds-doc journey-doctor journey-doctor-'+esc(status)+(status==='ended'?' is-done':'')+'"><button type="button" class="tds-doc-main" data-tds-doctor="'+esc(id)+'" title="اعرض مرضاه بس"><b>'+esc(d.name)+'</b>'+(p.department?'<span class="tds-doc-sp">'+esc(p.department)+'</span>':'')+(h?'<span class="tds-doc-hr" dir="ltr">'+esc(h)+'</span>':'')+'</button><div class="tds-doc-ft"><span class="tds-ds tds-ds-'+esc(status)+'">'+esc(label)+'</span><span class="tds-doc-cnt">'+num(d.waiting)+' منتظر · '+num(d.booked)+' حجز</span></div><span class="journey-doctor-pay" data-doctor-pay="'+esc(id)+'" data-finished="'+(d.open===0&&d.seen>0&&d.due===0?'1':'0')+'"></span>'+more(action('doctor_on_the_way',id,'في الطريق')+action('doctor_arrived',id,'وصل')+action('doctor_started',id,'بدأ')+action('doctor_delayed',id,'تأخير')+action('doctor_ended',id,'انتهى'),'حالة الطبيب')+'</article>';}).join('')+'</div><p class="tds-hint">اضغط على كارت الدكتور يعرض مرضاه بس في الجدول.</p>':'<p class="journey-empty">مفيش أطباء عليهم حجوزات في اليوم ده.</p>')+'</section>';
+   return '<article class="tds-doc journey-doctor journey-doctor-'+esc(status)+(status==='ended'?' is-done':'')+'"><button type="button" class="tds-doc-main" data-tds-doctor="'+esc(id)+'" title="اعرض مرضاه بس"><b>'+esc(d.name)+'</b>'+(p.department?'<span class="tds-doc-sp">'+esc(p.department)+'</span>':'')+(h?'<span class="tds-doc-hr" dir="ltr">'+esc(h)+'</span>':'')+'</button><div class="tds-doc-ft"><span class="tds-ds tds-ds-'+esc(status)+'">'+esc(label)+'</span><span class="tds-doc-cnt">'+num(d.waiting)+' منتظر · '+num(d.booked)+' حجز</span></div><span class="tds-doc-room" data-tds-room-slot="'+esc(id)+'"></span><span class="journey-doctor-pay" data-doctor-pay="'+esc(id)+'" data-finished="'+(d.open===0&&d.seen>0&&d.due===0?'1':'0')+'"></span>'+more(action('doctor_on_the_way',id,'في الطريق')+action('doctor_arrived',id,'وصل')+action('doctor_started',id,'بدأ')+action('doctor_delayed',id,'تأخير')+action('doctor_ended',id,'انتهى'),'حالة الطبيب')+'</article>';}).join('')+'</div><p class="tds-hint">اضغط على كارت الدكتور يعرض مرضاه بس في الجدول.</p>':'<p class="journey-empty">مفيش أطباء عليهم حجوزات في اليوم ده.</p>')+'</section>';
 }
 function hm(ms){return new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(ms));}
 /* Owner 2026-11-22 (SPEC A): «يحتاج تدخل» is one amber line for the longest waiter («نادي»), plus the patients' help requests («تم التعامل»). A delayed doctor shows only in the doctors line. */
@@ -326,6 +330,7 @@ function priorityModal(c,id){var a=findAppointment(id);if(!a){toast('تعذر ا
 function helpModal(c,id){c.modal('طلب مساعدة',c.select('kind','النوع',[['assistance','مساعدة'],['priority','أولوية إنسانية'],['complaint','شكوى'],['other','أخرى']])+c.field('message','التفاصيل','text','','required'),function(v){return run(c,'patient_help',{appointment_id:id,kind:v.kind,message:v.message});});}
 function handle(name,id,c){
  try{
+  if(name==='booking_discount'||name==='visit_discount'){var BDx=window.SSMPDReceptionPayer||window.SSMPDReceptionBookingDiscount;if(BDx)BDx[name==='booking_discount'?'openForBooking':'openForVisit'](id,state.context||c);return;}
   if(name==='sandbox_enter'){switchMode(c,true);return;}if(name==='sandbox_exit'){switchMode(state.context,false);return;}
   if(c.sandbox){
    var save=function(a,p,k){return run(c,a,p,k);};

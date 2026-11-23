@@ -228,11 +228,11 @@
         var p = M.list.filter(function (x) { return x.id === P.id; })[0];
         if (!p) { S.pop = null; return ''; }
         title = p.name;
-        if (P.from) back = '<button type="button" class="pp-back" data-pop="back">‹ رجوع</button>';
+        if (P.from) back = '<button type="button" class="pp-back" data-pop="back" aria-label="رجوع" title="رجوع"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
         body = '<dl class="pp-dl"><dt>القسم</dt><dd>' + esc(p.dept.name) + '</dd><dt>الوظيفة</dt><dd>' + esc(p.role || p.code || '—') + '</dd>' + (p.tname ? '<dt>الوردية</dt><dd>' + esc(p.tname) + (p.start ? ' · ' + esc(clock(p.start)) : '') + '</dd>' : '') + '</dl><div class="pp-meta">' + metaOf(p) + (p.long ? '<span class="pill p-warn">' + ico('warn') + ' مدة طويلة جدًا — تحقق من بصمة الخروج</span>' : '') + '</div>' +
           '<div class="pp-acts">' + acts(p) + (ctx.openProfile && !p.unmapped ? '<button type="button" class="mini solid" data-pop="profile" data-id="' + esc(p.id) + '">فتح ملف الأداء</button>' : '') + (S.canManage && !p.unmapped && p.r ? '<button type="button" class="mini" data-pop="map" data-id="' + esc(key(p.r)) + '">تغيير الربط</button>' : '') + '</div>';
       }
-      return '<div class="pp-ov" data-pop="overlay"><section class="pp" role="dialog" aria-modal="true" aria-label="' + esc(title) + '">' + back + '<header><h3>' + esc(title) + '</h3><button type="button" class="pp-x" data-pop="close" aria-label="إغلاق">' + ico('x') + '</button></header>' + body + '</section></div>';
+      return '<div class="pp-ov" data-pop="overlay"><section class="pp" role="dialog" aria-modal="true" aria-label="' + esc(title) + '">' + back + '<button type="button" class="pp-x" data-pop="close" aria-label="إغلاق">' + ico('x') + '</button><header><h3>' + esc(title) + '</h3></header>' + body + '</section></div>';
     }
     // Departments where nobody is in and nobody is missing (only upcoming / left / on leave) -> one line each in the side column.
     function quietDepts() { return deptList().filter(function (g) { var st = deptStats(g.d); return g.d.id !== 'unmapped' && !st.pres && !st.abs; }); }

@@ -800,6 +800,8 @@
   function paintBody(root, code) {
     var host = q(root, "#rc-body"); if (!host) return;
     host.innerHTML = bodyHtml(code);
+    // owner 2026-11-23 (20261122390000): «عمليات تحصيل» counts receipts — say how many covered more than one visit
+    if (code === "staff_productivity" && state.data && window.SSMPDMultiPay) { var tl = q(host, ".rc-tiles") || q(host, ".rc-card"); if (tl) window.SSMPDMultiPay.explain(tl, { from: state.f.from, to: state.f.to }); }
     // الفلاتر المعتمدة على بيانات التقرير (تخصصات/دكاترة) بتتحدّث بعد أول تحميل
     var o = (state.data && state.data.options) || {};
     if ((code === "revenue_by_doctor" || DEFS[code].doctorDay) && state.data && !state.optsPainted) {
