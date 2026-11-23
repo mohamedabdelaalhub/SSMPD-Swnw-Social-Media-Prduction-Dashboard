@@ -1,7 +1,7 @@
 -- Rolled-back verify of docs/ops/2026-11-23-body-slimming-doctors.sql («نحت وتنسيق القوام»): runs the step, then checks the booking
 -- scope gate (clinic_reception.has_provider_service_scope — used by «حجز موعد» / order / execution) for each named doctor × the 12,
 -- that the snapshot offers them (provider_service_scopes), that nobody gained the nutrition consults, and the catalogue republished.
--- ONE transaction ending in ROLLBACK; last output = one table.
+-- The snapshot is read as Mazen (reception). ONE transaction ending in ROLLBACK; last output = one table.
 begin;
 create temp table bs_before as select p.id, clinic_reception.has_provider_service_scope(p.id, s.code, (now() at time zone 'Africa/Cairo')::date) ok, s.code
   from clinic_reception.providers p join clinic_reception.workspaces w on w.id = p.workspace_id and w.mode = 'live'
@@ -60,7 +60,9 @@ begin
     insert into bs_live(step, expected, actual, ok) values (r.name || ' (' || r.department || ')', '12 / 12 bookable', okn || ' / ' || tot || coalesce(' — missing: ' || bad, ''), okn = 12 and tot = 12);
   end loop;
   -- the booking screen reads the snapshot: provider_service_scopes must list the 12 codes for each of them
-  snap := public.clinic_reception_snapshot(ws, d, d);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb', 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb', true);
+  snap := public.clinic_reception_snapshot(ws, d, d);  -- as Mazen (reception), like the booking screen
   insert into bs_live(step, expected, actual, ok)
     select 'snapshot scopes: ' || p.name, '12 codes listed', (select count(*) from jsonb_array_elements_text(coalesce(snap->'provider_service_scopes'->(p.id::text), '[]')) c where c between '0001215' and '0001226')::text,
            (select count(distinct c) from jsonb_array_elements_text(coalesce(snap->'provider_service_scopes'->(p.id::text), '[]')) c where c between '0001215' and '0001226') = 12
