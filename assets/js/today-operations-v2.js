@@ -72,7 +72,7 @@ function serviceGroup(s){
 function serviceSelect(services){
  var order=['lab','imaging','physio','other'],groups={};
  services.forEach(function(s){var g=serviceGroup(s);(groups[g.key]||(groups[g.key]={label:g.label,rows:[]})).rows.push(s);});
- return '<label>الخدمة المطلوبة<select name="service_id" required><option value="">اختر الخدمة</option>'+order.map(function(k){var g=groups[k];if(!g||!g.rows.length)return'';return '<optgroup label="'+esc(g.label)+'">'+g.rows.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+(s.department?' — '+esc(s.department):'')+'</option>';}).join('')+'</optgroup>';}).join('')+'</select></label>';
+ return '<label>الخدمة المطلوبة<select name="service_id" required><option value="">اختر الخدمة</option>'+order.map(function(k){var g=groups[k];if(!g||!g.rows.length)return'';return '<optgroup label="'+esc(g.label)+'">'+g.rows.map(function(s){return '<option value="'+esc(s.id)+'" data-code="'+esc(s.canonical_code||s.code||'')+'">'+esc(s.name)+(s.department?' — '+esc(s.department):'')+'</option>';}).join('')+'</optgroup>';}).join('')+'</select></label>';
 }
 
 function openService(id){
