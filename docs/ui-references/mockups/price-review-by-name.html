@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مراجعة أسماء الجهات — شكل مبدئي</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+:root{--blue:#0F369D;--or:#F15A22;--ink:#16212E;--ok:#2F7D5C;--bad:#D0402A;--mut:#5b6676;--line:#e3e8f2;--bg:#f3f5fa}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 110px}
+.crumb{font-size:13px;color:var(--mut)}
+h1{font-size:28px;line-height:1.2;margin:4px 0 4px}
+.sub{color:var(--mut);margin:0 0 16px}
+.hero{background:linear-gradient(135deg,#0F369D,#1c4fd1);color:#fff;border-radius:18px;padding:18px 20px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.hero b{font-size:30px;line-height:1}
+.hero small{display:block;color:#dbe4ff;margin-top:4px}
+.bar{grid-column:1/-1;height:8px;background:#ffffff33;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;width:23%;background:var(--or)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.pill{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-size:14px;min-height:40px}
+.pill.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.search{flex:1 1 220px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font:inherit;font-size:16px;background:#fff;min-height:44px}
+.list{display:grid;gap:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:grid;gap:10px}
+.head{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.chk{width:22px;height:22px;margin-top:4px;accent-color:var(--blue)}
+.name{font-weight:700;font-size:17px}
+.meta{font-size:13px;color:var(--mut)}
+.chip{display:inline-block;font-size:12px;padding:2px 10px;border-radius:99px;background:#eef2fd;color:var(--blue);margin-inline-start:6px}
+.chip.warn{background:#fdeee8;color:#b8431a}
+.sug{border:1px dashed #c9d4ef;border-radius:12px;padding:10px 12px;background:#f8faff}
+.sug .meta b{color:var(--ink)}
+.pct{font-weight:700;color:var(--ok)}.pct.low{color:#b8431a}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:inherit;font-weight:700;font-size:14px;border-radius:10px;padding:9px 16px;min-height:44px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.btn.yes{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.no{color:var(--bad);border-color:#f0c9c2}
+.btn.alt{color:var(--blue)}
+.lists{font-size:12px;color:var(--mut)}
+.note{font-size:12px;color:var(--mut);margin-top:18px}
+.bulk{position:fixed;inset-inline:0;bottom:0;background:var(--ink);color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.bulk .btn{background:#ffffff14;color:#fff;border-color:#ffffff40}.bulk .btn.no{background:var(--bad);border-color:var(--bad)}
+@media(max-width:600px){h1{font-size:24px}.hero{grid-template-columns:1fr}.hero b{font-size:26px}}
+</style></head><body>
+<div class="wrap">
+<div class="crumb">جهات التعاقد › قوائم الأسعار › مراجعة الأسماء</div>
+<h1>مراجعة أسماء الجهات</h1>
+<p class="sub">كل اسم بيتراجع مرة واحدة، والقرار بيمشي على كل اللوايح اللي فيها نفس الاسم.</p>
+<section class="hero"><div><b>1,900 اسم</b><small>3,426 سطر في 8 لوايح · اتراجع 0 لحد دلوقتي</small></div><div style="font-size:13px;color:#dbe4ff">ميد نت 574 · ميد شور 581 · الأطباء 686 · التجاريين 373 · …</div><div class="bar"><i style="width:0"></i></div></section>
+<div class="tools">
+<button class="pill on">الكل 1,900</button><button class="pill">ليها اقتراح 560</button><button class="pill">مفيش اقتراح 1,280</button><button class="pill">سعر غريب 60</button>
+<input class="search" placeholder="ابحث باسم الخدمة عند الجهة أو عندنا…" aria-label="بحث">
+</div>
+<div class="list" id="list"></div>
+<p class="note">شكل مبدئي بأسماء حقيقية من لوايح 23-11 (عينة). الأرقام فوق تقريبية. الصفحة دي للعرض بس، ومفيش ولا زرار فيها بيغيّر حاجة.</p>
+</div>
+<div class="bulk"><span>اخترت <b>2</b> اسم</span><div class="acts"><button class="btn no">مش عندنا للمختار</button><button class="btn">بعدين</button></div></div>
+<script>{
+const D=[{"nm": "موجات صوتية على البطن", "ls": 6, "rs": 6, "c1": "موجات صوتية على البطن والحوض", "s1": 0.89, "b1": "500", "pmin": 175, "pmax": 450, "lists": "مصر لتامينات ا،مصر هيلث كير،ميد شور،ميد نت،نقابة الاطباء ،نقابة المهندسي", "k": "fuzzy", "g": "xray"}, {"nm": "موجات صوتية على الحوض", "ls": 6, "rs": 6, "c1": "موجات صوتية على البطن والحوض", "s1": 0.89, "b1": "500", "pmin": 145, "pmax": 450, "lists": "مصر لتامينات ا،مصر هيلث كير،ميد شور،ميد نت،نقابة الاطباء ،نقابة المهندسي", "k": "fuzzy", "g": "xray"}, {"nm": "مسحة مهبلٌة من عنق الرحم", "ls": 5, "rs": 5, "c1": "مسحة عنق الرحم (غير شامل المستلزمات)", "s1": 0.75, "b1": "1000", "pmin": 70, "pmax": 120, "lists": "صحة وان،ميد شور،ميد نت،نقابة الاطباء ،نقابة المهندسي", "k": "fuzzy", "g": "misc"}, {"nm": "موجات صوتية على الحمل", "ls": 5, "rs": 5, "c1": "موجات صوتية على الرقبة", "s1": 0.75, "b1": "1500", "pmin": 145, "pmax": 190, "lists": "مصر هيلث كير،ميد شور،ميد نت،نقابة الاطباء ،نقابة المهندسي", "k": "fuzzy", "g": "xray"}, {"nm": "موجات صوتية على الخصيتين", "ls": 5, "rs": 5, "c1": "موجات صوتية على الرقبة", "s1": 0.75, "b1": "1500", "pmin": 200, "pmax": 275, "lists": "مصر هيلث كير،ميد شور،ميد نت،نقابة الاطباء ،نقابة المهندسي", "k": "fuzzy", "g": "xray"}, {"nm": "موجات صوتية على القلب", "ls": 5, "rs": 5, "c1": "موجات صوتية على الرقبة", "s1": 0.75, "b1": "1500", "pmin": 275, "pmax": 850, "lists": "مصر لتامينات ا،مصر هيلث كير،ميد شور،ميد نت،نقابة الاطباء ", "k": "fuzzy", "g": "xray"}, {"nm": "anti ccp", "ls": 5, "rs": 5, "c1": "Anti - dsDNA", "s1": 0.5, "b1": "800", "pmin": 212, "pmax": 307, "lists": "مصر هيلث كير،ميد شور،ميد نت،نقابة الاطباء ،نقابة التجاريي", "k": "unmatched", "g": "lab"}, {"nm": "Semen Processing", "ls": 5, "rs": 5, "c1": "Semen Analysis", "s1": 0.5, "b1": "800", "pmin": 133, "pmax": 385, "lists": "مصر هيلث كير،ميد شور،ميد نت،نقابة الاطباء ،نقابة التجاريي", "k": "unmatched", "g": "lab"}, {"nm": "TPHA", "ls": 5, "rs": 5, "c1": "Treponema Pallidum Ab IgG (TPHA)", "s1": 0.33, "b1": "1100", "pmin": 61, "pmax": 140, "lists": "مصر هيلث كير،ميد شور،ميد نت،نقابة الاطباء ،نقابة التجاريي", "k": "unmatched", "g": "lab"}];
+const f=n=>Number(n).toLocaleString('en-US');
+const e=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+document.getElementById('list').innerHTML=D.map((x,i)=>{const s=Math.round((x.s1||0)*100),strong=s>=85;
+return '<article class="card"><div class="head"><input type="checkbox" class="chk" aria-label="اختيار" '+(i>=6?'checked':'')+'><div><div class="name">'+e(x.nm)+'</div><div class="meta">في '+x.ls+' لوايح · '+x.rs+' سطر · السعر عندهم من '+f(x.pmin)+' لـ '+f(x.pmax)+' ج'+(x.pmax>3*x.pmin?'<span class="chip warn">أسعار مختلفة جداً</span>':'')+'</div></div></div>'+
+(x.c1?'<div class="sug"><div class="meta">أقرب خدمة عندنا: <b>'+e(x.c1)+'</b> · <span class="pct'+(strong?'':' low')+'">'+s+'%</span> · سعرنا '+f(x.b1)+' ج</div></div>':'')+
+'<div class="acts">'+(x.c1?'<button class="btn yes">هي دي</button>':'')+'<button class="btn alt">اختار خدمة تانية</button><button class="btn no">مش عندنا</button><button class="btn">بعدين</button></div></article>';}).join('');
+}</script>
+</body></html>
