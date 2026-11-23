@@ -13387,6 +13387,72 @@
       "reviewed": true
     },
     {
+      "title": "جلسات",
+      "labels": [
+        "جلسات"
+      ],
+      "text": "عدد جلسات الخدمة دي في الباكج.",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ المدفوع",
+      "labels": [
+        "المبلغ المدفوع"
+      ],
+      "text": "المبلغ اللي المريض دفعه في الخدمة دي (كل الجلسات).",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً ليزر نص إيد + منطقة تانية",
+      "labels": [
+        "مثلاً ليزر نص إيد + منطقة تانية",
+        "اسم الباكج"
+      ],
+      "text": "اسم يوضح الباكج، مثلاً «12 جلسة علاج طبيعي».",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دفع يوم",
+      "labels": [
+        "دفع يوم"
+      ],
+      "text": "اليوم اللي المريض دفع فيه الباكج — لازم يكون قبل النهارده.",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم الإيصال القديم أو صورته (لو موجود)",
+      "labels": [
+        "رقم الإيصال القديم أو صورته (لو موجود)"
+      ],
+      "text": "رقم أو مكان الإيصال الورق القديم — بيساعد اللي بيعتمد يراجع.",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك.",
       "labels": [
         "حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك."
@@ -20571,6 +20637,20 @@
       "reviewed": true
     },
     {
+      "title": "ابحث عن الخدمة",
+      "labels": [
+        "ابحث عن الخدمة",
+        "ابحث باسم الخدمة أو الكود أو القسم"
+      ],
+      "text": "اكتب جزء من اسم الخدمة أو كودها أو قسمها — القايمة تحتها بتصغر للنتايج، ولو نتيجة واحدة بتتختار لوحدها.",
+      "article": "reception-service-search",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الصورة",
       "labels": [
         "الصورة"
@@ -22933,9 +23013,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1975,
-    "labels": 1439,
-    "files": 153,
-    "groups": 1553
+    "definitions": 1984,
+    "labels": 1446,
+    "files": 155,
+    "groups": 1559
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
