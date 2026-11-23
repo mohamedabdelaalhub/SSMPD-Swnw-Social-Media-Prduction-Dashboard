@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1953,
-    "labels": 1423,
+    "definitions": 1951,
+    "labels": 1421,
     "files": 150,
-    "groups": 1537
+    "groups": 1536
   },
   "fields": [
     {
@@ -1832,26 +1832,6 @@
       "tab": "production",
       "article": "design-guide",
       "text_sha256": "532760cd7f85c75da576beb88df0fde662343c7fded4690927a1f17afb7cb9d1"
-    },
-    {
-      "file": "daily-clinics.js",
-      "label": "بداية موعد العيادة",
-      "name": "",
-      "kind": "html",
-      "forms": [],
-      "tab": "production",
-      "article": "design-guide",
-      "text_sha256": "aed349663e34f5afc2c13a63861c2259069f67f6668fa0c305f0bcbc8bfaf05b"
-    },
-    {
-      "file": "daily-clinics.js",
-      "label": "نهاية موعد العيادة",
-      "name": "",
-      "kind": "html",
-      "forms": [],
-      "tab": "production",
-      "article": "design-guide",
-      "text_sha256": "aed349663e34f5afc2c13a63861c2259069f67f6668fa0c305f0bcbc8bfaf05b"
     },
     {
       "file": "design-budget.js",
