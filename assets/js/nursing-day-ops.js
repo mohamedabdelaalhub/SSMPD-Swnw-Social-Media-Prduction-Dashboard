@@ -75,8 +75,9 @@ function routeNotes(){var h='',ns=staff.nurses||[];['physio','dental'].forEach(f
  ns.forEach(function(n){if(n.section==='general'||n.state!=='present')return;var late=n.late_min>0,ret=n.returned||0,kept=n.kept||0;if(!late&&!ret&&!kept)return;
   h+='<div class="nd-rt g" data-nd-back="'+esc(n.admin_id)+'"><i></i><span><b>'+esc(n.name)+'</b> ('+esc(secLabel(n.section))+') بصم '+tm(n.first_in)+(late?' — متأخر '+n.late_min+' دقيقة':'')+'.'+(ret?' رجعله '+cases(ret)+' محدش بدأ فيها.':'')+(kept?' '+cases(kept)+' فضلوا مع التمريض العام لأنهم بدأوا فيهم.':'')+'</span></div>';});
  return h;}
-function staffHtml(){if(!staff||!staff.nurses)return '';
+function staffHtml(){
  var warn=(unlinked&&unlinked.length)?'<div class="nd-card" data-nd-unlinked style="background:#FFF6E5;border-color:#F0D9A5;color:#8A5A00;font-weight:600;margin-top:10px">دكاترة أسنان وعلاج طبيعي من غير حساب مربوط: الاعتماد بيروح لدكتور القسم أو الإدارة<div class="nd-sub" style="color:#8A5A00">'+unlinked.map(function(d){return esc(d.name);}).join('، ')+'</div></div>':'';
+ if(!staff||!staff.nurses)return warn?'<section class="nd-card" data-nd-staff-warn>'+warn+'</section>':'';
  var rows=staff.nurses.map(function(n){var st=STATE[n.state]||[n.state||'—',''],chip=st[0]+(n.state==='present'&&n.late_min>0?' · متأخر '+n.late_min+' د':'');
   var when=n.first_in?'بصم '+tm(n.first_in):(n.state==='absent'?'مابصمش':'');if(n.exp_start&&n.state!=='leave')when+=(when?' · ':'')+'وردية '+tm(n.exp_start)+'–'+tm(n.exp_end);if(n.state==='leave')when='إجازة معتمدة من الموارد البشرية';
   return '<div class="nd-nr'+(n.state==='present'?'':' off')+'" data-nd-nurse="'+esc(n.admin_id)+'" data-state="'+esc(n.state)+'"><b>'+esc(n.name)+'</b><div class="nd-meta"><span class="nd-chip b">'+esc(secLabel(n.section))+'</span><span class="nd-chip '+st[1]+'">'+esc(chip)+'</span></div><span class="nd-when">'+esc(when)+'</span></div>';}).join('');
