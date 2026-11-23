@@ -13752,6 +13752,33 @@
       "reviewed": true
     },
     {
+      "title": "ابحث عن زيارة مريض تاني",
+      "labels": [
+        "ابحث عن زيارة مريض تاني",
+        "ابحث بالاسم أو رقم الملف"
+      ],
+      "text": "اكتب جزء من اسم المريض التاني أو رقم ملفه علشان تلاقي زيارته المفتوحة النهارده وتعلّمها.",
+      "article": "reception-collect-multi",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دفع كمان عن زيارة مريض تاني (مش من العيلة — صاحبه أو زميله مثلاً)",
+      "labels": [
+        "دفع كمان عن زيارة مريض تاني (مش من العيلة — صاحبه أو زميله مثلاً)"
+      ],
+      "text": "علّمها لو نفس الشخص دفع بنفس التحويل أو الإيصال عن زيارة مريض مش من عيلته. لازم تكتب في «ملاحظة» مين دفع عن مين، والدفعة بتظهر للمراجعة المالية.",
+      "article": "reception-collect-multi",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "كود المستلزم",
       "labels": [
         "كود المستلزم"
@@ -22703,9 +22730,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1951,
-    "labels": 1421,
+    "definitions": 1954,
+    "labels": 1424,
     "files": 150,
-    "groups": 1536
+    "groups": 1538
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

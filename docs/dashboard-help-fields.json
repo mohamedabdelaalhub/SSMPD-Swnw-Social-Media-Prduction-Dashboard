@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1951,
-    "labels": 1421,
+    "definitions": 1954,
+    "labels": 1424,
     "files": 150,
-    "groups": 1536
+    "groups": 1538
   },
   "fields": [
     {
@@ -12095,6 +12095,36 @@
       "tab": "reception_services",
       "article": "reception-collect-multi",
       "text_sha256": "aa6b9958935c5267ed63578005c459cf4e1f1d446087436b2095b3f60670b4e6"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "ابحث عن زيارة مريض تاني",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-collect-multi",
+      "text_sha256": "48d21d659b9fed718b1457ea3fcf9d3aa737e9c9e1c6d1fd2614e3d95b6723b9"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "ابحث بالاسم أو رقم الملف",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-collect-multi",
+      "text_sha256": "48d21d659b9fed718b1457ea3fcf9d3aa737e9c9e1c6d1fd2614e3d95b6723b9"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "دفع كمان عن زيارة مريض تاني (مش من العيلة — صاحبه أو زميله مثلاً)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-collect-multi",
+      "text_sha256": "298c569a7df8a0d28433be5a6dd1684ce4209996d4050c9a348852ab170d7580"
     },
     {
       "file": "reception-services.js",

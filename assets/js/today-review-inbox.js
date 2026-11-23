@@ -49,6 +49,7 @@
     switch (it.source) {
       case 'rx_request': return (it.visit_void ? 'الزيارة اتسجلت غلط' : (RX_KIND[it.kind] || it.kind));
       case 'rx_discount': return 'خصم ' + money(it.percent) + '%';
+      case 'rx_cross_payment': return 'دفعة لأكتر من مريض';
       case 'fin_request': return FIN_KIND[it.kind] || it.kind;
       case 'doctor_payout': return 'مستحقات دكتور';
       case 'desk_payout': return 'صرف من الديسك';
@@ -58,11 +59,12 @@
       default: return it.kind || 'طلب';
     }
   }
-  function tone(it) { return ({ rx_request: 'v', rx_discount: 's', doctor_payout: 'd', desk_payout: 'd', business: 'p', booking_advance: 'p', supplier: 's' })[it.source] || ''; }
+  function tone(it) { return ({ rx_request: 'v', rx_discount: 's', rx_cross_payment: 'p', doctor_payout: 'd', desk_payout: 'd', business: 'p', booking_advance: 'p', supplier: 's' })[it.source] || ''; }
   function subject(it) {
     var parts = [];
     if (it.visit_no != null) parts.push('زيارة ' + it.visit_no);
-    if (it.patient) parts.push(it.patient);
+    if (it.source === 'rx_cross_payment' && it.patients && it.patients.length) parts.push(it.patients.join(' + '));
+    else if (it.patient) parts.push(it.patient);
     if (it.doctor) parts.push(it.doctor);
     if (it.supplier) parts.push(it.supplier);
     if (it.service) parts.push(it.service);
@@ -72,6 +74,7 @@
     rx_request: 'الطلب بيتنفذ بقيود عكسية (مفيش حاجة بتتمسح)، وبيتسجل مين اعتمده والسبب.',
     service_void: 'الخدمة تتلغي، والمدفوع يرجع رصيد للمريض، وأتعاب الدكتور تتعكس — كله بقيود عكسية.',
     rx_discount: 'الخصم يتطبق على الخدمة قبل التحصيل.',
+    rx_cross_payment: 'شخص واحد دفع عن زيارات أكتر من مريض بتحويل/إيصال واحد. المراجعة دي للاطلاع بس — مفيش فلوس بتتحرك.',
     fin_request: 'الطلب يترحّل في الحسابات بعد موافقتك.',
     doctor_payout: 'المبلغ يتصرف للدكتور ويتخصم من رصيده.',
     desk_payout: 'الاستقبال يصرف المبلغ للدكتور من كاش الوردية.',
@@ -81,6 +84,7 @@
     shift: 'الوردية تتقفل كمراجَعة، وأي فرق بيتسجل بسبب — من غير خصم تلقائي.',
     handover: 'المبلغ يتنقل من خزنة الوردية للخزينة الرئيسية (لازم تكون فاتح الخزينة الرئيسية باسمك).'
   };
+  function verbOf(it, approve) { if (it.source === 'rx_cross_payment') return approve ? 'اطّلعت' : 'عليها ملاحظة'; return approve ? 'اعتماد' : 'رفض'; }
   function effect(it) { if (it.group === 'shift') return EFFECT.shift; if (it.group === 'handover') return EFFECT.handover; if (it.source === 'rx_request' && it.kind === 'service_void') return EFFECT.service_void; return EFFECT[it.source] || ''; }
 
   /* the existing RPC for each kind of decision */
@@ -94,6 +98,7 @@
     switch (it.source) {
       case 'rx_request': return rpc('clinic_reception_command', { p_workspace: it.workspace_id, p_action: 'request_review', p_payload: { id: it.id, approve: approve, note: note }, p_token: tok });
       case 'rx_discount': return rpc('clinic_reception_command', { p_workspace: it.workspace_id, p_action: 'discount_review', p_payload: { id: it.id, approve: approve, note: note }, p_token: tok });
+      case 'rx_cross_payment': return rpc('clinic_reception_command', { p_workspace: it.workspace_id, p_action: 'cross_payment_review', p_payload: { id: it.id, approve: approve, note: note }, p_token: tok });
       case 'fin_request': return rpc('clinic_finance_review_request', { p_id: it.id, p_approve: approve, p_note: note });
       case 'doctor_payout': return rpc('clinic_finance_doctor_command', { p_action: 'payout_review', p_payload: { id: it.id, approve: approve, note: note }, p_token: tok });
       case 'desk_payout': return rpc('clinic_reception_doctor_payout', { p_action: approve ? 'approve' : 'reject', p_payload: { id: it.id, note: note }, p_token: tok });
@@ -109,7 +114,7 @@
   function itemHtml(it) {
     var k = key(it), acts;
     if (it.group === 'shift') acts = it.mine ? '<span class="tri-mine">ورديتك — لازم حد تاني يستلمها</span>' : '<button type="button" class="btn tri-ok" data-tri-do="approve" data-tri-key="' + esc(k) + '">استلام</button>';
-    else acts = (it.mine ? '<span class="tri-mine">طلبك — لازم حد تاني يعتمده</span>' : '<button type="button" class="btn tri-ok" data-tri-do="approve" data-tri-key="' + esc(k) + '">اعتماد</button><button type="button" class="btn tri-no" data-tri-do="reject" data-tri-key="' + esc(k) + '">رفض</button>');
+    else acts = (it.mine ? '<span class="tri-mine">' + (it.source === 'rx_cross_payment' ? 'تحصيلك — لازم حد تاني يراجعه' : 'طلبك — لازم حد تاني يعتمده') + '</span>' : '<button type="button" class="btn tri-ok" data-tri-do="approve" data-tri-key="' + esc(k) + '">' + verbOf(it, true) + '</button><button type="button" class="btn tri-no" data-tri-do="reject" data-tri-key="' + esc(k) + '">' + verbOf(it, false) + '</button>');
     acts += '<button type="button" class="btn" data-tri-details="' + esc(k) + '" aria-expanded="' + (state.open[k] ? 'true' : 'false') + '">تفاصيل</button>';
     var head, sub, why = '';
     if (it.group === 'shift') {
@@ -215,12 +220,12 @@
     d.body.appendChild(m); return m;
   }
   function dialog(it, approve) {
-    var verb = it.group === 'shift' ? 'استلام' : (approve ? 'اعتماد' : 'رفض');
+    var verb = it.group === 'shift' ? 'استلام' : verbOf(it, approve);
     var m = modal('<h3>' + verb + ' — ' + esc(it.group === 'shift' ? 'وردية ' + (it.cashier || '') : it.group === 'handover' ? 'تسليم للرئيسية' : title(it)) + '</h3>' +
       '<p class="tri-muted">' + esc(it.group === 'request' ? subject(it) : (it.register || it.reference || '')) + ' · ' + money(it.amount != null ? it.amount : it.counted) + (it.by ? ' · ' + esc(it.by) : '') + '</p>' +
       (it.reason ? '<div class="tri-why">السبب: «' + esc(it.reason) + '»</div>' : '') +
       (approve ? '<p class="tri-note">اللي هيحصل: ' + esc(effect(it)) + '</p>' : '') +
-      '<form data-tri-form><label>' + (approve ? 'سبب القرار (إجباري)' : 'سبب الرفض (إجباري)') + '<input name="note" maxlength="300" required placeholder="مثلاً: راجعت الفاتورة"></label>' +
+      '<form data-tri-form><label>' + (it.source === 'rx_cross_payment' ? (approve ? 'تعليقك (إجباري)' : 'الملاحظة (إجباري)') : approve ? 'سبب القرار (إجباري)' : 'سبب الرفض (إجباري)') + '<input name="note" maxlength="300" required placeholder="مثلاً: راجعت الفاتورة"></label>' +
       '<p class="tri-err" data-tri-err hidden></p><div class="tri-acts"><button type="submit" class="btn ' + (approve ? 'tri-ok' : 'tri-no') + '">' + verb + '</button><button type="button" class="btn" data-tri-cancel>رجوع</button></div></form>');
     var f = m.querySelector('form'), err = m.querySelector('[data-tri-err]');
     m.querySelector('[data-tri-cancel]').onclick = function () { m.remove(); };
@@ -230,7 +235,7 @@
       var btn = f.querySelector('[type=submit]'); btn.disabled = true; err.hidden = true;
       decide(it, approve, note).then(function () {
         m.remove(); state.hidden[key(it)] = true; paint();
-        toast(it.group === 'shift' ? 'اتسلمت الوردية ✓' : (approve ? 'اتعتمد ✓ — الطلب اتشال من القايمة' : 'اترفض — الطلب اتشال من القايمة'));
+        toast(it.group === 'shift' ? 'اتسلمت الوردية ✓' : it.source === 'rx_cross_payment' ? (approve ? 'اتسجل إنك اطّلعت ✓' : 'اتسجلت الملاحظة ✓') : (approve ? 'اتعتمد ✓ — الطلب اتشال من القايمة' : 'اترفض — الطلب اتشال من القايمة'));
         load(true);
       }).catch(function (e2) { btn.disabled = false; err.hidden = false; err.textContent = e2.message || 'حصل خطأ'; });
     };
