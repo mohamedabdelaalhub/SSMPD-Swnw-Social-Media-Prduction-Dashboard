@@ -1144,6 +1144,13 @@ frule('reception-activity-log.js','الدكتور','اختار دكتور علش
 frule('today-operations-queue.js','اختار العيادة','العيادة اللي الدكتور ده هيكشف فيها النهارده. لو فيها دكتور تاني بيتفك منها، والربط بيتسجل باسمك.','queue-rooms')
 frule('reception-services.js','دفع كمان عن زيارة مريض تاني (مش من العيلة — صاحبه أو زميله مثلاً)','علّمها لو نفس الشخص دفع بنفس التحويل أو الإيصال عن زيارة مريض مش من عيلته. لازم تكتب في «ملاحظة» مين دفع عن مين، والدفعة بتظهر للمراجعة المالية.','reception-collect-multi')
 frule('reception-services.js','ابحث بالاسم أو رقم الملف|ابحث عن زيارة مريض تاني','اكتب جزء من اسم المريض التاني أو رقم ملفه علشان تلاقي زيارته المفتوحة النهارده وتعلّمها.','reception-collect-multi')
+frule('reception-legacy-package.js','باكج مدفوع قبل السيستم','باكج المريض دفعه قبل تشغيل الداشبورد — بيتسجّل من غير فلوس في الخزينة النهارده، ويستنى اعتماد السوبر أدمن أو المدير المالي.','reception-legacy-package')
+frule('reception-legacy-package.js','اسم الباكج|مثلاً ليزر نص إيد + منطقة تانية','اسم يوضح الباكج، مثلاً «12 جلسة علاج طبيعي».','reception-legacy-package')
+frule('reception-legacy-package.js','دفع يوم','اليوم اللي المريض دفع فيه الباكج — لازم يكون قبل النهارده.','reception-legacy-package')
+frule('reception-legacy-package.js','جلسات','عدد جلسات الخدمة دي في الباكج.','reception-legacy-package')
+frule('reception-legacy-package.js','المبلغ المدفوع','المبلغ اللي المريض دفعه في الخدمة دي (كل الجلسات).','reception-legacy-package')
+frule('reception-legacy-package.js','رقم الإيصال القديم أو صورته (لو موجود)','رقم أو مكان الإيصال الورق القديم — بيساعد اللي بيعتمد يراجع.','reception-legacy-package')
+frule('reception-legacy-package.js','خصم من باكج المريض','الخدمة دي تاخد جلسة من باكج المريض — المريض يدفع 0.','reception-legacy-package')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'

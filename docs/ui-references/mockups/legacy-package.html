@@ -1,0 +1,55 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>باكج مدفوع قبل السيستم — تصور</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:20px 12px;color:#16212E}
+.wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:stretch}
+.eyebrow{grid-column:1/-1;margin:0;font-size:12px;color:#8a93a3;line-height:1.7}
+.card{align-content:start;background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;box-shadow:0 12px 30px rgba(15,54,157,.08)}
+.card h3{margin:0;font-size:14px;color:#0F369D}
+.f{display:grid;gap:5px;font-size:13px}.f input,.f select{font:inherit;padding:9px 11px;border:1px solid #CBD5E1;border-radius:10px;min-width:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lines{display:grid;gap:6px}
+.ln{display:grid;grid-template-columns:minmax(0,1fr) 70px 90px;gap:6px;align-items:center;font-size:13px;border:1px solid #E3E8F2;border-radius:10px;padding:8px 10px}
+.ln small{color:#5b6577;display:block;font-size:11px}
+.badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:99px;background:#FFF6E5;color:#8A5A00;font-weight:700}
+.sum{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:13px;background:#F6F8FC;border-radius:10px;padding:8px 10px}.sum b{color:#0F369D}
+.note{font-size:12px;color:#5b6577;margin:0;line-height:1.7}
+.ok{font-size:12px;color:#2F7D5C;background:#E6F2EC;border-radius:10px;padding:8px 10px;margin:0;line-height:1.7}
+.btns{display:flex;gap:8px;flex-wrap:wrap}.btn{font:inherit;font-size:13px;padding:8px 14px;border-radius:10px;border:1px solid #CBD5E1;background:#fff}
+.btn.p{background:#0F369D;border-color:#0F369D;color:#fff}.btn.r{color:#D0402A;border-color:#F3C7BF}
+.add{font-size:12px;color:#0F369D}
+.ent{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;border:1.5px solid #CBD5E1;border-radius:12px;padding:9px 10px;font-size:13px}
+.ent.on{border-color:#0F369D;background:#EAF0FF}.ent small{display:block;color:#5b6577;font-size:11px}
+</style></head><body><div class="wrap">
+<p class="eyebrow">تصور (أسماء تجريبية). «باكج مدفوع قبل السيستم»: المريض دفع قبل تشغيل الداشبورد. الاستقبال بيسجّله، المالية (السوبر أدمن أو المدير المالي) بتعتمده، وبعدها الجلسات بتتخصم منه من غير أي كاش في وردية النهارده.</p>
+
+<section class="card"><h3>١) الاستقبال: ⋯ في ملف المريض ← «تسجيل باكج مدفوع قبل السيستم»</h3>
+<p class="note">مريضة تجربة — P-2026-000001</p>
+<div class="two"><label class="f">اسم الباكج<input value="ليزر نص إيد + منطقة تانية"></label><label class="f">دفعت يوم<input value="2026-11-15"></label></div>
+<div class="lines">
+ <div class="ln"><span>جلسة ليزر نص اليدين<small>الخدمة</small></span><span>3 <small>جلسات</small></span><span>1000 <small>ج.م</small></span></div>
+ <div class="ln"><span>جلسة ليزر الإبط<small>الخدمة</small></span><span>3 <small>جلسات</small></span><span>385 <small>ج.م</small></span></div>
+</div>
+<span class="add">+ خدمة تانية</span>
+<label class="f">رقم الإيصال القديم أو صورته (لو موجود)<input value="إيصال ورقي 1520"></label>
+<div class="sum"><span>الإجمالي المدفوع</span><b>1,385 ج.م</b><span>قيمة الجلسة — نص اليدين</span><span>333.33 ج.م</span><span>قيمة الجلسة — الإبط</span><span>128.33 ج.م</span></div>
+<p class="note">مفيش فلوس بتدخل الخزينة النهارده. الطلب بيروح للسوبر أدمن أو المدير المالي يعتمده.</p>
+<div class="btns"><span class="btn p">ابعت للاعتماد</span><span class="btn">إلغاء</span></div>
+</section>
+
+<section class="card"><h3>٢) الاعتماد: السوبر أدمن / المدير المالي</h3>
+<p class="note">«مراجعات الاستقبال» ← باكجات مدفوعة قبل السيستم</p>
+<div class="ln" style="grid-template-columns:1fr"><span><b>مريضة تجربة</b> — 1,385 ج.م <span class="badge">مدفوع قبل التشغيل بتاريخ 15/11/2026</span><small>نص اليدين 3 × 333.33 · الإبط 3 × 128.33 — سجّلته: موظفة استقبال · إيصال ورقي 1520</small></span></div>
+<div class="btns"><span class="btn p">اعتمد</span><span class="btn r">ارفض (بسبب)</span></div>
+<p class="note">بعد الاعتماد بيتعمل الباكج باسم المريض، والمبلغ بيتسجّل في الحسابات بتاريخ 15/11 على حساب «مقبوضات قبل التشغيل» — مش على وردية حد. اللي سجّل الطلب مايقدرش يعتمده.</p>
+</section>
+
+<section class="card"><h3>٣) يوم الجلسة: ⋯ في كارت الزيارة ← «خصم من باكج المريض»</h3>
+<p class="note">الخدمة المطلوبة: جلسة ليزر نص اليدين — 400 ج.م (لسه متحصلتش)</p>
+<div class="ent on"><span>◉</span><span>ليزر نص إيد + منطقة تانية — نص اليدين<small>فاضل 3 من 3 · قيمة الجلسة 333.33</small></span><span class="badge">مدفوع قبل التشغيل</span></div>
+<div class="ent"><span>○</span><span>ليزر نص إيد + منطقة تانية — الإبط<small>فاضل 3 من 3 · قيمة الجلسة 128.33</small></span><span></span></div>
+<div class="sum"><span>المريض يدفع</span><b>0 ج.م</b><span>بتتحسب من الباكج</span><span>333.33 ج.م</span></div>
+<div class="btns"><span class="btn p">خصم من الباكج</span><span class="btn">إلغاء</span></div>
+<p class="ok">✓ الجلسة اتخصمت من الباكج — فاضل 2 من 3. مستحق الدكتور والإيراد بيتحسبوا من قيمة الجلسة، ومفيش كاش.</p>
+</section>
+</div></body></html>
