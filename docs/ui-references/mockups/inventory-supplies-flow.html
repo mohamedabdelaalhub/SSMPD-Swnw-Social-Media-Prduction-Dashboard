@@ -1,0 +1,113 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>المستلزمات: استهلاك أمس + المخازن + فاتورة مورد مباشرة</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:24px 16px;color:#16212E}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:16px}
+.card{background:#fff;border-radius:16px;border:1px solid #D5DEEE;padding:20px;display:grid;gap:14px;align-content:start}
+.eyebrow{margin:0;font-size:12px;color:#8a93a3;border-bottom:1px solid #EEF1F6;padding-bottom:8px}
+h2{margin:0;font-size:22px;color:#0F369D}h3{margin:0;font-size:15px;color:#16212E}
+p{margin:0;font-size:13px;color:#3B4658;line-height:1.8}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.date{display:flex;gap:8px;align-items:center;font-size:13px}.date input{font:inherit;padding:8px 12px;border:1px solid #CBD5E1;border-radius:10px}
+.pills{display:flex;gap:6px;flex-wrap:wrap}.pill{font-size:12px;padding:6px 12px;border-radius:999px;background:#EEF1F6;color:#3B4658}.pill.on{background:#16212E;color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.kpi{border-radius:14px;border:1px solid #E3E9F4;padding:14px 16px;display:grid;gap:4px}
+.kpi small{font-size:12px;color:#8a93a3}.kpi b{font-size:24px;font-variant-numeric:tabular-nums}
+.kpi.hero{background:linear-gradient(135deg,#0F369D,#2a55c9);color:#fff;border-color:transparent}.kpi.hero small{color:#dbe4fb}
+.cols{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:stretch}
+.list{display:grid;gap:8px;align-content:start}
+.v{display:grid;gap:6px;padding:10px 12px;border:1px solid #E3E9F4;border-radius:12px;font-size:13px}
+.v.sel{border-color:#0F369D;box-shadow:inset 3px 0 0 #0F369D}
+.v .r{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.v .m{font-size:12px;color:#5b6577}
+.chip{font-size:11px;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.ok{background:#E3F1EA;color:#2F7D5C}.miss{background:#FDE8E2;color:#D0402A}.svc{background:#EEF1F6;color:#3B4658}
+.detail{display:grid;gap:12px;align-content:start}
+.pat{background:#F4F7FC;border-radius:12px;padding:10px 14px;font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.svcbox{border:1px solid #E3E9F4;border-radius:12px;padding:12px;display:grid;gap:8px}
+.svcbox .h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}th{font-weight:400;color:#8a93a3;font-size:12px;text-align:right;padding:4px 6px;border-bottom:1px solid #EEF1F6}
+td{padding:7px 6px;border-bottom:1px solid #F3F5F9;font-variant-numeric:tabular-nums}
+td input{font:inherit;width:56px;padding:4px 6px;border:1px solid #CBD5E1;border-radius:8px}
+.add{font-size:13px;color:#0F369D;background:none;border:1px dashed #9fb3e6;border-radius:10px;padding:7px;font-family:inherit}
+.foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid #EEF1F6;padding-top:12px}
+.foot b{font-size:18px;color:#0F369D}
+.btn{font:inherit;border-radius:10px;padding:9px 16px;border:1px solid #CBD5E1;background:#fff}.btn.p{background:#0F369D;color:#fff;border-color:#0F369D}
+.note{font-size:12px;color:#5b6577;background:#FFF7EE;border:1px solid #FBD9C3;border-radius:10px;padding:8px 12px;line-height:1.8}
+.stores{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.st{border:1px solid #E3E9F4;border-radius:14px;padding:14px;display:grid;gap:6px;font-size:13px}
+.st b{font-size:15px}.st .m{font-size:12px;color:#5b6577}
+.st.main{border-top:4px solid #0F369D}.st.sub{border-top:4px solid #F15A22}
+.arrow{font-size:12px;color:#F15A22}
+.form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.f{display:grid;gap:4px;font-size:12px;color:#5b6577}.f span{font:inherit;color:#16212E;font-size:13px;padding:8px 10px;border:1px solid #CBD5E1;border-radius:10px}
+.tax{font-size:12px;border:1px dashed #CBD5E1;border-radius:10px;padding:8px 12px;color:#5b6577}
+@media(max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}.cols,.stores,.form{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+
+<section class="card">
+ <p class="eyebrow">تصور ١ ببيانات تجريبية: شاشة «استهلاك أمس» في الاستقبال. بيسجلها الاستقبال الصبح، لكل مريض وكل خدمة لوحدها.</p>
+ <div class="top"><h2>استهلاك أمس</h2>
+  <div class="date">تاريخ الزيارات <input value="2026-11-21"></div></div>
+ <div class="pills"><span class="pill on">الكل 23</span><span class="pill">ناقص 8</span><span class="pill">اتسجل 15</span><span class="pill">أسنان 9</span><span class="pill">بشرة 5</span><span class="pill">علاج طبيعي 4</span><span class="pill">كشف 5</span></div>
+ <div class="kpis">
+  <div class="kpi"><small>زيارات اليوم</small><b>23</b></div>
+  <div class="kpi"><small>اتسجل استهلاكها</small><b style="color:#2F7D5C">15</b></div>
+  <div class="kpi"><small>لسه ناقصة</small><b style="color:#D0402A">8</b></div>
+  <div class="kpi hero"><small>تكلفة المستلزمات (سعر الشراء)</small><b>1,245.50 ج</b></div>
+ </div>
+ <div class="cols">
+  <div class="list">
+   <div class="v sel"><div class="r"><b>منى أحمد</b><span class="chip miss">ناقص</span></div><div class="m">ملف 1043 · 10:30 ص</div><div class="r" style="justify-content:flex-start;gap:6px"><span class="chip svc">تنضيف بشرة</span><span class="chip svc">كشف جلدية</span></div></div>
+   <div class="v"><div class="r"><b>كريم سامي</b><span class="chip ok">اتسجل</span></div><div class="m">ملف 0987 · 11:15 ص</div><div class="r" style="justify-content:flex-start;gap:6px"><span class="chip svc">حشو عصب</span></div></div>
+   <div class="v"><div class="r"><b>سارة محمود</b><span class="chip miss">ناقص</span></div><div class="m">ملف 1102 · 12:00 م</div><div class="r" style="justify-content:flex-start;gap:6px"><span class="chip svc">جلسة علاج طبيعي</span></div></div>
+   <div class="v"><div class="r"><b>أحمد علي</b><span class="chip ok">اتسجل</span></div><div class="m">ملف 0450 · 01:30 م</div><div class="r" style="justify-content:flex-start;gap:6px"><span class="chip svc">كشف باطنة</span></div></div>
+  </div>
+  <div class="detail">
+   <div class="pat"><span><b>منى أحمد</b> · ملف 1043 · زيارة 21-11-2026 10:30 ص</span><span>الخدمات المنفذة: 2</span></div>
+   <div class="svcbox"><div class="h"><h3>تنضيف بشرة (هيدرافيشيال)</h3><span class="chip svc">قسم البشرة</span></div>
+    <table><thead><tr><th>المستلزم</th><th>من مخزن</th><th>الكمية</th><th>سعر الشراء</th><th>التكلفة</th></tr></thead><tbody>
+     <tr><td>جلافز M</td><td>فرعي تمريض</td><td><input value="2"></td><td>1.80</td><td>3.60</td></tr>
+     <tr><td>شاش فازلين 10×10</td><td>فرعي تمريض</td><td><input value="1"></td><td>6.50</td><td>6.50</td></tr>
+     <tr><td>كيس قطن</td><td>فرعي تمريض</td><td><input value="1"></td><td>22.00</td><td>22.00</td></tr>
+    </tbody></table><button class="add" type="button">+ مستلزم</button></div>
+   <div class="svcbox"><div class="h"><h3>كشف جلدية</h3><span class="chip svc">قسم الجلدية</span></div>
+    <table><thead><tr><th>المستلزم</th><th>من مخزن</th><th>الكمية</th><th>سعر الشراء</th><th>التكلفة</th></tr></thead><tbody>
+     <tr><td>خافض لسان</td><td>فرعي تمريض</td><td><input value="1"></td><td>0.75</td><td>0.75</td></tr>
+    </tbody></table><button class="add" type="button">+ مستلزم</button></div>
+   <div class="note">المستلزمات دي داخلة في الخدمة، والمريض مش بيدفعها. بتتخصم من المخزن بتاريخ الزيارة، وتتسجل بسعر الشراء كتكلفة على القسم. اللي بيدفعه المريض بيتسجل من «صرف مستلزم إضافي» على فاتورته، بسعر البيع = سعر الشراء + 35% (100 ج ← 135 ج).</div>
+   <div class="foot"><span>تكلفة الزيارة <b>32.85 ج</b></span><span style="display:flex;gap:8px"><button class="btn" type="button">مفيش مستلزمات</button><button class="btn p" type="button">حفظ استهلاك الزيارة</button></span></div>
+  </div>
+ </div>
+</section>
+
+<section class="card">
+ <p class="eyebrow">تصور ٢: شكل المخازن الجديد. 3 مخازن رئيسية، ومخزن فرعي للتمريض بيتغذى من الرئيسي مستلزمات.</p>
+ <div class="stores">
+  <div class="st main"><b>رئيسي أسنان</b><span class="m">(هو «مخزن الأسنان» الحالي) · هدى</span><span>الأسنان بتصرف منه مباشرة</span></div>
+  <div class="st main"><b>رئيسي مستلزمات</b><span class="m">(هو «المخزن الرئيسي المركزي» الحالي)</span><span class="arrow">بيحوّل ← فرعي مستلزمات تمريض</span></div>
+  <div class="st main"><b>رئيسي أدوية</b><span class="m">(هو «الأدوية - تمريض» الحالي)</span><span>التمريض بيصرف منه مباشرة</span></div>
+ </div>
+ <div class="stores">
+  <div class="st sub"><b>فرعي مستلزمات تمريض</b><span class="m">(هو «مستلزمات طبية - تمريض» الحالي)</span><span>التمريض والبشرة والعلاج الطبيعي والكشف بيصرفوا منه</span></div>
+  <div class="st"><b>فندقة</b><span class="m">موجود دلوقتي</span><span>يفضل زي ما هو؟</span></div>
+  <div class="st"><b>فاتورة المورد</b><span class="m">بتدخل على أي رئيسي</span><span>أسنان / مستلزمات / أدوية</span></div>
+ </div>
+</section>
+
+<section class="card">
+ <p class="eyebrow">تصور ٣: فاتورة مورد مباشرة، من غير طلب شراء. بتزوّد المخزن الرئيسي، وتتسجل على حساب المورد في نفس الخطوة.</p>
+ <div class="form">
+  <label class="f">المورد<span>شركة الأمل للمستلزمات</span></label>
+  <label class="f">رقم فاتورة المورد<span>INV-55120</span></label>
+  <label class="f">تاريخ الفاتورة<span>2026-11-22</span></label>
+  <label class="f">يدخل على مخزن<span>رئيسي مستلزمات</span></label>
+ </div>
+ <table><thead><tr><th>الصنف</th><th>عدد العبوات</th><th>قطع في العبوة</th><th>سعر العبوة</th><th>الصلاحية</th><th>الإجمالي</th></tr></thead><tbody>
+  <tr><td>جلافز M</td><td>10</td><td>100</td><td>180.00</td><td>2028-03-31</td><td>1,800.00</td></tr>
+  <tr><td>سرنجة 5 سم</td><td>4</td><td>100</td><td>210.00</td><td>2029-01-31</td><td>840.00</td></tr>
+ </tbody></table>
+ <div class="tax">خانة «الضرائب» (هيعملها شات الحسابات): فاتورة ضريبية؟ · اترفعت على بوابة الضرائب؟</div>
+ <div class="foot"><span>إجمالي الفاتورة <b>2,640.00 ج</b> ← على حساب المورد</span><button class="btn p" type="button">حفظ الفاتورة</button></div>
+</section>
+</div></body></html>

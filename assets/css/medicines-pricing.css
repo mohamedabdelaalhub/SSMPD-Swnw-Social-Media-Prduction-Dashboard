@@ -1,0 +1,13 @@
+/* Medicines store sheets (owner 2026-11-22, mockup docs/ui-references/mockups/medicines-store.html) */
+.rx-sheet-back[data-rx-sheet="mdp"] .rx-sheet,.rx-sheet-back[data-rx-sheet="mdd"] .rx-sheet,.rx-sheet-back[data-rx-sheet="mdr"] .rx-sheet{width:min(1100px,100%);grid-template-columns:minmax(0,1fr)}
+.mdp,.mdd{display:grid;gap:12px;font-size:13px;color:#16212E;min-width:0}
+.mdp-top{display:grid;grid-template-columns:1fr 260px;gap:8px}.mdp-top input,.mdp-top select,.mdp-t select,.mdp-t input,.mdd-form input,.mdd-form select{font:inherit;padding:7px 10px;border:1px solid #CBD5E1;border-radius:10px;min-width:0}
+.mdp-t input{width:80px}.mdp-tw{overflow-x:auto;min-width:0}
+.mdp-t{width:100%;border-collapse:collapse}.mdp-t th{font-weight:400;color:#8a93a3;font-size:12px;text-align:right;padding:4px 6px;border-bottom:1px solid #EEF1F6}.mdp-t td{padding:6px;border-bottom:1px solid #F3F5F9;font-variant-numeric:tabular-nums}.mdp-t small{color:#8a93a3}
+.mdp-note{margin:0;font-size:12px;color:#5b6577;background:#FFF7EE;border:1px solid #FBD9C3;border-radius:10px;padding:8px 12px;line-height:1.8}
+.mdd-form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.mdd-form label{display:grid;gap:4px;font-size:12px;color:#5b6577}.mdd-wide{grid-column:span 2}
+.mdd-foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid #EEF1F6;padding-top:10px}.mdd-foot b{color:#0F369D;font-size:16px}
+.mdd-chip{font-size:12px;padding:4px 10px;border-radius:999px;background:#E3F1EA;color:#2F7D5C}.mdd h4{margin:4px 0 0;color:#0F369D}
+.mdr-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}.mdr-kpi{border-radius:14px;border:1px solid #E3E9F4;padding:12px 14px;display:grid;gap:4px}.mdr-kpi small{font-size:12px;color:#8a93a3}.mdr-kpi b{font-size:18px;font-variant-numeric:tabular-nums}.mdr-kpi b.ok{color:#2F7D5C}
+.mdr-kpi.hero{background:linear-gradient(135deg,#0F369D,#2a55c9);color:#fff;border-color:transparent}.mdr-kpi.hero small{color:#dbe4fb}
+@media(max-width:820px){.mdp-top,.mdd-form{grid-template-columns:1fr}.mdd-wide{grid-column:auto}.mdr-kpis{grid-template-columns:repeat(2,1fr)}}

@@ -1,0 +1,32 @@
+/* Inventory & medicines sheets — look layer (owner via inventory chat 2026-11-23). Display only. */
+/* main buttons: identity dark, orange on hover (OWNER-AGREEMENTS-UI-UX §7) */
+.rx-sheet-back:is([data-rx-sheet="rvu"],[data-rx-sheet="idi"],[data-rx-sheet="mdp"],[data-rx-sheet="mdd"],[data-rx-sheet="mdr"]) .btn-primary{background:#16212E;border-color:#16212E;color:#fff;transition:background-color .2s,border-color .2s,box-shadow .2s}
+.rx-sheet-back:is([data-rx-sheet="rvu"],[data-rx-sheet="idi"],[data-rx-sheet="mdp"],[data-rx-sheet="mdd"],[data-rx-sheet="mdr"]) .btn-primary:is(:hover,:focus-visible){background:#F15A22;border-color:#F15A22;box-shadow:0 6px 16px rgba(241,90,34,.28)}
+.rx-sheet-back:is([data-rx-sheet="rvu"],[data-rx-sheet="idi"],[data-rx-sheet="mdp"],[data-rx-sheet="mdd"],[data-rx-sheet="mdr"]) :is(.btn,button,input,select):focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+.rx-sheet-back:is([data-rx-sheet="rvu"],[data-rx-sheet="idi"],[data-rx-sheet="mdp"],[data-rx-sheet="mdd"],[data-rx-sheet="mdr"]) :is(.btn,input,select){min-height:44px}
+.rvu-t td,.idi-t td,.mdp-t td{vertical-align:middle}
+.idi-total,.mdd-foot,.rvu-foot{align-items:center;gap:10px;flex-wrap:wrap}
+.idi-total b,.mdd-foot b,.rvu-foot b{white-space:nowrap}
+.mdd-reject{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.mdd-reject input{font:inherit;min-height:44px;padding:0 10px;border:1px solid #CBD5E1;border-radius:10px;min-width:0;flex:1 1 160px}
+/* phones: tables become stacked cards; no sideways scroll */
+@media (max-width:640px){
+ .rvu-svc,.idi,.mdp-tw{overflow-x:visible}
+ table.inv-cards,table.inv-cards tbody,table.inv-cards tr,table.inv-cards td{display:block;width:100%}
+ table.inv-cards thead,table.inv-cards tr:has(> th){display:none}
+ table.inv-cards tr{border:1px solid #E3E9F4;border-radius:14px;padding:8px 12px;margin-top:10px;background:#fff}
+ table.inv-cards td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;padding:6px 0;text-align:start;min-height:36px}
+ table.inv-cards td[data-l]::before{content:attr(data-l);color:#8a93a3;font-size:12px;flex:none;max-width:45%}
+ table.inv-cards td:not([data-l])::before{content:none}
+ table.inv-cards td:first-child{font-weight:700;font-size:14px}
+ table.inv-cards td:first-child::before{font-weight:400}
+ table.inv-cards td:empty{display:none}
+ table.inv-cards td[data-wide]{display:block;text-align:center;color:#5b6577}
+ table.inv-cards td input{max-width:60%}
+ table.inv-cards td:has(select){flex-wrap:wrap}
+ table.inv-cards td select{flex:1 1 100%;max-width:100%}
+ table.inv-cards td:last-child .btn{flex:1}
+ .rvu-add,.idi-add{grid-template-columns:1fr}
+ .idi-total,.mdd-foot,.rvu-foot{flex-direction:column;align-items:stretch}
+ .idi-total .btn,.mdd-foot .btn,.rvu-foot .btn{width:100%}
+ .rvu-kpi b{font-size:19px}
+}
