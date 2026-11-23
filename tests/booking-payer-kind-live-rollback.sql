@@ -112,6 +112,8 @@ begin
 
   -- (d2) arrival path: a walk-in today (contract) for a patient with no booking today, then arrive → order at list price + quote 80
   begin
+    -- the catalog as walk_in sees it (walk_in syncs it first and refuses stale / inactive service versions)
+    perform clinic_reception.sync_catalog(w);
     -- a provider available now that has a priced, non-home service in its own department
     select av.provider_id, s.id into prov, svc from clinic_reception.availability av join clinic_reception.providers pr on pr.id = av.provider_id
       join clinic_reception.services s on s.workspace_id = w and s.department = pr.department and s.active and to_jsonb(s)->>'pricing_service_id' is not null
