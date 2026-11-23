@@ -12277,6 +12277,45 @@
       "reviewed": true
     },
     {
+      "title": "الموظف",
+      "labels": [
+        "الموظف"
+      ],
+      "text": "اختر الموظف الذي يخصه التكليف أو العقد أو الاستحقاق أو الفلترة. في مستحقات الرواتب طابق الاسم بالعقد والفترة ولا تستخدم اسم مسجل الطلب بدل المستفيد.",
+      "article": "payroll",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الدكتور",
+      "labels": [
+        "الدكتور"
+      ],
+      "text": "اختار دكتور علشان السجل يعرض العمليات اللي على مرضاه بس، أو سيبها «كل الدكاترة».",
+      "article": "reception-activity-log",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المريض",
+      "labels": [
+        "المريض"
+      ],
+      "text": "اختر الملف الموجود بعد مطابقة الاسم ورقم الملف والهاتف؛ لا تنشئ ملفًا جديدًا لكل زيارة.",
+      "article": "patient",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "وقت تاني في نفس اليوم",
       "labels": [
         "وقت تاني في نفس اليوم"
@@ -12576,19 +12615,6 @@
       ],
       "text": "اكتب عدد دقائق الخدمة أو الحجز مثل20. المدة تحدد طول الموعد، ويجب أن تكفيها فترة تواجد الطبيب.",
       "article": "no-slots",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "المريض",
-      "labels": [
-        "المريض"
-      ],
-      "text": "اختر الملف الموجود بعد مطابقة الاسم ورقم الملف والهاتف؛ لا تنشئ ملفًا جديدًا لكل زيارة.",
-      "article": "patient",
       "tabs": [
         "reception_services"
       ],
@@ -20976,19 +21002,6 @@
       "reviewed": true
     },
     {
-      "title": "الموظف",
-      "labels": [
-        "الموظف"
-      ],
-      "text": "اختر الموظف الذي يخصه التكليف أو العقد أو الاستحقاق أو الفلترة. في مستحقات الرواتب طابق الاسم بالعقد والفترة ولا تستخدم اسم مسجل الطلب بدل المستفيد.",
-      "article": "payroll",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "يوم التشغيل",
       "labels": [
         "يوم التشغيل"
@@ -22730,9 +22743,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1954,
+    "definitions": 1957,
     "labels": 1424,
-    "files": 150,
-    "groups": 1538
+    "files": 151,
+    "groups": 1539
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
