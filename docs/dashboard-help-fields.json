@@ -1,7 +1,7 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1919,
+    "definitions": 1918,
     "labels": 1402,
     "files": 146,
     "groups": 1513
@@ -10129,16 +10129,6 @@
       "tab": "home",
       "article": "personal",
       "text_sha256": "cb369dfe4f4d347611d73d597b06cf662eed732794d5ab3c69f3490bdb9b7602"
-    },
-    {
-      "file": "nursing-day-ops.js",
-      "label": "القسم",
-      "name": "",
-      "kind": "aria",
-      "forms": [],
-      "tab": "production",
-      "article": "content",
-      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
     },
     {
       "file": "nursing-day-ops.js",
