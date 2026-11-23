@@ -109,6 +109,21 @@ const body=`
  for(const f of ['clinic_reception.free_starts(uuid,date,integer,integer)','clinic_reception.day_capacity(uuid,uuid,date)','clinic_reception.auto_book_place_day_only(uuid,uuid)'])
   assert.equal((await one("select has_function_privilege('authenticated',$1,'execute') x",[f])).x,false,f);
  assert.equal((await one("select has_table_privilege('authenticated','clinic_reception.auto_time_saved_defs','select') x")).x,false);await as('');
+ // 20261122360000: free_starts keeps the doctor's 5-minute gap on both sides
+ await db.exec("create function clinic_reception.provider_gap(p uuid) returns interval language sql stable as $g$ select interval '5 minutes' $g$");
+ const M36=fs.readFileSync('supabase/migrations/20261122360000_free_starts_gap.sql','utf8');
+ await db.exec(M36);await assert.rejects(()=>db.exec(M36),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+ const day6=(await one("select ((now() at time zone 'Africa/Cairo')::date+6)::text d")).d;
+ await q("insert into clinic_reception.availability(workspace_id,provider_id,starts_at,ends_at) values($1,$2,$3,$4)",[ws,prov,z(day6,'22:00'),z(day6,'23:30')]);
+ const other=(await one("select id from clinic_reception.patients where workspace_id=$1 limit 1",[ws])).id;
+ await q("insert into clinic_reception.appointments(workspace_id,patient_id,provider_id,service_id,starts_at,ends_at,source) values($1,$2,$3,$4,$5,$6,'manual')",[ws,other,prov,svc,z(day6,'22:20'),z(day6,'22:40')]);
+ const fs6=(await one("select array_agg(to_char(t at time zone 'Africa/Cairo','HH24:MI') order by t) a from clinic_reception.free_starts($1,$2::date,20,3) t",[prov,day6])).a;
+ assert.deepEqual(fs6,['22:45','22:50','22:55'],'22:00 would end at 22:20 with no gap before the 22:20 booking');
+ await q("insert into patients(full_name,phone,age) values('دينا ماهر سعيد','01000000009',30)");
+ await mk('G1','دينا ماهر سعيد','01000000009',day6);await one("select clinic_reception.auto_book_run()");
+ const G1=await rowOf('G1');assert.equal(G1.state,'booked',G1.reason);assert.equal(await hm(G1.appointment_id),'22:45');
+ await db.exec(fs.readFileSync('supabase/rollbacks/20261122360000_free_starts_gap.rollback.sql','utf8'));
+ assert.equal((await one("select array_agg(to_char(t at time zone 'Africa/Cairo','HH24:MI') order by t) a from clinic_reception.free_starts($1,$2::date,20,1) t",[prov,day6])).a[0],'22:00','rollback: no gap again');
  // rollback (newest first; 330000 refuses while 340000 is applied)
  await assert.rejects(()=>db.exec(fs.readFileSync('supabase/rollbacks/20261122330000_masa_day_only_auto_time.rollback.sql','utf8')),/رجّع 20261122340000 الأول/);await db.exec('rollback');
  await db.exec(fs.readFileSync('supabase/rollbacks/20261122340000_masa_timed_service_department.rollback.sql','utf8'));
