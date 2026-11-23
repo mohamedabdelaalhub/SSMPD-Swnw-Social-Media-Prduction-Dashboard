@@ -14,7 +14,8 @@ begin
   select id, owner_id into w, me from clinic_reception.workspaces where mode = 'live';
   select id into sub from public.inventory_locations where name = 'فرعي مستلزمات تمريض' and active;
   -- fixtures (owner context)
-  insert into public.patients(full_name, phone, created_by) values (ref, '01000000000', me) returning id into person;
+  -- live patient guard (psychcare.check_basics): 2+ word letters-only name, valid phone, age 0-130; random phone avoids the duplicate guard
+  insert into public.patients(full_name, phone, age, created_by) values ('اختبار ازرار المخزن', '010' || lpad((floor(random() * 1e8))::bigint::text, 8, '0'), 30, me) returning id into person;
   insert into clinic_reception.patients(workspace_id, patient_id, file_no, name, phone, created_by)
     select w, id, patient_code, full_name, phone, me from public.patients where id = person returning id into rp;
   insert into clinic_reception.providers(workspace_id, name, department, branch) values (w, ref, 'اختبار متراجع', 'اختبار') returning id into pr;
