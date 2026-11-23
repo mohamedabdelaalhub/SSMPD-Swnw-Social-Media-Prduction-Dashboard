@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1969,
-    "labels": 1434,
-    "files": 152,
-    "groups": 1548
+    "definitions": 1975,
+    "labels": 1439,
+    "files": 153,
+    "groups": 1553
   },
   "fields": [
     {
@@ -12009,6 +12009,66 @@
       "tab": "reception_services",
       "article": "booking-flow",
       "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "اختار الطبيب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "0fc558266cf9a5b92f983866a5df7ac8d8a72b21907dd6832c0335742697a3b8"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "د. …",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "42ff4f9acfc4a955939df4059f528560553ef142da2ca0586b0a58620fbce252"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "اسم الطبيب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "42ff4f9acfc4a955939df4059f528560553ef142da2ca0586b0a58620fbce252"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "تخصص الطبيب المحوِّل",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "5e4fd7b401cd817b30a7aa2243bc156ea57c76fdcb5244ee004966b450200043"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "العيادة / المستشفى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "db9ec55819f3843d9165fe300fc5c18a526201ca0abe6da7d923d82a7734ee9b"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "تليفون الطبيب المحوِّل",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "69fe73e0dd6f32f980047b67af2d5c8487f940a68b1b1e23d5b03457c7a4554b"
     },
     {
       "file": "reception-service-later.js",

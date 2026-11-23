@@ -13641,6 +13641,72 @@
       "reviewed": true
     },
     {
+      "title": "اختار الطبيب",
+      "labels": [
+        "اختار الطبيب"
+      ],
+      "text": "طبيب المركز اللي حوّل المريض.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "د. …",
+      "labels": [
+        "د. …",
+        "اسم الطبيب"
+      ],
+      "text": "اسم الطبيب اللي حوّل المريض من بره المركز — إجباري لو اخترت «من بره المركز».",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تخصص الطبيب المحوِّل",
+      "labels": [
+        "تخصص الطبيب المحوِّل"
+      ],
+      "text": "تخصص الطبيب اللي حوّل المريض (اختياري) — بيطلع جنب اسمه في الفاتورة.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "العيادة / المستشفى",
+      "labels": [
+        "العيادة / المستشفى"
+      ],
+      "text": "عيادة أو مستشفى الطبيب المحوِّل (اختياري).",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تليفون الطبيب المحوِّل",
+      "labels": [
+        "تليفون الطبيب المحوِّل"
+      ],
+      "text": "رقم الطبيب المحوِّل لو معاك (اختياري) — مش بيطلع في الفاتورة.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الخدمة (إجباري)",
       "labels": [
         "الخدمة (إجباري)"
@@ -22867,9 +22933,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1969,
-    "labels": 1434,
-    "files": 152,
-    "groups": 1548
+    "definitions": 1975,
+    "labels": 1439,
+    "files": 153,
+    "groups": 1553
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
