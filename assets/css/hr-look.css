@@ -1,0 +1,33 @@
+/* HR look (owner 2026-11-23 «طبقه», mockup docs/ui-references/mockups/hr-look.html) */
+/* «⋯» employee actions button */
+.hra-dots{flex:none;width:36px;height:36px;min-width:36px;border:1px solid #E6EBF3;border-radius:12px;background:#fff;color:#0F369D;display:inline-grid;place-items:center;cursor:pointer;padding:0;margin-inline-start:6px;vertical-align:middle}
+.hra-dots:hover{background:#F3F6FB}
+.hra-dots:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+@media (pointer:coarse){.hra-dots{width:44px;height:44px;min-width:44px}}
+/* actions sheet */
+dialog.hra-sheet{border:0;border-radius:24px;padding:20px;width:min(560px,calc(100% - 24px));max-height:88vh;overflow:auto;color:#16212E;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;box-shadow:0 24px 64px rgba(15,54,157,.25)}
+dialog.hra-sheet::backdrop{background:rgba(22,33,46,.45)}
+.hra-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.hra-head b{display:block;font-size:18px}.hra-head small{display:block;color:#667085;font-size:12px;margin-top:4px}
+.hra-x{width:44px;height:44px;border:0;border-radius:12px;background:#F3F6FB;cursor:pointer;font:inherit;flex:none}
+.hra-group{margin-top:12px}
+.hra-group h4{margin:0 0 6px;font-size:12px;color:#667085;font-weight:600}
+.hra-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.hra-act{min-height:52px;border:1px solid #E6EBF3;border-radius:14px;background:#fff;text-align:start;padding:8px 12px;display:flex;gap:10px;align-items:center;font:inherit;font-weight:600;color:#16212E;cursor:pointer;text-decoration:none}
+.hra-act:hover{background:#F3F6FB}.hra-act:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+.hra-act i{font-style:normal;width:30px;height:30px;border-radius:10px;background:#EAF0FF;display:grid;place-items:center;flex:none}
+.hra-act small{display:block;font-weight:400;color:#667085;font-size:11px}
+.hra-act.danger{color:#D0402A}.hra-act.danger i{background:#FDECEA}
+@media (max-width:640px){dialog.hra-sheet{padding:16px;margin-bottom:0;border-radius:24px 24px 0 0;width:100%;max-width:100%}.hra-grid{grid-template-columns:minmax(0,1fr)}}
+/* shifts: one alerts line instead of the warning stack (option أ) */
+.sh-alerts{background:#FFF6EC;border:1px solid #FBD9B4;border-radius:16px;padding:0;margin:0 0 14px}
+.sh-alerts>summary{list-style:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;cursor:pointer;min-height:44px}
+.sh-alerts>summary::-webkit-details-marker{display:none}
+.sh-alerts>summary b{color:#9A4E00}
+.sh-alerts-sub{color:#667085;font-size:12.5px;flex:1;min-width:160px}
+.sh-alerts-open{color:#0F369D;font-weight:700;font-size:13px;white-space:nowrap}
+.sh-alerts[open] .sh-alerts-open{visibility:hidden}
+.sh-alerts>summary:focus-visible{outline:3px solid #0F369D;outline-offset:2px;border-radius:16px}
+.sh-alerts-body{display:grid;gap:8px;padding:0 14px 14px}
+.sh-alerts.ok{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#E6F4EC;border-color:#CDE9D8;color:#2F7D5C}
+.sc.sc-rest{outline:2px solid #FF8800;outline-offset:1px}
