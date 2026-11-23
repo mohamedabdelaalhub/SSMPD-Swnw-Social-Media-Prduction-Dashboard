@@ -1,0 +1,41 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تحصيل — دفعة واحدة لزيارة مريض تاني</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:20px 12px;color:#16212E}
+.wrap{max-width:560px;margin:0 auto;display:grid;gap:12px}
+.eyebrow{margin:0;font-size:12px;color:#8a93a3;line-height:1.7}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:16px;display:grid;gap:12px;box-shadow:0 12px 30px rgba(15,54,157,.10)}
+.head{background:#0F369D;color:#fff;border-radius:12px;padding:12px 16px;font-weight:700}
+.f{display:grid;gap:6px;font-size:13px}
+.f input,.f select,.f textarea{font:inherit;padding:10px 12px;border:1px solid #CBD5E1;border-radius:10px;min-width:0}
+fieldset{border:1px solid #D5DEEE;border-radius:12px;padding:10px 12px;margin:0;display:grid;gap:8px}
+legend{font-size:13px;font-weight:700;padding:0 4px}
+.ck{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.7}
+.ck input{width:20px;height:20px;flex:none;margin-top:2px}
+.sub{font-size:12px;color:#5b6577;line-height:1.7;margin:0}
+.other{border-top:1px dashed #D5DEEE;padding-top:8px;display:grid;gap:8px}
+.warn{font-size:12px;background:#FFF6E5;color:#8A5A00;border-radius:10px;padding:8px 10px;line-height:1.8;margin:0}
+.tot{font-weight:700;color:#0F369D;margin:0}
+.act{display:flex;gap:8px}.act .btn{flex:1}
+</style></head><body><div class="wrap">
+<p class="eyebrow">تصور (أسماء تجريبية). «تحصيل» فاتورة زيارة ← «الدفعة دي لأكتر من زيارة». الجديد: زيارة لمريض مش من العيلة دفع عنه نفس الشخص، بملاحظة إجبارية.</p>
+<section class="card">
+ <div class="head">تحصيل — يحيى أحمد — كشف — باقي 500</div>
+ <label class="f">طريقة الدفع<select><option>إنستا باي</option></select></label>
+ <label class="f">رقم العملية<input value="IPN-48213"></label>
+ <fieldset><legend><label class="ck"><input type="checkbox" checked> الدفعة دي لأكتر من زيارة (نفس التحويل أو نفس الإيصال)</label></legend>
+  <p class="sub">زيارات المريض أو عيلته (نفس التليفون أو مربوطين كأقارب):</p>
+  <p class="sub">مفيش زيارات تانية مفتوحة للعيلة.</p>
+  <div class="other">
+   <label class="ck"><input type="checkbox" checked> <span><b>دفع كمان عن زيارة مريض تاني</b> (مش من العيلة — صاحبه أو زميله مثلاً)</span></label>
+   <label class="f">ابحث بالاسم أو رقم الملف<input value="محمود عبد"></label>
+   <label class="ck"><input type="checkbox" checked> محمود عبد اللطيف — P-2026-001970 — كشف استشاري تغذية — باقي 500</label>
+   <label class="f">مين دفع عن مين؟ (إجباري)<textarea rows="2">يحيى دفع التحويل كله 1000 عن نفسه وعن صاحبه محمود</textarea></label>
+   <p class="warn">التحصيل ده هيطلع إيصال واحد برقم عملية واحد، وكل زيارة تتسجل لصاحبها في الحسابات. وهيظهر للمراجعة المالية إنه «دفعة واحدة لأكتر من مريض».</p>
+  </div>
+  <p class="tot">إجمالي 2 زيارات: 1,000</p>
+ </fieldset>
+ <label class="f">المبلغ<input value="1000"></label>
+ <div class="act"><button class="btn btn-primary" type="button">تحصيل</button><button class="btn" type="button">إلغاء</button></div>
+</section>
+</div></body></html>
