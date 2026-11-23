@@ -13387,6 +13387,72 @@
       "reviewed": true
     },
     {
+      "title": "جلسات",
+      "labels": [
+        "جلسات"
+      ],
+      "text": "عدد جلسات الخدمة دي في الباكج.",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ المدفوع",
+      "labels": [
+        "المبلغ المدفوع"
+      ],
+      "text": "المبلغ اللي المريض دفعه في الخدمة دي (كل الجلسات).",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً ليزر نص إيد + منطقة تانية",
+      "labels": [
+        "مثلاً ليزر نص إيد + منطقة تانية",
+        "اسم الباكج"
+      ],
+      "text": "اسم يوضح الباكج، مثلاً «12 جلسة علاج طبيعي».",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دفع يوم",
+      "labels": [
+        "دفع يوم"
+      ],
+      "text": "اليوم اللي المريض دفع فيه الباكج — لازم يكون قبل النهارده.",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم الإيصال القديم أو صورته (لو موجود)",
+      "labels": [
+        "رقم الإيصال القديم أو صورته (لو موجود)"
+      ],
+      "text": "رقم أو مكان الإيصال الورق القديم — بيساعد اللي بيعتمد يراجع.",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك.",
       "labels": [
         "حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك."
@@ -13638,6 +13704,72 @@
       "forms": [
         "طريقة الدفع / الخصم (قبل التحصيل)"
       ],
+      "reviewed": true
+    },
+    {
+      "title": "اختار الطبيب",
+      "labels": [
+        "اختار الطبيب"
+      ],
+      "text": "طبيب المركز اللي حوّل المريض.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "د. …",
+      "labels": [
+        "د. …",
+        "اسم الطبيب"
+      ],
+      "text": "اسم الطبيب اللي حوّل المريض من بره المركز — إجباري لو اخترت «من بره المركز».",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تخصص الطبيب المحوِّل",
+      "labels": [
+        "تخصص الطبيب المحوِّل"
+      ],
+      "text": "تخصص الطبيب اللي حوّل المريض (اختياري) — بيطلع جنب اسمه في الفاتورة.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "العيادة / المستشفى",
+      "labels": [
+        "العيادة / المستشفى"
+      ],
+      "text": "عيادة أو مستشفى الطبيب المحوِّل (اختياري).",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تليفون الطبيب المحوِّل",
+      "labels": [
+        "تليفون الطبيب المحوِّل"
+      ],
+      "text": "رقم الطبيب المحوِّل لو معاك (اختياري) — مش بيطلع في الفاتورة.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
       "reviewed": true
     },
     {
@@ -22881,9 +23013,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1971,
-    "labels": 1436,
-    "files": 153,
-    "groups": 1549
+    "definitions": 1984,
+    "labels": 1446,
+    "files": 155,
+    "groups": 1559
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
