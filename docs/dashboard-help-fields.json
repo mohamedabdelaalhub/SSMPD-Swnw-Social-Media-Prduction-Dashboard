@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1957,
+    "definitions": 1958,
     "labels": 1424,
     "files": 151,
-    "groups": 1539
+    "groups": 1540
   },
   "fields": [
     {
@@ -10784,7 +10784,7 @@
     },
     {
       "file": "reception-booking-discount.js",
-      "label": "خصم على الحجز ده (اختياري)",
+      "label": "خصم (نقابة / نادي / فيزيتا / كارت العيلة / خاص) (اختياري)",
       "name": "",
       "kind": "label",
       "forms": [],
@@ -10871,6 +10871,18 @@
       "tab": "reception_services",
       "article": "reception-booking-discount",
       "text_sha256": "4b70bc45a899abf71656228cc7d3b888ccf6900569117fbc2659417a292465bd"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "خصم على الزيارة (قبل التحصيل)"
+      ],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
     },
     {
       "file": "reception-booking-plus.js",

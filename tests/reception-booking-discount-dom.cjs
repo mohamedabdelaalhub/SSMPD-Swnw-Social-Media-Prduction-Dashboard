@@ -28,6 +28,6 @@ assert(!('discount_card_no' in v),'card fields not sent for خاص');assert('dis
  on.checked=false;fire(on);assert.equal(Object.keys(fd()).filter(k=>k.startsWith('discount_')).length,0);
  on.checked=true;fire(on);form.elements.package_id.value='p1';fire(form.elements.package_id);assert.equal(form.querySelector('[data-rbd]').hidden,true);assert.equal(on.checked,false);
  assert.equal(Object.keys(fd()).filter(k=>k.startsWith('discount_')).length,0,'package → no discount');
- const src=fs.readFileSync('assets/js/reception-workspace.js','utf8');assert(/SSMPDReceptionBookingDiscount\.enhance\(form,\{data:data,workspace:workspace\}\)/.test(src)&&/!appointment\)window\.SSMPDReceptionBookingDiscount/.test(src),'hooked for new bookings');
+ const src=fs.readFileSync('assets/js/reception-workspace.js','utf8');assert(src.includes('if(window.SSMPDReceptionBookingDiscount&&!(appointment&&appointment.package_id))window.SSMPDReceptionBookingDiscount.enhance(form,{data:data,workspace:workspace,appointment:appointment});'),'hooked for new bookings and for «تعديل الحجز» (owner 2026-11-23), not for package bookings');
  assert(/rx-disc-tag/.test(src),'badge on the timeline');
  console.log('PASS booking discount UI');})().catch(e=>{console.error(e);process.exit(1);});

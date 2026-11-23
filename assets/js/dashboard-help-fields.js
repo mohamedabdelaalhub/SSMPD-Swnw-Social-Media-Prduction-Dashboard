@@ -12394,9 +12394,9 @@
       "reviewed": true
     },
     {
-      "title": "خصم على الحجز ده (اختياري)",
+      "title": "خصم (نقابة / نادي / فيزيتا / كارت العيلة / خاص) (اختياري)",
       "labels": [
-        "خصم على الحجز ده (اختياري)"
+        "خصم (نقابة / نادي / فيزيتا / كارت العيلة / خاص) (اختياري)"
       ],
       "text": "علّمها لو المريض له خصم نقابة أو نادي أو خصم خاص. لو مش متعلمة الحجز بيتعمل بسعره العادي.",
       "article": "reception-booking-discount",
@@ -12485,6 +12485,21 @@
         "reception_services"
       ],
       "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الخدمة",
+      "labels": [
+        "الخدمة"
+      ],
+      "text": "اختار أو اكتب الخدمة التي يخصها هذا السجل، مع مطابقة كودها وقسمها. في الحجز استخدم الخدمة الجاهزة، وفي الربط اختار تعريفها الأصلي من التسعير.",
+      "article": "booking-flow",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "خصم على الزيارة (قبل التحصيل)"
+      ],
       "reviewed": true
     },
     {
@@ -22743,9 +22758,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1957,
+    "definitions": 1958,
     "labels": 1424,
     "files": 151,
-    "groups": 1539
+    "groups": 1540
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

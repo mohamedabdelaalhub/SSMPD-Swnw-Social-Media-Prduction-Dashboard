@@ -20,7 +20,7 @@ function uploadCard(ws,file){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c||!c.storage
 function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.elements.service_id)return;
  var data=(ctx&&ctx.data)||{},ws=ctx&&ctx.workspace;
  var box=document.createElement('section');box.className='rbd';box.setAttribute('data-rbd','');box.setAttribute('data-wide','');
- box.innerHTML='<label class="rbd-sw"><input type="checkbox" data-rbd-on><span>خصم على الحجز ده <small>(اختياري)</small></span></label>'+
+ box.innerHTML='<label class="rbd-sw"><input type="checkbox" data-rbd-on><span>خصم (نقابة / نادي / فيزيتا / كارت العيلة / خاص) <small>(اختياري)</small></span></label>'+(ctx&&ctx.appointment&&!ctx.order?'<input type="hidden" name="discount_kind" value="" data-rbd-clear disabled>':'')+
   '<fieldset class="rbd-body" data-rbd-body hidden disabled>'+
    '<div class="rbd-row"><span class="rbd-l">نوع الخصم</span>'+chips('discount_kind',[['syndicate','خصم نقابة / نادي'],['vezeeta','فيزيتا شامل'],['family','كارت العيلة'],['special','خصم خاص']],'syndicate')+'</div>'+
    '<div data-rbd-syn>'+
@@ -92,6 +92,40 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
  file.addEventListener('change',function(){var f=file.files&&file.files[0];path.value='';if(!f)return;if(f.size>8*1024*1024){up.textContent='الصورة أكبر من ٨ ميجا — صوّرها تاني';file.value='';return;}
   up.textContent='جاري رفع الصورة…';uploadCard(ws,f).then(function(p){path.value=p;up.textContent='اترفعت ✓';}).catch(function(e){up.textContent='الرفع ما نجحش: '+((e&&e.message)||'حاول تاني');file.value='';});});
  path.addEventListener('invalid',function(){up.textContent='ارفع صورة الكارنيه';});
- form.addEventListener('input',paint);form.addEventListener('change',paint);on.addEventListener('change',paint);paint();}
-w.SSMPDReceptionBookingDiscount={enhance:enhance,preview:preview,MAX:MAX};
+ /* owner 2026-11-23 (20261123060000): editing a booking shows its discount; unticking it sends discount_kind '' (clears it) */
+ var ap=ctx&&ctx.appointment,clear=box.querySelector('[data-rbd-clear]');
+ if(ap&&ap.discount_kind){on.checked=true;var setR=function(n,v){var x=box.querySelector('input[name="'+n+'"][value="'+v+'"]');if(x)x.checked=true;};setR('discount_kind',ap.discount_kind);if(ap.discount_org_type)setR('discount_org_type',ap.discount_org_type);
+  [['discount_org_name',ap.discount_org_name],['discount_card_no',ap.discount_card_no],['discount_card_expiry',ap.discount_card_expiry],['discount_card_path',ap.discount_card_path],['discount_reason',ap.discount_reason],['discount_percent',ap.discount_percent!=null?String(+ap.discount_percent):'']].forEach(function(x){var el=form.elements[x[0]];if(el&&x[1]!=null&&el.type!=='radio')el.value=x[1];});
+  if(ap.discount_card_path)up.textContent='صورة الكارت متسجّلة ✓ (ارفع تاني لو اتغيّرت)';}
+ /* «مصدر الحجز: نقابة / نادي» is only where the booking came from — the price changes from the discount box */
+ var src=form.elements.source,srcHint=null;if(src&&src.closest){srcHint=document.createElement('small');srcHint.className='rbd-srchint';srcHint.setAttribute('data-rbd-srchint','');srcHint.textContent='ده مصدر الحجز بس — الخصم من خانة «خصم» تحت';srcHint.hidden=true;(src.closest('label')||src).after(srcHint);
+  var hint=function(){srcHint.hidden=!(src.value==='syndicate'||src.value==='club');};src.addEventListener('change',hint);hint();}
+ function syncClear(){if(clear)clear.disabled=on.checked||!(ap&&ap.discount_kind);}
+ form.addEventListener('input',paint);form.addEventListener('change',paint);on.addEventListener('change',function(){paint();syncClear();});paint();syncClear();}
+/* «⋯ ← خصم» on a booked card (booking_discount) and on an arrived card while the service is still «ordered» (order_discount).
+   c = the reception context {data, workspace, modal, command}. */
+function dayOf(iso){try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(iso));}catch(_){return '';}}
+function openForBooking(apId,c){var d=c.data||{},ap=(d.appointments||[]).find(function(x){return x.id===apId;});if(!ap)return false;
+ if(ap.status!=='booked')throw new Error('الخصم على الحجز قبل الوصول بس — بعد الوصول استخدم «خصم على الزيارة»');
+ if(ap.package_id)throw new Error('حجز الباكج بسعره المتعاقد عليه — مينفعش عليه خصم');
+ var root=c.modal(ap.discount_kind?'تعديل / شيل الخصم':'خصم على الحجز','<input type="hidden" name="service_id" value="'+esc(ap.service_id)+'"><input type="hidden" name="patient_id" value="'+esc(ap.patient_id)+'"><input type="hidden" name="day" value="'+esc(dayOf(ap.starts_at))+'"><p class="rbd-note">'+esc((d.patients||[]).filter(function(p){return p.id===ap.patient_id;}).map(function(p){return p.name;})[0]||'')+'</p>',
+  function(v){var p={id:ap.id};Object.keys(v).forEach(function(k){if(/^discount_/.test(k))p[k]=v[k];});if(!('discount_kind' in p)){if(!ap.discount_kind)throw new Error('علّم «خصم» واختار نوعه');p.discount_kind='';}
+   return c.command('booking_discount',p,crypto.randomUUID()).then(function(r){if(w.SSMPDToast)w.SSMPDToast.show(p.discount_kind?'اتسجّل الخصم على الحجز ✓ — بيتطبّق لما المريض يوصل':'اتشال الخصم من الحجز');return r;});},null,{ok:'حفظ الخصم'});
+ if(!root)return true;var form=root.querySelector('form');enhance(form,{data:d,workspace:c.workspace,appointment:ap});
+ var on=form.querySelector('[data-rbd-on]');if(!ap.discount_kind&&on){on.checked=true;on.dispatchEvent(new Event('change',{bubbles:true}));}return true;}
+function openForVisit(apId,c){var d=c.data||{},ap=(d.appointments||[]).find(function(x){return x.id===apId;});if(!ap)return false;
+ var visit=(d.visits||[]).find(function(v){return v.appointment_id===ap.id;});
+ var orders=visit?(d.orders||[]).filter(function(o){return o.visit_id===visit.id&&o.status==='ordered'&&!o.entitlement_id&&!(+o.discount>0);}):[];
+ if(ap.discount_kind)throw new Error('الزيارة دي عليها خصم بالفعل — خصم واحد بس لكل زيارة');
+ if(!orders.length)throw new Error('مفيش خدمة لسه متنفذتش على الزيارة دي — الخصم قبل التحصيل بس');
+ var svcName=function(o){return (o.snapshot&&o.snapshot.name)||((d.services||[]).find(function(s){return s.id===o.service_id;})||{}).name||'خدمة';};
+ var root=c.modal('خصم على الزيارة (قبل التحصيل)','<label>الخدمة<select name="order_id" required>'+orders.map(function(o){return '<option value="'+esc(o.id)+'" data-svc="'+esc(o.service_id)+'">'+esc(svcName(o))+' — '+money(o.price*(o.quantity||1))+'</option>';}).join('')+'</select></label><input type="hidden" name="service_id" value="'+esc(orders[0].service_id)+'"><input type="hidden" name="patient_id" value="'+esc(ap.patient_id)+'"><input type="hidden" name="day" value="'+esc(dayOf(new Date().toISOString()))+'">',
+  function(v){if(!v.discount_kind)throw new Error('علّم «خصم» واختار نوعه');var p={order_id:v.order_id};Object.keys(v).forEach(function(k){if(/^discount_/.test(k))p[k]=v[k];});
+   return c.command('order_discount',p,crypto.randomUUID()).then(function(r){if(w.SSMPDToast)w.SSMPDToast.show('اتسجّل الخصم ✓ — المريض يدفع '+money(r&&r.net));return r;});},null,{ok:'حفظ الخصم'});
+ if(!root)return true;var form=root.querySelector('form'),sel=form.elements.order_id;sel.addEventListener('change',function(){form.elements.service_id.value=sel.options[sel.selectedIndex].getAttribute('data-svc');form.dispatchEvent(new Event('change'));});
+ enhance(form,{data:d,workspace:c.workspace,appointment:ap,order:true});var on=form.querySelector('[data-rbd-on]');if(on){on.checked=true;on.dispatchEvent(new Event('change',{bubbles:true}));}return true;}
+/* which ⋯ item a card gets (shown only when the server would accept it) */
+function canBooking(ap){return !!ap&&ap.status==='booked'&&!ap.package_id;}
+function canVisit(ap,d){if(!ap||ap.discount_kind||(ap.status!=='arrived'))return false;var v=((d&&d.visits)||[]).find(function(x){return x.appointment_id===ap.id;});return !!v&&((d.orders||[]).some(function(o){return o.visit_id===v.id&&o.status==='ordered'&&!o.entitlement_id&&!(+o.discount>0);}));}
+w.SSMPDReceptionBookingDiscount={enhance:enhance,preview:preview,MAX:MAX,openForBooking:openForBooking,openForVisit:openForVisit,canBooking:canBooking,canVisit:canVisit};
 })(window);
