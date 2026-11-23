@@ -4,6 +4,7 @@
 --   * any member of the live workspace with 'book', 'arrive' or 'execute',
 --   * anyone the previous rule already allowed (reception 'execute' access).
 -- Creating / renaming / stopping rooms and room staff stay manager-only (unchanged: they go to the previous function).
+-- 'state' also returns can_link_rooms, so the screen shows the link buttons only to accounts the server will accept.
 -- Every link / unlink is audited in clinic_reception.audit ('room_link' / 'room_unlink': room, doctor, the doctor it replaced).
 -- Outer wrapper; the previous body is kept as clinic_reception.queue_rpc_before_room_link.
 -- Rollback: supabase/rollbacks/20261123030000_reception_room_link.rollback.sql
@@ -35,8 +36,13 @@ revoke all on function clinic_reception.queue_rpc_before_room_link(uuid, text, j
 
 create function public.clinic_reception_queue(p_workspace uuid, p_action text, p_payload jsonb default '{}')
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
-declare me uuid; p jsonb := coalesce(p_payload, '{}'); rm clinic_reception.rooms; pv uuid; prev uuid; today date;
+declare me uuid; p jsonb := coalesce(p_payload, '{}'); rm clinic_reception.rooms; pv uuid; prev uuid; today date; v jsonb; ok boolean;
 begin
+  if p_action = 'state' then
+    v := clinic_reception.queue_rpc_before_room_link(p_workspace, p_action, p_payload);
+    begin perform clinic_reception.room_link_allowed(p_workspace); ok := true; exception when others then ok := false; end;
+    return v || jsonb_build_object('can_link_rooms', ok);
+  end if;
   if p_action not in ('assign', 'end_assignment') then
     return clinic_reception.queue_rpc_before_room_link(p_workspace, p_action, p_payload);
   end if;

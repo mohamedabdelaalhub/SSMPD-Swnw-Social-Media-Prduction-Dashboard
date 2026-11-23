@@ -21,7 +21,7 @@ const lab=(await Q('room_save',{label:'غرفة سحب العينات',kind:'lab
 await db.exec('reset role');
 for(const [n,role] of [[7,'reception'],[8,'nurse'],[9,'accountant']])await db.query("insert into admins(id,name,role,active) values($1,$2,$3,true) on conflict(id) do update set role=excluded.role,active=true",[id(n),'تجربة '+n,role]);
 await db.query("delete from clinic_reception.members where workspace_id=$1 and admin_id = any($2::uuid[])",[live,[id(7),id(8),id(9)]]);
-await db.query("insert into clinic_reception.members(workspace_id,admin_id,capabilities) values($1,$2,'{view,book}')",[live,id(8)]);
+await db.query("insert into clinic_reception.members(workspace_id,admin_id,capabilities) values($1,$2,'{view,book}')",[live,id(8)]);await db.query("insert into clinic_reception.members(workspace_id,admin_id,capabilities) values($1,$2,'{view}')",[live,id(7)]);
 // before: a reception account without 'execute' cannot link
 await as(7);const before=await Q('assign',{room_id:c1,provider_id:doc}).then(()=>'ok',e=>e.message);
 await db.exec('reset role');const M=require("fs").readFileSync(${JSON.stringify('supabase/migrations/20261123030000_reception_room_link.sql')},'utf8');
@@ -42,6 +42,9 @@ await as(7);await assert.rejects(()=>Q('room_save',{label:'عيادة 3'}));awai
 await as(8);await Q('assign',{room_id:c2,provider_id:doc});assert.deepEqual((await open(c2)).map(x=>x.provider_id),[doc]);
 await as(8);await assert.rejects(()=>Q('assign',{room_id:lab,provider_id:doc}),/غرفة قسم/);
 await as(9);await assert.rejects(()=>Q('assign',{room_id:c1,provider_id:doc2}));
+// the screen is told who may link (no refusal-only buttons)
+await as(7);assert.equal((await Q('state')).can_link_rooms,true,'reception');await as(8);assert.equal((await Q('state')).can_link_rooms,true,'book member');
+await db.exec('reset role');await db.query("insert into clinic_reception.members(workspace_id,admin_id,capabilities) values($1,$2,'{view}')",[live,id(9)]);await as(9);assert.equal((await Q('state')).can_link_rooms,false,'view-only member sees the rooms but no link buttons');
 // other actions still go to the previous function
 await as(1);const s2=await Q('state');assert.equal(s2.rooms.find(r=>r.id===c2).assignment.provider_id,doc);
 // rollback
