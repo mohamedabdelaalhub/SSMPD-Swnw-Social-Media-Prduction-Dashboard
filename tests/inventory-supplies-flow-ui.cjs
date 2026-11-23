@@ -2,7 +2,7 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('path'),fs=require('fs');
 const root=path.resolve(__dirname,'..'),out=process.env.SHOTS||'';
 const L={central:'00000000-0000-4000-8000-000000000001',dental:'d0000000-0000-4000-8000-000000000002',sub:'s0000000-0000-4000-8000-000000000003',meds:'m0000000-0000-4000-8000-000000000004'};
-const list={day:'2026-11-21',counts:{all:2,done:1,missing:1,cost:32.85},
+const list={day:'2026-11-21',can_save:true,counts:{all:2,done:1,missing:1,cost:32.85},
  locations:[{id:L.dental,name:'رئيسي أسنان',main:true},{id:L.meds,name:'رئيسي أدوية',main:true},{id:L.central,name:'رئيسي مستلزمات',main:true},{id:L.sub,name:'فرعي مستلزمات تمريض',main:false}],
  items:[{id:'i1',name:'جلافز M',unit:'قطعة',cost:1.8,stock:{[L.sub]:400,[L.central]:1000}},{id:'i2',name:'meta paste',unit:'سرينجة',cost:120,stock:{[L.dental]:5}}],
  rows:[{visit_id:'v1',visit_no:1043,time:'10:30',patient:'مريضة تجريبية',file_no:'P-2026-000101',done:false,orders:[{order_id:'o1',service:'تنضيف بشرة',department:'جلدية وتجميل',usage_status:null,lines:[],bom_cost:0},{order_id:'o2',service:'حشو عصب',department:'أسنان',usage_status:null,lines:[],bom_cost:0}]},
@@ -35,6 +35,10 @@ for(const width of [1280,390]){const p=await b.newPage({viewport:{width,height:9
  const none=(await p.evaluate(()=>window.__calls)).filter(c=>c[0]==='clinic_reception_visit_usage'&&c[1].p_action==='save')[1];assert.equal(none[1].p_payload.none,true);assert.deepEqual(none[1].p_payload.lines,[]);
  const overflow=await p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);assert(overflow<=0,'no horizontal overflow at '+width);
  await p.click('[data-rx-sheet-close]');
+ // button rule: a view-only user (no «collect») gets no save/none/add buttons
+ await p.evaluate(()=>{const C=window.SSMPDDb.client.rpc;window.SSMPDDb.client.rpc=(n,a)=>C(n,a).then(r=>{if(n==='clinic_reception_visit_usage'&&a.p_action==='list')r={data:Object.assign({},r.data,{can_save:false})};return r;});window.SSMPDVisitUsage.state.open=true;return window.SSMPDVisitUsage.load();});
+ await p.waitForSelector('[data-rvu-sheet]');assert.equal(await p.locator('[data-rvu-save],[data-rvu-none],[data-rvu-addline]').count(),0);assert.match(await p.textContent('[data-rvu-sheet]'),/تشوف بس/);
+ await p.evaluate(()=>{window.SSMPDVisitUsage.state.open=false;});await p.click('[data-rx-sheet-close]');
  // direct supplier invoice
  await p.evaluate(()=>window.SSMPDInventoryDirectInvoice.open());await p.waitForSelector('[data-idi]');
  await p.selectOption('[data-idi] [name="supplier"]','s1');await p.fill('[data-idi] [name="reference"]','INV-1');

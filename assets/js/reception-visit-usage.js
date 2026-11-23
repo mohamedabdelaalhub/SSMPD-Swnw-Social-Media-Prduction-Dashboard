@@ -29,6 +29,7 @@ function orderHtml(o){
  if(o.usage_status==='recorded')return '<div class="rvu-svc done"><div class="rvu-svc-h"><b>'+esc(o.service)+'</b><span class="rvu-chip ok">اتسجل — '+esc(o.usage_by||'')+(o.usage_time?' <bdi dir="ltr">'+esc(o.usage_time)+'</bdi>':'')+'</span></div>'+
   '<table class="rvu-t"><thead><tr><th>المستلزم</th><th>من مخزن</th><th>الكمية</th><th>التكلفة</th></tr></thead><tbody>'+(o.lines||[]).map(function(l){return '<tr><td>'+esc(l.item)+'</td><td>'+esc(l.location)+'</td><td dir="ltr">'+qty(l.quantity)+' '+esc(l.unit)+'</td><td dir="ltr">'+money(l.cost)+'</td></tr>';}).join('')+'</tbody></table>'+
   '<p class="rvu-sum">تكلفة الخدمة <b dir="ltr">'+money(o.total_cost)+' ج</b></p></div>';
+ if(!state.canSave)return '<div class="rvu-svc"><div class="rvu-svc-h"><b>'+esc(o.service)+'</b><span class="rvu-chip bad">ناقص</span></div><p class="rvu-avail">تسجيل الاستهلاك للاستقبال اللي معاه صلاحية التحصيل. إنت تقدر تشوف بس.</p></div>';
  var dr=draft(o),est=0,lines=dr.lines.map(function(l,ix){var i=item(l.item_id),c=i?Number(i.cost)*Number(l.quantity||0):0;est+=c;
   return '<tr data-rvu-line="'+ix+'"><td>'+esc(i?i.name:'')+'</td><td>'+esc((state.locations.filter(function(x){return x.id===l.location_id;})[0]||{}).name||'')+'</td><td><input class="rvu-q" inputmode="decimal" data-rvu-qty="'+ix+'" value="'+esc(l.quantity)+'" aria-label="الكمية"></td><td dir="ltr">'+(i?money(i.cost):'')+'</td><td dir="ltr">'+money(c)+'</td><td><button type="button" class="rvu-x" data-rvu-del="'+ix+'" aria-label="شيل السطر">✕</button></td></tr>';}).join('');
  return '<div class="rvu-svc" data-rvu-order="'+esc(o.order_id)+'"><div class="rvu-svc-h"><b>'+esc(o.service)+'</b>'+(o.department?'<span class="rvu-chip">'+esc(o.department)+'</span>':'')+(Number(o.bom_cost)>0?'<span class="rvu-chip ok">اتخصم مع تنفيذ الخدمة '+money(o.bom_cost)+' ج</span>':'')+'</div>'+
@@ -53,7 +54,7 @@ function render(){var host=state.ctx&&state.ctx.host;if(!host||!host.isConnected
  el.onclick=function(){state.open=true;render();};
  if(!state.open){M.sheet('rvu',null,null);return;}
  var box=d.createElement('div');box.innerHTML=sheetHtml();var card=box.firstChild;M.sheet('rvu',miniTitle()+(state.day?' — '+state.day:''),card,function(){state.open=false;});wire(card);}
-function load(){return rpc(state.ws,'list',{day:state.day}).then(function(r){state.err=null;state.rows=(r&&r.rows)||[];state.counts=(r&&r.counts)||{};state.items=(r&&r.items)||[];state.locations=(r&&r.locations)||[];state.day=(r&&r.day)||state.day;
+function load(){return rpc(state.ws,'list',{day:state.day}).then(function(r){state.err=null;state.rows=(r&&r.rows)||[];state.counts=(r&&r.counts)||{};state.items=(r&&r.items)||[];state.locations=(r&&r.locations)||[];state.canSave=!!(r&&r.can_save);state.day=(r&&r.day)||state.day;
   if(!state.rows.some(function(x){return x.visit_id===state.sel;})){var first=rowsShown()[0]||state.rows[0];state.sel=first?first.visit_id:null;}render();})
  .catch(function(e){state.err=(e&&e.message)||'خطأ';state.rows=[];render();});}
 function save(orderId,none){if(state.busy)return;var r=state.rows.filter(function(x){return x.visit_id===state.sel;})[0];if(!r)return;var dr=state.drafts[orderId]||{lines:[]};
