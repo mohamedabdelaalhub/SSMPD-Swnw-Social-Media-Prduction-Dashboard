@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: الموارد البشرية — الحضور اللحظي والورديات وإجراءات الموظف</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--teal:#00B0BD;--pos:#2F7D5C;--neg:#D0402A;--gap:16px}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:var(--gap)}
+.card{background:#fff;border-radius:24px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:20px}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;background:#fff;border-radius:18px;padding:6px;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.seg button{min-height:44px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:600;white-space:nowrap}
+.seg button.on{background:var(--brand);color:#fff}
+.view{display:none;gap:var(--gap)}.view.on{display:grid}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+.tile{border:0;text-align:start;background:#fff;border-radius:20px;padding:16px;box-shadow:0 6px 24px rgba(15,54,157,.06);display:grid;gap:6px;min-width:0}
+.tile small{color:var(--muted);font-size:12px}.tile b{font-size:22px;color:var(--brand)}.tile span{font-size:12px;color:var(--muted)}
+.tile.warn b{color:#B4540A}.tile.ok b{color:var(--pos)}
+.tile:hover{outline:2px solid var(--tint)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.search{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:14px;padding:0 12px;height:44px;color:var(--muted)}
+.search input{border:0;background:none;outline:0;flex:1;min-width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{min-height:36px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 12px;font-size:12px;white-space:nowrap;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.chips button.on{background:var(--tint);border-color:#CFDCF8;color:var(--brand);font-weight:600}
+.chips i{font-style:normal;font-size:11px}
+.period{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.period .chips button{min-height:36px}
+.btn{min-height:44px;border-radius:14px;border:1px solid var(--line);background:#fff;padding:0 16px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-weight:600;color:var(--brand);justify-content:center}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff;transition:background-color .2s,border-color .2s,box-shadow .2s}
+.btn.main:hover,.btn.main:focus-visible{background:var(--accent);border-color:var(--accent);box-shadow:0 6px 16px rgba(241,90,34,.28)}
+.btn.main:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+.btn.sm{min-height:40px;padding:0 12px;font-size:13px}
+.btn.icon{width:44px;padding:0}
+.list{display:grid;gap:12px}
+.vcard{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;border:1px solid var(--line);border-radius:20px;padding:14px 16px;background:#fff;border-inline-start:4px solid var(--line)}
+.vcard.open{border-inline-start-color:var(--teal)}.vcard.wait{border-inline-start-color:#FF8800}.vcard.done{border-inline-start-color:var(--pos)}.vcard.closed{border-inline-start-color:#525B6F}
+.av{width:46px;height:46px;border-radius:50%;background:var(--tint);color:var(--brand);display:grid;place-items:center;flex:none}.av svg{width:22px;height:22px}
+.mid{display:grid;gap:6px;min-width:0}
+.top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.top b{font-size:15px}
+.sub{font-size:12px;color:var(--muted)}
+.svc{display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;white-space:nowrap}
+.pill.wait{background:#FFF1E0;color:#9A4E00}.pill.done{background:#E6F4EC;color:var(--pos)}.pill.cancel{background:var(--soft);color:var(--muted);text-decoration:line-through}
+.st{display:inline-flex;min-height:24px;align-items:center;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st.open{background:var(--teal);color:#fff}.st.closed{background:#525B6F;color:#fff}
+.end{display:grid;justify-items:end;gap:8px}
+.amt{font-weight:700;white-space:nowrap}.amt small{font-weight:400;color:var(--muted)}
+.due{font-size:12px;color:#B4540A;font-weight:600;white-space:nowrap}
+.empty{text-align:center;color:var(--muted);padding:24px}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;border:1px solid var(--line);border-radius:20px;padding:12px 16px}
+.pacts{display:flex;gap:8px;align-items:center}
+.menu{position:relative}
+.pop{position:absolute;top:50px;inset-inline-end:0;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(15,54,157,.18);padding:6px;display:none;z-index:5;min-width:200px}
+.pop.on{display:grid}
+.pop button{border:0;background:none;text-align:start;padding:10px 12px;border-radius:10px;white-space:nowrap;min-height:44px}
+.pop button:hover{background:var(--soft)}
+.pop button.danger{color:var(--neg)}
+/* modal */
+.bd{position:fixed;inset:0;background:rgba(22,33,46,.45);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.bd.on{display:flex}
+.modal{background:#fff;border-radius:24px;max-width:640px;width:100%;padding:20px;display:grid;gap:14px;max-height:88vh;overflow:auto}
+.mh{display:flex;align-items:flex-start;gap:12px}
+.mh .t{flex:1;min-width:0;display:grid;gap:6px}.mh h3{margin:0;font-size:18px}
+.x{width:44px;height:44px;border:0;border-radius:12px;background:var(--soft);flex:none}
+.orow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:12px 14px;border-radius:16px;background:var(--soft)}
+.orow .n{display:grid;gap:4px;min-width:0}.orow .n b{font-size:14px}.orow .n small{color:var(--muted);font-size:12px}
+.orow.cancel .n b{text-decoration:line-through;color:var(--muted)}
+.tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tot div{background:var(--soft);border-radius:14px;padding:10px 12px;display:grid;gap:2px}.tot small{font-size:12px;color:var(--muted)}.tot b{font-size:16px}
+.tot .rest b{color:#B4540A}
+.mf{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.conf{display:grid;gap:10px}.conf h3{margin:0}.conf p{margin:0;color:var(--muted);line-height:1.8}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:40}.toast.on{opacity:1}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){
+ :root{--gap:12px}.wrap{padding:0 12px}.bd{padding:12px}.note{padding:0 12px}.card{padding:16px;border-radius:20px}
+ .tile b{font-size:19px}
+ .vcard{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px}
+ .vcard .end{grid-column:1/-1;grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-items:stretch}
+ .prow{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px}
+ .prow .pacts{grid-column:1/-1}.prow .pacts .btn.main{flex:1}
+ .orow{grid-template-columns:minmax(0,1fr) auto;}.orow .amt{grid-column:2;grid-row:1}.orow .oa{grid-column:1/-1;display:flex;gap:8px}.orow .oa .btn.main{flex:1}
+ .tot b{font-size:14px}
+ .mf .btn{flex:1}
+ .search input{font-size:16px}
+}
+
+
+.hdr{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.hdr h2{margin:0;font-size:20px}.hdr .sub{font-size:12px}
+.live{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:0 12px;border-radius:999px;background:#E6F4EC;color:var(--pos);font-size:12px;font-weight:600;white-space:nowrap}.live i{width:8px;height:8px;border-radius:50%;background:var(--pos)}
+.tabs{display:flex;gap:6px;background:#fff;border-radius:18px;padding:6px;box-shadow:0 6px 24px rgba(15,54,157,.06);overflow-x:auto}
+.tabs button{flex:1;min-height:44px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:600;white-space:nowrap;padding:0 14px}
+.tabs button.on{background:var(--brand);color:#fff}
+.alertchip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#FFF6EC;border:1px solid #FBD9B4;border-radius:16px;padding:10px 14px}
+.alertchip b{color:#9A4E00}.alertchip .sub{flex:1;min-width:160px}
+.optbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.deps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap)}
+.dep{background:#fff;border-radius:20px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:14px 16px;display:grid;gap:8px;border-inline-start:4px solid var(--brand)}
+.dep h4{margin:0;font-size:15px;display:flex;gap:8px;align-items:center;justify-content:space-between}
+.emp{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.emp:first-of-type{border-top:0}
+.dot{width:36px;height:36px;border-radius:50%;background:var(--tint);color:var(--brand);display:grid;place-items:center;position:relative}.dot svg{width:18px;height:18px}
+.dot::after{content:"";position:absolute;bottom:0;inset-inline-start:0;width:10px;height:10px;border-radius:50%;border:2px solid #fff;background:var(--pos)}
+.dot.late::after{background:#FF8800}.dot.abs::after{background:var(--neg)}.dot.leave::after{background:#3B82F6}.dot.out::after{background:#9AA3B2}
+.emp .nm{display:grid;gap:2px;min-width:0}.emp .nm b{font-size:14px}.emp .nm small{font-size:12px;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;min-height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.tag.ok{background:#E6F4EC;color:var(--pos)}.tag.late{background:#FFF1E0;color:#9A4E00}.tag.abs{background:#FDECEA;color:var(--neg)}.tag.leave{background:#E7F0FE;color:#1D4ED8}.tag.out{background:var(--soft);color:var(--muted)}
+.dots3{width:40px;min-height:40px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--brand);display:grid;place-items:center}
+.grid{width:100%;border-collapse:collapse;font-size:13px}
+.grid th{font-weight:600;color:var(--muted);font-size:12px;padding:8px 6px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+.grid th:first-child,.grid td:first-child{text-align:start}
+.grid td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:center}
+.grid tr.gdep td{background:var(--soft);font-weight:700;color:var(--brand);text-align:start}
+.sh{display:inline-flex;min-height:28px;align-items:center;padding:0 10px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap}
+.sh.m{background:#E7EDFB;color:#0F369D}.sh.e{background:#FDEBE3;color:#C2410C}.sh.l{background:#E3F1EA;color:#2F7D5C}.sh.off{background:var(--soft);color:var(--muted)}.sh.none{background:#fff;border:1px dashed #C9D3E6;color:var(--muted)}
+.sh.warn{outline:2px solid #FF8800;outline-offset:1px}
+.namecell{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.namecell b{font-size:13px}.namecell small{color:var(--muted);font-size:11px}
+.gridwrap{overflow-x:auto;max-width:100%}.view>*,.wrap>*{min-width:0}
+.today{background:#F4F7FF}
+.acts{display:grid;gap:14px}
+.agroup h5{margin:0 0 6px;font-size:12px;color:var(--muted)}
+.agroup .ab{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ab button{min-height:48px;border:1px solid var(--line);border-radius:14px;background:#fff;text-align:start;padding:8px 12px;display:flex;gap:10px;align-items:center;font-weight:600;color:var(--ink)}
+.ab button:hover{background:var(--soft)}
+.ab button i{font-style:normal;width:30px;height:30px;border-radius:10px;background:var(--tint);display:grid;place-items:center;flex:none}
+.ab button.danger{color:var(--neg)}.ab button.danger i{background:#FDECEA}
+.ab button small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.warnlist{display:grid;gap:8px}
+.warnlist div{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#FFF6EC;font-size:13px}
+.warnlist div b{white-space:nowrap}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cmp>div{border:2px solid var(--line);border-radius:16px;padding:12px;display:grid;gap:8px;cursor:pointer}
+.cmp>div.on{border-color:var(--brand);background:#F7F9FF}
+.cmp h5{margin:0;font-size:13px}
+@media (max-width:900px){.deps{grid-template-columns:1fr}}
+@media (max-width:640px){.agroup .ab{grid-template-columns:1fr}.cmp{grid-template-columns:1fr}.grid{font-size:12px}.tabs button{padding:0 10px;font-size:13px}}
+</style>
+</head>
+<body>
+<div class="note"><b>تصور تفاعلي — الموارد البشرية: الحضور اللحظي والورديات وزرار «⋯» لإجراءات الموظف</b> · بيانات تجربة، مفيش حاجة بتتحفظ. جرّب «⋯» جنب أي اسم.</div>
+<div class="wrap">
+ <section class="card hdr"><div><div class="sub">الاثنين 23 نوفمبر · 3:53 م</div><h2>الحضور والانصراف</h2></div><span class="live"><i></i>البصمة متصلة · آخر بصمة 3:52 م</span></section>
+ <nav class="tabs"><button class="on" data-v="now">الآن (مباشر)</button><button data-v="shifts">الورديات</button><button data-t="هيفتح التقارير زي ما هي">التقارير</button><button data-t="هيفتح أجازات المركز زي ما هي">أجازات المركز</button></nav>
+
+ <section class="view on" id="v-now">
+  <div class="tiles">
+   <button class="tile ok" data-f="in"><small>موجودين دلوقتي</small><b>5</b><span>من 7 مجدولين النهارده</span></button>
+   <button class="tile warn" data-f="late"><small>متأخرين</small><b>1</b><span>بعد الموعد + السماح</span></button>
+   <button class="tile" data-f="abs"><small>غايبين</small><b style="color:var(--neg)">1</b><span>مجدولين ولسه ماوصلوش</span></button>
+   <button class="tile" data-f="leave"><small>إجازة أو إذن</small><b style="color:#1D4ED8">1</b><span>معتمدة</span></button>
+  </div>
+  <div class="card" style="display:grid;gap:12px">
+   <div class="bar"><label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="دوّر باسم الموظف أو القسم"></label></div>
+   <div class="chips" id="fchips"><button class="on" data-f="all">الكل <i>8</i></button><button data-f="in">موجود <i>5</i></button><button data-f="late">متأخر <i>1</i></button><button data-f="abs">غايب <i>1</i></button><button data-f="leave">إجازة <i>1</i></button><button data-f="out">انصرف <i>1</i></button></div>
+  </div>
+  <div class="deps" id="deps"></div>
+ </section>
+
+ <section class="view" id="v-shifts">
+  <div class="card" style="display:grid;gap:10px">
+   <div class="optbar">قولّي تحب التنبيهات تبقى إزاي: <span class="sub">(دوس على اختيار)</span></div>
+   <div class="cmp"><div class="on" data-opt="chip"><h5>أ) رقم صغير تدوس عليه</h5><span class="sub">التنبيهات بتتجمع في سطر واحد، والتفاصيل في نافذة.</span></div><div data-opt="none"><h5>ب) تتشال خالص</h5><span class="sub">مفيش تنبيه فوق. الوردية اللي فيها مشكلة بس عليها حدود برتقالي في الجدول.</span></div></div>
+  </div>
+  <div class="alertchip" id="achip"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><b>5 تنبيهات راحة · 3 من غير جدول</b><span class="sub">مش بتمنع الحفظ — للمراجعة بس</span><button class="btn sm" data-warn>اعرض التفاصيل</button></div>
+  <div class="card" style="padding:12px"><div class="gridwrap"><table class="grid" id="grid"></table></div></div>
+ </section>
+</div>
+<div class="bd" id="bd"><div class="modal" id="mb"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2000);}
+const U='<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',M='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>';
+const E=[{n:'مازن أحمد علي',d:'الاستقبال',s:'in',t:'دخل 10:03 ص',code:'EMP-1'},{n:'منار موسى عريقي',d:'الاستقبال',s:'in',t:'دخلت 10:06 ص',code:'EMP-2'},{n:'كريم سعيد',d:'الاستقبال',s:'abs',t:'وردية 10:00 ص',code:'EMP-9'},{n:'شروق محمد',d:'المحتوى',s:'late',t:'وصلت 10:35 ص · متأخرة 25 د',code:'EMP-3'},{n:'هبة سمير',d:'التمريض',s:'out',t:'انصرفت 3:38 م',code:'EMP-4'},{n:'أحمد خالد',d:'التمريض',s:'in',t:'دخل 10:15 ص',code:'EMP-5'},{n:'سارة علي',d:'الحسابات',s:'leave',t:'إجازة اعتيادية',code:'EMP-6'},{n:'محمود حسن',d:'الأمن',s:'in',t:'دخل 10:21 ص',code:'EMP-7'}];
+const TAG={in:['ok','موجود'],late:['late','متأخر'],abs:['abs','غايب'],leave:['leave','إجازة'],out:['out','انصرف']},DOT={in:'',late:'late',abs:'abs',leave:'leave',out:'out'};
+let f='all',q='';
+function drawNow(){const deps=[...new Set(E.map(e=>e.d))];$('#deps').innerHTML=deps.map(d=>{const r=E.filter(e=>e.d===d&&(f==='all'||e.s===f)&&(!q||(e.n+e.d).includes(q)));if(!r.length)return '';const inn=E.filter(e=>e.d===d&&e.s==='in').length;return `<div class="dep"><h4><span>${d}</span><span class="sub">${inn} موجود من ${E.filter(e=>e.d===d).length}</span></h4>${r.map(e=>`<div class="emp"><span class="dot ${DOT[e.s]}">${U}</span><div class="nm"><b>${e.n}</b><small>${e.t}</small></div><span class="tag ${TAG[e.s][0]}">${TAG[e.s][1]}</span><button class="dots3" data-act="${e.n}" aria-label="إجراءات ${e.n}">${M}</button></div>`).join('')}</div>`;}).join('')||'<p class="card empty">مفيش موظفين بالفلتر ده.</p>';}
+const SH={m:['m','صباحي 10–6'],e:['e','مسائي 4–12'],l:['l','طويل 10–12'],off:['off','إجازة أسبوعية'],none:['none','—']};
+const DAYS=['السبت 21','الأحد 22','الاثنين 23','الثلاثاء 24','الأربعاء 25','الخميس 26','الجمعة 27'];
+const G=[['الاستقبال',[['مازن أحمد علي',['m','m','l','e','m!','m','off']],['منار موسى عريقي',['m','e!','m','e','m!','e','off']],['كريم سعيد',['none','none','none','none','none','none','none']]]],['المحتوى',[['شروق محمد',['m','m','m','e','m!','m','off']]]],['التمريض',[['هبة سمير',['m','e','l!','e','m','e','off']],['أحمد خالد',['m','m','m','e','m','m','off']]]]];
+let opt='chip';
+function drawGrid(){$('#achip').style.display=opt==='chip'?'flex':'none';$('#grid').innerHTML='<tr><th>الموظف</th>'+DAYS.map((d,i)=>`<th class="${i===2?'today':''}">${d.replace(' ','<br>')}</th>`).join('')+'<th>ساعات</th></tr>'+G.map(([dep,rows])=>`<tr class="gdep"><td colspan="9">${dep}</td></tr>`+rows.map(([n,ds])=>`<tr><td><div class="namecell"><span><b>${n}</b></span><button class="dots3" data-act="${n}" aria-label="إجراءات ${n}">${M}</button></div></td>`+ds.map((k,i)=>{const w=k.endsWith('!');k=k.replace('!','');return `<td class="${i===2?'today':''}"><span class="sh ${SH[k][0]} ${w?'warn':''}" ${w?'title="راحة أقل من 11 ساعة قبلها"':''}>${SH[k][1]}</span></td>`;}).join('')+`<td><b>${ds.includes('none')?0:48}</b> س</td></tr>`).join('')).join('');}
+function modal(h){$('#mb').innerHTML=h;$('#bd').classList.add('on');}function close(){$('#bd').classList.remove('on');}
+function actions(n){const e=E.find(x=>x.n===n)||{d:'',code:''};modal(`<div class="mh"><span class="av">${U}</span><div class="t"><h3>${n}</h3><div class="sub">${e.code||''} · ${e.d||''}</div></div><button class="x" data-close aria-label="إغلاق">✕</button></div>
+<div class="acts">
+<div class="agroup"><h5>الورديات والحضور</h5><div class="ab"><button data-t="هيفتح تعديل جدول ورديات ${n}"><i>🗓</i><span>تعديل جدول الورديات<small>الأيام والأنواع</small></span></button><button data-t="هيفتح تبديل وردية"><i>⇄</i><span>تبديل وردية<small>مع زميل في نفس اليوم</small></span></button><button data-t="هيفتح تسجيل إذن أو تأخير"><i>⏱</i><span>إذن أو تأخير مسموح</span></button><button data-t="هيفتح الساعات الإضافية"><i>＋</i><span>ساعات إضافية</span></button></div></div>
+<div class="agroup"><h5>الإجازات</h5><div class="ab"><button data-t="هيفتح طلب إجازة جديد"><i>🌴</i><span>إجازة جديدة</span></button><button data-t="هيفتح تعديل مواعيد الإجازة"><i>✎</i><span>تعديل مواعيد إجازة<small>رصيده: 7 أيام</small></span></button></div></div>
+<div class="agroup"><h5>الملف والعقد</h5><div class="ab"><button data-t="هيفتح ملف الموظف"><i>👤</i><span>فتح ملف الموظف</span></button><button data-t="هيفتح تحديث العلاقة (العقد / الوظيفة / الراتب)"><i>📄</i><span>تحديث العلاقة<small>العقد · الوظيفة · الراتب</small></span></button><button data-t="هيفتح العهد"><i>🔑</i><span>العهد</span></button><button data-t="هيفتح التأمينات"><i>🛡</i><span>التأمينات</span></button></div></div>
+<div class="agroup"><h5>تواصل</h5><div class="ab"><button data-t="هيتصل بالموظف"><i>📞</i><span>اتصال</span></button><button data-t="هيفتح واتساب"><i>💬</i><span>واتساب</span></button></div></div>
+<div class="agroup"><div class="ab"><button class="danger" data-ask="إنهاء خدمة ${n}"><i>⏻</i><span>إنهاء الخدمة<small>بيفتح خطوات إنهاء الخدمة والتسوية</small></span></button></div></div>
+</div>`);}
+document.addEventListener('click',e=>{const t=e.target.closest('button,[data-opt]');if(!t)return;
+ if(t.dataset.v){$$('.tabs button').forEach(b=>b.classList.toggle('on',b===t));$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+t.dataset.v));return;}
+ if(t.dataset.f){f=t.dataset.f;$$('#fchips button').forEach(b=>b.classList.toggle('on',b.dataset.f===f));drawNow();return;}
+ if(t.dataset.opt){opt=t.dataset.opt;$$('.cmp>div').forEach(b=>b.classList.toggle('on',b===t));drawGrid();return;}
+ if(t.dataset.act){actions(t.dataset.act);return;}
+ if('warn' in t.dataset){modal(`<div class="mh"><div class="t"><h3>تنبيهات الورديات</h3><div class="sub">للمراجعة بس — مش بتمنع الحفظ</div></div><button class="x" data-close aria-label="إغلاق">✕</button></div><div class="warnlist"><div>⏱<span><b>مازن أحمد علي:</b> مسائي الثلاثاء ثم صباحي الأربعاء — راحة أقل من 11 ساعة</span></div><div>⏱<span><b>منار موسى عريقي:</b> مسائي الأحد ثم صباحي الاثنين — راحة أقل من 11 ساعة</span></div><div>⏱<span><b>منار موسى عريقي:</b> مسائي الثلاثاء ثم صباحي الأربعاء</span></div><div>⏱<span><b>شروق محمد:</b> مسائي الثلاثاء ثم صباحي الأربعاء</span></div><div>⏱<span><b>هبة سمير:</b> مسائي الأحد ثم طويل الاثنين</span></div><div style="background:var(--soft)">👤<span><b>3 موظفين من غير جدول:</b> كريم سعيد، نورا فتحي، دعاء رضا — مش بيظهروا في الغياب والتأخير لحد ما يتحدد جدولهم.</span></div></div>`);return;}
+ if(t.dataset.ask){modal(`<div class="conf"><h3>تأكيد: ${t.dataset.ask}</h3><p>هيفتح خطوات إنهاء الخدمة الموجودة (آخر يوم، التسوية، العهد).</p><div class="mf"><button class="btn" data-close>رجوع</button><button class="btn main" data-close data-t="هيفتح خطوات إنهاء الخدمة">كمّل</button></div></div>`);return;}
+ if('close' in t.dataset){close();if(t.dataset.t)toast(t.dataset.t);return;}
+ if(t.dataset.t){close();toast(t.dataset.t);}});
+$('#bd').addEventListener('click',e=>{if(e.target.id==='bd')close();});document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+$('#q').oninput=e=>{q=e.target.value.trim();drawNow();};drawNow();drawGrid();
+</script>
+</body>
+</html>
