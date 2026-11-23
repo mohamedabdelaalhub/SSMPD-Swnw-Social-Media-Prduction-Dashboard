@@ -9,7 +9,7 @@ declare
   central constant uuid := '00000000-0000-4000-8000-000000000001';
   w uuid; me uuid; ref text := 'TEST-BTN-' || gen_random_uuid(); pr uuid; sv uuid; rp uuid; person uuid; sup uuid; it uuid; lot uuid;
   a record; app uuid; vis uuid; ord uuid; res jsonb; shown boolean; ok boolean; e text; can_mgr boolean; can_create boolean; can_review boolean;
-  disc uuid; disc_by uuid; sub uuid; v_view boolean; ou uuid;
+  disc uuid; disc_by uuid; sub uuid; v_view boolean; ou uuid; slot int := 0;
 begin
   select id, owner_id into w, me from clinic_reception.workspaces where mode = 'live';
   select id into sub from public.inventory_locations where name = 'فرعي مستلزمات تمريض' and active;
@@ -39,7 +39,8 @@ begin
     perform set_config('request.jwt.claim.sub', a.user_id::text, true); perform set_config('test.admin', a.id::text, true);
     -- one visit + order per admin, so each save has its own target
     insert into clinic_reception.appointments(workspace_id, patient_id, provider_id, service_id, starts_at, ends_at, created_by)
-      values (w, rp, pr, sv, now(), now() + interval '20 minutes', me) returning id into app;
+      values (w, rp, pr, sv, now() + slot * interval '30 minutes', now() + slot * interval '30 minutes' + interval '20 minutes', me) returning id into app;
+    slot := slot + 1;   -- live guard appointments_respect_gap: ≥5 min between bookings of the same doctor
     insert into clinic_reception.visits(workspace_id, appointment_id, patient_id, opened_by) values (w, app, rp, me) returning id into vis;
     insert into clinic_reception.orders(workspace_id, visit_id, service_id, provider_id, price, snapshot, created_by)
       values (w, vis, sv, pr, 100, jsonb_build_object('name', ref, 'department', 'اختبار متراجع', 'bom', '[]'::jsonb), me) returning id into ord;
