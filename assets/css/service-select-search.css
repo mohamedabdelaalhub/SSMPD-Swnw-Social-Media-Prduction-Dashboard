@@ -1,0 +1,4 @@
+/* searchable service lists (service-select-search.js) */
+.sss{display:grid;gap:4px;margin:4px 0}.sss-q{font:inherit;padding:9px 11px;border:1px solid #CBD5E1;border-radius:10px;min-width:0;width:100%;box-sizing:border-box}
+.sss-q:focus-visible{outline:2px solid #F15A22;outline-offset:1px}.sss-n{font-size:12px;color:#5b6577;min-height:1em}
+select[data-sss][size]{padding:4px;border-radius:10px}

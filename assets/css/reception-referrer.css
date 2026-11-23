@@ -1,0 +1,10 @@
+/* «الطبيب المحوِّل» (owner 2026-11-23) — same look as «طريقة الدفع» */
+.rrf{display:grid;gap:10px;border:1px solid #D5DEEE;border-radius:14px;padding:12px 14px;background:#fff;min-width:0}
+.rrf-title{margin:0}.rrf-title small{font-weight:400;color:#5b6577}
+.rrf-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.rrf-opt{position:relative;min-width:0}.rrf-opt input{position:absolute;opacity:0;pointer-events:none}
+.rrf-opt span{display:block;border:1.5px solid #CBD5E1;border-radius:12px;padding:8px 4px;text-align:center;font-size:13px;font-weight:700;color:#16212E;cursor:pointer;background:#fff}
+.rrf-opt input:checked+span{border-color:#0F369D;background:#EAF0FF;color:#0F369D}
+.rrf-opt input:focus-visible+span{outline:2px solid #F15A22;outline-offset:2px}
+.rrf-ext{display:grid;gap:10px;min-width:0}
+.rrf select,.rrf input{min-width:0;max-width:100%}
