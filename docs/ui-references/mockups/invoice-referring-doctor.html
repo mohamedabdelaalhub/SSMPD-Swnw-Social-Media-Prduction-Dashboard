@@ -1,0 +1,57 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>الطبيب المحوِّل — تصور</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:20px 12px;color:#16212E}
+.wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:stretch}
+.eyebrow{grid-column:1/-1;margin:0;font-size:12px;color:#8a93a3;line-height:1.7}
+.card{align-content:start;background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;box-shadow:0 12px 30px rgba(15,54,157,.08)}
+.card h3{margin:0;font-size:14px;color:#0F369D}
+.f{display:grid;gap:5px;font-size:13px}.f input,.f select{font:inherit;padding:9px 11px;border:1px solid #CBD5E1;border-radius:10px;min-width:0}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg span{border:1.5px solid #CBD5E1;border-radius:12px;padding:8px 4px;text-align:center;font-size:12.5px;font-weight:700}
+.seg span.on{border-color:#0F369D;background:#EAF0FF;color:#0F369D}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.note{font-size:12px;color:#5b6577;margin:0;line-height:1.7}
+.lbl{font-size:13px;font-weight:700;margin:0}
+.btns{display:flex;gap:8px}.btn{font:inherit;font-size:13px;padding:8px 14px;border-radius:10px;border:1px solid #CBD5E1;background:#fff}.btn.p{background:#0F369D;border-color:#0F369D;color:#fff}
+.inv{border:1px solid #c7d0e6;border-radius:10px;padding:10px;display:grid;gap:8px;font-size:12px}
+.inv .ttl{display:flex;justify-content:space-between;border-bottom:2px solid #0F369D;padding-bottom:4px}.inv .ttl b{color:#0F369D;font-size:15px}.inv .ttl span{color:#F15A22;font-weight:700}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;padding:8px;background:#f4f6fb;border-radius:8px}.meta .k{color:#5b6577}
+.meta .new{grid-column:1/-1;background:#FFF6E5;border-radius:6px;padding:2px 6px}
+.tag{font-size:11px;color:#2F7D5C;background:#e6f2ec;border-radius:9px;padding:0 6px}
+</style></head><body><div class="wrap">
+<p class="eyebrow">تصور (أسماء تجريبية). «الطبيب المحوِّل» — من جوه المركز أو من بره — بيتسجّل في الحجز أو عند الحضور، ويتعدّل لحد التحصيل، ويطلع في الفاتورة جنب الطبيب المنفّذ.</p>
+
+<section class="card"><h3>١) «حجز موعد» / «حضور بدون ميعاد» / «تسجيل الحضور»</h3>
+<p class="lbl">الطبيب المحوِّل <small style="font-weight:400;color:#5b6577">(اختياري)</small></p>
+<div class="seg"><span>مفيش</span><span class="on">من جوه المركز</span><span>من بره المركز</span></div>
+<label class="f">اختار الطبيب<select><option>د. أحمد تجريبي — الباطنة</option></select></label>
+<p class="note">لو الطبيب له نسبة إحالة على الخدمة دي، نسبته بتتحسب لوحدها زي دلوقتي.</p>
+<hr style="border:0;border-top:1px dashed #D5DEEE;margin:2px 0">
+<p class="lbl">لو «من بره المركز»:</p>
+<div class="seg"><span>مفيش</span><span>من جوه المركز</span><span class="on">من بره المركز</span></div>
+<label class="f">اسم الطبيب<input value="د. سامي تجريبي"></label>
+<div class="two"><label class="f">التخصص (اختياري)<input value="عظام"></label><label class="f">العيادة / المستشفى (اختياري)<input value="عيادة خاصة"></label></div>
+</section>
+
+<section class="card"><h3>٢) بعد الحضور وقبل التحصيل: ⋯ ← «الطبيب المحوِّل»</h3>
+<p class="note">مريض تجربة — كشف باطنة (لسه متحصلش)</p>
+<div class="seg"><span>مفيش</span><span>من جوه المركز</span><span class="on">من بره المركز</span></div>
+<label class="f">اسم الطبيب<input value="د. سامي تجريبي"></label>
+<div class="two"><label class="f">التخصص<input value="عظام"></label><label class="f">العيادة / المستشفى<input value=""></label></div>
+<div class="btns"><span class="btn p">حفظ</span><span class="btn">إلغاء</span></div>
+<p class="note">بعد التحصيل الطبيب المحوِّل بيتقفل على الفاتورة — التعديل بعدها طلب للمدير.</p>
+</section>
+
+<section class="card"><h3>٣) الفاتورة / إيصال السداد (بيانات الرأس)</h3>
+<div class="inv"><div class="ttl"><b>فاتورة / إيصال سداد</b><span>INV-2026-000123</span></div>
+<div class="meta">
+ <div><span class="k">المريض:</span> مريض تجربة</div><div><span class="k">رقم الملف:</span> F-0001</div>
+ <div><span class="k">تاريخ الخدمة:</span> 23/11/2026</div><div><span class="k">التخصص:</span> الباطنة</div>
+ <div><span class="k">الطبيب:</span> د. منى تجريبية</div><div><span class="k">التليفون:</span> 010••••••00</div>
+ <div class="new"><span class="k">الطبيب المحوِّل:</span> د. سامي تجريبي — عظام <span class="tag">من بره المركز</span></div>
+</div>
+<p class="note" style="margin:0">لو الطبيب من جوه المركز: «الطبيب المحوِّل: د. أحمد تجريبي — الباطنة». لو مفيش: السطر مايظهرش.</p>
+</div>
+</section>
+</div></body></html>
