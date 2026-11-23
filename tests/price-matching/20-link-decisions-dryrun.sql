@@ -13,7 +13,9 @@ select 'absent_by_topic', jsonb_object_agg(topic,n) from (select topic,count(*) 
 union all
 select 'review_left_by_reason', jsonb_object_agg(action,n) from (select action,count(*) n from lk_plan where action like 'review%' group by 1) q
 union all
-select 'fuzzy_links_sample', jsonb_agg(jsonb_build_array(rname,top3->0->>'name',round(best,2))) from (select * from lk_plan where action='link_fuzzy' order by random() limit 25) q
+select 'fuzzy_links_sample', jsonb_agg(jsonb_build_array(rname,top3->0->>'name',round(best,2))) from (select * from lk_plan where action='link_fuzzy' order by random() limit 40) q
+union all
+select 'fuzzy_sent_to_review_sample', jsonb_agg(jsonb_build_array(rname,top3->0->>'name',round(best,2))) from (select * from lk_plan where action='review_fuzzy_extra_words' order by random() limit 25) q
 union all
 select 'twin_links', jsonb_agg(jsonb_build_array(rname,(select category from public.pricing_services where id=target))) from lk_plan where action='link_twin'
 union all

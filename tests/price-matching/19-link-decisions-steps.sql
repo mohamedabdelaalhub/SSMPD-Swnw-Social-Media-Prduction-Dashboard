@@ -5,11 +5,12 @@
 --   * exact matches (alias / code / normalized name) and the 14 «شامل/غير شامل» variants → link
 --   * MRI, CT, nuclear, endoscopy, cardiac cath / major operations → defer «مش عندنا»
 --   * labs, x-ray/US, simple procedures, dental, neuro/audio, physio/speech, casts → link only STRONG suggestions
---     (word-Dice ≥ 0.80 and strictly better than the 2nd candidate); the rest stays for his review screen
+--     (word-Dice ≥ 0.80, strictly better than the 2nd candidate, and every differing word is noise such as ELISA/total/
+--     «غير شامل المستلزمات»; an extra qualifier like «وضعين»/«ملون»/«الغدة الدرقية» sends it to review); the rest stays for review
 --   * «متنوع» → nothing automatic
 --   * catalogue twins (same name in الطوارئ and العظام): casts/splints/braces/slabs/wire → العظام; dressings/sutures/
 --     catheter → الطوارئ; تقويم → الاسنان
---   * نقابة التجاريين duplicates: Troponine I / تركيب كانيولا / تعليق محلول وريدي / فك جبيرة تمريض = 140; the
+--   * نقابة التجاريين duplicates: Troponine I / تركيب كانيولا / تعليق محلول وريدي (أقل من ساعتين) / فك جبيرة تمريض = 140; the
 --     other-price row is deferred («تقدر تحذف الخدمات التانية اللي سعرها مختلف»)
 --   * odd prices (0, or >10× the base) → NOT linked, left flagged for his review
 -- Rows the RPC would refuse (alias conflict, list already holds that service at another price/unit, two rows → one
@@ -126,12 +127,20 @@ from grp g where not g.done and coalesce(g.x->>'review_status','') not in ('defe
 
 -- owner prices for the نقابة التجاريين duplicates (normalized names)
 create temp table lk_owner_price on commit drop as
-select * from (values ('troponine i',140::numeric),('تركيب كانيولا',140),('تعليق محلول وريدي',140),('فك جبيره تمريض',140)) v(key,price);
+select * from (values ('^troponine i$',140::numeric),('^تركيب كانيولا',140),('^تعليق محلول وريدي.*اقل من ساعتين',140),('^فك جبيره.*تمريض',140)) v(key,price);
+
+-- normalized catalogue names (same normalization as the matcher) and words that never change the service
+create temp table lk_svcn on commit drop as
+select s.id,
+         trim(regexp_replace(regexp_replace(regexp_replace(regexp_replace(translate(regexp_replace(regexp_replace(lower(regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(coalesce(s.name,''),'ٌ(ي)','\1','g'),'ٌ','ي','g'),'ً( |$|\))','ي\1','g'),'[\(\)]\s*غير شامل[^()]*[\(\)]',' ','g'),'[\(\)]\s*(شامل|يشمل)[^()]*[\(\)]',' شامل ','g'),'(غير شامل|لا يشمل|بدون) (ال)?مستلزمات','','g')),'[ً-ٰٟـ]','','g'),'[*"''`|+؟…]',' ','g'),'أإآٱىة٠١٢٣٤٥٦٧٨٩()[]-_/\.,،:','اااايه0123456789'),'\s+',' ','g'),'(^| )(و ?)?ال','\1','g'),'(^| )و( |$)',' ','g'),'(^| )شعه( |$)','\1اشعه\2','g')) nname2
+  from public.pricing_services s where s.active;
+create temp table lk_noise(w text) on commit drop;
+insert into lk_noise values ('elisa'),('centure'),('level'),('serum'),('test'),('quantitative'),('qualitative'),('ab'),('abs'),('antibody'),('antibodies'),('2026'),('شامل'),('شامله'),('غير'),('مستلزمات'),('ادويه'),('بواسطه'),('عدد'),('total');
 
 create temp table lk_plan on commit drop as
 with r as (
  select l.*,
-  (select op.price from lk_owner_price op where l.list_name like '%التجاريين%' and l.nname like op.key||'%') owner_price,
+  (select op.price from lk_owner_price op where l.list_name like '%التجاريين%' and l.nname ~ op.key limit 1) owner_price,
   -- twin resolution by the owner's rule
   (select s.id from public.pricing_services s
     where s.active and s.id in (select jsonb_array_elements_text(l.twins)::uuid)
@@ -152,7 +161,16 @@ d as (
    when owner_price is not null and matched_by in ('alias','code','name','variant') and not price_zero and not price_10x and not item_conflict then 'link'
    when klass='ambiguous' and jsonb_array_length(coalesce(twins,'[]'))>1 and twin_n=1 then 'link_twin'
    when klass in ('fuzzy','unmatched','ambiguous') and topic in ('mri','ct','nuc','endo','cath') then 'defer_absent'
-   when klass='fuzzy' and topic not in ('misc') and best>=0.8 and best>coalesce((top3->1->>'sim')::numeric,0) then 'link_fuzzy'
+   when klass='fuzzy' and topic not in ('misc') and best>=0.8 and best>coalesce((top3->1->>'sim')::numeric,0)
+        and not exists(  -- every word that differs between the two names must be noise (no extra qualifier like «وضعين»، «ملون»، «الغدة الدرقية»)
+          select 1 from (
+            (select t from unnest(string_to_array(r.nname,' ')) t where length(t)>=2
+             except select t from unnest(string_to_array((select nname2 from lk_svcn where id=(r.top3->0->>'id')::uuid),' ')) t)
+            union
+            (select t from unnest(string_to_array((select nname2 from lk_svcn where id=(r.top3->0->>'id')::uuid),' ')) t where length(t)>=2
+             except select t from unnest(string_to_array(r.nname,' ')) t)) diff(t)
+          where t not in (select w from lk_noise)) then 'link_fuzzy'
+   when klass='fuzzy' and topic not in ('misc') and best>=0.8 then 'review_fuzzy_extra_words'
    else 'review' end act0,
   case when klass='ambiguous' and twin_n=1 then twin_sid
        when klass='fuzzy' then (top3->0->>'id')::uuid else sid end target
@@ -190,7 +208,7 @@ begin
     res:=public.price_service_mapping_command(jsonb_build_object('action','source_defer','list_id',p.list_id,'list_revision',lrev,
       'batch_id',p.batch_id,'batch_revision',brev,'indexes',jsonb_build_array(p.idx),
       'note',case p.action when 'defer_absent' then 'مش عندنا — استبعاد بقرار المالك 23-11 ('||p.topic||')'
-                           else 'سعر مكرر مخالف للسعر المعتمد '||(select price from lk_owner_price where p.nname like key||'%')||' — قرار المالك 23-11' end));
+                           else 'سعر مكرر مخالف للسعر المعتمد '||(select price from lk_owner_price where p.nname ~ key limit 1)||' — قرار المالك 23-11' end));
    end if;
    insert into lk_log values(p.list_name,p.batch_id,p.idx,p.action,true,null);
   exception when others then
