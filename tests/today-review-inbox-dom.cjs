@@ -62,6 +62,18 @@ async function submit(t,note){const f=t.d.querySelector('.tri-modal form');f.ele
  d.querySelector('[data-tri-key="shift:f1"][data-tri-do="approve"]').click();
  await submit(t,'استلمت الكاش');
  const sc=t.calls.filter(c=>c[0]==='clinic_reception_command').pop();assert.deepEqual([sc[1].p_action,sc[1].p_payload],['shift_review',{id:'r1',note:'استلمت الكاش'}]);
+ // 20261122380000: «دفعة لأكتر من مريض» → «اطّلعت» / «عليها ملاحظة» through cross_payment_review
+ {const v=fixture();v.requests=[{source:'rx_cross_payment',id:'cp1',kind:'cross_payment',amount:1000,reason:'يحيى دفع عن صاحبه محمود',by:'منار',at:now(),mine:false,patient:'يحيى تجريبي',patients:['يحيى تجريبي','محمود تجريبي'],workspace_id:WS},
+   {source:'rx_cross_payment',id:'cp2',kind:'cross_payment',amount:300,by:'أنا',mine:true,patients:['أ','ب'],workspace_id:WS}];t.set(v);t.w.SSMPDReviewInbox.load(true);
+  for(let i=0;i<40&&!d.querySelector('[data-tri-item="rx_cross_payment:cp1"]');i++)await tick(20);
+  const it=d.querySelector('[data-tri-item="rx_cross_payment:cp1"]');assert(it,'cross payment listed');
+  assert.match(it.textContent,/دفعة لأكتر من مريض/);assert.match(it.textContent,/يحيى تجريبي \+ محمود تجريبي/);
+  assert.equal(it.querySelector('[data-tri-do="approve"]').textContent,'اطّلعت');assert.equal(it.querySelector('[data-tri-do="reject"]').textContent,'عليها ملاحظة');
+  assert.match(d.querySelector('[data-tri-item="rx_cross_payment:cp2"]').textContent,/تحصيلك — لازم حد تاني يراجعه/);
+  it.querySelector('[data-tri-do="reject"]').click();assert.match(d.querySelector('.tri-modal').textContent,/الملاحظة \(إجباري\)/);
+  await submit(t,'الإيصال مش واضح');
+  const cc=t.calls.filter(c=>c[0]==='clinic_reception_command').pop();assert.deepEqual([cc[1].p_action,cc[1].p_payload],['cross_payment_review',{id:'cp1',approve:false,note:'الإيصال مش واضح'}]);}
+ t.set(fixture());
  // the board repaints its root → the inbox comes back
  d.querySelector('[data-journey-root]').innerHTML='<div class="journey-top"></div>';await tick();
  assert(d.querySelector('[data-review-inbox]'),'remounted after the board re-render');
