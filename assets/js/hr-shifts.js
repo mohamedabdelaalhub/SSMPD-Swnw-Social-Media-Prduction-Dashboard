@@ -60,22 +60,31 @@
     function tpl(id) { return ws.templates.filter(function (x) { return x.id === id; })[0]; }
     function chipStyle(t) { var c = safeColor(t.color); return 'background:' + c + '1f;color:' + c; }
 
+    var shortRest = {};
     function warnChips() {
-      var out = [];
+      var out = []; shortRest = {};
       ws.people.forEach(function (p) {
         for (var i = 0; i < 6; i++) {
           var a = tpl(p.days && p.days[DAYS[i][0]]), b = tpl(p.days && p.days[DAYS[i + 1][0]]); if (!a || !b) continue;
           var endA = mins(a.end_time) <= mins(a.start_time) ? mins(a.end_time) + 1440 : mins(a.end_time);
-          if (mins(b.start_time) + 1440 - endA < MIN_REST_MINUTES) out.push('<div class="sch warn" data-shifts-conflict>' + ico('clock') + '<span><b>' + esc(p.full_name) + ':</b> ' + esc(a.name) + ' ' + esc(DAYS[i][1]) + ' ثم ' + esc(b.name) + ' ' + esc(DAYS[i + 1][1]) + ' (راحة أقل من 11 ساعة)</span></div>');
+          if (mins(b.start_time) + 1440 - endA < MIN_REST_MINUTES) { shortRest[p.id + ':' + DAYS[i + 1][0]] = 1; out.push('<div class="sch warn" data-shifts-conflict>' + ico('clock') + '<span><b>' + esc(p.full_name) + ':</b> ' + esc(a.name) + ' ' + esc(DAYS[i][1]) + ' ثم ' + esc(b.name) + ' ' + esc(DAYS[i + 1][1]) + ' (راحة أقل من 11 ساعة)</span></div>'); }
         }
       });
-      if (!out.length) out.push('<div class="sch ok" data-shifts-ok>' + ico('ok') + '<span>الجدول متوازن: لا تعارض راحة بين الورديات</span></div>');
-      return out.slice(0, 5).join('');
+      return out;
+    }
+    /* owner 2026-11-23 («طبقه», option أ): the rest-gap pills and the «بدون جدول» banner collapse into one line; details open on demand */
+    function alertsHtml() {
+      var conflicts = warnChips(), un = ws.people.filter(function (p) { return !(p.days && Object.keys(p.days).length); });
+      if (!ws.templates.length || un.length === ws.people.length) return '';
+      if (!conflicts.length && !un.length) return '<div class="sh-alerts ok" data-shifts-ok>' + ico('ok') + '<span>الجدول متوازن: لا تعارض راحة بين الورديات</span></div>';
+      var label = [conflicts.length ? conflicts.length + ' ' + (conflicts.length === 1 ? 'تنبيه راحة' : 'تنبيهات راحة') : '', un.length ? un.length + ' من غير جدول' : ''].filter(Boolean).join(' · ');
+      return '<details class="sh-alerts" data-shifts-alerts><summary>' + ico('warn') + '<b>' + esc(label) + '</b><span class="sh-alerts-sub">مش بتمنع الحفظ — للمراجعة بس</span><span class="sh-alerts-open">اعرض التفاصيل</span></summary><div class="sh-alerts-body">' +
+        (un.length ? '<div class="sch" data-shifts-unscheduled>' + ico('warn') + '<span><b>' + un.length + ' موظف بدون جدول ورديات:</b> ' + esc(un.map(function (p) { return p.full_name; }).join('، ')) + ' — مش بيظهروا في الغياب والتأخير لحد ما يتحدد جدولهم. اضغط على اسم الموظف في الجدول.</span></div>' : '') +
+        conflicts.join('') + '</div></details>';
     }
     function bannerHtml() {
       var scheduled = ws.people.filter(function (p) { return p.days && Object.keys(p.days).length; }).length, unscheduled = ws.people.length - scheduled;
       if (!ws.templates.length || !scheduled) return '<div class="banner" data-shifts-empty>' + ico('bulb') + '<div style="flex:1;min-width:220px"><b>الجدول هو أساس معرفة «الغايب» و«المتأخر»</b><span style="color:var(--muted);font-size:13.5px">لم تُحدَّد ورديات بعد — أضف وردية (مثلًا «صباحي» من 09:00 إلى 17:00) ثم حدّد أيام عمل كل موظف من الجدول ليظهر من وصل في ميعاده ومن تأخر.</span></div>' + btn('tpl', 'إضافة وردية', '', 'btn') + '</div>';
-      if (unscheduled) return '<div class="banner" data-shifts-unscheduled>' + ico('warn') + '<div style="flex:1;min-width:220px"><b>' + unscheduled + ' موظف بدون جدول ورديات</b><span style="color:var(--muted);font-size:13.5px">لا يظهرون في الغياب والتأخير حتى يُحدَّد جدولهم. اضغط على اسم الموظف في الجدول.</span></div></div>';
       return '';
     }
     function gridHtml() {
@@ -93,9 +102,10 @@
               if (t) hours += span(t) / 60;
               var b = t ? '<button type="button" class="sc" style="' + chipStyle(t) + '" data-shifts="sched" data-id="' + esc(p.id) + '" title="' + esc(t.name) + '">' + esc(t.name) + ' <span class="ltr">' + esc(shortTime(t.start_time) + '–' + shortTime(t.end_time)) + '</span></button>'
                 : '<button type="button" class="sc sc-off" data-shifts="sched" data-id="' + esc(p.id) + '">' + (has ? OFF : '—') + '</button>';
+              if (t && shortRest[p.id + ':' + dy[0]]) b = b.replace('class="sc"', 'class="sc sc-rest"').replace('title="' + esc(t.name) + '"', 'title="' + esc(t.name) + ' — راحة أقل من 11 ساعة قبلها"');
               return '<td class="' + (i === tIdx ? 'today' : '') + '">' + b + '</td>';
             }).join('');
-            return '<tr data-shifts-person><td class="n"><button type="button" data-shifts="sched" data-id="' + esc(p.id) + '" style="border:0;background:none;padding:0;text-align:start"><b>' + esc(p.full_name) + '</b></button> <small style="color:var(--muted)">' + esc([p.code, p.job_title].filter(Boolean).join(' · ')) + '</small></td>' + cells +
+            return '<tr data-shifts-person><td class="n"><button type="button" data-shifts="sched" data-id="' + esc(p.id) + '" style="border:0;background:none;padding:0;text-align:start"><b>' + esc(p.full_name) + '</b></button> <small style="color:var(--muted)">' + esc([p.code, p.job_title].filter(Boolean).join(' · ')) + '</small>' + (w.SSMPDHRActions ? w.SSMPDHRActions.button(p.id, p.full_name) : '') + '</td>' + cells +
               '<td><b style="color:' + (hours > MAX_WEEK_HOURS ? 'var(--neg)' : 'var(--dark)') + '">' + Math.round(hours * 10) / 10 + '</b> <small style="color:var(--muted)">س</small>' + (hours > MAX_WEEK_HOURS ? '<br><small style="color:var(--neg)">فوق ' + MAX_WEEK_HOURS + '</small>' : '') + '</td></tr>';
           }).join('');
       }).join('');
@@ -116,7 +126,7 @@
     }
     function draw() {
       var legend = ws.templates.filter(function (t) { return t.active; }).map(function (t) { return '<span class="pill" style="' + chipStyle(t) + '">' + esc(t.name) + ' <span class="ltr">' + esc(shortTime(t.start_time) + '–' + shortTime(t.end_time)) + '</span></span>'; }).join('');
-      host.innerHTML = bannerHtml() + '<div class="strip" style="margin:0 0 14px">' + warnChips() + '</div>' +
+      host.innerHTML = bannerHtml() + alertsHtml() +
         '<div class="bar" style="margin-bottom:14px"><div class="legend" style="margin:0">' + legend + '<span class="pill p-out">' + OFF + '</span></div><span style="margin-inline-start:auto;color:var(--muted);font-size:13px">اضغط على أي خانة أو اسم لتعديل جدول الموظف</span></div>' + gridHtml() + templatesHtml();
       bind();
     }
