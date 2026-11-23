@@ -40,7 +40,7 @@ assert(/if\(a==='collect-invoice'&&fixed&&!fixed\.package_id\)\{var others=multi
 const pw=new JSDOM('',{runScripts:'outside-only',url:'https://x.test/'}).window;pw.eval(fs.readFileSync('assets/js/swnw-print.js','utf8'));
 const html=pw.SSMPDPrint.receiptHtml({receipt_no:'RC-2026-000010',reference:'W-7788',method:'wallet',amount:1000,note:'تحويل واحد لزيارتين',lines:[{patient:'منار',no:'RX-11',applied:500,due:0},{patient:'ابن منار',no:'RX-12',applied:500,due:100}]});
 const text=html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
-assert.match(text,/الدفعة دي غطّت 2 زيارات/);assert.match(text,/منار — RX-11 500.00 مسدّدة/);assert.match(text,/ابن منار — RX-12 500.00 · الباقي 100.00/);assert.match(text,/ملاحظة تحويل واحد لزيارتين/);
+assert.match(text,/غطّت هذه الدفعة 2 زيارات/);assert.match(text,/منار — RX-11 500.00 مسدّدة/);assert.match(text,/ابن منار — RX-12 500.00 · الباقي 100.00/);assert.match(text,/ملاحظة تحويل واحد لزيارتين/);
 assert(!/حساب الفاتورة بعد الدفعة/.test(text),'no single-invoice box on a multi receipt');
 const br=fs.readFileSync('assets/js/reception-bridge.js','utf8');assert(br.includes("note:record.note||'',lines:alloc.length>1?"),'receipt passes the lines and the note');
 console.log('PASS collect multi UI: same phone / linked family open visits offered (no paid / package), other patients only behind «مريض تاني» with a required note + search, sum, collect_multi payload, note field, receipt lists every visit + note.');
