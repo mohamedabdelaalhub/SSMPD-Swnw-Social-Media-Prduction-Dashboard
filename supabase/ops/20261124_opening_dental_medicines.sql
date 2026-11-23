@@ -1,16 +1,16 @@
--- Ops (data): opening balances «رئيسي أسنان» + «رئيسي أدوية» as of 2026-12-01 (owner, inventory chat).
+-- Ops (data): opening balances «رئيسي أسنان» + «رئيسي أدوية» as of 2026-11-24 (owner, inventory chat).
 -- Source sheets: dental count 21-11 (owner-confirmed, open pieces may exceed a pack), medicines sheet with expiry
 -- (month/day swap fixed per owner; ماء اوكسجين = Feb 2027; melatonin 40 EGP). Quantities in the item's dispensing unit.
--- APPLY ONLY ON/AFTER 2026-12-01 and only after the Dec-1 morning recount (the file will be regenerated if counts change).
+-- APPLY ON/AFTER 2026-11-24 (owner: start tomorrow with the counts we have; a normal جرد on 2026-12-01 records any difference).
 -- Per row: create the item (category, unit, units_per_pack, pricing_kind, markup, sale price), one opening lot
--- «OPEN-<store>-20261201» (every row gets a lot so reception «استهلاك أمس» can consume it), one opening_balance movement
--- at the store dated 2026-12-01 08:00 Cairo, and the opening marker. No GL posting (opening_balance has no posting
+-- «OPEN-<store>-20261124» (every row gets a lot so reception «استهلاك أمس» can consume it), one opening_balance movement
+-- at the store dated 2026-11-24 08:00 Cairo, and the opening marker. No GL posting (opening_balance has no posting
 -- trigger); the opening stock value must be booked by finance's opening entry.
 -- Idempotent: aborts if any of these item names already exists. Expected: 94 dental + 42 medicine items;
 -- value dental 26,609.09 EGP, medicines 14,404.70 EGP.
 begin;
 do $$ begin
-  if now() < timestamptz '2026-12-01 00:00+02' then raise exception 'لسه بدري: الرصيد ده بتاريخ 1 ديسمبر'; end if;
+  if now() < timestamptz '2026-11-24 00:00+02' then raise exception 'لسه بدري: الرصيد ده بتاريخ 24 نوفمبر'; end if;
 end $$;
 create temp table _open(store text,name text,category text,unit text,units_per_pack numeric,quantity numeric,unit_cost numeric,kind text,markup numeric,expiry date) on commit drop;
 insert into _open values
@@ -151,7 +151,7 @@ insert into _open values
   ('medicine','sulfax cream','أدوية','قطعة',1.0,0.0,120.0,'medicine',0,null),
   ('medicine','controloc 40 mg amp','أدوية','قطعة',1.0,0.0,146.0,'medicine',0,null);
 do $$
-declare me uuid; r record; iid uuid; lid uuid; loc uuid; v_at timestamptz := timestamptz '2026-12-01 08:00+02';
+declare me uuid; r record; iid uuid; lid uuid; loc uuid; v_at timestamptz := timestamptz '2026-11-24 08:00+02';
 begin
   select id into me from public.admins where role = 'super_admin' and active order by id limit 1;
   if me is null then raise exception 'no super admin'; end if;
@@ -167,14 +167,14 @@ begin
       returning id into iid;
     if r.quantity > 0 then
       insert into public.inventory_lots(item_id, lot_number, expiry_date, received_quantity, unit_cost, supplier_name, created_by)
-        values (iid, 'OPEN-' || upper(r.store) || '-20261201', r.expiry, r.quantity, r.unit_cost, 'رصيد أول المدة', me) returning id into lid;
+        values (iid, 'OPEN-' || upper(r.store) || '-20261124', r.expiry, r.quantity, r.unit_cost, 'رصيد أول المدة', me) returning id into lid;
       insert into public.inventory_movements(item_id, location_id, lot_id, movement_type, quantity_delta, unit_cost, reference_type, note, occurred_at, created_by)
-        values (iid, loc, lid, 'opening_balance', r.quantity, r.unit_cost, 'opening', 'رصيد أول المدة 1 ديسمبر 2026', v_at, me);
+        values (iid, loc, lid, 'opening_balance', r.quantity, r.unit_cost, 'opening', 'رصيد أول المدة 24 نوفمبر 2026', v_at, me);
       insert into public.inventory_opening_markers(location_id, item_id, batch_id) values (loc, iid, null);
     end if;
   end loop;
 end $$;
 select l.name store, count(distinct m.item_id) items, round(sum(m.quantity_delta * m.unit_cost), 2) value
   from public.inventory_movements m join public.inventory_locations l on l.id = m.location_id
- where m.movement_type = 'opening_balance' and m.occurred_at = timestamptz '2026-12-01 08:00+02' group by l.name;
+ where m.movement_type = 'opening_balance' and m.occurred_at = timestamptz '2026-11-24 08:00+02' group by l.name;
 commit;
