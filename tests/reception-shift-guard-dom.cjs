@@ -46,13 +46,13 @@ async function run(role,guard,watch){
  const s=await run('reception',{locked:true,reason:'stale',opened_at:new Date(Date.now()-26*3600e3).toISOString(),register:'خزينة الاستقبال 1',expected:1500});
  const sc=s.d.querySelector('[data-rsg-lock="stale"]');assert(sc);assert.match(sc.textContent,/خزينة الاستقبال 1/);assert.match(sc.textContent,/1,500 كاش/);
  sc.querySelector('[data-rsg-handover]').click();assert.deepEqual(s.opened.pop(),['handover']);s.w.close();
- // handed over («سلّم الوردية» → end_shift): not locked, a clear waiting card, nothing stopped, no «افتح وردية»
- const h=await run('reception',{locked:false,reason:'awaiting_receipt',ended_at:new Date(Date.now()-5*60000).toISOString(),receiver:'محمود تجريبي'});
- const hc=h.d.querySelector('[data-rsg-lock="awaiting_receipt"]');assert(hc,'waiting card');assert.match(hc.textContent,/سلّمت ورديتك — مستني محمود تجريبي يأكد الاستلام/);
- assert(!hc.querySelector('[data-rsg-open]'),'no «افتح وردية» while the handover waits');assert(!/[٠-٩]/.test(hc.textContent));
- assert.equal((await h.client.rpc('clinic_reception_command',{p_action:'book'})).data.ok,1,'book not stopped after the handover');h.w.close();
- const rv=await run('reception',{locked:false,reason:'awaiting_review',ended_at:new Date(Date.now()-3600e3).toISOString()});
- assert.match(rv.d.querySelector('[data-rsg-lock="awaiting_review"]').textContent,/مستنية مراجعة الحسابات/);rv.w.close();
+ // owner: always a way out — stale card «اقفل الوردية القديمة» → handover (end_shift to main) → card turns into «افتح وردية» → open → gone
+ const x=await run('reception',{locked:true,reason:'stale',opened_at:new Date(Date.now()-26*3600e3).toISOString(),register:'خزينة الاستقبال 1',expected:1500});
+ const xb=x.d.querySelector('[data-rsg-lock="stale"] [data-rsg-handover]');assert.equal(xb.textContent,'اقفل الوردية القديمة (سلّم الفلوس)');
+ x.set({locked:true,reason:'need_open',exp_start:start});await x.client.rpc('clinic_finance_treasury_command',{p_action:'end_shift'});await tick(80);
+ const xo=x.d.querySelector('[data-rsg-lock="need_open"] [data-rsg-open]');assert(xo,'after the handover the card offers «افتح وردية»');assert(!x.d.querySelector('[data-rsg-lock="stale"]'));
+ x.set({locked:false,reason:'open'});xo.click();await tick(400);assert(x.calls.some(c=>c[0]==='clinic_booking_shift'&&c[1]==='open'),'opened');await tick(80);
+ assert(!x.d.querySelector('[data-rsg-lock]'),'unlocked once the new shift is open');x.w.close();
  // manager: no lock, watch list
  const m=await run('financial_manager',null,{visible:true,items:[{kind:'missing',name:'منار تجريبية',exp_start:start},{kind:'stale',name:'مازن تجريبي',opened_at:new Date(Date.now()-40*3600e3).toISOString(),expected:0},{kind:'after_end',name:'مريم تجريبية',exp_end:start,expected:850}]});
  assert(!m.d.querySelector('[data-rsg-lock]'));assert(!m.calls.some(c=>c[0]==='clinic_reception_shift_guard'),'managers do not ask for their own lock');

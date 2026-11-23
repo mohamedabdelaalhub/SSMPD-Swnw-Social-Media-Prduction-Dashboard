@@ -9,12 +9,15 @@
 -- Everything else stays open: reading, shift_open / shift_close / handovers, reviews (request_review, discount_review, shift_review,
 -- cross_payment_review …), rescheduling, cancel, patient edits, messages. Trial workspaces are never locked.
 -- Not locked when: no linked HR person, no schedule today, leave day, shift already over, punched out, or a shift closed today.
--- Not locked either once the shift is handed over («سلّم الوردية» → end_shift) and waits for the main treasurer's receipt or the
--- finance review: a new collection shift can't be opened before that review, so the card says «مستني الاستلام / المراجعة» instead.
+-- Owner (via main chat): «لو ما فتحش وردية وشاشته وقفت يبقى عنده اوبشن يقفل الوردية القديمة … علشان الدنيا ما توقفش تماما».
+-- The locked user always has a way out: a stale shift → «سلّم / اقفل الوردية القديمة» (handover to main or count & close);
+-- right after, the stale lock is gone and «افتح وردية» works. For that, collection treasuries now follow the main-treasury rule
+-- (20261122200000): ONE OPEN, not-handed-over collection shift per register and per cashier; shifts waiting for the receipt / the
+-- finance review queue and no longer block a new shift (the review itself, maker ≠ checker and period close are unchanged).
 -- Read-only RPCs: public.clinic_reception_shift_guard() (own state, for the lock card) and public.clinic_reception_shift_watch()
 -- (super admin / general manager / financial manager: who is locked, stale shifts, shifts open more than an hour after the HR shift end).
 -- Outer wrappers only (old bodies renamed into clinic_reception.*_before_shift_guard). Nothing moves money; nothing is deducted.
--- Rollback: supabase/rollbacks/20261123090000_reception_shift_guard.rollback.sql
+-- Rollback: supabase/rollbacks/20261123100000_reception_shift_guard.rollback.sql
 begin;
 
 do $$ begin
@@ -43,17 +46,6 @@ begin
     end if;
     return jsonb_build_object('locked', false, 'reason', 'open');
   end if;
-  -- handed over (end_shift → waiting for the main treasurer's receipt) or closed but not yet reviewed: a new collection shift
-  -- cannot be opened until finance reviews it (unique fin_cashier_collection_active), so this is never a lock — the card explains it
-  select sh.id, sh.status, sh.ended_at, sh.closed_at into s from clinic_finance.shifts sh
-   where sh.cashier_id = me and not coalesce(sh.is_main, false) and sh.status <> 'reviewed' and (sh.status <> 'open' or sh.ended_at is not null)
-   order by sh.opened_at desc limit 1;
-  if found then
-    return jsonb_build_object('locked', false, 'reason', case when s.status = 'open' then 'awaiting_receipt' else 'awaiting_review' end,
-      'shift_id', s.id, 'ended_at', coalesce(s.ended_at, s.closed_at),
-      'receiver', (select coalesce(nullif(trim(a.name), ''), a.email) from clinic_finance.shifts m join public.admins a on a.id = m.cashier_id
-                    where m.is_main and m.status = 'open' order by m.opened_at desc limit 1));
-  end if;
   select p.id into pid from clinic_people.people p where p.admin_id = me and p.status <> 'ended' limit 1;
   if pid is null then return jsonb_build_object('locked', false, 'why', 'no_person'); end if;
   select x.first_in, x.exp_start, x.exp_end, x.status into e from clinic_people.attendance_eval(d, now()) x where x.person_id = pid limit 1;
@@ -61,7 +53,8 @@ begin
      or now() < e.exp_start + interval '1 hour' then
     return jsonb_build_object('locked', false, 'why', 'not_due');
   end if;
-  if exists (select 1 from clinic_finance.shifts sh where sh.cashier_id = me and sh.status <> 'open' and sh.opened_at >= now() - interval '16 hours') then
+  if exists (select 1 from clinic_finance.shifts sh where sh.cashier_id = me and not coalesce(sh.is_main, false)
+               and (sh.status <> 'open' or sh.ended_at is not null) and sh.opened_at >= now() - interval '16 hours') then
     return jsonb_build_object('locked', false, 'why', 'closed');
   end if;
   if to_regclass('clinic_people.device_punches') is not null then
@@ -163,7 +156,7 @@ begin
     elsif e_start is not null and coalesce(e_status, '') <> 'leave' and now() >= e_start + interval '1 hour'
           and (e_end is null or now() < e_end)
           and not exists (select 1 from clinic_finance.shifts sh where sh.cashier_id = a.id and not coalesce(sh.is_main, false)
-                            and (sh.opened_at >= now() - interval '16 hours' or (sh.status <> 'reviewed' and (sh.status <> 'open' or sh.ended_at is not null)))) then
+                            and sh.opened_at >= now() - interval '16 hours') then
       rows := rows || jsonb_build_object('kind', 'missing', 'admin_id', a.id, 'name', a.name, 'exp_start', e_start, 'first_in', e_in);
     end if;
   end loop;
@@ -171,5 +164,42 @@ begin
 end $$;
 revoke all on function public.clinic_reception_shift_watch() from public, anon;
 grant execute on function public.clinic_reception_shift_watch() to authenticated;
+
+-- collection treasuries: one OPEN (not handed over) shift per register / cashier; handed-over and closed ones queue for receipt / review
+create table clinic_reception.shift_guard_saved_defs(name text primary key, def text not null);
+revoke all on clinic_reception.shift_guard_saved_defs from public, anon, authenticated;
+insert into clinic_reception.shift_guard_saved_defs select 'shift_single_active_message', pg_get_functiondef(to_regprocedure('clinic_finance.shift_single_active_message()'))
+  where to_regprocedure('clinic_finance.shift_single_active_message()') is not null;
+drop index if exists clinic_finance.fin_register_active;
+drop index if exists clinic_finance.fin_cashier_collection_active;
+drop index if exists clinic_finance.fin_cashier_active;   -- pre-20261019001000 name
+create unique index fin_register_collection_open on clinic_finance.shifts(register_id) where status = 'open' and ended_at is null and not is_main;
+create unique index fin_cashier_collection_open on clinic_finance.shifts(cashier_id) where status = 'open' and ended_at is null and not is_main;
+create or replace function clinic_finance.shift_single_active_message() returns trigger
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare s record; main boolean;
+begin
+  select treasury_kind = 'main' into main from clinic_finance.registers where id = new.register_id;
+  main := coalesce(main, false);
+  select sh.opened_at, coalesce(a.name, 'موظف') as who into s
+    from clinic_finance.shifts sh left join public.admins a on a.id = sh.cashier_id
+   where sh.register_id = new.register_id and sh.status = 'open' and sh.id <> new.id and sh.is_main = main and (main or sh.ended_at is null)
+   order by sh.opened_at desc limit 1;
+  if found then
+    raise exception 'الخزينة دي عليها وردية لسه مفتوحة (باسم %، اتفتحت %). %', s.who, to_char(s.opened_at at time zone 'Africa/Cairo', 'DD/MM HH24:MI'),
+      case when main then 'الخزينة الرئيسية مفتوحة بالفعل — اعمل «جرد الخزينة الرئيسية» بدل ما تفتح وردية جديدة.'
+           else 'اقفلها الأول بـ«جرد وتسليم»، وبعدين افتح وردية جديدة.' end using errcode = '23505';
+  end if;
+  select sh.opened_at, coalesce(r.name, 'خزينة') as reg into s
+    from clinic_finance.shifts sh left join clinic_finance.registers r on r.id = sh.register_id
+   where sh.cashier_id = new.cashier_id and sh.status = 'open' and sh.id <> new.id and (sh.is_main or sh.ended_at is null)
+   order by sh.opened_at desc limit 1;
+  if found then
+    raise exception 'عندك وردية تانية لسه مفتوحة على «%» (اتفتحت %). اقفلها الأول بـ«جرد وتسليم» أو «سلّم الوردية».', s.reg,
+      to_char(s.opened_at at time zone 'Africa/Cairo', 'DD/MM HH24:MI') using errcode = '23505';
+  end if;
+  return new;
+end $$;
+revoke all on function clinic_finance.shift_single_active_message() from public, anon, authenticated;
 
 commit;
