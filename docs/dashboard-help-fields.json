@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1954,
+    "definitions": 1957,
     "labels": 1424,
-    "files": 150,
-    "groups": 1538
+    "files": 151,
+    "groups": 1539
   },
   "fields": [
     {
@@ -10691,6 +10691,36 @@
       "tab": "patients",
       "article": "patient-records",
       "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "reception-activity-log.js",
+      "label": "الموظف",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "reception-activity-log.js",
+      "label": "الدكتور",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-activity-log",
+      "text_sha256": "d5f03cde804f53abbde61c1df147c956c413583d44557b2cf8c963699d7ce1d9"
+    },
+    {
+      "file": "reception-activity-log.js",
+      "label": "المريض",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient",
+      "text_sha256": "34ae74f68692afd35d96b169b7ea58bda8c755399f80e852141385483719cffa"
     },
     {
       "file": "reception-auto-book.js",
