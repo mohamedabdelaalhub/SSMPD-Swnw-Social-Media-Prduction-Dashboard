@@ -43,7 +43,7 @@ begin
   select s.price, nullif(to_jsonb(s)->>'pricing_service_id', '')::uuid into base, psid from clinic_reception.services s where s.id = p_service;
   if base is null then return null; end if;
   select * into l from clinic_prices.lists x
-   where x.contract_id = p_contract and x.status = 'active' and p_day between x.valid_from and x.valid_to
+   where x.contract_id = p_contract and x.status = 'active' and p_day between x.valid_from and x.valid_to and to_jsonb(x)->>'deleted_at' is null
    order by x.version desc limit 1;
   if not found then return null; end if;
   if psid is not null then select * into it from clinic_prices.items i where i.list_id = l.id and i.service_id = psid; end if;
@@ -71,7 +71,8 @@ begin
         from public.contracting_entity_contracts c join public.contracting_entities e on e.id = c.entity_id
        where c.status = 'active' and e.category in ('insurance', 'unions', 'clubs')
          and (c.start_date is null or c.start_date <= d) and (c.end_date is null or c.end_date >= d)
-         and exists (select 1 from clinic_prices.lists l where l.contract_id = c.id and l.status = 'active' and d between l.valid_from and l.valid_to)) q;
+         and exists (select 1 from clinic_prices.lists l where l.contract_id = c.id and l.status = 'active' and d between l.valid_from and l.valid_to
+                       and to_jsonb(l)->>'deleted_at' is null)) q;
   end if;
   if to_regclass('public.contracting_entities') is not null then
     select coalesce(jsonb_agg(jsonb_build_object('name', e.name, 'category', e.category) order by e.name), '[]'::jsonb) into unions
