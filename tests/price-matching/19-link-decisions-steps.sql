@@ -162,12 +162,12 @@ d as (
    when klass='ambiguous' and jsonb_array_length(coalesce(twins,'[]'))>1 and twin_n=1 then 'link_twin'
    when klass in ('fuzzy','unmatched','ambiguous') and topic in ('mri','ct','nuc','endo','cath') then 'defer_absent'
    when klass='fuzzy' and topic not in ('misc') and best>=0.8 and best>coalesce((top3->1->>'sim')::numeric,0)
-        and not exists(  -- every word that differs between the two names must be noise (no extra qualifier like «وضعين»، «ملون»، «الغدة الدرقية»)
+        and not exists(  -- every word that differs between the two names must be noise (no extra qualifier like «وضعين»، «ملون»، «الغدة الدرقية»; single digits count: Dsg1 ≠ Dsg3)
           select 1 from (
-            (select t from unnest(string_to_array(r.nname,' ')) t where length(t)>=2
+            (select t from unnest(string_to_array(r.nname,' ')) t where length(t)>=2 or t ~ '^[0-9]+$'
              except select t from unnest(string_to_array((select nname2 from lk_svcn where id=(r.top3->0->>'id')::uuid),' ')) t)
             union
-            (select t from unnest(string_to_array((select nname2 from lk_svcn where id=(r.top3->0->>'id')::uuid),' ')) t where length(t)>=2
+            (select t from unnest(string_to_array((select nname2 from lk_svcn where id=(r.top3->0->>'id')::uuid),' ')) t where length(t)>=2 or t ~ '^[0-9]+$'
              except select t from unnest(string_to_array(r.nname,' ')) t)) diff(t)
           where t not in (select w from lk_noise)) then 'link_fuzzy'
    when klass='fuzzy' and topic not in ('misc') and best>=0.8 then 'review_fuzzy_extra_words'
