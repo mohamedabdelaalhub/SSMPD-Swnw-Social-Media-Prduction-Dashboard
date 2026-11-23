@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1944,
-    "labels": 1413,
-    "files": 149,
-    "groups": 1530
+    "definitions": 1954,
+    "labels": 1422,
+    "files": 150,
+    "groups": 1537
   },
   "fields": [
     {
@@ -18940,6 +18940,106 @@
       "tab": "tasks",
       "article": "tasks-guide",
       "text_sha256": "3c10fd9b1342e48b8fd97c2633c5978bbf956121d8ab5c365ae493833150b10b"
+    },
+    {
+      "file": "tax-status.js",
+      "label": "مثلاً: 7F3K9Q2M…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "accounting",
+      "article": "tax-invoices-portal",
+      "text_sha256": "e8e727c3adc5b1d984b227faec8139f9e5c22313b26115ff21daf20f108097f6"
+    },
+    {
+      "file": "tax-status.js",
+      "label": "رقم الفاتورة على البوابة (UUID)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "tax-invoices-portal",
+      "text_sha256": "e8e727c3adc5b1d984b227faec8139f9e5c22313b26115ff21daf20f108097f6"
+    },
+    {
+      "file": "tax-status.js",
+      "label": "رقم الفاتورة الداخلي على البوابة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "tax-invoices-portal",
+      "text_sha256": "a6e5db5dd62f771a7d67f218f15e0b77fc935684954880e5b14ee3d15e5e7c30"
+    },
+    {
+      "file": "tax-status.js",
+      "label": "تاريخ الرفع",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "tax-invoices-portal",
+      "text_sha256": "3d54bf1dca97ab87af9a18f5f01c1b090449f8aa5a7525f45bd39e39f47405f1"
+    },
+    {
+      "file": "tax-status.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "tax-status.js",
+      "label": "تقرير الضرائب من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "tax-invoices-portal",
+      "text_sha256": "1593db15439b41176ad65f86c820132f3645e444f1f875e7256903de1c16f0ad"
+    },
+    {
+      "file": "tax-status.js",
+      "label": "تقرير الضرائب لحد",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "tax-invoices-portal",
+      "text_sha256": "99f6b2aff0208f3c911459c2a87f523c553081c0819483f691a40f057d334440"
+    },
+    {
+      "file": "tax-status.js",
+      "label": "الفواتير الضريبية من تاريخ",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "tax-invoices-portal",
+      "text_sha256": "7a1657c46bf1c1dbe56bd5ae9664142bdafbb048264fa6c84691ba7888b1ce55"
+    },
+    {
+      "file": "tax-status.js",
+      "label": "الفواتير الإلكترونية من تاريخ",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "tax-invoices-portal",
+      "text_sha256": "7a1657c46bf1c1dbe56bd5ae9664142bdafbb048264fa6c84691ba7888b1ce55"
+    },
+    {
+      "file": "tax-status.js",
+      "label": "نسبة خصم ضريبة الأطباء % (واحدة للكل)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "tax-invoices-portal",
+      "text_sha256": "a33ccb64dfb2d56994608739819266a01a48bc0704c6a05dd89a49da3b8f1988"
     },
     {
       "file": "test-records.js",

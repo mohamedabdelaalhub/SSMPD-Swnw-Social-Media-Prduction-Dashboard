@@ -20511,6 +20511,106 @@
       "reviewed": true
     },
     {
+      "title": "مثلاً: 7F3K9Q2M…",
+      "labels": [
+        "مثلاً: 7F3K9Q2M…",
+        "رقم الفاتورة على البوابة (UUID)"
+      ],
+      "text": "انسخ رقم الفاتورة (UUID) من بوابة الضرائب بعد رفعها. الرقم ده مايتكررش على فاتورتين، والرفع بيستنى تأكيد المدير المالي.",
+      "article": "tax-invoices-portal",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم الفاتورة الداخلي على البوابة (اختياري)",
+      "labels": [
+        "رقم الفاتورة الداخلي على البوابة (اختياري)"
+      ],
+      "text": "رقم الفاتورة الداخلي اللي ظاهر على البوابة لو مختلف عن رقمنا. اختياري ومبيغيّرش أي مبلغ.",
+      "article": "tax-invoices-portal",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تاريخ الرفع",
+      "labels": [
+        "تاريخ الرفع"
+      ],
+      "text": "اليوم اللي الفاتورة اترفعت فيه على بوابة الضرائب. مايبقاش في المستقبل.",
+      "article": "tax-invoices-portal",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تقرير الضرائب من",
+      "labels": [
+        "تقرير الضرائب من"
+      ],
+      "text": "أول يوم في فترة تقرير الضرائب. التقرير بيعرض الفواتير اللي تاريخها بين «من» و«لحد».",
+      "article": "tax-invoices-portal",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تقرير الضرائب لحد",
+      "labels": [
+        "تقرير الضرائب لحد"
+      ],
+      "text": "آخر يوم في فترة تقرير الضرائب. التقرير بيعرض الفواتير اللي تاريخها بين «من» و«لحد».",
+      "article": "tax-invoices-portal",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الفواتير الضريبية من تاريخ",
+      "labels": [
+        "الفواتير الضريبية من تاريخ",
+        "الفواتير الإلكترونية من تاريخ"
+      ],
+      "text": "من التاريخ ده أي فاتورة بتتعلّم ضريبية (أو إلكترونية) لوحدها. المحاسب يقدر يشيل العلامة من فاتورة معيّنة. سيبه فاضي لو لسه ما بدأناش.",
+      "article": "tax-invoices-portal",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نسبة خصم ضريبة الأطباء % (واحدة للكل)",
+      "labels": [
+        "نسبة خصم ضريبة الأطباء % (واحدة للكل)"
+      ],
+      "text": "نسبة واحدة لكل الأطباء بتتحسب على أتعابهم في الفواتير الإلكترونية اللي اترفعت، وبتظهر كاقتراح في تسوية أتعاب الطبيب. النسبة القانونية يأكدها المحاسب.",
+      "article": "tax-invoices-portal",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "نوع السجل",
       "labels": [
         "نوع السجل"
@@ -22618,9 +22718,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1944,
-    "labels": 1413,
-    "files": 149,
-    "groups": 1530
+    "definitions": 1954,
+    "labels": 1422,
+    "files": 150,
+    "groups": 1537
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
