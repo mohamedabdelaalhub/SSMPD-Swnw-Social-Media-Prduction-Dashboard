@@ -1,9 +1,9 @@
 -- Ops (data): opening balance «فرعي مستلزمات تمريض» as of 2026-11-24 08:00 Cairo (owner, inventory chat).
--- Source: nursing sheet + supplier prices sent by the owner (per piece; tubes 2 EGP each; dressing gauze 6,500 EGP per pack of 100 = 65 each;
+-- Source: nursing sheet + supplier prices sent by the owner (per piece; tubes 2 EGP each; dressing gauze EXCLUDED here (count pending; 400 EGP per pack of 100);
 -- steri-strip 5 EGP each; مقص جراحي excluded = instrument). Expiry: Excel day/month swap fixed, end of month; Prolene 2.0 = Feb 2027.
 -- Same pattern as 20261124_opening_dental_medicines.sql: item (category مستلزمات, supply 35%), lot OPEN-NURSING-20261124,
 -- opening_balance movement, opening marker. No GL posting (finance books ONE opening for all stores afterwards).
--- Expected: 63 items (62 with stock), value 71,729.40 EGP. Aborts if any name already exists (idempotent).
+-- Expected: 62 items (61 with stock), value 49,629.40 EGP. Aborts if any name already exists (idempotent).
 begin;
 create temp table _open(name text,unit text,units_per_pack numeric,quantity numeric,unit_cost numeric,expiry date) on commit drop;
 insert into _open values
@@ -22,7 +22,6 @@ insert into _open values
   ('تيوبة لبني','قطعة',1.0,75.0,2.0,'2027-11-30'),
   ('تيوبة احمر','قطعة',1.0,81.0,2.0,'2027-03-31'),
   ('شاش فازلين 10 *10','قطعة',1.0,20.0,250.0,null),
-  ('بكت شاش دريسينج 10*10','قطعة',100.0,340.0,65.0,null),
   ('كيس قطن (100 جرام )','كيس',1.0,13.0,110.0,null),
   ('قسطرة بولية مقاس 16','قطعة',1.0,3.0,500.0,'2028-01-31'),
   ('قسطرة بولية مقاس 18','قطعة',1.0,3.0,500.0,'2028-01-31'),

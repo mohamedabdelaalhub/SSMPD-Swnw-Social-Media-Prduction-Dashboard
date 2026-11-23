@@ -135,15 +135,6 @@
   "desc": "قطعة"
  },
  {
-  "name": "بكت شاش دريسينج 10*10",
-  "unit": "قطعة",
-  "units_per_pack": 100.0,
-  "quantity": 340.0,
-  "unit_cost": 65.0,
-  "expiry": null,
-  "desc": "علبة (100 قطعة)"
- },
- {
   "name": "كيس قطن (100 جرام )",
   "unit": "كيس",
   "units_per_pack": 1.0,
