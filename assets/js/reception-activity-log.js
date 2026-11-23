@@ -1,7 +1,7 @@
 /* «سجل نشاط الاستقبال» (owner 2026-11-23 «طبقه», mockup docs/ui-references/mockups/reception-activity-log-*). A read-only
    section inside «الاستقبال والخدمات» for the general manager / super admin / financial manager: who did what (booking,
    rescheduling, cancel, visit, service, collection, correction request), a per-employee summary and a CSV export.
-   Server: public.clinic_reception_activity (20261122350000). A payment that covered more than one visit shows
+   Server: public.clinic_reception_activity (20261123010000). A payment that covered more than one visit shows
    «دفعة واحدة لـN زيارات» and its note, so the collections count vs the visits count is explained. */
 (function (w, d) {
   'use strict';

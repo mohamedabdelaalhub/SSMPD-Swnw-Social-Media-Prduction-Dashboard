@@ -1,4 +1,4 @@
-// 20261122350000 «سجل نشاط الاستقبال» (public.clinic_reception_activity): read-only, super admin / GM / FM only; one row per reception
+// 20261123010000 «سجل نشاط الاستقبال» (public.clinic_reception_activity): read-only, super admin / GM / FM only; one row per reception
 // action (audit), resolved to patient / doctor / visit / payment; collect_multi rows carry the note + visits covered + «لأكتر من مريض»
 // (20261122380000 collect_multi_cross); auto-booking account shown apart; per-employee summary; filters; paging; rollback. Sample data.
 // (base: tests/reception-collect-multi-sql.cjs) «دفعة واحدة لأكتر من زيارة» + «ملاحظة» (20261122160000): ONE payment (one reference, one proof, one receipt number) pays several
@@ -70,7 +70,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   assert.equal((await owner("select note from clinic_reception.payments where id=$1",[s1.id]))[0].note,'دفع عن طريق أخوه');
   // a no-access user is refused
   await as(3);await assert.rejects(()=>cmd('collect_multi',{...base,reference:'W-14'}));
-  // ---- 20261122380000 (one payer) so a cross-patient collect_multi exists, then 20261122350000 ----
+  // ---- 20261122380000 (one payer) so a cross-patient collect_multi exists, then 20261123010000 ----
   await db.exec('reset role');
   await db.exec(mig('20261122380000'));
   await owner("insert into clinic_reception.members(workspace_id,admin_id,capabilities) values($1,$2,$3) on conflict (workspace_id,admin_id) do update set capabilities=excluded.capabilities",[ws,id(4),['book','collect','view']]);
@@ -87,7 +87,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   await audit(4,'book',ap1);await audit(2,'book',ap2);await audit(4,'reschedule',ap1);await audit(4,'patient_attach',A);
   await db.exec("create table if not exists clinic_reception.auto_book_settings(id boolean primary key default true,system_admin_id uuid)");
   await owner("insert into clinic_reception.auto_book_settings(id,system_admin_id) values(true,$1) on conflict (id) do update set system_admin_id=excluded.system_admin_id",[id(2)]);
-  const M35=mig('20261122350000');await db.exec(M35);await assert.rejects(()=>db.exec(M35),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+  const M35=mig('20261123010000');await db.exec(M35);await assert.rejects(()=>db.exec(M35),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
   const act=async(who,f={})=>{await as(who);try{return await call('clinic_reception_activity',[ws,f]);}finally{await db.exec('reset role');}};
   // access: reception / accountant refused; super admin + FM allowed
   await assert.rejects(()=>act(4),/للمدير العام والمدير المالي/);await assert.rejects(()=>act(2),/للمدير العام والمدير المالي/);
@@ -118,7 +118,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   // read-only: no writes
   assert.equal(all.providers[0].name,'د. جلدية تجريبية');
   // rollback
-  await db.exec(fs.readFileSync('supabase/rollbacks/20261122350000_reception_activity_log.rollback.sql','utf8'));
+  await db.exec(fs.readFileSync('supabase/rollbacks/20261123010000_reception_activity_log.rollback.sql','utf8'));
   assert.equal((await owner("select to_regprocedure('public.clinic_reception_activity(uuid,jsonb)') r"))[0].r,null);
   console.log('PASS reception activity log: GM/super admin/FM only, one row per action with patient/doctor, collect_multi note + visits + cross flag, auto-booking apart, summary (visits paid vs collections), filters, paging, period cap, rollback.');
  }finally{await db.close();}

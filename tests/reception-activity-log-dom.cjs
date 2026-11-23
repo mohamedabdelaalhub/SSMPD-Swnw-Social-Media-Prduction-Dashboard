@@ -1,4 +1,4 @@
-// «سجل نشاط الاستقبال» UI (reception-activity-log.js, 20261122350000): a reception section only for GM / super admin / FM; filters,
+// «سجل نشاط الاستقبال» UI (reception-activity-log.js, 20261123010000): a reception section only for GM / super admin / FM; filters,
 // period + operation chips, per-employee summary (click a name filters), log grouped by day, a multi-visit payment shows
 // «دفعة واحدة لـ2 زيارات — لأكتر من مريض» + its note, «اعرض أكتر» paging, CSV export with a BOM; English digits. Sample data only.
 const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');

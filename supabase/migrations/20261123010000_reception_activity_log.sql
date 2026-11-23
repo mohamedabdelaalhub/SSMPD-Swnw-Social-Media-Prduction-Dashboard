@@ -7,7 +7,7 @@
 --     same payment has a 'collect_multi_cross' audit row (20261122380000) — so a payments-vs-visits difference is explained.
 --   * bookings by the auto-booking account (clinic_reception.auto_book_settings.system_admin_id) are «الحجز التلقائي».
 --   * summary per employee for the period: visits, bookings, services, changes/cancels, collections, amount, visits paid.
--- Nothing is written. Rollback: supabase/rollbacks/20261122350000_reception_activity_log.rollback.sql
+-- Nothing is written. Rollback: supabase/rollbacks/20261123010000_reception_activity_log.rollback.sql
 begin;
 
 do $$ begin
