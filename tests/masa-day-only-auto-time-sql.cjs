@@ -58,11 +58,26 @@ const body=`
  await q("update clinic_reception.masa_bookings set starts_at=$1,ends_at=$2 where official_booking_id='D2'",[z(day3,'00:00'),z(day3,'00:20')]);
  await one("select clinic_reception.auto_book_run()");D2=await rowOf('D2');assert.equal(D2.state,'booked',D2.reason);assert.equal(D2.dayt,day3);
  assert.equal((await one("select (starts_at at time zone 'Africa/Cairo')::date::text d from clinic_reception.appointments where id=$1",[D2.appointment_id])).d,day3);
+ // a window ending at midnight (22:00-00:00 Cairo, like Dr. Ahmed Samir): placed at 22:00, 22:20, …
+ const day4=(await one("select ((now() at time zone 'Africa/Cairo')::date+4)::text d")).d,day5=(await one("select ((now() at time zone 'Africa/Cairo')::date+5)::text d")).d;
+ await q("insert into clinic_reception.availability(workspace_id,provider_id,starts_at,ends_at) values($1,$2,$3,$4)",[ws,prov,z(day4,'22:00'),z(day5,'00:00')]);
+ await q("insert into patients(full_name,phone,age) values('رنا فتحي علي','01000000005',30),('سلمى نبيل حسن','01000000006',30)");
+ await mk('Z1','رنا فتحي علي','01000000005',day4);await mk('Z2','سلمى نبيل حسن','01000000006',day4);
+ await one("select clinic_reception.auto_book_run()");
+ const M1=await rowOf('Z1'),M2=await rowOf('Z2');assert.equal(M1.state,'booked',M1.reason);assert.equal(M2.state,'booked',M2.reason);
+ assert.deepEqual([await hm(M1.appointment_id),await hm(M2.appointment_id)].sort(),['22:00','22:20']);
+ // free times exist but the booking rules refuse them all → review 'slot' with the reason (not «مليان»)
+ await q("insert into patients(full_name,phone,age) values('ياسر عمرو سعد','01000000007',30)");
+ await db.exec("create function clinic_reception.refuse_all() returns trigger language plpgsql as $t$begin if new.patient_id in (select rp.id from clinic_reception.patients rp where rp.phone='01000000007') then raise exception 'قاعدة حجز رفضت'; end if; return new; end $t$; create trigger refuse_all before insert on clinic_reception.appointments for each row execute function clinic_reception.refuse_all();");
+ await mk('Z3','ياسر عمرو سعد','01000000007',day4);await one("select clinic_reception.auto_book_run()");
+ const M3=await rowOf('Z3');assert.equal(M3.review_kind,'slot');assert.match(M3.reason,/مقدرتش أسجّل أول ميعاد فاضي: قاعدة حجز رفضت/);
+ await db.exec("drop trigger refuse_all on clinic_reception.appointments");
  // reception RPC: capacity, extras, told, set_time modes
  await as(staffU);
  const rpc=async(a,p)=>(await one("select clinic_reception_auto_book($1,$2,$3) r",[ws,a,p])).r;
  const cap=await rpc('capacity',{provider_id:prov,from:day2,to:day3});
  assert.deepEqual(cap.days.map(x=>[x.day,x.booked,x.capacity]),[[day2,2,3],[day3,1,3]]);
+ const capM=await rpc('capacity',{provider_id:prov,from:day4,to:day4});assert.deepEqual([capM.days[0].booked,capM.days[0].capacity],[2,6],'midnight window counts 120 minutes');
  const ex=(await rpc('extras',{ids:[D4.id]})).rows[0];assert.equal(ex.capacity.capacity,3);assert(ex.free.length>=1,'day2 has a free time again after D2 moved');
  assert(ex.suggest.length>=1&&ex.suggest.every(t=>!t.startsWith(day2)),'suggestions on other days');
  const lst9=await rpc('list',{from:day2,to:day3});const lr=lst9.rows.find(x=>x.id===D1.id);assert.equal(lr.auto_timed,true);assert('time_told_at' in lr&&'pinned' in lr);

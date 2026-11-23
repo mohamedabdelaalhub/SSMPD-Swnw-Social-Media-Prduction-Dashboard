@@ -88,7 +88,7 @@ end $$;
 create function clinic_reception.auto_book_place_day_only(p_id uuid, p_workspace uuid) returns text
 language plpgsql security definer set search_path = pg_catalog, public as $$
 declare b clinic_reception.external_bookings%rowtype; appt clinic_reception.appointments%rowtype; svc uuid; mins int; t timestamptz;
-  r jsonb; placed timestamptz; err text;
+  r jsonb; placed timestamptz; err text; tried int := 0;
 begin
   select * into b from clinic_reception.external_bookings where id = p_id for update;
   if b.appointment_id is not null then
@@ -119,6 +119,7 @@ begin
   end if;
   select minutes into mins from clinic_reception.services where id = svc;
   for t in select x from clinic_reception.free_starts(b.provider_id, b.day, coalesce(mins, 15), 96) x loop
+    tried := tried + 1;
     begin
       if appt.id is not null then
         r := public.clinic_reception_command(p_workspace, 'reschedule', jsonb_build_object('id', appt.id, 'patient_id', b.reception_patient_id,
@@ -133,6 +134,9 @@ begin
       err := sqlerrm;
     end;
   end loop;
+  if placed is null and tried > 0 then   -- free times exist but the booking rules refused all of them: say why
+    return clinic_reception.auto_book_review(b.id, 'slot', 'مقدرتش أسجّل أول ميعاد فاضي: ' || coalesce(err, 'سبب غير معروف'));
+  end if;
   if placed is null then
     return clinic_reception.auto_book_review(b.id, 'full_day',
       'يوم الدكتور مليان — مفيش ميعاد فاضي في اليوم ده. اختار وقت من الأيام اللي جنبه، أو حجز إضافي فوق الجدول، أو ميعاد يدوي، أو كلّم المريض للتأجيل.');
