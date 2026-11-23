@@ -27,11 +27,12 @@ language plpgsql stable security definer set search_path = pg_catalog, public as
 declare me uuid := public.my_admin_id(); pid uuid; d date := (now() at time zone 'Africa/Cairo')::date; e record; s record;
   last_in timestamptz; last_out timestamptz;
 begin
-  if me is null or not (public.has_role('reception') or public.has_role('customer_service'))
+  if me is null or not public.has_role('reception')
      or public.has_role('super_admin') or public.has_role('general_manager') then return jsonb_build_object('locked', false); end if;
-  select sh.id, sh.opened_at, sh.expected, r.name as register into s from clinic_reception.shifts sh
-    join clinic_reception.workspaces w on w.id = sh.workspace_id and w.mode = 'live'
-    left join clinic_reception.registers r on r.id = sh.register_id
+  -- the cash shift itself (clinic_finance.shifts): live desks open it from «خزينة الاستقبال والحجوزات» (clinic_booking_shift 'open');
+  -- clinic_reception.shifts is only a mirror that is synced later
+  select sh.id, sh.opened_at, clinic_finance.shift_cash(sh.id) as expected, r.name as register into s from clinic_finance.shifts sh
+    left join clinic_finance.registers r on r.id = sh.register_id
    where sh.cashier_id = me and sh.status = 'open' order by sh.opened_at desc limit 1;
   if found then
     if s.opened_at < now() - interval '16 hours' then
@@ -47,7 +48,7 @@ begin
      or now() < e.exp_start + interval '1 hour' then
     return jsonb_build_object('locked', false, 'why', 'not_due');
   end if;
-  if exists (select 1 from clinic_reception.shifts sh where sh.cashier_id = me and sh.status <> 'open' and sh.opened_at >= now() - interval '16 hours') then
+  if exists (select 1 from clinic_finance.shifts sh where sh.cashier_id = me and sh.status <> 'open' and sh.opened_at >= now() - interval '16 hours') then
     return jsonb_build_object('locked', false, 'why', 'closed');
   end if;
   if to_regclass('clinic_people.device_punches') is not null then
@@ -124,10 +125,10 @@ declare d date := (now() at time zone 'Africa/Cairo')::date; rows jsonb := '[]':
 begin
   if not (public.has_role('super_admin') or public.has_role('general_manager') or public.has_role('financial_manager')) then
     return jsonb_build_object('visible', false, 'items', '[]'::jsonb); end if;
-  select coalesce(array_agg(x.id), '{}') into ids from public.admins x where x.active and x.role in ('reception', 'customer_service');
+  select coalesce(array_agg(x.id), '{}') into ids from public.admins x where x.active and x.role = 'reception';
   if to_regclass('public.admin_extra_roles') is not null then
     execute 'select coalesce(array_agg(distinct r.admin_id), ''{}'') from public.admin_extra_roles r join public.admins x on x.id = r.admin_id and x.active
-              where r.role in (''reception'', ''customer_service'')' into more;
+              where r.role = ''reception''' into more;
     ids := ids || more;
   end if;
   for a in select x.id, coalesce(nullif(trim(x.name), ''), x.email) as name from public.admins x where x.id = any(ids) order by 2 loop
@@ -136,9 +137,8 @@ begin
     if pid is not null then
       select x.first_in, x.exp_start, x.exp_end, x.status into e_in, e_start, e_end, e_status from clinic_people.attendance_eval(d, now()) x where x.person_id = pid limit 1;
     end if;
-    select sh.opened_at, sh.expected, r.name as register into s from clinic_reception.shifts sh
-      join clinic_reception.workspaces w on w.id = sh.workspace_id and w.mode = 'live'
-      left join clinic_reception.registers r on r.id = sh.register_id
+    select sh.opened_at, clinic_finance.shift_cash(sh.id) as expected, r.name as register into s from clinic_finance.shifts sh
+      left join clinic_finance.registers r on r.id = sh.register_id
      where sh.cashier_id = a.id and sh.status = 'open' order by sh.opened_at desc limit 1;
     if found then
       stale := s.opened_at < now() - interval '16 hours';
@@ -148,7 +148,7 @@ begin
       end if;
     elsif e_start is not null and coalesce(e_status, '') <> 'leave' and now() >= e_start + interval '1 hour'
           and (e_end is null or now() < e_end)
-          and not exists (select 1 from clinic_reception.shifts sh where sh.cashier_id = a.id and sh.opened_at >= now() - interval '16 hours') then
+          and not exists (select 1 from clinic_finance.shifts sh where sh.cashier_id = a.id and sh.opened_at >= now() - interval '16 hours') then
       rows := rows || jsonb_build_object('kind', 'missing', 'admin_id', a.id, 'name', a.name, 'exp_start', e_start, 'first_in', e_in);
     end if;
   end loop;

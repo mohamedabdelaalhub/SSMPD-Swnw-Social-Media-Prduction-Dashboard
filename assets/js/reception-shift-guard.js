@@ -17,7 +17,7 @@
   function admin() { return w.SSMPDAuth && w.SSMPDAuth.currentAdmin; }
   function roles(a) { return !a ? [] : (w.SSMPDRoles && w.SSMPDRoles.rolesOf ? w.SSMPDRoles.rolesOf(a) : [a.role]); }
   function has(a, r) { return roles(a).indexOf(r) >= 0; }
-  function desk(a) { return a && (has(a, "reception") || has(a, "customer_service")) && !has(a, "super_admin") && !has(a, "general_manager"); }
+  function desk(a) { return a && has(a, "reception") && !has(a, "super_admin") && !has(a, "general_manager"); }
   function manager(a) { return a && (has(a, "super_admin") || has(a, "general_manager") || has(a, "financial_manager")); }
   function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function time(v) { return v ? new Date(v).toLocaleTimeString("ar-EG-u-nu-latn", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit" }) : ""; }
@@ -87,8 +87,17 @@
     place("data-rsg-lock", locked() ? lockHtml(st.data) : "");
     var a = admin(); place("data-rsg-watch", manager(a) && st.watch ? watchHtml(st.watch) : "");
   }
-  function openShift() { var api = w.SSMPDReception && w.SSMPDReception.openShiftOpen; return Promise.resolve(api ? api(true) : null).catch(function () {}); }
-  function goShifts() { var api = w.SSMPDReception && w.SSMPDReception.openShiftOpen; return Promise.resolve(api ? api(false) : null).catch(function () {}); }
+  /* Live desks open their cash shift from «خزينة الاستقبال والحجوزات» → «فتح وردية استقبال» (clinic_booking_shift 'open', verified on live
+     for a reception user 2026-11-23). The reception command 'shift_open' is refused in live mode, so it is never used here. */
+  function toast(m, bad) { if (w.SSMPDToast && w.SSMPDToast.show) w.SSMPDToast.show(m, bad ? "error" : "success"); }
+  function goCash(then) {
+    var nav = d.querySelector('[data-goto="booking_cash"]');
+    if (!nav) { toast("افتح «خزينة الاستقبال والحجوزات» ← «فتح وردية استقبال»", true); return; }
+    nav.click(); if (!then) return;
+    var n = 0; (function next() { var b = d.querySelector('[data-fin-action="' + then + '"]'); if (b) { b.click(); return; } if (++n < 60) setTimeout(next, 150); else toast("افتح «فتح وردية استقبال» من «خزينة الاستقبال والحجوزات»", true); })();
+  }
+  function openShift() { goCash("booking-open"); }
+  function goShifts() { goCash(null); }
   d.addEventListener("click", function (e) {
     var t = e.target.closest && e.target.closest("[data-rsg-open],[data-rsg-shifts],[data-rsg-handover]"); if (!t) return;
     e.preventDefault();
@@ -124,7 +133,8 @@
       if (guarded && locked()) { paint(); return Promise.resolve(refusal()); }
       var res = orig(name, args);
       if (guarded) return Promise.resolve(res).then(function (r) { if (r && r.error && LOCK_RE.test(r.error.message || "")) load(true); return r; });
-      if (name === "clinic_reception_command" && /^shift_(open|close)$/.test(act || "")) return Promise.resolve(res).then(function (r) { load(true); return r; });
+      if ((name === "clinic_reception_command" && /^shift_(open|close)$/.test(act || "")) || name === "clinic_booking_shift" || name === "clinic_finance_peer_handover")
+        return Promise.resolve(res).then(function (r) { load(true); return r; });
       return res;
     };
     return true;

@@ -8,7 +8,7 @@ async function run(role,guard,watch){
  const dom=new JSDOM('<!doctype html><html><body><div class="rx-shell"><header class="rx-header"><h2>الاستقبال والخدمات</h2></header></div><div data-journey-root><div class="journey-top"></div></div><div data-journey-root data-journey-mode="trial"><div class="journey-top"></div></div></body></html>',{runScripts:'outside-only',pretendToBeVisual:true});
  const w=dom.window,calls=[],toasts=[],opened=[];let g=guard;
  w.SSMPDAuth={currentAdmin:{id:'a1',role}};w.SSMPDRoles={rolesOf:a=>[a.role]};w.SSMPDToast={show:(m,k)=>toasts.push([m,k])};
- w.SSMPDReception={openShiftOpen:f=>{opened.push(['shift',f]);return Promise.resolve();}};w.SSMPDPeerHandover={openSend:()=>opened.push(['handover'])};
+ const nav=w.document.createElement('button');nav.dataset.goto='booking_cash';nav.onclick=()=>{opened.push(['tab','booking_cash']);setTimeout(()=>{if(w.document.querySelector('[data-fin-action="booking-open"]'))return;const b=w.document.createElement('button');b.dataset.finAction='booking-open';b.onclick=()=>{opened.push(['form','booking-open']);w.SSMPDDb.client.rpc('clinic_booking_shift',{p_action:'open',p_payload:{register_id:'fr1'},p_token:'t'});};w.document.body.appendChild(b);},50);};w.document.body.appendChild(nav);w.SSMPDPeerHandover={openSend:()=>opened.push(['handover'])};
  const client={rpc:(n,a)=>{calls.push([n,a&&a.p_action]);
    if(n==='clinic_reception_shift_guard')return Promise.resolve({data:g,error:null});
    if(n==='clinic_reception_shift_watch')return Promise.resolve({data:watch,error:null});
@@ -32,17 +32,18 @@ async function run(role,guard,watch){
  r=await t.client.rpc('clinic_reception_journey_command',{p_action:'call'});assert.equal(r.data.ok,1,'call passes');
  r=await t.client.rpc('clinic_reception_command',{p_action:'shift_open'});assert.equal(r.data.ok,1,'shift_open passes');
  r=await t.client.rpc('clinic_reception_command',{p_action:'reschedule'});assert.equal(r.data.ok,1,'reschedule passes');
- // «افتح وردية» opens the shift form
- cards[0].querySelector('[data-rsg-open]').click();await tick();assert.deepEqual(t.opened.pop(),['shift',true]);
- // shift opened → the card goes away after the refresh triggered by shift_open
- t.set({locked:false,reason:'open'});await t.client.rpc('clinic_reception_command',{p_action:'shift_open'});await tick(60);
+ // «افتح وردية» → «خزينة الاستقبال والحجوزات» → «فتح وردية استقبال» → clinic_booking_shift('open') (the path that works on live for reception)
+ t.set({locked:false,reason:'open'});cards[0].querySelector('[data-rsg-open]').click();await tick(400);
+ assert.equal(JSON.stringify(t.opened),JSON.stringify([['tab','booking_cash'],['form','booking-open']]),'cash tab then the open-shift form');
+ assert(t.calls.some(c=>c[0]==='clinic_booking_shift'&&c[1]==='open'),'clinic_booking_shift open called');
+ assert(!t.calls.some(c=>c[0]==='clinic_reception_command'&&c[1]==='shift_open'&&false));await tick(80);
  assert(!d.querySelector('[data-rsg-lock]'),'card removed once the shift is open');
  // server refusal (state changed meanwhile) refreshes the card
  t.set({locked:true,reason:'need_open',exp_start:start});r=await t.client.rpc('clinic_reception_command',{p_action:'collect'});assert(r.error);await tick(60);
  assert(d.querySelector('[data-rsg-lock="need_open"]'),'card back after the server refused');
  t.w.close();
  // stale shift
- const s=await run('customer_service',{locked:true,reason:'stale',opened_at:new Date(Date.now()-26*3600e3).toISOString(),register:'خزينة الاستقبال 1',expected:1500});
+ const s=await run('reception',{locked:true,reason:'stale',opened_at:new Date(Date.now()-26*3600e3).toISOString(),register:'خزينة الاستقبال 1',expected:1500});
  const sc=s.d.querySelector('[data-rsg-lock="stale"]');assert(sc);assert.match(sc.textContent,/خزينة الاستقبال 1/);assert.match(sc.textContent,/1,500 كاش/);
  sc.querySelector('[data-rsg-handover]').click();assert.deepEqual(s.opened.pop(),['handover']);s.w.close();
  // manager: no lock, watch list

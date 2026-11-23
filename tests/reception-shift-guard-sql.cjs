@@ -27,6 +27,10 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     const trial = (await owner("insert into clinic_reception.workspaces(name,mode,owner_id) values('trial','trial',$1) returning id", [id(1)]))[0].id;
     await owner("insert into clinic_reception.members(workspace_id,admin_id,capabilities) values($1,$2,$3),($4,$2,$3)", [ws, rec, ['book', 'collect', 'view', 'review'], trial]);
     const reg = (await owner("insert into clinic_reception.registers(workspace_id,name,direction) values($1,'خزينة الاستقبال 1','receive') returning id", [ws]))[0].id;
+    // the live cash shift: clinic_finance.shifts, opened from «خزينة الاستقبال والحجوزات» (clinic_booking_shift 'open')
+    const freg = (await owner("insert into clinic_finance.registers(name,petty_limit,created_by) values('خزينة الاستقبال 1',0,$1) returning id", [id(1)]))[0].id;
+    await owner("update admins set role='reception' where id=$1", [rec]);
+    const FS = 'clinic_finance.shifts';
     const ago = m => new Date(Date.now() - m * 60000).toISOString();
     const setEval = async (fi, st, en, status) => { await owner('delete from stub_eval'); if (st !== undefined) await owner('insert into stub_eval values($1,$2,$3,$4,$5)', [person, fi, st, en, status || 'present']); };
     const cmd = (a, p, w = ws) => call('clinic_reception_command', [w, a, p || {}, randomUUID()]);
@@ -48,6 +52,8 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     assert.equal((await jc('call')).done, 'call', 'other journey actions pass');
     for (const a of ['request_review', 'discount_review', 'shift_review', 'reschedule', 'cancel', 'patient']) await notGuard(cmd(a, {}), a);
     await notGuard(cmd('book', {}, trial), 'trial workspace');
+    // customer service (no «خزينة الاستقبال والحجوزات» to open a shift from) is never locked
+    await owner("update admins set role='customer_service' where id=$1", [rec]); assert.equal((await guard()).locked, false, 'customer service'); await owner("update admins set role='reception' where id=$1", [rec]);
     // managers are never locked
     await as(1); await notGuard(cmd('book', {}), 'super admin');
     // not locked: leave, shift over, punched out, a shift closed today, no linked person
@@ -57,31 +63,30 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     await owner("insert into clinic_people.device_punches(device_id,device_user_id,ts,punch) values('k14',7,$1,0),('k14',7,$2,1)", [ago(60), ago(2)]);
     assert.equal((await guard()).why, 'punched_out'); await owner('delete from clinic_people.device_punches');
     // shift_open passes while locked; then everything opens
-    await as(4); await notGuard(cmd('shift_open', { register_id: reg }), 'shift_open');
-    if (!(await owner("select 1 from clinic_reception.shifts where cashier_id=$1 and status='open'", [rec])).length)
-      await owner("insert into clinic_reception.shifts(workspace_id,register_id,cashier_id,status,opened_at) values($1,$2,$3,'open',now())", [ws, reg, rec]);
+    // «افتح وردية» on the lock card → «فتح وردية استقبال» → clinic_booking_shift('open') as the reception user (the live path)
+    await as(4); const opened = await call('clinic_booking_shift', ['open', { register_id: freg }, randomUUID()]); assert(opened, 'booking shift opened while locked');
     g = await guard(); assert.equal(g.locked, false); assert.equal(g.reason, 'open');
     await as(4); await notGuard(cmd('collect', {}), 'collect with an open shift'); assert.equal((await jc('arrive')).done, 'arrive');
     // a shift left open from yesterday locks (stale) until handed over
-    await owner("update clinic_reception.shifts set opened_at=now()-interval '30 hours', expected=1500 where cashier_id=$1", [rec]);
-    g = await guard(); assert.equal(g.locked, true); assert.equal(g.reason, 'stale'); assert.equal(+g.expected, 1500); assert.equal(g.register, 'خزينة الاستقبال 1');
+    await owner(`update ${FS} set opened_at=now()-interval '30 hours' where cashier_id=$1`, [rec]);
+    g = await guard(); assert.equal(g.locked, true); assert.equal(g.reason, 'stale'); assert.equal(typeof +g.expected, 'number'); assert.equal(g.register, 'خزينة الاستقبال 1');
     await as(4); await assert.rejects(() => cmd('collect', {}), STALE); await notGuard(cmd('shift_close', {}), 'shift_close on a stale shift');
     // manager watch list
-    await owner("update clinic_reception.shifts set status='submitted',closed_at=now() where cashier_id=$1", [rec]);
-    await owner("delete from clinic_reception.shifts where cashier_id=$1", [rec]);
+    await owner(`delete from ${FS} where cashier_id=$1`, [rec]);
     await as(2); assert.equal((await call('clinic_reception_shift_watch', [])).visible, false, 'accountant: no watch list');
     await as(3); let w = await call('clinic_reception_shift_watch', []); assert.equal(w.visible, true);
     assert.deepEqual(w.items.map(x => [x.kind, x.admin_id]), [['missing', rec]], 'locked employee listed');
-    await owner("insert into clinic_reception.shifts(workspace_id,register_id,cashier_id,status,opened_at,expected) values($1,$2,$3,'open',now()-interval '40 hours',0)", [ws, reg, rec]);
+    await as(4); await call('clinic_booking_shift', ['open', { register_id: freg }, randomUUID()]); await as(3);
+    await owner(`update ${FS} set opened_at=now()-interval '40 hours' where cashier_id=$1`, [rec]);
     w = await call('clinic_reception_shift_watch', []); assert.equal(w.items[0].kind, 'stale');
-    await owner("update clinic_reception.shifts set opened_at=now()-interval '9 hours',expected=850 where cashier_id=$1", [rec]);
+    await owner(`update ${FS} set opened_at=now()-interval '9 hours' where cashier_id=$1`, [rec]);
     await setEval(ago(540), ago(540), ago(70)); w = await call('clinic_reception_shift_watch', []);
-    assert.equal(w.items[0].kind, 'after_end', 'open more than an hour after the HR shift end'); assert.equal(+w.items[0].expected, 850);
+    assert.equal(w.items[0].kind, 'after_end', 'open more than an hour after the HR shift end');
     await setEval(ago(300), ago(300), ago(-100)); assert.equal((await call('clinic_reception_shift_watch', [])).items.length, 0, 'normal open shift not listed');
     // rollback
     await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261123020000_reception_shift_guard.rollback.sql', 'utf8'));
     assert.equal((await owner("select to_regprocedure('public.clinic_reception_shift_guard()') r"))[0].r, null);
-    await owner("delete from clinic_reception.shifts where cashier_id=$1", [rec]); await setEval(null, ago(70), ago(-410));
+    await owner(`delete from ${FS} where cashier_id=$1`, [rec]); await setEval(null, ago(70), ago(-410));
     await as(4); await notGuard(cmd('book', {}), 'after rollback'); assert.equal((await jc('arrive')).done, 'arrive');
     console.log('PASS shift guard: locked an hour after the HR shift start without a cash shift (and with a stale one) for book / walk-in / overbook / agent booking / arrival / collect (all kinds) / packages / services / journey arrive + request_service; shift_open, shift_close, reviews, reschedule, cancel, other journey actions, trial and managers stay open; leave / shift over / punched out not locked; manager watch list (missing, stale, after end); rollback.');
   } finally { await db.close(); }
