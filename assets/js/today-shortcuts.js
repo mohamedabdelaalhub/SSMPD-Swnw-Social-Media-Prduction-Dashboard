@@ -19,7 +19,16 @@
   var ATTENTION = { auto: 1, calls: 1, outbox: 1 };
   var timer = null, observer = null, lastHtml = '';
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function root() { return document.querySelector('[data-journey-root]'); }
+  /* hotfix 2026-11-23 (reception: «الغرف والطابور» did nothing): never act on a hidden / trial / detached copy of the board —
+     use the live board the tile belongs to (or the visible one). */
+  var current = null;
+  function usable(r) { return r && r.isConnected && r.dataset.journeyMode !== 'trial' && r.querySelector('[data-tds-tiles]'); }
+  function root() {
+    if (usable(current)) return current;
+    var all = Array.prototype.slice.call(document.querySelectorAll('[data-journey-root]')).filter(usable);
+    current = all.filter(function (r) { return r.getClientRects().length > 0; })[0] || all[0] || document.querySelector('[data-journey-root]');
+    return current;
+  }
   function panel(r, key) { return r && r.querySelector('[data-tds-panel~="' + key + '"]'); }
   function count(r, key) {
     var p = panel(r, key); if (!p) return null;
@@ -46,12 +55,22 @@
       var head = p.querySelector('.journey-section-head');
       if (head && !head.querySelector('[data-tds-close]')) head.insertAdjacentHTML('beforeend', '<button type="button" class="tds-close" data-tds-close aria-label="إغلاق">✕</button>');
       if (key === 'admin') { var m = p.querySelector('details[data-qr-mgr]'); if (m && !m.open) m.open = true; }
+      var sw = head && head.querySelector('[data-tds-switch]'), canAdmin = count(r, 'admin') !== null;
+      if (head && key === 'rooms' && canAdmin && !sw) head.insertAdjacentHTML('beforeend', '<button type="button" class="btn sm" data-tds-switch="admin">إدارة الغرف</button>');
+      else if (sw && (key !== 'rooms' || !canAdmin)) sw.remove();
       if (!r.querySelector('[data-tds-veil]')) r.insertAdjacentHTML('beforeend', '<div class="tds-veil" data-tds-veil></div>');
     } else { var v = r.querySelector('[data-tds-veil]'); if (v) v.remove(); }
   }
   function schedule() { if (timer) return; timer = setTimeout(function () { timer = null; paint(); }, 60); }
-  function open(key) {
+  function open(key, retried) {
     var r = root(); if (!r) return;
+    if (!panel(r, key) && (key === 'rooms' || key === 'admin')) {
+      /* the rooms section is re-attached by its own layer; load it now instead of silently doing nothing */
+      var Q = window.__SWNWQueueTest;
+      if (!retried && Q && Q.refresh) { Q.refresh(true).then(function () { setTimeout(function () { open(key, true); }, 80); }); return; }
+      if (window.SSMPDToast) window.SSMPDToast.show('الغرف والطابور لسه بتحمّل — جرّب كمان ثانية', 'error');
+      return;
+    }
     r.dataset.tdsOpen = key; document.documentElement.classList.add('tds-locked');
     paint();
     var p = panel(r, key); if (p) { p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true'); p.scrollTop = 0; var c = p.querySelector('[data-tds-close]'); if (c) c.focus(); }
@@ -63,7 +82,9 @@
   }
   document.addEventListener('click', function (e) {
     var t = e.target.closest && e.target.closest('[data-tds-tile]');
-    if (t && t.closest('[data-journey-root]')) { e.preventDefault(); var r = root(); if (r && r.dataset.tdsOpen === t.dataset.tdsTile) close(); else open(t.dataset.tdsTile); return; }
+    var sw = e.target.closest && e.target.closest('[data-tds-switch]');
+    if (sw) { e.preventDefault(); open(sw.dataset.tdsSwitch); return; }
+    if (t && t.closest('[data-journey-root]')) { e.preventDefault(); current = t.closest('[data-journey-root]'); var r = root(); if (r && r.dataset.tdsOpen === t.dataset.tdsTile) close(); else open(t.dataset.tdsTile); return; }
     if (e.target.closest && (e.target.closest('[data-tds-close]') || e.target.closest('[data-tds-veil]'))) { e.preventDefault(); close(); }
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !document.querySelector('.rx-modal,.qr-big') && root() && root().dataset.tdsOpen) close(); });
