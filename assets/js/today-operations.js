@@ -94,6 +94,10 @@ function cardActions(a,c){
  else if(s==='in_service'){main=action('visit_complete',a.id,'إنهاء الزيارة','btn-primary');rest=action('hold',a.id,'انتظار تحليل/إجراء')+action('request_service',a.id,'طلب خدمة')+detail;}
  else if(s==='on_hold'){main=action('resume',a.id,'عودة للطبيب','btn-primary');rest=action('request_service',a.id,'طلب خدمة')+detail+v2('finish',a.id,'إنهاء الزيارة وانتظار النتيجة')+action('help',a.id,'طلب دعم');}
  if(hasDue(a)&&can('collect')&&a.due_invoices&&a.due_invoices.length){if(!main)main=action('collect_due',a.id,'حصّل '+money(a.patient_due),'btn-primary journey-main-collect');else rest=action('collect_due',a.id,'تحصيل '+money(a.patient_due))+rest;}
+ /* owner 2026-11-23 (20261123060000): «خصم» on a booked card, «خصم على الزيارة» after arrival while the service is still ordered */
+ var PY=window.SSMPDReceptionPayer,BD=PY||window.SSMPDReceptionBookingDiscount,ra=!c.sandbox&&BD&&can('book')&&((c.data&&c.data.appointments)||[]).find(function(x){return x.id===a.id;});
+ if(ra&&['expected','on_the_way'].includes(s)&&BD.canBooking(ra))rest+=action('booking_discount',a.id,PY?PY.label(ra):ra.discount_kind?'تعديل / شيل الخصم':'خصم (نقابة / نادي / فيزيتا / العيلة / خاص)');
+ if(ra&&['waiting','called','in_service','on_hold'].includes(s)&&BD.canVisit(ra,c.data))rest+=action('visit_discount',a.id,PY?PY.label(ra)+' (قبل التحصيل)':'خصم على الزيارة (قبل التحصيل)');
  if(c.sandbox&&s==='completed')rest+=action('sandbox_feedback',a.id,'تقييم التجربة');
  /* «الزيارة اتسجلت غلط» (20261122040000): files the existing «إلغاء خدمة اتدخلت بالغلط» for the whole visit; finance approves */
  if(!c.sandbox&&s==='completed'&&a.visit_id&&can('collect'))rest+=action('visit_void',a.id,'الزيارة اتسجلت غلط');
@@ -326,6 +330,7 @@ function priorityModal(c,id){var a=findAppointment(id);if(!a){toast('تعذر ا
 function helpModal(c,id){c.modal('طلب مساعدة',c.select('kind','النوع',[['assistance','مساعدة'],['priority','أولوية إنسانية'],['complaint','شكوى'],['other','أخرى']])+c.field('message','التفاصيل','text','','required'),function(v){return run(c,'patient_help',{appointment_id:id,kind:v.kind,message:v.message});});}
 function handle(name,id,c){
  try{
+  if(name==='booking_discount'||name==='visit_discount'){var BDx=window.SSMPDReceptionPayer||window.SSMPDReceptionBookingDiscount;if(BDx)BDx[name==='booking_discount'?'openForBooking':'openForVisit'](id,state.context||c);return;}
   if(name==='sandbox_enter'){switchMode(c,true);return;}if(name==='sandbox_exit'){switchMode(state.context,false);return;}
   if(c.sandbox){
    var save=function(a,p,k){return run(c,a,p,k);};

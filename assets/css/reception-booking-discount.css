@@ -25,3 +25,4 @@
 .rbd-list{margin:0;padding-inline-start:18px;font-size:12px;color:#3B4658;line-height:1.9}.rbd-muted{color:#5b6577}
 .rbd-ok{margin:0;font-size:12px;color:#2F7D5C}
 .rbd-linkbox{display:grid;gap:8px;border-top:1px solid #E3E8F2;padding-top:8px}
+.rbd-srchint{display:block;margin-top:4px;font-size:12px;color:#8A5A00;background:#FFF6E5;border-radius:8px;padding:4px 8px;line-height:1.7}

@@ -12394,19 +12394,6 @@
       "reviewed": true
     },
     {
-      "title": "خصم على الحجز ده (اختياري)",
-      "labels": [
-        "خصم على الحجز ده (اختياري)"
-      ],
-      "text": "علّمها لو المريض له خصم نقابة أو نادي أو خصم خاص. لو مش متعلمة الحجز بيتعمل بسعره العادي.",
-      "article": "reception-booking-discount",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "مثلاً نقابة المهندسين",
       "labels": [
         "مثلاً نقابة المهندسين",
@@ -12485,6 +12472,21 @@
         "reception_services"
       ],
       "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الخدمة",
+      "labels": [
+        "الخدمة"
+      ],
+      "text": "اختار أو اكتب الخدمة التي يخصها هذا السجل، مع مطابقة كودها وقسمها. في الحجز استخدم الخدمة الجاهزة، وفي الربط اختار تعريفها الأصلي من التسعير.",
+      "article": "booking-flow",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "خصم على الزيارة (قبل التحصيل)"
+      ],
       "reviewed": true
     },
     {
@@ -13527,6 +13529,115 @@
         "reception_services"
       ],
       "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الجهة (العقود المتفعّلة بس)",
+      "labels": [
+        "الجهة (العقود المتفعّلة بس)"
+      ],
+      "text": "الجهات اللي عقدها وقايمة أسعارها متفعّلين بس، وجنب كل واحدة سعر الخدمة في عقدها. لو فاضية: الحسابات تفعّل العقد الأول.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم الكوبون / الكارنيه *",
+      "labels": [
+        "رقم الكوبون / الكارنيه *"
+      ],
+      "text": "رقم كوبون أو كارنيه المريض عند الجهة — إجباري. بيتسجّل مع ربط المريض بعقد الجهة.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم موافقة التغطية *",
+      "labels": [
+        "رقم موافقة التغطية *"
+      ],
+      "text": "رقم الموافقة اللي الجهة أدتها للخدمة دي — إجباري، وبيروح على المطالبة.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نسبة تحمّل الجهة ٪ * ٪",
+      "labels": [
+        "نسبة تحمّل الجهة ٪ * ٪",
+        "نسبة تحمّل الجهة ٪ *"
+      ],
+      "text": "النسبة اللي الجهة بتدفعها من سعر العقد، من الموافقة والكارت الطبي للمريض (من 0 لـ 100). المريض بيدفع الباقي.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "النقابة / النادي",
+      "labels": [
+        "النقابة / النادي",
+        "مثلاً نادي الصيد",
+        "اسم النقابة / النادي"
+      ],
+      "text": "اختار النقابة أو النادي اللي المريض جاي بكارنيهها، أو «أخرى» واكتب الاسم. الخصم ثابت ٣٠٪.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم كارنيه النقابة / النادي",
+      "labels": [
+        "رقم كارنيه النقابة / النادي"
+      ],
+      "text": "رقم كارنيه النقابة أو النادي — إجباري.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "كارنيه النقابة / النادي ساري لحد",
+      "labels": [
+        "كارنيه النقابة / النادي ساري لحد"
+      ],
+      "text": "آخر يوم الكارنيه ساري فيه — لازم يكون يوم الزيارة أو بعده.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الخدمة",
+      "labels": [
+        "الخدمة"
+      ],
+      "text": "اختار أو اكتب الخدمة التي يخصها هذا السجل، مع مطابقة كودها وقسمها. في الحجز استخدم الخدمة الجاهزة، وفي الربط اختار تعريفها الأصلي من التسعير.",
+      "article": "booking-flow",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "طريقة الدفع / الخصم (قبل التحصيل)"
+      ],
       "reviewed": true
     },
     {
@@ -22756,9 +22867,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1958,
-    "labels": 1425,
-    "files": 151,
-    "groups": 1540
+    "definitions": 1969,
+    "labels": 1434,
+    "files": 152,
+    "groups": 1548
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
