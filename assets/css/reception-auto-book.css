@@ -52,3 +52,18 @@
 .rx-ab-seg .rx-ab-kold.on{background:#525B6F;border-color:#525B6F;color:#fff}
 .rx-ab-tools+.rx-ab-seg{margin-top:2px}
 .rx-ab-seg:empty{display:none}
+/* owner 2026-11-23: Masa day-only auto time — free-time chips, capacity, full day, told list */
+.rx-ab-pick{display:grid;gap:6px;margin-top:4px}
+.rx-ab-pl{font-size:12px;color:#5b6577;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rx-ab-slots{display:flex;gap:6px;flex-wrap:wrap}
+.rx-ab-slot{font:inherit;font-size:13px;font-weight:700;border:1px solid #BFCBE3;border-radius:99px;padding:6px 12px;min-height:36px;background:#fff;color:#0F369D;cursor:pointer}
+.rx-ab-slot.on{background:#0F369D;border-color:#0F369D;color:#fff}
+.rx-ab-slot-d{font-weight:600}
+.rx-ab-slot:focus-visible{outline:3px solid rgba(15,54,157,.35);outline-offset:2px}
+.rx-ab-cap{font-size:12px;font-weight:700;border-radius:99px;padding:2px 10px;background:#E6F2EC;color:#2F7D5C}
+.rx-ab-cap.is-full{background:#FBE9E6;color:#D0402A}
+.rx-ab-item.rx-ab-full{border-color:#F3C7BF;background:#FFFBFA}
+.rx-ab-kind.rx-ab-kfull{background:#FBE9E6;color:#D0402A}
+.rx-ab-item.rx-ab-told{border-color:#CFE6D9;background:#F7FCF9}
+.rx-ab-tm{font-size:18px;color:#0F369D}
+.rx-ab-call{text-decoration:none}
