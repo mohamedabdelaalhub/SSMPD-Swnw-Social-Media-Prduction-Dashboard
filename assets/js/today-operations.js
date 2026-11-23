@@ -9,7 +9,7 @@ css.rel='stylesheet';css.href='assets/css/today-operations.css?v=today-phone-scr
 if(!document.querySelector('link[data-today-operations]'))document.head.appendChild(css);
 /* Owner 2026-11-22 («طبق يلا», mockup today-shortcuts): shortcut tiles + sheets, «حجوزات آلية» by source. */
 ['today-shortcuts.css?v=masa-auto-time-20261123-1'].forEach(function(f){if(document.querySelector('link[data-today-shortcuts]'))return;var l=document.createElement('link');l.rel='stylesheet';l.href='assets/css/'+f;l.dataset.todayShortcuts='1';document.head.appendChild(l);});
-[['__SWNWTodayShortcuts','today-shortcuts.js?v=today-rooms-fix-20261123-1'],['__SWNWTodayAutoBookings','today-auto-bookings.js?v=masa-auto-time-20261123-1']].forEach(function(x){if(window[x[0]]||document.querySelector('script[data-src="'+x[1]+'"]'))return;var sc=document.createElement('script');sc.src='assets/js/'+x[1];sc.async=false;sc.dataset.src=x[1];document.head.appendChild(sc);});
+[['__SWNWTodayShortcuts','today-shortcuts.js?v=today-tiles-tap-20261123-1'],['__SWNWTodayAutoBookings','today-auto-bookings.js?v=masa-auto-time-20261123-1']].forEach(function(x){if(window[x[0]]||document.querySelector('script[data-src="'+x[1]+'"]'))return;var sc=document.createElement('script');sc.src='assets/js/'+x[1];sc.async=false;sc.dataset.src=x[1];document.head.appendChild(sc);});
 
 var state={day:null,workspace:null,data:null,loading:false,error:null,refreshTimer:null,context:null,sandbox:null,owner:null,generation:0,query:'',doctor:'',status:'',filter:'all',open:null,staff:null};
 var base=window.SSMPDReceptionModules||{sections:function(){return[];},panel:function(){return'';},act:function(){return false;},bookingFields:function(){return'';},bookingWire:function(){}};
