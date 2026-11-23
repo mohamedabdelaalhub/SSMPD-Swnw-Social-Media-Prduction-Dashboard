@@ -105,3 +105,25 @@
 .mc-den{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mc-den label,.mc-form label{display:grid;gap:4px;font-size:13px}.mc-den input,.mc-form input{min-height:40px}
 .mc-total b{font-size:20px;color:#0F369D}.mc-actions{display:flex;gap:8px;flex-wrap:wrap}.mc-status{margin:0;font-size:13px;color:#2F7D5C}.mc-status:empty{display:none}
 @media (max-width:640px){.mc-facts{grid-template-columns:1fr}.mc-den{grid-template-columns:repeat(2,1fr)}.mc-big{width:100%}}
+/* «الضرائب» box + tax report (20261122280000) */
+.tx-box{border:1px solid #E3E8F2;border-radius:14px;padding:14px;display:grid;gap:10px;background:#fff;margin:10px 0}
+.tx-head b{display:block;font-size:16px;color:#0F369D}.tx-head small{color:#5B6676;font-size:12px}
+.tx-types{display:flex;gap:18px;flex-wrap:wrap}.tx-chk{display:flex;gap:6px;align-items:center;font-weight:700}.tx-chk small{font-weight:400;color:#5B6676}
+.tx-portal{border:2px solid #C5CDDB;border-radius:12px;padding:12px;display:grid;gap:8px}.tx-portal.is-uploaded{border-color:#2F7D5C;background:#F2FAF6}.tx-portal.is-pending{border-color:#0F369D;background:#F5F8FF}.tx-portal.is-not_uploaded{border-color:#F15A22;background:#FFF7F2}
+.tx-row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.tx-seg{display:inline-flex;border:1px solid #C5CDDB;border-radius:999px;overflow:hidden}.tx-seg b{padding:4px 14px;font-size:13px}.tx-seg b.on{background:#2F7D5C;color:#fff}.tx-seg b.on.no{background:#F15A22}.tx-seg b.wait{background:#0F369D;color:#fff}
+.tx-kv{display:grid;grid-template-columns:150px 1fr;gap:4px 12px;font-size:13px}.tx-kv span:nth-child(odd){color:#5B6676}.tx-ltr{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all}
+.tx-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tx-note{margin:0;font-size:12px;color:#5B6676}.tx-status{margin:0;font-size:13px;color:#2F7D5C}.tx-status:empty{display:none}
+.tx-form{display:grid;gap:8px}.tx-form label{display:grid;gap:4px;font-size:13px}.tx-form input{min-height:38px}
+.tx-overlay{position:fixed;inset:0;background:rgba(22,33,46,.45);display:grid;place-items:center;z-index:1000;padding:16px}.tx-dialog{background:#fff;border-radius:16px;padding:16px;max-width:560px;width:100%;max-height:90vh;overflow:auto;display:grid;gap:8px}.tx-close{justify-self:start}
+.tx-report{border:1px solid #E3E8F2;border-radius:16px;padding:16px;background:#fff;display:grid;gap:12px;margin:0 0 14px}
+.tx-rhead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:end}.tx-rhead b{display:block;font-size:18px;color:#0F369D}.tx-rhead small{color:#5B6676}
+.tx-period{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.tx-period label{display:grid;gap:2px;font-size:12px}
+.tx-pills{display:flex;gap:8px;flex-wrap:wrap}.tx-pill{border-radius:999px;padding:6px 14px;background:#fff;border:1px solid #E3E8F2;font:inherit;font-size:13px;cursor:pointer}.tx-pill.on{background:#16212E;color:#fff;border-color:#16212E}
+.tx-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.tx-kpi{border:1px solid #E3E8F2;border-radius:12px;padding:12px;display:grid;gap:2px}.tx-kpi span,.tx-kpi small{color:#5B6676;font-size:12px}.tx-kpi b{font-size:20px}.tx-kpi.ok b{color:#2F7D5C}.tx-kpi.wait b{color:#F15A22}
+.tx-warn{margin:0;background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px}
+.tx-table{overflow-x:auto}.tx-table table{width:100%;border-collapse:collapse;font-size:13px}.tx-table th,.tx-table td{text-align:right;padding:8px;border-bottom:1px solid #EEF1F6;white-space:nowrap}.tx-table th{color:#5B6676;font-weight:400}
+.tx-st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;background:#EEF1F6;color:#3B4658}.tx-st.is-uploaded{background:#E6F4EC;color:#2F7D5C}.tx-st.is-pending{background:#E8EEFB;color:#0F369D}.tx-st.is-not_uploaded{background:#FFF1E8;color:#F15A22}
+.tx-settings{border-top:1px solid #EEF1F6;padding-top:10px}.tx-settings form{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:end;margin-top:10px}.tx-settings label{display:grid;gap:4px;font-size:13px}.tx-settings .tx-note{grid-column:1/-1}
+.tx-hint{margin:4px 0 8px;font-size:12px;color:#0F369D;background:#F5F8FF;border-radius:8px;padding:6px 10px}.tx-hint:empty{display:none}
+@media (max-width:640px){.tx-kpis,.tx-settings form{grid-template-columns:1fr}.tx-kv{grid-template-columns:120px 1fr}}
