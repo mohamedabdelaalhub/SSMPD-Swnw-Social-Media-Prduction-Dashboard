@@ -3,7 +3,9 @@
 begin;
 do $$ declare r record; begin
   if to_regclass('clinic_reception.auto_time_saved_defs') is null then raise exception 'لم يُطبّق الملف'; end if;
-  for r in select def from clinic_reception.auto_time_saved_defs loop execute r.def; end loop;
+  if exists (select 1 from clinic_reception.auto_time_saved_defs where name = 'auto_book_one_timed') then
+    raise exception 'رجّع 20261122340000 الأول'; end if;
+  for r in select def from clinic_reception.auto_time_saved_defs where name in ('auto_book_one', 'auto_book_enqueue', 'clinic_reception_auto_book') loop execute r.def; end loop;
 end $$;
 update clinic_reception.external_bookings set state = 'needs_time', review_kind = null, reason = null, updated_at = now() where review_kind = 'full_day';
 alter table clinic_reception.external_bookings drop constraint if exists external_bookings_review_kind_check;
