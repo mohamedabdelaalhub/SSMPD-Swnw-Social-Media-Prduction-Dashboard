@@ -2360,20 +2360,6 @@
       "reviewed": true
     },
     {
-      "title": "بداية موعد العيادة",
-      "labels": [
-        "بداية موعد العيادة",
-        "نهاية موعد العيادة"
-      ],
-      "text": "اختر الساعة والدقيقة مع صباحًا أو مساءً من حقل الوقت. النهاية الأقل من البداية تعني اليوم التالي؛ يجب اختلاف البداية والنهاية. هذه أوقات المنشور فقط وليست حجزًا لمريض.",
-      "article": "design-guide",
-      "tabs": [
-        "production"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "اتجاه التوسيع",
       "labels": [
         "اتجاه التوسيع"
@@ -22717,9 +22703,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1953,
-    "labels": 1422,
+    "definitions": 1951,
+    "labels": 1420,
     "files": 150,
-    "groups": 1537
+    "groups": 1536
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
