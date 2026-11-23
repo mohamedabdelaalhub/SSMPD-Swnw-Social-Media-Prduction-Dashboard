@@ -1114,6 +1114,7 @@ frule('inventory-direct-invoice.js','رابط صورة الفاتورة (اخت�
 frule('inventory-direct-invoice.js','عدد العبوات','عدد العلب أو الأكياس زي الفاتورة. الرصيد بيزيد بعدد العبوات × عدد القطع في العبوة.','inventory-direct-invoice')
 frule('reception-visit-usage.js','من مخزن','المخزن اللي المستلزم اتصرف منه. الأسنان من رئيسي أسنان، والبشرة والعلاج الطبيعي والكشف من فرعي مستلزمات تمريض.','visit-usage-yesterday')
 frule('reception-visit-usage.js','تاريخ الزيارات','يوم الزيارات اللي هتسجل استهلاكها. بيبقى امبارح تلقائياً، وتقدر تختار أي يوم من آخر 14 يوم.','visit-usage-yesterday')
+frule('today-review-inbox.js','سبب القرار (إجباري)|سبب الرفض (إجباري)|مثلاً: راجعت الفاتورة','اكتب سبب قرارك (3 حروف على الأقل) قبل اعتماد أو رفض الطلب أو استلام الوردية. السبب بيتسجل مع اسمك على الطلب، والطلب اللي إنت عامله لازم حد تاني يعتمده.','today-review-inbox')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'
