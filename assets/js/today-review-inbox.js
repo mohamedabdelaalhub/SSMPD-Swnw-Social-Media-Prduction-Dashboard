@@ -91,7 +91,8 @@
   function decide(it, approve, note) {
     var tok = uuid();
     if (it.group === 'shift') {
-      if (it.rpc === 'clinic_reception_command') return rpc('clinic_reception_command', { p_workspace: it.workspace_id, p_action: 'shift_review', p_payload: { id: it.target_id, note: note }, p_token: tok });
+      // Every shift (reception-opened too) is reviewed on its finance row: the live reception workspace refuses
+      // clinic_reception_command 'shift_review' («استخدم النموذج الموجود في الحسابات…»), same as the accounts screen.
       return rpc('clinic_finance_review_shift', { p_shift: it.id, p_note: note });
     }
     if (it.group === 'handover') return rpc('clinic_finance_treasury_command', { p_action: 'transfer_review', p_payload: { id: it.id, approve: approve, note: note }, p_token: tok });
