@@ -20,9 +20,10 @@ function uploadCard(ws,file){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c||!c.storage
 function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.elements.service_id)return;
  var data=(ctx&&ctx.data)||{},ws=ctx&&ctx.workspace;
  var box=document.createElement('section');box.className='rbd';box.setAttribute('data-rbd','');box.setAttribute('data-wide','');
- box.innerHTML='<label class="rbd-sw"><input type="checkbox" data-rbd-on><span>خصم (نقابة / نادي / فيزيتا / كارت العيلة / خاص) <small>(اختياري)</small></span></label>'+(ctx&&ctx.appointment&&!ctx.order?'<input type="hidden" name="discount_kind" value="" data-rbd-clear disabled>':'')+
+ var payer=!!form.querySelector('[data-rpk]');
+ box.innerHTML='<label class="rbd-sw"><input type="checkbox" data-rbd-on><span>'+(payer?'خصم إضافي (فيزيتا شامل / كارت العيلة / خاص)':'خصم (نقابة / نادي / فيزيتا / كارت العيلة / خاص)')+' <small>(اختياري)</small></span></label>'+(ctx&&ctx.appointment&&!ctx.order?'<input type="hidden" name="discount_kind" value="" data-rbd-clear disabled>':'')+
   '<fieldset class="rbd-body" data-rbd-body hidden disabled>'+
-   '<div class="rbd-row"><span class="rbd-l">نوع الخصم</span>'+chips('discount_kind',[['syndicate','خصم نقابة / نادي'],['vezeeta','فيزيتا شامل'],['family','كارت العيلة'],['special','خصم خاص']],'syndicate')+'</div>'+
+   '<div class="rbd-row"><span class="rbd-l">نوع الخصم</span>'+chips('discount_kind',(payer?[]:[['syndicate','خصم نقابة / نادي']]).concat([['vezeeta','فيزيتا شامل'],['family','كارت العيلة'],['special','خصم خاص']]),payer?'vezeeta':'syndicate')+'</div>'+
    '<div data-rbd-syn>'+
     '<div class="rbd-row" data-rbd-org><span class="rbd-l">الجهة</span>'+chips('discount_org_type',[['syndicate','نقابة'],['club','نادي'],['other','أخرى']],'syndicate')+'</div>'+
     '<label class="rbd-row" data-rbd-orgn><span class="rbd-l" data-rbd-orgl>اسم النقابة</span><input name="discount_org_name" maxlength="120" required placeholder="مثلاً نقابة المهندسين"></label>'+
@@ -70,8 +71,8 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
   lb.querySelector('[data-rbd-rel-go]').onclick=function(){var rid=lb.querySelector('[data-rbd-rel-p]').value,rel=(lb.querySelector('input[name="rbd_relation"]:checked')||{}).value;
    if(!rid){upl.textContent='اختار القريب';return;}if(!proof){upl.textContent='ارفع مستند إثبات القرابة';return;}var bt=this;bt.disabled=true;
    rpc('link',{patient_id:pid,relative_id:rid,relation:rel,proof_path:proof}).then(function(){loadFam(true);}).catch(function(err){bt.disabled=false;upl.textContent=(err&&err.message)||'تعذر الربط';});};}
- function paint(){var p=pkg();box.hidden=p;if(p&&on.checked)on.checked=false;body.hidden=!on.checked;body.disabled=!on.checked;
-  var kind=val('discount_kind')||'syndicate',isSyn=kind==='syndicate',isVz=kind==='vezeeta',isFam=kind==='family',card=isSyn||isVz,mx=KMAX[kind]||MAX;
+ function paint(){var pk=form.getAttribute('data-payer'),p=pkg()||(payer&&pk!=='cash');box.hidden=p;if(p&&on.checked)on.checked=false;body.hidden=!on.checked;body.disabled=!on.checked;
+  var kind=val('discount_kind')||(payer?'vezeeta':'syndicate'),isSyn=kind==='syndicate',isVz=kind==='vezeeta',isFam=kind==='family',card=isSyn||isVz,mx=KMAX[kind]||MAX;
   syn.hidden=!card;reason.hidden=kind!=='special';famBox.hidden=!isFam;
   Array.prototype.forEach.call(syn.querySelectorAll('input'),function(i){i.disabled=!on.checked||!card;});
   ['[data-rbd-org]','[data-rbd-orgn]'].forEach(function(q){var el=box.querySelector(q);el.hidden=!isSyn;el.querySelectorAll('input').forEach(function(i){i.disabled=!on.checked||!isSyn;});});
@@ -87,18 +88,18 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
   sum.hidden=!(on.checked&&pr);if(pr){var who=isSyn?(form.elements.discount_org_name.value.trim()||''):isVz?'فيزيتا شامل':isFam?'كارت العيلة'+(famData?' — الزيارة '+famData.visit_no:''):'خصم خاص';
    sum.innerHTML='<span>السعر</span><s>'+money(pr.price)+'</s><span>الخصم ('+esc(+pct.value)+'٪'+(who?' — '+esc(who):'')+')</span><span>− '+money(pr.off)+'</span><span>المريض يدفع</span><b>'+money(pr.net)+'</b>';}
   note.textContent=isVz?'نسبة فيزيتا شامل ثابتة ٤٠٪، بتتطبّق لما المريض يوصل. مفيش خصم تاني على نفس الزيارة.':isFam?'السيستم بيحسب النسبة: ١٠٪ أول زيارة وتزيد ١٠٪ كل زيارة للمريض أو أي حد من عيلته لحد ٥٠٪، وبعدها ترجع ١٠٪. بتتحسب لما المريض يوصل.':'الخصم بيتطبّق على الخدمة لما المريض يوصل. أقصى خصم ٣٠٪. الحجز اللي عليه الخصم ده مايتعملوش أي خصم تاني ولا سعر تعاقد.';
-  var big=on.checked&&!isVz&&!isFam&&+pct.value>mx;warn.hidden=!big;if(big)warn.textContent='أقصى خصم على الحجز ٣٠٪ — قلّل النسبة.';}
+  var big=on.checked&&!isVz&&!isFam&&+pct.value>mx;warn.hidden=!big;if(big)warn.textContent='أقصى خصم على الحجز ٣٠٪ — قلّل النسبة.';if(clear)syncClear();}
  if(form.elements.patient_id)form.elements.patient_id.addEventListener('change',function(){famFor='';if(val('discount_kind')==='family'&&on.checked)loadFam(true);});
  file.addEventListener('change',function(){var f=file.files&&file.files[0];path.value='';if(!f)return;if(f.size>8*1024*1024){up.textContent='الصورة أكبر من ٨ ميجا — صوّرها تاني';file.value='';return;}
   up.textContent='جاري رفع الصورة…';uploadCard(ws,f).then(function(p){path.value=p;up.textContent='اترفعت ✓';}).catch(function(e){up.textContent='الرفع ما نجحش: '+((e&&e.message)||'حاول تاني');file.value='';});});
  path.addEventListener('invalid',function(){up.textContent='ارفع صورة الكارنيه';});
  /* owner 2026-11-23 (20261123060000): editing a booking shows its discount; unticking it sends discount_kind '' (clears it) */
  var ap=ctx&&ctx.appointment,clear=box.querySelector('[data-rbd-clear]');
- if(ap&&ap.discount_kind){on.checked=true;var setR=function(n,v){var x=box.querySelector('input[name="'+n+'"][value="'+v+'"]');if(x)x.checked=true;};setR('discount_kind',ap.discount_kind);if(ap.discount_org_type)setR('discount_org_type',ap.discount_org_type);
+ if(ap&&ap.discount_kind&&!(payer&&ap.discount_kind==='syndicate')){on.checked=true;var setR=function(n,v){var x=box.querySelector('input[name="'+n+'"][value="'+v+'"]');if(x)x.checked=true;};setR('discount_kind',ap.discount_kind);if(ap.discount_org_type)setR('discount_org_type',ap.discount_org_type);
   [['discount_org_name',ap.discount_org_name],['discount_card_no',ap.discount_card_no],['discount_card_expiry',ap.discount_card_expiry],['discount_card_path',ap.discount_card_path],['discount_reason',ap.discount_reason],['discount_percent',ap.discount_percent!=null?String(+ap.discount_percent):'']].forEach(function(x){var el=form.elements[x[0]];if(el&&x[1]!=null&&el.type!=='radio')el.value=x[1];});
   if(ap.discount_card_path)up.textContent='صورة الكارت متسجّلة ✓ (ارفع تاني لو اتغيّرت)';}
  /* «مصدر الحجز: نقابة / نادي» is only where the booking came from — the price changes from the discount box */
- var src=form.elements.source,srcHint=null;if(src&&src.closest){srcHint=document.createElement('small');srcHint.className='rbd-srchint';srcHint.setAttribute('data-rbd-srchint','');srcHint.textContent='ده مصدر الحجز بس — الخصم من خانة «خصم» تحت';srcHint.hidden=true;(src.closest('label')||src).after(srcHint);
+ var src=form.elements.source,srcHint=null;if(src&&src.closest){srcHint=document.createElement('small');srcHint.className='rbd-srchint';srcHint.setAttribute('data-rbd-srchint','');srcHint.textContent=payer?'ده مصدر الحجز بس — خصم النقابة / النادي من «طريقة الدفع» فوق':'ده مصدر الحجز بس — الخصم من خانة «خصم» تحت';srcHint.hidden=true;(src.closest('label')||src).after(srcHint);
   var hint=function(){srcHint.hidden=!(src.value==='syndicate'||src.value==='club');};src.addEventListener('change',hint);hint();}
  function syncClear(){if(clear)clear.disabled=on.checked||!(ap&&ap.discount_kind);}
  form.addEventListener('input',paint);form.addEventListener('change',paint);on.addEventListener('change',function(){paint();syncClear();});paint();syncClear();}

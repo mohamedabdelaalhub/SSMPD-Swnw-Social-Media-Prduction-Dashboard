@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1959,
-    "labels": 1425,
-    "files": 151,
-    "groups": 1541
+    "definitions": 1969,
+    "labels": 1434,
+    "files": 152,
+    "groups": 1548
   },
   "fields": [
     {
@@ -10784,16 +10784,6 @@
     },
     {
       "file": "reception-booking-discount.js",
-      "label": "خصم (نقابة / نادي / فيزيتا / كارت العيلة / خاص) (اختياري)",
-      "name": "",
-      "kind": "label",
-      "forms": [],
-      "tab": "reception_services",
-      "article": "reception-booking-discount",
-      "text_sha256": "b0d38c7798b6e6eb8ef38cc817ffffb304919a5325d575936d4e9432d2c12162"
-    },
-    {
-      "file": "reception-booking-discount.js",
       "label": "مثلاً نقابة المهندسين",
       "name": "",
       "kind": "placeholder",
@@ -11907,6 +11897,118 @@
       "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "الجهة (العقود المتفعّلة بس)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "69aed6a6c4724877b50c09093bf6f08f7cf5a73f5d705acaee8b09a5f52af7c5"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "رقم الكوبون / الكارنيه *",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "0d0d8a7f034417fd255aafb957a71efa9bc33d9fb00cda55c396b40219116057"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "رقم موافقة التغطية *",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "3352bc48f3261b42daa98bdf30da3d0c86fddcd859267219364f819fda4cedf0"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "نسبة تحمّل الجهة ٪ * ٪",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "3718ef07f641830e45de3a30654baf62038e715cb4b89dce622c28d02c63f012"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "نسبة تحمّل الجهة ٪ *",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "3718ef07f641830e45de3a30654baf62038e715cb4b89dce622c28d02c63f012"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "النقابة / النادي",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "365f60d27f88de7e7afeb1ecf9249ead0a87e042f0d71f20c335b5363d4b1fa1"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "مثلاً نادي الصيد",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "365f60d27f88de7e7afeb1ecf9249ead0a87e042f0d71f20c335b5363d4b1fa1"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "اسم النقابة / النادي",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "365f60d27f88de7e7afeb1ecf9249ead0a87e042f0d71f20c335b5363d4b1fa1"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "رقم كارنيه النقابة / النادي",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "7a0be09f7b3d9383a6547ea599713649b7088400b45ab5fabd60cbc172624fe7"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "كارنيه النقابة / النادي ساري لحد",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "b21ca52bd738b07227e14981108fcb61dd06c68d0ebaf2b8e7150e7be88f8191"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "طريقة الدفع / الخصم (قبل التحصيل)"
+      ],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
     },
     {
       "file": "reception-service-later.js",
