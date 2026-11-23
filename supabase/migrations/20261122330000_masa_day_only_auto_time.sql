@@ -44,16 +44,27 @@ insert into clinic_reception.auto_time_saved_defs values
   ('auto_book_enqueue', pg_get_functiondef('clinic_reception.auto_book_enqueue(jsonb)'::regprocedure)),
   ('clinic_reception_auto_book', pg_get_functiondef('public.clinic_reception_auto_book(uuid,text,jsonb)'::regprocedure));
 
--- the doctor's service for a Masa row (Masa service text first when that helper exists)
+-- the doctor's service for a Masa row: the Masa service text first (when that helper exists), then the doctor's saved
+-- auto-book service, then the service this doctor is booked for most in his own department, then a «كشف» of his department.
+-- Only a service of the doctor's own department is returned (reception refuses others: «الطبيب خارج تخصص الخدمة»).
 create function clinic_reception.auto_time_service(p_workspace uuid, p_provider uuid, p_needed text) returns uuid
 language plpgsql stable security definer set search_path = pg_catalog, public as $$
-declare v uuid;
+declare v uuid; dept text;
 begin
+  select department into dept from clinic_reception.providers where id = p_provider and workspace_id = p_workspace;
+  if dept is null then return null; end if;
   if to_regprocedure('clinic_reception.auto_book_service_for(uuid,uuid,text)') is not null then
     execute 'select clinic_reception.auto_book_service_for($1, $2, $3)' into v using p_workspace, p_provider, p_needed;
-  else
-    v := clinic_reception.auto_book_service(p_workspace, p_provider);
+    if v is not null and exists (select 1 from clinic_reception.services where id = v and active and department = dept) then return v; end if;
   end if;
+  v := clinic_reception.auto_book_service(p_workspace, p_provider);
+  if v is not null and exists (select 1 from clinic_reception.services where id = v and active and department = dept) then return v; end if;
+  select x.service_id into v from clinic_reception.appointments x join clinic_reception.services s on s.id = x.service_id
+   where x.provider_id = p_provider and s.active and s.department = dept and x.status not in ('cancelled')
+   group by x.service_id order by count(*) desc limit 1;
+  if v is not null then return v; end if;
+  select s.id into v from clinic_reception.services s where s.workspace_id = p_workspace and s.active and s.department = dept
+   order by (s.name like '%كشف%') desc, s.minutes, s.name limit 1;
   return v;
 end $$;
 

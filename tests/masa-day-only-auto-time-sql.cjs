@@ -62,10 +62,13 @@ const body=`
  const day4=(await one("select ((now() at time zone 'Africa/Cairo')::date+4)::text d")).d,day5=(await one("select ((now() at time zone 'Africa/Cairo')::date+5)::text d")).d;
  await q("insert into clinic_reception.availability(workspace_id,provider_id,starts_at,ends_at) values($1,$2,$3,$4)",[ws,prov,z(day4,'22:00'),z(day5,'00:00')]);
  await q("insert into patients(full_name,phone,age) values('رنا فتحي علي','01000000005',30),('سلمى نبيل حسن','01000000006',30)");
+ // the doctor's saved service belongs to another department (live: «الطبيب خارج تخصص الخدمة») → his own department's service is used
+ await q("insert into clinic_reception.auto_book_services(provider_id,service_code) values($1,'DENT1') on conflict (provider_id) do update set service_code='DENT1'",[prov]);
  await mk('Z1','رنا فتحي علي','01000000005',day4);await mk('Z2','سلمى نبيل حسن','01000000006',day4);
  await one("select clinic_reception.auto_book_run()");
  const M1=await rowOf('Z1'),M2=await rowOf('Z2');assert.equal(M1.state,'booked',M1.reason);assert.equal(M2.state,'booked',M2.reason);
  assert.deepEqual([await hm(M1.appointment_id),await hm(M2.appointment_id)].sort(),['22:00','22:20']);
+ assert.equal((await one("select s.department from clinic_reception.appointments x join clinic_reception.services s on s.id=x.service_id where x.id=$1",[M1.appointment_id])).department,'جلدية','service of his own department');
  // free times exist but the booking rules refuse them all → review 'slot' with the reason (not «مليان»)
  await q("insert into patients(full_name,phone,age) values('ياسر عمرو سعد','01000000007',30)");
  await db.exec("create function clinic_reception.refuse_all() returns trigger language plpgsql as $t$begin if new.patient_id in (select rp.id from clinic_reception.patients rp where rp.phone='01000000007') then raise exception 'قاعدة حجز رفضت'; end if; return new; end $t$; create trigger refuse_all before insert on clinic_reception.appointments for each row execute function clinic_reception.refuse_all();");
