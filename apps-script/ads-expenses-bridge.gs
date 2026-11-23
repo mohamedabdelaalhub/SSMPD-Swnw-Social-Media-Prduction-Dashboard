@@ -3,21 +3,8 @@
    Bank reconciliation is deliberately never read or added to totals. */
 var ADS_EXPENSES_SHEET_ID = '1iWLoprZNt-F2GTEhpTs6JiOYV5mq7YfIbN7ugAfx_ik';
 
-// Requires ?token= matching Script property ADS_BRIDGE_TOKEN. If the property is not set the check is skipped
-// (backward compatible) - set it BEFORE relying on this. Called only by the ads-expenses-proxy edge function.
-function tokenOk_(e) {
-  var expected = PropertiesService.getScriptProperties().getProperty('ADS_BRIDGE_TOKEN');
-  if (!expected) return true;
-  var given = (e && e.parameter && e.parameter.token) || '';
-  if (given.length !== expected.length) return false;
-  var diff = 0;
-  for (var i = 0; i < expected.length; i++) diff |= given.charCodeAt(i) ^ expected.charCodeAt(i);
-  return diff === 0;
-}
-
 function doGet(e) {
   var out;
-  if (!tokenOk_(e)) return ContentService.createTextOutput(JSON.stringify({ error: 'unauthorized' })).setMimeType(ContentService.MimeType.JSON);
   try { out = readAdsExpenses_(SpreadsheetApp.openById(ADS_EXPENSES_SHEET_ID)); }
   catch (error) { out = { error: 'تعذر قراءة المصدر المالي: ' + error.message }; }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
