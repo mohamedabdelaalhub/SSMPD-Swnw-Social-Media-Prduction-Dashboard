@@ -59,15 +59,18 @@ function discount(suppliers){var st={supplier:'',month:thisMonth(),pv:null,list:
   if(st.supplier)jobs.push(call('clinic_finance_supplier_discount',{p_action:'preview',p_payload:{supplier_id:st.supplier,month:st.month+'-01'}}).then(function(p){st.pv=p;}));else st.pv=null;
   return Promise.all(jobs).then(draw).catch(function(x){toast((x&&x.message)||'تعذر التحميل','error');draw();});}
  function draw(){sheet('mdd','خصم آخر الشهر',html(),wire);}
- function review(id,ok){var note=ok?'':(w.prompt?w.prompt('سبب الرفض'):'');if(!ok&&!note)return;
+ function review(id,ok,why){var note=ok?'':(why||'');if(!ok&&!note)return;
   call('clinic_finance_supplier_discount',{p_action:'review',p_payload:{id:id,approve:ok,note:note||''}}).then(function(){toast(ok?'الخصم اتعتمد واتسجل على حساب المورد':'الخصم اترفض');return load();}).catch(function(x){toast((x&&x.message)||'تعذر المراجعة','error');});}
  function wire(el){
   el.querySelector('[name="supplier"]').onchange=function(){st.supplier=this.value;st.token=uuid();load();};
   el.querySelector('[name="month"]').onchange=function(){st.month=this.value||thisMonth();st.token=uuid();load();};
   ['percent','amount'].forEach(function(n){el.querySelector('[name="'+n+'"]').oninput=function(){amt(el);};});
-  el.addEventListener('click',function(e){var t=e.target.closest('[data-mdd-create],[data-mdd-ok],[data-mdd-no]');if(!t)return;
+  el.addEventListener('click',function(e){var t=e.target.closest('[data-mdd-create],[data-mdd-ok],[data-mdd-no],[data-mdd-noyes],[data-mdd-nocancel]');if(!t)return;
    if(t.hasAttribute('data-mdd-ok'))return review(t.getAttribute('data-mdd-ok'),true);
-   if(t.hasAttribute('data-mdd-no'))return review(t.getAttribute('data-mdd-no'),false);
+   /* owner (via inventory chat) 2026-11-23: inline rejection reason instead of window.prompt; payload unchanged {id, approve, note} */
+   if(t.hasAttribute('data-mdd-no')){var cell=t.parentNode,rid=t.getAttribute('data-mdd-no');cell.setAttribute('data-mdd-was',cell.innerHTML);cell.innerHTML='<div class="mdd-reject"><input type="text" data-mdd-reason maxlength="300" placeholder="سبب الرفض" aria-label="سبب الرفض"><button type="button" class="btn btn-danger" data-mdd-noyes="'+esc(rid)+'">تأكيد الرفض</button><button type="button" class="btn" data-mdd-nocancel>رجوع</button></div>';cell.querySelector('[data-mdd-reason]').focus();return;}
+   if(t.hasAttribute('data-mdd-nocancel')){var c2=t.closest('td');if(c2&&c2.hasAttribute('data-mdd-was')){c2.innerHTML=c2.getAttribute('data-mdd-was');c2.removeAttribute('data-mdd-was');}return;}
+   if(t.hasAttribute('data-mdd-noyes')){var c3=t.closest('td'),why=(c3.querySelector('[data-mdd-reason]').value||'').trim();if(!why){toast('اكتب سبب الرفض','error');c3.querySelector('[data-mdd-reason]').focus();return;}return review(t.getAttribute('data-mdd-noyes'),false,why);}
    if(st.busy)return;var v=function(n){return el.querySelector('[name="'+n+'"]').value.trim();},p=v('percent'),a=v('amount');
    if(!!p===!!a)return toast('اكتب نسبة الخصم أو المبلغ (واحد بس)','error');st.busy=true;t.disabled=true;
    call('clinic_finance_supplier_discount',{p_action:'create',p_payload:{supplier_id:st.supplier,month:st.month+'-01',percent:p?Number(p):null,amount:a?Number(a):null,document_url:v('document_url'),note:v('note'),token:st.token}})

@@ -11,13 +11,13 @@ const ctx={suppliers:[{id:'s1',name:'مورد تجريبي'}],locations:[{id:L.c
 (async()=>{const b=await chromium.launch({args:['--no-sandbox']});
 for(const width of [1280,390]){const p=await b.newPage({viewport:{width,height:900}});
  await p.setContent('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><main id="host"><section class="rx-section">الاستقبال</section></main></body></html>');
- for(const f of ['assets/css/styles.css','assets/css/reception-minicards.css','assets/css/reception-visit-usage.css'])await p.addStyleTag({path:path.join(root,f)});
+ for(const f of ['assets/css/styles.css','assets/css/reception-minicards.css','assets/css/reception-visit-usage.css','assets/css/inventory-look.css'])await p.addStyleTag({path:path.join(root,f)});
  await p.evaluate(([list,ctx])=>{window.__calls=[];window.SSMPDToast={show:(m,k)=>window.__calls.push(['toast',m,k])};
   window.SSMPDDb={client:{rpc:(n,a)=>{window.__calls.push([n,JSON.parse(JSON.stringify(a))]);
    if(n==='clinic_reception_visit_usage')return Promise.resolve({data:a.p_action==='list'?list:{status:'recorded',total_cost:3.6}});
    if(n==='inventory_direct_invoice')return Promise.resolve({data:a.p_action==='context'?ctx:{id:'r1',total:1800,supplier:'مورد تجريبي',location:'رئيسي مستلزمات'}});
    return Promise.resolve({data:null});}}};},[list,ctx]);
- for(const f of ['assets/js/reception-minicards.js','assets/js/reception-visit-usage.js','assets/js/inventory-direct-invoice.js'])await p.addScriptTag({path:path.join(root,f)});
+ for(const f of ['assets/js/reception-minicards.js','assets/js/inventory-look.js','assets/js/reception-visit-usage.js','assets/js/inventory-direct-invoice.js'])await p.addScriptTag({path:path.join(root,f)});
  await p.evaluate(()=>window.SSMPDVisitUsage.decorate({host:document.getElementById('host'),data:{workspace:{id:'w1',mode:'live'}}},'operations'));
  await p.waitForSelector('[data-mini="rvu"] .nums');assert.match(await p.textContent('[data-mini="rvu"]'),/1 ناقص/);
  await p.click('[data-mini="rvu"]');await p.waitForSelector('[data-rvu-sheet]');

@@ -1,7 +1,7 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1942,
+    "definitions": 1943,
     "labels": 1412,
     "files": 148,
     "groups": 1529
@@ -10299,6 +10299,16 @@
       "tab": "production",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "medicines-pricing.js",
+      "label": "سبب الرفض",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "a21ad9d28e2191e6557244226e39fd526699de2cecda568291a4f8dceb372f43"
     },
     {
       "file": "my-contract.js",
