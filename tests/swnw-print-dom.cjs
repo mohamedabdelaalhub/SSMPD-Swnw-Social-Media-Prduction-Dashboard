@@ -8,7 +8,7 @@ assert.equal(P.words(750),'سبعمائة وخمسون جنيهًا فقط لا 
 assert.equal(P.words(3500),'ثلاثة آلاف وخمسمائة جنيهًا فقط لا غير');
 assert.equal(P.words(1250.5),'ألف ومائتان وخمسون جنيهًا وخمسون قرشًا فقط لا غير');
 const r=P.receiptHtml({receipt_no:'RC-2026-000002',reference:'778899',method:'pos',amount:750,has_proof:true,created_at:'2026-11-19T19:42:00Z',patient_name:'مريضة <b>',file_no:'F-1',cashier:'دينا',invoice:{no:'INV-2026-000001',total:1750,due:0},applied:750});
-for(const s of ['swnw-official-letterhead.png','إيصال سداد','RC-2026-000002','INV-2026-000001','778899','سبعمائة وخمسون','مسدّدة بالكامل','ختم المركز','مرفقة في السيستم'])assert(r.includes(s),'receipt shows '+s);
+for(const s of ['swnw-official-letterhead.png','إيصال سداد','RC-2026-000002','INV-2026-000001','778899','سبعمائة وخمسون','مسدّدة بالكامل','ختم المركز','مرفقة في النظام'])assert(r.includes(s),'receipt shows '+s);
 assert(r.includes('مريضة &lt;b&gt;'),'escaped');
 const cash=P.receiptHtml({reference:'RC-1',method:'cash',amount:100,created_at:'2026-11-19T10:00:00Z'});
 assert(!cash.includes('رقم العملية'),'cash has no transaction number row');
