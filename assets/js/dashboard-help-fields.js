@@ -20863,6 +20863,19 @@
       "reviewed": true
     },
     {
+      "title": "اختار العيادة",
+      "labels": [
+        "اختار العيادة"
+      ],
+      "text": "العيادة اللي الدكتور ده هيكشف فيها النهارده. لو فيها دكتور تاني بيتفك منها، والربط بيتسجل باسمك.",
+      "article": "queue-rooms",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "مريض التجربة",
       "labels": [
         "مريض التجربة",
@@ -22730,9 +22743,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1954,
-    "labels": 1424,
+    "definitions": 1955,
+    "labels": 1425,
     "files": 150,
-    "groups": 1538
+    "groups": 1539
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

@@ -9,7 +9,7 @@
 var TIPS={
  reception:[
   {id:'room',go:'tab-reception_services',t:'اربط الدكتور بالعيادة',vid:null,ctx:true,frames:[
-   ['افتح <span>«الغرف والطابور»</span> من «⋯» فوق',`<div class="m-row"><span class="m-b main">حجز جديد</span><span class="m-b hl">⋯</span></div><div class="m-card"><b>الغرف والطابور</b><span>العيادات · طوابير الأطباء</span></div>`,[14,8]],
+   ['دوس مربع <span>«الغرف والطابور»</span> تحت الحالات — أو «اربط الدكتور بالعيادة» في كارت الدكتور',`<div class="m-row"><span class="m-b">الأطباء النهارده</span><span class="m-b hl">الغرف والطابور</span></div><div class="m-card"><b>الغرف والطابور</b><span>العيادات · طوابير الأطباء</span></div>`,[62,8]],
    ['في كارت العيادة اختار <span>الدكتور</span>',`<div class="m-card"><b>عيادة 3</b><span>فاضية</span><div class="m-row"><span class="m-sel hl">د. سارة علي ▾</span><span class="m-b">ربط</span></div></div>`,[62,38]],
    ['دوس <span>«ربط»</span>',`<div class="m-card"><b>عيادة 3</b><span>فاضية</span><div class="m-row"><span class="m-sel">د. سارة علي ▾</span><span class="m-b main hl">ربط</span></div></div>`,[62,62]],
    ['خلاص — رقم العيادة <span>بيظهر للمرضى لوحده</span> على الشاشة وفي «دوري»',`<div class="m-scr"><span>رقم</span><b>A-12</b><span>اتفضل على عيادة 3</span></div>`,[45,48]]]},

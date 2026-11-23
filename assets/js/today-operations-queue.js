@@ -19,6 +19,7 @@ function css(){if(document.getElementById('swnw-queue-style'))return;var s=docum
 '.qr-card{border:1px solid #d9e1f2;border-radius:12px;padding:10px;background:#fff;color:#16212E;display:flex;flex-direction:column;gap:8px}'+
 '.qr-card h4{margin:0;font-size:15px;color:#0F369D}.qr-sub{font-size:12px;color:#5b6676}'+
 '.qr-cur{font-size:34px;font-weight:700;color:#F15A22;line-height:1.1;text-align:center}.qr-wait{display:flex;flex-wrap:wrap;gap:4px}'+
+'.tds-doc-room{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}.qr-docroom{background:#EAF0FF;color:#0F369D;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}.tds-doc-room select{max-width:100%;min-width:0;font:inherit;padding:6px 8px;border:1px solid #CBD5E1;border-radius:8px}'+
 '.qr-chip{background:#eef2fb;color:#0F369D;border-radius:8px;padding:2px 8px;font-size:13px}'+
 '.qr-card select,.qr-card input{width:100%;min-height:38px;border:1px solid #cdd6ea;border-radius:8px;padding:4px 8px;font:inherit}'+
 '.qr-card button,.qr-sec .qr-btn{min-height:40px;border-radius:10px;border:1px solid #0F369D;background:#fff;color:#0F369D;font:inherit;cursor:pointer;padding:4px 10px}'+
@@ -78,7 +79,7 @@ window.SSMPDTodayQueue={bookings:function(){return ag||[];},register:function(b)
 function typing(sec){var a=document.activeElement;return !!(a&&sec&&sec.contains(a)&&a.matches&&a.matches('input,select'));}
 function paint(force){var host=target();if(!host)return;var sec=host.querySelector('[data-journey-queue]');if(!st){if(!sec){sec=document.createElement('section');sec.className='journey-section qr-sec';sec.dataset.journeyQueue='1';sec.innerHTML='<div class="journey-section-head"><h3>الغرف والطابور</h3></div><p class="journey-loading">جاري التحميل…</p>';host.appendChild(sec);}return;}
  if(sec&&!force&&typing(sec))return;var created=!sec;if(!sec){sec=document.createElement('section');sec.className='journey-section qr-sec';sec.dataset.journeyQueue='1';host.appendChild(sec);}
- var m=sec.querySelector('[data-qr-mgr]');if(m)mgrOpen=m.open;sec.innerHTML=html();sec.classList.add('tds-panel');sec.dataset.tdsPanel='rooms admin';sec.dataset.tdsCount=String(waitingCount());sec.dataset.tdsRooms=String(((st&&st.rooms)||[]).length);wire(sec);}
+ var m=sec.querySelector('[data-qr-mgr]');if(m)mgrOpen=m.open;sec.innerHTML=html();sec.classList.add('tds-panel');sec.dataset.tdsPanel='rooms admin';sec.dataset.tdsCount=String(waitingCount());sec.dataset.tdsRooms=String(((st&&st.rooms)||[]).length);wire(sec);fillRoomSlots();}
 function wire(sec){
  sec.querySelectorAll('[data-qr-pick]').forEach(function(s){s.onchange=function(){picks[s.dataset.qrPick]=s.value;};});
  var m=sec.querySelector('[data-qr-mgr]');if(m)m.ontoggle=function(){mgrOpen=m.open;};
@@ -101,7 +102,19 @@ function handle(b){var a=b.dataset.qa,room=b.dataset.room,id=b.dataset.id;
  else if(a==='link'){var u=new URL('queue-room.html',location.href);u.search='';u.hash='';u.searchParams.set('w',ws());u.searchParams.set('room',room);var go=function(){toast('تم نسخ رابط الفني');};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u.toString()).then(go).catch(function(){window.prompt('انسخ الرابط',u.toString());});else window.prompt('انسخ الرابط',u.toString());}}
 function loadAdmins(){if(adminsCache)return Promise.resolve(adminsCache);var Db=window.SSMPDDb;if(!Db||!Db.listAdmins)return Promise.resolve([]);return Db.listAdmins().then(function(l){adminsCache=(l||[]).filter(function(a){return a.active!==false;});return adminsCache;}).catch(function(){return [];});}
 function refresh(force){if(!ctx||!ws()||!target()||(document.hidden&&!force))return Promise.resolve();if(loading)return Promise.resolve();loading=true;return Promise.all([q('state'),q('agent_bookings',{}).catch(function(){return null;})]).then(function(a){st=a[0];ag=(a[1]&&a[1].bookings)||[];paint(!!force);}).catch(function(e){if(force)toast((e&&e.message)||'تعذر تحميل الطابور','error');}).then(function(){loading=false;});}
-function onDom(){var host=target();if(!host){return;}if(!host.querySelector('[data-journey-queue]')){paint(true);refresh(true);}}
+/* owner 2026-11-23 «موظفي الريسبشن هم اللي هيسجلوا رقم العيادة لكل دكتور يوميا» (20261123030000): each doctor card in «الأطباء النهارده»
+   shows today's clinic room, or «اربط الدكتور بالعيادة» to pick one (the same 'assign' as the rooms sheet). */
+function clinicList(){return ((st&&st.rooms)||[]).filter(function(r){return r.active&&!r.ticket_prefix;});}
+function roomOfDoctor(pid){return clinicList().filter(function(r){return r.assignment&&r.assignment.provider_id===pid;})[0]||null;}
+function slotHtml(pid){var r=roomOfDoctor(pid);if(!clinicList().length)return '';return r?'<span class="qr-docroom">'+esc(r.label)+'</span><button type="button" class="btn sm" data-qr-link="'+esc(pid)+'">تغيير العيادة</button>':'<button type="button" class="btn sm qr-linkbtn" data-qr-link="'+esc(pid)+'">اربط الدكتور بالعيادة</button>';}
+function fillRoomSlots(){if(!st)return;var r=root();if(!r)return;r.querySelectorAll('[data-tds-room-slot]').forEach(function(el){if(el.querySelector('[data-qr-linkform]'))return;var h=slotHtml(el.getAttribute('data-tds-room-slot'));if(el.__qr!==h){el.__qr=h;el.innerHTML=h;}});}
+function linkForm(el,pid){var cur=roomOfDoctor(pid);el.__qr=null;el.innerHTML='<span data-qr-linkform><select aria-label="اختار العيادة" data-qr-linkroom><option value="">اختار العيادة</option>'+clinicList().map(function(r){var a=r.assignment;return '<option value="'+esc(r.id)+'"'+(cur&&cur.id===r.id?' selected':'')+'>'+esc(r.label)+(a&&a.provider_id!==pid?' — مع '+esc(a.doctor_name):a?'':' — فاضية')+'</option>';}).join('')+'</select><button type="button" class="btn sm btn-primary" data-qr-linkgo="'+esc(pid)+'">ربط</button><button type="button" class="btn sm" data-qr-linkx>إلغاء</button></span>';}
+document.addEventListener('click',function(e){var t=e.target;if(!t.closest)return;
+ var b=t.closest('[data-qr-link]');if(b){e.preventDefault();linkForm(b.closest('[data-tds-room-slot]'),b.getAttribute('data-qr-link'));return;}
+ if(t.closest('[data-qr-linkx]')){e.preventDefault();var s0=t.closest('[data-tds-room-slot]');s0.__qr=null;s0.innerHTML='';fillRoomSlots();return;}
+ var go=t.closest('[data-qr-linkgo]');if(go){e.preventDefault();var slot=go.closest('[data-tds-room-slot]'),room=slot.querySelector('[data-qr-linkroom]').value,pid=go.getAttribute('data-qr-linkgo');if(!room){toast('اختار العيادة الأول','error');return;}
+  go.disabled=true;q('assign',{room_id:room,provider_id:pid}).then(function(){toast('تم ربط الدكتور بالعيادة');slot.innerHTML='';return refresh(true);}).catch(function(err){go.disabled=false;toast((err&&err.message)||'تعذر الربط','error');});}});
+function onDom(){var host=target();if(!host){return;}if(!host.querySelector('[data-journey-queue]')){paint(true);refresh(true);}fillRoomSlots();}
 function install(){var base=window.SSMPDReceptionModules;if(!base){setTimeout(install,120);return;}if(base.__swnwQueueWrapped)return;css();
  var wrapped={};Object.keys(base).forEach(function(k){wrapped[k]=base[k];});
  wrapped.panel=function(section,c){if(section==='journey'){if(!ctx||ctx.workspace!==c.workspace){st=null;}ctx=c;}var h=base.panel?base.panel(section,c):'';setTimeout(onDom,0);return h;};wrapped.__swnwQueueWrapped=true;window.SSMPDReceptionModules=wrapped;
