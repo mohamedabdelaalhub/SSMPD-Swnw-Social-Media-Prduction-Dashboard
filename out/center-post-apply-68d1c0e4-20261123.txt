@@ -1,0 +1,4 @@
+# request qm13-213932 on swnw-vps at 2026-11-23T21:40:08Z
+reception_copies | [{"code": "0000003", "active": false, "workspace": "dc6e99a1-1e41-48f5-98e6-d5cfd4dcd9f3", "pricing_active": false}, {"code": "0000004", "active": false, "workspace": "dc6e99a1-1e41-48f5-98e6-d5cfd4dcd9f3", "pricing_active": false}, {"code": "0000167", "active": true, "workspace": "dc6e99a1-1e41-48f5-98e6-d5cfd4dcd9f3", "pricing_active": true}, {"code": "0000168", "active": true, "workspace": "dc6e99a1-1e41-48f5-98e6-d5cfd4dcd9f3", "pricing_active": true}]
+center_review | {"items": 1363, "review": {"groups": 1363, "status": "approved", "prepared_by": "bd5a528f-af8d-4ada-afe9-ce64e68b1d92"}, "list_status": "active"}
+# exit 0 at 2026-11-23T21:40:08Z
