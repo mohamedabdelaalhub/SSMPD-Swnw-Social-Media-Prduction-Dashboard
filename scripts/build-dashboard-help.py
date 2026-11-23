@@ -1061,6 +1061,7 @@ frule('reception-payer-kind.js','النقابة / النادي|اسم النقا
 frule('reception-payer-kind.js','رقم كارنيه النقابة / النادي','رقم كارنيه النقابة أو النادي — إجباري.','reception-payer-kind')
 frule('reception-payer-kind.js','كارنيه النقابة / النادي ساري لحد','آخر يوم الكارنيه ساري فيه — لازم يكون يوم الزيارة أو بعده.','reception-payer-kind')
 frule('reception-payer-kind.js','صورة الكارنيه','صوّر كارنيه النقابة أو النادي — إجباري.','reception-payer-kind')
+frule('service-select-search.js','ابحث باسم الخدمة أو الكود أو القسم|ابحث عن الخدمة','اكتب جزء من اسم الخدمة أو كودها أو قسمها — القايمة تحتها بتصغر للنتايج، ولو نتيجة واحدة بتتختار لوحدها.','reception-service-search')
 frule('reception-booking-discount.js','اسم النقابة|مثلاً نقابة المهندسين','اسم الجهة اللي المريض جاي بخصمها (نقابة أو نادي أو جهة تانية). بيظهر على كارت الموعد والفاتورة.','reception-booking-discount')
 frule('reception-booking-discount.js','رقم الكارنيه','رقم كارنيه النقابة أو النادي — إجباري.','reception-booking-discount')
 frule('reception-booking-discount.js','الكارنيه ساري لحد','آخر يوم الكارنيه ساري فيه. لازم يكون يوم الزيارة أو بعده، ولو خلص قبل الحضور تسجيل الحضور بيقف.','reception-booking-discount')
