@@ -75,12 +75,22 @@ const body=`
  await mk('Z3','ياسر عمرو سعد','01000000007',day4);await one("select clinic_reception.auto_book_run()");
  const M3=await rowOf('Z3');assert.equal(M3.review_kind,'slot');assert.match(M3.reason,/مقدرتش أسجّل أول ميعاد فاضي: قاعدة حجز رفضت/);
  await db.exec("drop trigger refuse_all on clinic_reception.appointments");
+ // 20261122340000: a TIMED Masa row with the doctor's saved service of another department → his own department's service
+ const M34=fs.readFileSync('supabase/migrations/20261122340000_masa_timed_service_department.sql','utf8');
+ await db.exec(M34);await assert.rejects(()=>db.exec(M34),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+ await q("insert into patients(full_name,phone,age) values('عمر حسام فؤاد','01000000008',30)");
+ await q("insert into clinic_reception.masa_bookings values('T1',$1,1130,$2,$3,$4,'active','كشف','عمر حسام فؤاد','01000000008',false)",[ws,prov,z(day4,'23:00'),z(day4,'23:20')]);
+ await one("select clinic_reception.auto_book_run()");const T1=await rowOf('T1');assert.equal(T1.state,'booked',T1.reason);
+ assert.equal((await one("select s.department from clinic_reception.appointments x join clinic_reception.services s on s.id=x.service_id where x.id=$1",[T1.appointment_id])).department,'جلدية');
+ await db.exec(fs.readFileSync('supabase/rollbacks/20261122340000_masa_timed_service_department.rollback.sql','utf8'));
+ assert.equal((await one("select position('auto_time_service' in pg_get_functiondef('clinic_reception.auto_book_one(uuid)'::regprocedure)) p")).p,0,'timed path restored');
+ await db.exec(M34);
  // reception RPC: capacity, extras, told, set_time modes
  await as(staffU);
  const rpc=async(a,p)=>(await one("select clinic_reception_auto_book($1,$2,$3) r",[ws,a,p])).r;
  const cap=await rpc('capacity',{provider_id:prov,from:day2,to:day3});
  assert.deepEqual(cap.days.map(x=>[x.day,x.booked,x.capacity]),[[day2,2,3],[day3,1,3]]);
- const capM=await rpc('capacity',{provider_id:prov,from:day4,to:day4});assert.deepEqual([capM.days[0].booked,capM.days[0].capacity],[2,6],'midnight window counts 120 minutes');
+ const capM=await rpc('capacity',{provider_id:prov,from:day4,to:day4});assert.deepEqual([capM.days[0].booked,capM.days[0].capacity],[3,6],'midnight window counts 120 minutes');
  const ex=(await rpc('extras',{ids:[D4.id]})).rows[0];assert.equal(ex.capacity.capacity,3);assert(ex.free.length>=1,'day2 has a free time again after D2 moved');
  assert(ex.suggest.length>=1&&ex.suggest.every(t=>!t.startsWith(day2)),'suggestions on other days');
  const lst9=await rpc('list',{from:day2,to:day3});const lr=lst9.rows.find(x=>x.id===D1.id);assert.equal(lr.auto_timed,true);assert('time_told_at' in lr&&'pinned' in lr);
@@ -99,7 +109,9 @@ const body=`
  for(const f of ['clinic_reception.free_starts(uuid,date,integer,integer)','clinic_reception.day_capacity(uuid,uuid,date)','clinic_reception.auto_book_place_day_only(uuid,uuid)'])
   assert.equal((await one("select has_function_privilege('authenticated',$1,'execute') x",[f])).x,false,f);
  assert.equal((await one("select has_table_privilege('authenticated','clinic_reception.auto_time_saved_defs','select') x")).x,false);await as('');
- // rollback
+ // rollback (newest first; 330000 refuses while 340000 is applied)
+ await assert.rejects(()=>db.exec(fs.readFileSync('supabase/rollbacks/20261122330000_masa_day_only_auto_time.rollback.sql','utf8')),/رجّع 20261122340000 الأول/);await db.exec('rollback');
+ await db.exec(fs.readFileSync('supabase/rollbacks/20261122340000_masa_timed_service_department.rollback.sql','utf8'));
  await db.exec(fs.readFileSync('supabase/rollbacks/20261122330000_masa_day_only_auto_time.rollback.sql','utf8'));
  assert.equal((await one("select to_regprocedure('clinic_reception.free_starts(uuid,date,int,int)') r")).r,null);
  assert.ok((await one("select position('needs_time' in pg_get_functiondef('clinic_reception.auto_book_one(uuid)'::regprocedure)) p")).p>0,'old day-only branch back');
