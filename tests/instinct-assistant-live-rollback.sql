@@ -235,7 +235,9 @@ select 'system identities (my_admin_id patch)', 'none has role ai_assistant', co
 
 -- ===== as Instinct: every table / view the dashboard can read returns nothing =====
 do $$
-declare r record; ai_sub uuid; leaked text := ''; checked int := 0; k bigint; err text;
+declare r record; ai_sub uuid; leaked text := ''; accepted text := ''; checked int := 0; k bigint; err text;
+  -- owned by supabase_admin: the migration role cannot revoke them; separate one-off docs/ops/2026-11-24-instinct-supabase-admin-revokes.sql
+  known constant text[] := array['extensions.pg_stat_statements', 'extensions.pg_stat_statements_info', 'net._http_response', 'realtime.subscription'];
 begin
   select user_id into ai_sub from public.admins where id = '6bc2a2ff-9947-4a3f-a06d-e10b5130a526';
   perform set_config('request.jwt.claims', jsonb_build_object('sub', ai_sub, 'role', 'authenticated')::text, true);
@@ -248,10 +250,12 @@ begin
       execute 'set local role authenticated';
       execute format('select count(*) from (select 1 from %s limit 1) s', r.t) into k;
       execute 'reset role';
-      if k > 0 and r.t not in ('public.admins') then leaked := leaked || ' ' || r.t; end if;
+      if k > 0 and r.t = any(known) then accepted := accepted || ' ' || r.t;
+      elsif k > 0 and r.t not in ('public.admins') then leaked := leaked || ' ' || r.t; end if;
     exception when others then execute 'reset role'; end;
   end loop;
-  insert into ins_live(step, expected, actual, ok) values ('AI sweep: ' || checked || ' readable tables/views', '0 rows everywhere', coalesce(nullif(leaked, ''), 'none'), leaked = '');
+  insert into ins_live(step, expected, actual, ok) values ('AI sweep: ' || checked || ' readable tables/views', '0 rows everywhere (supabase_admin-owned ones accepted, see ops file)',
+    coalesce(nullif(leaked, ''), 'none') || case when accepted <> '' then ' · accepted (needs supabase_admin one-off):' || accepted else '' end, leaked = '');
 end $$;
 
 -- ===== as the fake Instinct: main RPCs of the other modules, NULL arguments =====
