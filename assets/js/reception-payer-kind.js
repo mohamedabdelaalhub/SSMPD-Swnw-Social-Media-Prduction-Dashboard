@@ -27,7 +27,7 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.ele
  ctx=ctx||{};var data=ctx.data||{},ws=ctx.workspace,ap=ctx.appointment||null,cur=ap&&ap.payer_kind||'';
  if(!cur&&ap&&ap.discount_kind==='syndicate')cur='union';
  var box=document.createElement('section');box.className='rpk';box.setAttribute('data-rpk','');box.setAttribute('data-wide','');
- box.innerHTML='<p class="rbd-l rpk-title">طريقة الدفع <b class="rpk-req">*</b></p>'+seg(cur)+
+ box.innerHTML='<p class="rbd-l rpk-title">طريقة الدفع <b class="rpk-req">*</b></p>'+seg(cur)+'<p class="rbd-offer" data-rpk-offer hidden>السعر ده عرض — مفيش خصم تاني عليه (لا نقابة ولا نادي ولا خصم إضافي)</p>'+
   '<fieldset class="rpk-body" data-rpk-contract hidden disabled>'+
    '<label class="rbd-row"><span class="rbd-l">الجهة (العقود المتفعّلة بس)</span><select name="payer_contract_id" required data-rpk-c><option value="">جاري التحميل…</option></select></label>'+
    '<p class="rpk-empty" data-rpk-cempty hidden>مفيش عقود متفعّلة — الحسابات تفعّل العقد الأول</p>'+
@@ -57,6 +57,7 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.ele
  if(ctx.only)box.querySelectorAll('input[name="payer_kind"]').forEach(function(r){if(ctx.only.indexOf(r.value)<0){r.disabled=true;r.closest('label').classList.add('rpk-off');}});
  function kind(){var r=box.querySelector('input[name="payer_kind"]:checked');return r?r.value:'';}
  function pkg(){return !!(E.package_id&&E.package_id.value);}
+ function offerPriced(){var o=ctx.order,ev=o&&o.snapshot&&o.snapshot.pricing_evidence;if(ev)return ev.source==='offer';var s=svc();return !!(s&&s.pricing_evidence&&s.pricing_evidence.source==='offer');}
  function svc(){return (data.services||[]).find(function(s){return s.id===E.service_id.value;});}
  function qty(){return Math.max(1,+(E.quantity&&E.quantity.value)||1);}
  function day(){return (E.day&&E.day.value)||'';}
@@ -81,6 +82,9 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.ele
   form.setAttribute('data-payer',p?'cash':(k||'none'));
   cBox.hidden=p||k!=='contract';cBox.disabled=cBox.hidden;uBox.hidden=p||k!=='union';uBox.disabled=uBox.hidden;syncUnion();
   box.querySelectorAll('input[name="payer_kind"]').forEach(function(r){if(!ctx.only)r.disabled=p;});
+  /* owner 2026-11-24: an offer-priced service takes no union discount (server 20261123200000) */
+  var off=offerPriced(),un=box.querySelector('input[name="payer_kind"][value="union"]');if(un){if(off){un.disabled=true;if(un.checked){un.checked=false;}}un.closest('label').classList.toggle('is-off',off);}
+  var oN=box.querySelector('[data-rpk-offer]');if(oN)oN.hidden=!off;
   if(!p&&(k==='contract'||k==='union'))load();
   var s=svc(),base=s?+s.price*qty():0;
   if(k==='contract'){var c=contract(),cov=+E.payer_coverage_percent.value,price=c&&c.price!=null?+c.price*qty():0,ok=c&&E.payer_coverage_percent.value!==''&&cov>=0&&cov<=100;
