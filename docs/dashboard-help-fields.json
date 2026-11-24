@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1993,
-    "labels": 1452,
+    "definitions": 1997,
+    "labels": 1453,
     "files": 157,
-    "groups": 1566
+    "groups": 1569
   },
   "fields": [
     {
@@ -4944,6 +4944,50 @@
       "tab": "accounting",
       "article": "requests",
       "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "finance-controls.js",
+      "label": "طريقة التسوية",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "cash-case-settlement",
+      "text_sha256": "9a8abe497431dd20651eefd9280fc01e963c796646fc4f5f3b1b9a49abe493fa"
+    },
+    {
+      "file": "finance-controls.js",
+      "label": "السبب والمستند",
+      "name": "note",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "finance-controls.js",
+      "label": "القرار",
+      "name": "approve",
+      "kind": "helper",
+      "forms": [
+        "مراجعة تسوية الفرق — "
+      ],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "finance-controls.js",
+      "label": "سبب القرار",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة تسوية الفرق — "
+      ],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
     },
     {
       "file": "finance-controls.js",

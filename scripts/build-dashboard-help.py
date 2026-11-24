@@ -1164,6 +1164,7 @@ frule('reception-legacy-package.js','رقم الإيصال القديم أو ص�
 frule('reception-legacy-package.js','خصم من باكج المريض','الخدمة دي تاخد جلسة من باكج المريض — المريض يدفع 0.','reception-legacy-package')
 frule('price-name-review.js','ابحث باسم الخدمة عند الجهة أو عندنا…','اكتب جزء من اسم الخدمة زي ما هو مكتوب في لائحة الجهة أو زي ما هو عندنا. الأسماء اللي فيها الكلام ده بس هتفضل ظاهرة، ومش فارقة أ/ا ولا ة/ه ولا ى/ي.','price-name-review')
 frule('price-name-review.js','ابحث في خدماتنا','اكتب جزء من اسم الخدمة عندنا أو كودها، واختار الخدمة الصح من النتايج. الاختيار بيربط الاسم بالخدمة دي في كل اللوايح اللي فيها الاسم.','price-name-review')
+frule('finance-controls.js','طريقة التسوية','اختار إزاي فرق الخزينة يتسجّل: الزيادة «إيراد فروق زيادة الخزينة»، والعجز «مصروف عجز الخزينة» أو «على الموظف» لو القرار كده. القيد بيستنى موافقة شخص تاني ومفيش خصم من المرتب تلقائي.','cash-case-settlement')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'
