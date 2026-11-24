@@ -72,11 +72,13 @@ begin
   end loop;
   a2 := (select (v->>'settle_amount')::numeric from jsonb_array_elements(l) e(v) where v->>'id' = c2.id::text);
   if a2 <> least(c2.difference, greatest(0, -b0)) then raise exception 'settle_amount % ≠ min(%, %)', a2, c2.difference, -b0; end if;
-  for rw in select * from clinic_finance.cash_cases where id in (c1.id, c2.id) loop
-    if rw.status = 'recorded' then perform public.clinic_finance_case_step(rw.id, 'review', 'اختبار تراجع — مراجعة'); end if;
-    if rw.status in ('recorded', 'reviewed') then perform public.clinic_finance_case_step(rw.id, 'responsibility', 'اختبار تراجع — مسؤولية', 'process_error', null, null); end if;
-    if rw.status <> 'decided' then perform public.clinic_finance_case_step(rw.id, 'decision', 'اختبار تراجع — قرار', null, null, 'correct_records'); end if;
-  end loop;
+  -- statuses read before switching role (c1 / c2 were loaded as the owner); only RPCs run as the FM
+  if c1.status = 'recorded' then perform public.clinic_finance_case_step(c1.id, 'review', 'اختبار تراجع — مراجعة'); end if;
+  if c1.status in ('recorded', 'reviewed') then perform public.clinic_finance_case_step(c1.id, 'responsibility', 'اختبار تراجع — مسؤولية', 'process_error', null, null); end if;
+  if c1.status <> 'decided' then perform public.clinic_finance_case_step(c1.id, 'decision', 'اختبار تراجع — قرار', null, null, 'correct_records'); end if;
+  if c2.status = 'recorded' then perform public.clinic_finance_case_step(c2.id, 'review', 'اختبار تراجع — مراجعة'); end if;
+  if c2.status in ('recorded', 'reviewed') then perform public.clinic_finance_case_step(c2.id, 'responsibility', 'اختبار تراجع — مسؤولية', 'process_error', null, null); end if;
+  if c2.status <> 'decided' then perform public.clinic_finance_case_step(c2.id, 'decision', 'اختبار تراجع — قرار', null, null, 'correct_records'); end if;
   r := public.clinic_finance_case_settle('request', jsonb_build_object('id', c2.id, 'kind', 'surplus_income', 'note', 'اختبار تراجع — تسوية'), gen_random_uuid());
   perform set_config('request.jwt.claim.sub', checker::text, true);
   r := public.clinic_finance_case_settle('review', jsonb_build_object('id', c2.id, 'approve', true, 'note', 'اختبار تراجع — اعتماد'), gen_random_uuid());
