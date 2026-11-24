@@ -53,7 +53,7 @@ end $$;
 -- ===== test =====
 do $$
 declare maker uuid; checker uuid; mk uuid; ck uuid; reg uuid; c1 clinic_finance.cash_cases%rowtype; c2 clinic_finance.cash_cases%rowtype;
-  b0 numeric; b1 numeric; a2 numeric; r jsonb; ok boolean; l jsonb; x record;
+  b0 numeric; b1 numeric; a2 numeric; r jsonb; ok boolean; l jsonb; rw record;
 begin
   select a.user_id, a.id into maker, mk from public.admins a where a.active and a.user_id is not null and a.role = 'financial_manager' order by a.id limit 1;
   select a.user_id, a.id into checker, ck from public.admins a where a.active and a.user_id is not null and a.role in ('super_admin', 'general_manager') and a.id <> mk order by a.role desc, a.id limit 1;
@@ -67,15 +67,15 @@ begin
   b0 := clinic_finance.case_settle_book(reg);
   perform set_config('request.jwt.claim.sub', maker::text, true); execute 'set local role authenticated';
   l := public.clinic_finance_case_settle('list', '{}'::jsonb, null);
-  for x in select * from jsonb_array_elements(l) e(v) loop
-    if (x.v->>'settle_amount') is null then raise exception 'list has no settle_amount'; end if;
+  for rw in select * from jsonb_array_elements(l) e(v) loop
+    if (rw.v->>'settle_amount') is null then raise exception 'list has no settle_amount'; end if;
   end loop;
   a2 := (select (v->>'settle_amount')::numeric from jsonb_array_elements(l) e(v) where v->>'id' = c2.id::text);
   if a2 <> least(c2.difference, greatest(0, -b0)) then raise exception 'settle_amount % ≠ min(%, %)', a2, c2.difference, -b0; end if;
-  for x in select * from clinic_finance.cash_cases where id in (c1.id, c2.id) loop
-    if x.status = 'recorded' then perform public.clinic_finance_case_step(x.id, 'review', 'اختبار تراجع — مراجعة'); end if;
-    if x.status in ('recorded', 'reviewed') then perform public.clinic_finance_case_step(x.id, 'responsibility', 'اختبار تراجع — مسؤولية', 'process_error', null, null); end if;
-    if x.status <> 'decided' then perform public.clinic_finance_case_step(x.id, 'decision', 'اختبار تراجع — قرار', null, null, 'correct_records'); end if;
+  for rw in select * from clinic_finance.cash_cases where id in (c1.id, c2.id) loop
+    if rw.status = 'recorded' then perform public.clinic_finance_case_step(rw.id, 'review', 'اختبار تراجع — مراجعة'); end if;
+    if rw.status in ('recorded', 'reviewed') then perform public.clinic_finance_case_step(rw.id, 'responsibility', 'اختبار تراجع — مسؤولية', 'process_error', null, null); end if;
+    if rw.status <> 'decided' then perform public.clinic_finance_case_step(rw.id, 'decision', 'اختبار تراجع — قرار', null, null, 'correct_records'); end if;
   end loop;
   r := public.clinic_finance_case_settle('request', jsonb_build_object('id', c2.id, 'kind', 'surplus_income', 'note', 'اختبار تراجع — تسوية'), gen_random_uuid());
   perform set_config('request.jwt.claim.sub', checker::text, true);
