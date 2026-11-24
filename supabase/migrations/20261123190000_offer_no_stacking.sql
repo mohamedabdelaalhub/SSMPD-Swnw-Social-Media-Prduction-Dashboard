@@ -5,8 +5,8 @@
 -- but lists that derive from the center price (fallback 'base'/'discount', mode discount/mixed) use it — and the base the
 -- callers pass is the reception cash price, which during an offer IS the offer price (clinic_reception.sync_catalog,
 -- clinic_reception entity claims). So, for a contract call only: when an active offer covers the date for this service and
--- the base passed equals that offer price, the base is replaced by the NON-offer center price
--- (clinic_prices.resolve_before_offer with no contract). Cash prices (no contract) and everything else are unchanged.
+-- the base passed equals that offer price, the base is replaced by the NON-offer center price: the active center list
+-- without a contract that prices the service (clinic_prices.resolve_explicit_list), else the catalogue base_price. Cash prices (no contract) and everything else are unchanged.
 -- The desk discounts (نقابة / نادي / فيزيتا / كارت العيلة / خصم خاص) on offer-priced orders are refused in the reception
 -- discount flow (reception chat).
 -- Requires 20261123160000_offer_price_lists. Rollback: supabase/rollbacks/20261123190000_offer_no_stacking.rollback.sql
@@ -18,7 +18,7 @@ end $$;
 
 create or replace function clinic_prices.resolve(p_service uuid,p_base numeric,p_date date,p_contract uuid default null) returns jsonb
 language plpgsql stable security definer set search_path=pg_catalog,public as $$
-declare o record;base numeric:=p_base;r jsonb;
+declare o record;base numeric:=p_base;r jsonb;cl uuid;
 begin
  select l.id,l.name,l.version,l.valid_from,l.valid_to,i.fixed_price into o
   from clinic_prices.lists l join clinic_prices.items i on i.list_id=l.id and i.service_id=p_service
@@ -34,7 +34,13 @@ begin
  end if;
  -- contract: never build on top of the offer price
  if o.id is not null and round(p_base,2)=round(o.fixed_price,2) then
-  base:=(clinic_prices.resolve_before_offer(p_service,p_base,p_date,null)->>'price')::numeric;
+  -- the normal center price: the active center list WITHOUT a contract that prices this service, else the catalogue base
+  select l.id into cl from clinic_prices.lists l
+   where l.list_kind='center' and l.contract_id is null and l.status='active' and l.deleted_at is null and p_date between l.valid_from and l.valid_to
+     and exists(select 1 from clinic_prices.items i where i.list_id=l.id and i.service_id=p_service)
+   order by l.valid_from desc,l.id limit 1;
+  if cl is not null then base:=(clinic_prices.resolve_explicit_list(p_service,p_base,p_date,cl)->>'price')::numeric;
+  else select s.base_price into base from public.pricing_services s where s.id=p_service;end if;
  end if;
  r:=clinic_prices.resolve_before_offer(p_service,base,p_date,p_contract);
  if base is distinct from p_base then r:=r||jsonb_build_object('base_without_offer',base,'offer_ignored',o.id);end if;
