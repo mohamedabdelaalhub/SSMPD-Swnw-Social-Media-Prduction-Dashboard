@@ -360,6 +360,7 @@
     var preferred=R.defaultTab(admin);if(tabs.indexOf('home')!==-1)preferred='home';
     try{if(sessionStorage.getItem('ssmpd_active_tab_owner')!==admin.id)savedTab=null;}catch(e){}
     var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : (tabs.indexOf(preferred)!==-1?preferred:tabs[0]);
+    if (/^#instinct\b/.test(String(window.location.hash || "")) && tabs.indexOf("instinct") !== -1) startTab = "instinct";
     if (window.SSMPDPatientUI && window.SSMPDPatientUI.route() && tabs.indexOf('patients') !== -1) startTab = 'patients';
     switchTab(startTab);
     setupRealtime();

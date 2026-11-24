@@ -13,20 +13,23 @@ do $$ declare f text; begin
     'public.instinct_thread(uuid)', 'public.instinct_notifications_list()', 'public.instinct_notifications_read(uuid[])',
     'public.instinct_unread_since(timestamptz)', 'public.instinct_staff_profiles()', 'public.instinct_audit_list(integer)',
     'public.instinct_require()', 'public.instinct_audit(uuid,text,text,text,uuid,jsonb)', 'public.instinct_notify(uuid,text,text,uuid,text)',
-    'public.instinct_check_text(text)', 'public.instinct_patient_data_reason(text)'] loop
+    'public.instinct_check_text(text)', 'public.instinct_patient_data_reason(text)', 'public.instinct_message_hide(uuid,boolean)',
+    'public.instinct_set_ai_active(uuid,boolean)', 'public.instinct_outbox_lease(integer,integer)', 'public.instinct_outbox_ack(uuid,uuid[],boolean,text)',
+    'public.instinct_rate_limit(uuid,text,integer)', 'public.instinct_role_label(uuid)', 'public.instinct_outbox_add(text,uuid,uuid)'] loop
     execute format('drop function if exists %s', f);
   end loop;
 end $$;
 
-drop table if exists public.instinct_audit_log, public.instinct_notifications, public.instinct_messages, public.instinct_threads cascade;
+drop table if exists public.instinct_notify_outbox, public.instinct_audit_log, public.instinct_notifications, public.instinct_messages, public.instinct_threads cascade;
 drop function if exists public.instinct_note_json(public.instinct_notes);
 drop table if exists public.instinct_notes cascade;
 drop function if exists public.instinct_audit_immutable();
 
 -- restrictive policies
 do $$ declare r record; begin
-  for r in select p.polrelid::regclass::text t from pg_policy p where p.polname = 'instinct_ai_block' loop
-    execute format('drop policy instinct_ai_block on %s', r.t);
+  for r in select p.polname, format('%I.%I', n.nspname, c.relname) t from pg_policy p join pg_class c on c.oid = p.polrelid
+             join pg_namespace n on n.oid = c.relnamespace where p.polname like 'instinct\_ai\_block%' loop
+    execute format('drop policy %I on %s', r.polname, r.t);
   end loop;
 end $$;
 

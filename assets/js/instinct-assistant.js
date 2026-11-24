@@ -7,6 +7,7 @@
   var STATUS = { draft: 'مسودة', approved: 'معتمدة', published: 'منشورة' };
   var ACTIONS = { note_create: 'كتب مسودة', note_edit: 'عدّل مسودة', note_approve: 'اعتمد ملاحظة', note_publish: 'نشر ملاحظة', question: 'سأل', reply: 'رد' };
   var WARNING = 'ممنوع كتابة اسم أو رقم أو بيانات مريض';
+  var AI_LABEL = 'رد من مساعد آلي (إنستنكت) — مش تعليمات رسمية من الإدارة';
   var st = { el: null, ctx: null, notes: [], threads: [], notifs: [], thread: null, editing: null, chatOpen: false };
   var badgeTimer = null, lastUnread = null;
 
@@ -32,7 +33,7 @@
 
   function noteCard(n) {
     var c = st.ctx, btns = '';
-    var canEdit = n.status === 'draft' && (c.owner || (c.kind === 'instinct'));
+    var canEdit = n.status === 'draft' && c.can_decide;
     if (canEdit) btns += '<button type="button" class="btn ghost sm" data-ins-edit="' + esc(n.id) + '">تعديل</button>';
     if (c.can_decide && n.status === 'draft') btns += '<button type="button" class="btn sm" data-ins-approve="' + esc(n.id) + '">اعتماد</button>';
     if (c.can_decide && n.status !== 'published') btns += '<button type="button" class="btn primary sm" data-ins-publish="' + esc(n.id) + '">نشر</button>';
@@ -73,13 +74,22 @@
       '<section class="ins-block"><h3>الإشعارات</h3>' + (st.notifs.some(function (n) { return !n.read; }) ? '<button type="button" class="btn ghost sm" data-ins-read-all>تحديد الكل كمقروء</button>' : '') +
       '<div data-ins-notifs>' + (st.notifs.length ? st.notifs.map(notifRow).join('') : '<p class="ins-empty">مفيش إشعارات.</p>') + '</div></section>' +
       (c.sees_all_threads ? '<details class="ins-block" data-ins-profiles><summary>الوصف المخفي للموظفين</summary><div data-ins-profiles-body></div></details>' : '') +
+      (c.owner && (c.ai_accounts || []).length ? '<section class="ins-block" data-ins-accounts><h3>حساب إنستنكت</h3>' + c.ai_accounts.map(function (a) {
+        return '<div class="ins-account"><b>' + esc(a.name) + '</b> <span class="ins-chip ins-chip-' + (a.active ? 'published' : 'draft') + '">' + (a.active ? 'شغال' : 'موقوف') + '</span> ' +
+          '<button type="button" class="btn ' + (a.active ? 'danger' : 'primary') + ' sm" data-ins-kill="' + esc(a.id) + '" data-active="' + (a.active ? '1' : '') + '">' + (a.active ? 'إيقاف الحساب' : 'تشغيل الحساب') + '</button></div>';
+      }).join('') + '</section>' : '') +
       (c.owner ? '<details class="ins-block" data-ins-audit><summary>سجل التدقيق</summary><div data-ins-audit-body></div></details>' : '') + '</section>' + chatHtml();
     wire();
   }
   function chatHtml() {
     var c = st.ctx, t = st.thread, mine = !t || (t.staff_id && t.staff_id === c.id) || t.mine;
     var canWrite = t ? (c.can_reply || (c.can_ask && mine)) : c.can_ask;
-    var msgs = t ? t.messages.map(function (m) { return '<div class="ins-msg ' + (m.author_kind === 'instinct' ? 'them' : 'me') + '"><div>' + esc(m.body) + '</div><small>' + esc(fmt(m.created_at)) + '</small></div>'; }).join('')
+    var msgs = t ? t.messages.map(function (m) {
+        var ai = m.author_kind === 'instinct', tools = '';
+        if (ai && c.can_hide) tools = '<button type="button" class="btn ghost sm" data-ins-hide="' + esc(m.id) + '" data-hidden="' + (m.hidden ? '1' : '') + '">' + (m.hidden ? 'إظهار الرد' : 'إخفاء الرد') + '</button>';
+        return '<div class="ins-msg ' + (ai ? 'them' : 'me') + (m.hidden ? ' hidden-reply' : '') + '">' + (ai ? '<em class="ins-ai-label">' + AI_LABEL + '</em>' : '') +
+          (m.hidden ? '<em class="ins-hidden-label">مخفي عن الموظف</em>' : '') + '<div class="ins-text">' + esc(m.body) + '</div><small>' + esc(fmt(m.created_at)) + '</small>' + tools + '</div>';
+      }).join('')
       : '<div class="ins-msg them"><div>اكتب سؤالك عن أي خطوة في الداشبورد، وإنستنكت هترد عليك هنا.</div></div>';
     return '<aside class="ins-chat" data-ins-chat' + (st.chatOpen ? '' : ' hidden') + ' aria-label="محادثة مساعد إنستنكت"><div class="ins-chat-head"><b>' + (t ? (c.sees_all_threads ? esc(t.staff_name) : 'سؤالك') : 'سؤال جديد') + '</b>' +
       '<button type="button" class="ins-x" data-ins-close aria-label="إغلاق">×</button></div><div class="ins-chat-msgs" data-ins-msgs>' + msgs + '</div>' +
@@ -114,6 +124,16 @@
     if (aud) aud.addEventListener('toggle', function () { if (!aud.open || aud.dataset.loaded) return; aud.dataset.loaded = '1'; rpc('instinct_audit_list', { p_limit: 100 }).then(function (rows) {
       el.querySelector('[data-ins-audit-body]').innerHTML = (rows || []).map(function (a) { return '<div class="ins-audit-row">' + esc(fmt(a.at)) + ' — ' + esc(a.actor_name) + ' ' + esc(ACTIONS[a.action] || a.action) + (a.detail && a.detail.title ? ': ' + esc(a.detail.title) : '') + '</div>'; }).join('') || '<p class="ins-empty">السجل فاضي.</p>';
     }).catch(function (e) { aud.dataset.loaded = ''; showError(e.message); }); });
+    el.querySelectorAll('[data-ins-kill]').forEach(function (b) { b.onclick = function () {
+      var on = !!b.getAttribute('data-active');
+      if (on && w.confirm && !w.confirm('إيقاف حساب إنستنكت؟ مش هيقدر يدخل أو يكتب أي حاجة لحد ما تشغّله تاني.')) return;
+      b.disabled = true; rpc('instinct_set_ai_active', { p_admin: b.getAttribute('data-ins-kill'), p_active: !on }).then(load).catch(function (e) { b.disabled = false; showError(e.message); });
+    }; });
+    el.querySelectorAll('[data-ins-hide]').forEach(function (b) { b.onclick = function () {
+      b.disabled = true; var tid = st.thread && st.thread.id;
+      rpc('instinct_message_hide', { p_message: b.getAttribute('data-ins-hide'), p_hidden: !b.getAttribute('data-hidden') }).then(function () { return tid ? openThread(tid) : load(); })
+        .catch(function (e) { b.disabled = false; chatError(e.message); });
+    }; });
     var chat = el.querySelector('[data-ins-chat]');
     if (chat) {
       chat.querySelector('[data-ins-close]').onclick = function () { st.chatOpen = false; chat.hidden = true; };
@@ -155,7 +175,7 @@
   function load() {
     showError('');
     return rpc('instinct_context').then(function (c) {
-      st.ctx = c;
+      st.ctx = c; if (document.body) document.body.classList.toggle('ins-ai-only', c.kind === 'instinct');
       return Promise.all([rpc('instinct_notes_list'), rpc('instinct_threads_list'), rpc('instinct_notifications_list')]);
     }).then(function (r) {
       st.notes = r[0] || []; st.threads = r[1] || []; st.notifs = r[2] || []; setBadge(st.ctx.unread); draw();
@@ -177,6 +197,7 @@
   function startBadge() {
     if (badgeTimer) return;
     var a = w.SSMPDAuth && w.SSMPDAuth.currentAdmin;
+    if (document.body && w.SSMPDRoles && w.SSMPDRoles.isInstinctOnly) document.body.classList.toggle('ins-ai-only', !!a && w.SSMPDRoles.isInstinctOnly(a));
     if (!a || !w.SSMPDRoles || !w.SSMPDRoles.canSeeTab(a, 'instinct')) { setTimeout(startBadge, 1500); return; }
     pollBadge(); badgeTimer = setInterval(function () { if (!document.hidden) pollBadge(); }, 90000);
   }

@@ -1,30 +1,54 @@
 -- Live rollback test for 20261124200000_instinct_assistant.sql («مساعد إنستنكت»). ONE transaction ending in ROLLBACK, run as postgres.
 -- Apply the migration body at the marked spot first if it is not applied yet. Nothing is kept: no auth user, no notes, no messages.
+-- The REAL Instinct account (admins.id 6bc2a2ff-9947-4a3f-a06d-e10b5130a526) is first moved to ai_assistant exactly like
+-- docs/ops/2026-11-24-instinct-account-to-ai-assistant.sql (as the owner), inside this transaction — then rolled back with the rest.
 -- Acts as: Mazen (reception, f0891d2c…): ask + patient-data refusals; the owner (administrative_assistant_config.owner_admin_id):
--- approve / publish / audit; a FAKE ai_assistant account created inside this transaction: draft / reply / unread_since / staff
--- descriptions, refused on decide; then, as that AI account, a sweep of every table/view granted to authenticated (must return 0 rows)
--- and of the main RPCs of finance / treasury / reception / patients / leads / HR / inventory / tasks / home (each called with NULL
--- arguments; must be refused or return nothing). Last output = one result table.
+-- edit / approve / publish / hide a reply / kill switch / audit; Instinct: draft / reply / unread_since / staff descriptions,
+-- refused on edit / decide / hide / admins writes; service_role: outbox lease + ack. Then 3 normal RPCs each as Mazen, a financial
+-- manager and the owner (must still work), and, as Instinct, a sweep of every table/view granted to authenticated (0 rows) and of
+-- the main RPCs of finance / treasury / reception / patients / leads / HR / inventory / tasks / home / prices / content (NULL
+-- arguments; must be refused or return nothing). Also lists every table that got instinct_ai_block* and the system identities.
+-- Last output = one result table.
 begin;
 -- >>> apply supabase/migrations/20261124200000_instinct_assistant.sql here (without its own begin / commit) if not applied yet <<<
 set local statement_timeout = '15min';
 create temp table ins_live(n serial, step text, expected text, actual text, ok boolean);
-grant all on ins_live to authenticated; grant usage, select on sequence ins_live_n_seq to authenticated;
+grant all on ins_live to authenticated, service_role; grant usage, select on sequence ins_live_n_seq to authenticated, service_role;
 
 do $$
 declare
-  mazen_sub constant uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb';
-  owner_sub uuid; owner_id uuid; mazen_id uuid; gm_sub uuid; ai_sub uuid := gen_random_uuid(); ai_id uuid := gen_random_uuid();
-  r jsonb; err text; e2 text; note_id uuid; thread_id uuid;
+  mazen_sub constant uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; ai_id constant uuid := '6bc2a2ff-9947-4a3f-a06d-e10b5130a526';
+  owner_sub uuid; owner_id uuid; mazen_id uuid; gm_sub uuid; ai_sub uuid; sets text;
+  r jsonb; err text; e2 text; note_id uuid; thread_id uuid; reply_id uuid; k int;
 begin
   select a.user_id, a.id into owner_sub, owner_id from public.administrative_assistant_config c join public.admins a on a.id = c.owner_admin_id where c.id = 1;
   select id into mazen_id from public.admins where user_id = mazen_sub and active;
   if owner_sub is null or mazen_id is null then raise exception 'owner or Mazen not found'; end if;
   select a.user_id into gm_sub from public.admins a where a.active and a.user_id is not null and a.id <> owner_id and a.role in ('general_manager', 'super_admin') limit 1;
 
-  -- fake Instinct account (rolled back): auth user + admins row with role ai_assistant
-  insert into auth.users(id, aud, role, email, created_at, updated_at) values (ai_sub, 'authenticated', 'authenticated', 'instinct-dryrun-' || left(ai_sub::text, 8) || '@invalid.test', now(), now());
-  insert into public.admins(id, user_id, email, name, role, active) values (ai_id, ai_sub, 'instinct-dryrun-' || left(ai_sub::text, 8) || '@invalid.test', 'إنستنكت (تجربة)', 'ai_assistant', true);
+  -- the real Instinct account → ai_assistant (same statements as the ops file, as the owner); its login is not touched
+  select user_id into ai_sub from public.admins where id = ai_id;
+  if ai_sub is null then
+    -- not linked yet: a throw-away auth user for this test only (rolled back)
+    ai_sub := gen_random_uuid();
+    insert into auth.users(id, aud, role, email, created_at, updated_at) values (ai_sub, 'authenticated', 'authenticated', 'instinct-dryrun-' || left(ai_sub::text, 8) || '@invalid.test', now(), now());
+    perform set_config('request.jwt.claims', jsonb_build_object('sub', owner_sub, 'role', 'authenticated')::text, true);
+    perform set_config('request.jwt.claim.sub', owner_sub::text, true);
+    update public.admins set user_id = ai_sub where id = ai_id;
+  end if;
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', owner_sub, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', owner_sub::text, true);
+  insert into ins_live(step, expected, actual, ok) select 'Instinct before', 'page_manager + flags', a.role || ' / ' || coalesce((select string_agg(e.key, ',') from jsonb_each(to_jsonb(a)) e
+    where (e.key like 'has\_%' or e.key like 'can\_%') and e.value = 'true'::jsonb), 'no flags'), true from public.admins a where a.id = ai_id;
+  delete from public.admin_extra_roles where admin_id = ai_id;
+  if to_regclass('public.admin_module_permissions') is not null then delete from public.admin_module_permissions where admin_id = ai_id; end if;
+  select string_agg(format('%I = false', column_name), ', ' order by column_name) into sets from information_schema.columns
+   where table_schema = 'public' and table_name = 'admins' and data_type = 'boolean' and (column_name like 'has\_%' or column_name like 'can\_%');
+  execute format('update public.admins set role = %L%s where id = %L', 'ai_assistant', coalesce(', ' || sets, ''), ai_id);
+  insert into ins_live(step, expected, actual, ok) select 'ops step: Instinct after', 'ai_assistant, no flags', a.role || ' / ' || coalesce((select string_agg(e.key, ',') from jsonb_each(to_jsonb(a)) e
+    where (e.key like 'has\_%' or e.key like 'can\_%') and e.value = 'true'::jsonb), 'no flags'),
+    a.role = 'ai_assistant' and not exists (select 1 from jsonb_each(to_jsonb(a)) e where (e.key like 'has\_%' or e.key like 'can\_%') and e.value = 'true'::jsonb)
+    from public.admins a where a.id = ai_id;
   begin update public.admins set has_archive_access = true where id = ai_id; err := 'accepted'; exception when others then err := sqlerrm; end;
   insert into ins_live(step, expected, actual, ok) values ('ai_assistant + access flag', 'refused', err, err like '%صلاحيات إضافية%');
 
@@ -36,6 +60,8 @@ begin
   insert into ins_live(step, expected, actual, ok) select 'AI: staff roles', 'none', public.has_any_role(array['super_admin','general_manager','reception','customer_service','accountant','financial_manager','page_manager','designer','approver','nursing','head_nursing','sono_doctor','contract_manager'])::text,
     not public.has_any_role(array['super_admin','general_manager','reception','customer_service','accountant','financial_manager','page_manager','designer','approver','nursing','head_nursing','sono_doctor','contract_manager']);
   insert into ins_live(step, expected, actual, ok) select 'AI: admins rows visible', '1 (own)', count(*)::text, count(*) = 1 and bool_and(id = ai_id) from public.admins;
+  begin update public.admins set name = name || ' x' where id = ai_id; get diagnostics k = row_count; err := k || ' rows'; exception when others then err := sqlerrm; end;
+  insert into ins_live(step, expected, actual, ok) values ('AI: update own admins row', '0 rows / refused', err, err = '0 rows' or err like '%row-level security%' or err like '%permission denied%' or err like '%غير مسموح%');
   r := public.instinct_context();
   insert into ins_live(step, expected, actual, ok) values ('AI: context', 'kind instinct, can_draft, can_reply', r::text, r->>'kind' = 'instinct' and (r->>'can_draft')::boolean and (r->>'can_reply')::boolean and not (r->>'can_decide')::boolean);
   r := public.instinct_note_save(null, 'تجربة تراجع: الحجز السريع', 'افتح «الاستقبال والخدمات» ثم «حجز جديد».', 'reception'); note_id := (r->>'id')::uuid;
@@ -44,6 +70,8 @@ begin
   insert into ins_live(step, expected, actual, ok) values ('AI: draft with a mobile', 'refused', err, err like '%رقم موبايل%');
   begin perform public.instinct_note_decide(note_id, 'publish'); err := 'accepted'; exception when others then err := sqlerrm; end;
   insert into ins_live(step, expected, actual, ok) values ('AI: publish own draft', 'refused (owner only)', err, err like '%للمالك بس%');
+  begin perform public.instinct_note_save(note_id, 'تعديل', 'تعديل المسودة', 'all'); err := 'accepted'; exception when others then err := sqlerrm; end;
+  insert into ins_live(step, expected, actual, ok) values ('AI: edit own draft', 'refused (owner only)', err, err like '%للمالك بس%');
   begin perform public.instinct_ask(null, 'سؤال'); err := 'accepted'; exception when others then err := sqlerrm; end;
   insert into ins_live(step, expected, actual, ok) values ('AI: ask', 'refused', err, err like '%مش بيسأل%');
   execute 'reset role';
@@ -89,7 +117,9 @@ begin
   execute 'set local role authenticated';
   r := public.instinct_unread_since(now() - interval '1 minute');
   insert into ins_live(step, expected, actual, ok) values ('AI: unread_since', '≥ 2 new questions', jsonb_array_length(r->'new_questions')::text, jsonb_array_length(r->'new_questions') >= 2);
-  r := public.instinct_reply(thread_id, 'تجربة تراجع: افتح «الاستقبال والخدمات» ثم «حجز جديد».');
+  r := public.instinct_reply(thread_id, 'تجربة تراجع: افتح «الاستقبال والخدمات» ثم «حجز جديد».'); reply_id := (r->>'message_id')::uuid;
+  begin perform public.instinct_message_hide(reply_id, true); err := 'accepted'; exception when others then err := sqlerrm; end;
+  insert into ins_live(step, expected, actual, ok) values ('AI: hide a reply', 'refused (owner only)', err, err like '%للمالك بس%');
   insert into ins_live(step, expected, actual, ok) values ('AI: reply', 'same thread', r->>'thread_id', (r->>'thread_id')::uuid = thread_id);
   r := public.instinct_staff_profiles();
   insert into ins_live(step, expected, actual, ok) values ('AI: hidden descriptions', '> 0, no emails', jsonb_array_length(r)::text, jsonb_array_length(r) > 0 and r::text !~ '@');
@@ -102,13 +132,43 @@ begin
   execute 'set local role authenticated';
   insert into ins_live(step, expected, actual, ok) select 'owner: notifications', 'new_draft + new_question', string_agg(distinct e->>'kind', ','),
     bool_or(e->>'kind' = 'new_draft') and bool_or(e->>'kind' = 'new_question') from jsonb_array_elements(public.instinct_notifications_list()) e where (e->>'created_at')::timestamptz > now() - interval '1 minute';
+  r := public.instinct_note_save(note_id, 'تجربة تراجع: الحجز السريع', 'افتح «الاستقبال والخدمات» ثم اضغط «حجز جديد».', 'reception');
+  insert into ins_live(step, expected, actual, ok) values ('owner: edit draft', 'still draft', r->>'status', r->>'status' = 'draft');
   r := public.instinct_note_decide(note_id, 'approve');
   insert into ins_live(step, expected, actual, ok) values ('owner: approve', 'approved', r->>'status', r->>'status' = 'approved');
+  r := public.instinct_message_hide(reply_id, true);
+  insert into ins_live(step, expected, actual, ok) values ('owner: hide reply', 'hidden', r::text, (r->>'hidden')::boolean);
   r := public.instinct_note_decide(note_id, 'publish');
   insert into ins_live(step, expected, actual, ok) values ('owner: publish', 'published', r->>'status', r->>'status' = 'published');
   insert into ins_live(step, expected, actual, ok) select 'owner: all threads', 'includes Mazen''s', count(*)::text, count(*) = 1 from jsonb_array_elements(public.instinct_threads_list()) e where e->>'id' = thread_id::text;
   insert into ins_live(step, expected, actual, ok) select 'owner: audit', 'create, question x2, reply, approve, publish', string_agg(e->>'action', ',' order by (e->>'id')::bigint),
-    count(*) = 6 from jsonb_array_elements(public.instinct_audit_list(500)) e where e->>'entity_id' in (note_id::text, thread_id::text);
+    count(*) = 7 from jsonb_array_elements(public.instinct_audit_list(500)) e where e->>'entity_id' in (note_id::text, thread_id::text);
+  r := public.instinct_set_ai_active(ai_id, false);
+  insert into ins_live(step, expected, actual, ok) values ('owner: kill switch off', 'inactive', r::text, not (r->>'active')::boolean);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', ai_sub, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', ai_sub::text, true);
+  execute 'set local role authenticated';
+  begin perform public.instinct_reply(thread_id, 'رد'); err := 'accepted'; exception when others then err := sqlerrm; end;
+  insert into ins_live(step, expected, actual, ok) values ('AI after kill switch: reply', 'refused', err, err <> 'accepted');
+  begin perform public.instinct_context(); err := 'accepted'; exception when others then err := sqlerrm; end;
+  insert into ins_live(step, expected, actual, ok) values ('AI after kill switch: context', 'refused', err, err <> 'accepted');
+  execute 'reset role';
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', owner_sub, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', owner_sub::text, true);
+  execute 'set local role authenticated';
+  r := public.instinct_set_ai_active(ai_id, true);
+  insert into ins_live(step, expected, actual, ok) values ('owner: kill switch on', 'active', r::text, (r->>'active')::boolean);
+  execute 'reset role';
+  -- outbox: lines without message text; service_role leases + acks
+  insert into ins_live(step, expected, actual, ok) select 'outbox lines (this test)', 'new_draft + 2 new_question, no text', string_agg(kind, ',' order by created_at),
+    count(*) = 3 and bool_and(to_jsonb(o)::text not like '%تجربة تراجع%' and to_jsonb(o)::text not like '%ألغيه%')
+    from public.instinct_notify_outbox o where item_id in (note_id, thread_id);
+  execute 'set local role service_role';
+  r := public.instinct_outbox_lease(100, 60);
+  insert into ins_live(step, expected, actual, ok) values ('service_role: lease', '≥ 3 items', jsonb_array_length(r->'items')::text, jsonb_array_length(r->'items') >= 3);
+  k := public.instinct_outbox_ack((r->>'lease_token')::uuid, array(select (i->>'id')::uuid from jsonb_array_elements(r->'items') i), true);
+  insert into ins_live(step, expected, actual, ok) values ('service_role: ack', 'all leased marked sent', k::text, k = jsonb_array_length(r->'items'));
   execute 'reset role';
   begin update public.instinct_audit_log set action = action where entity_id = note_id; err := 'accepted'; exception when others then err := sqlerrm; end;
   insert into ins_live(step, expected, actual, ok) values ('audit update (even as postgres)', 'refused', err, err like '%للإضافة فقط%');
@@ -119,16 +179,61 @@ begin
   execute 'set local role authenticated';
   insert into ins_live(step, expected, actual, ok) select 'Mazen: published note', 'listed', count(*)::text, count(*) = 1 from jsonb_array_elements(public.instinct_notes_list()) e where e->>'id' = note_id::text;
   r := public.instinct_thread(thread_id);
-  insert into ins_live(step, expected, actual, ok) values ('Mazen: thread', 'staff, staff, instinct', (select string_agg(m->>'author_kind', ',') from jsonb_array_elements(r->'messages') m),
-    (select string_agg(m->>'author_kind', ',') from jsonb_array_elements(r->'messages') m) = 'staff,staff,instinct');
+  insert into ins_live(step, expected, actual, ok) values ('Mazen: thread (reply hidden by owner)', 'staff, staff', (select string_agg(m->>'author_kind', ',') from jsonb_array_elements(r->'messages') m),
+    (select string_agg(m->>'author_kind', ',') from jsonb_array_elements(r->'messages') m) = 'staff,staff');
+  begin perform public.instinct_outbox_lease(1, 60); err := 'accepted'; exception when others then err := sqlerrm; end;
+  insert into ins_live(step, expected, actual, ok) values ('Mazen: outbox lease', 'permission denied', err, err like '%permission denied%');
   execute 'reset role';
 end $$;
 
--- ===== as the fake Instinct: every table / view the dashboard can read returns nothing =====
+-- ===== normal users still work: 3 RPCs each as Mazen, a financial manager, the owner =====
+do $$
+declare who record; fn text; res text; err text; fm_sub uuid;
+begin
+  select user_id into fm_sub from public.admins where active and user_id is not null and role = 'financial_manager' limit 1;
+  for who in select * from (values ('Mazen', 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'::uuid, array['personal_home_inbox', 'clinic_reception_workspaces', 'inventory_my_access']),
+                                   ('financial manager', fm_sub, array['personal_home_inbox', 'clinic_finance_my_handover_nudges', 'inventory_my_access']),
+                                   ('owner', (select a.user_id from public.administrative_assistant_config c join public.admins a on a.id = c.owner_admin_id where c.id = 1),
+                                     array['personal_home_inbox', 'clinic_reception_workspaces', 'clinic_finance_my_handover_nudges'])) v(label, sub, fns) loop
+    if who.sub is null then insert into ins_live(step, expected, actual, ok) values (who.label || ': normal RPCs', 'work', 'no such user', false); continue; end if;
+    perform set_config('request.jwt.claims', jsonb_build_object('sub', who.sub, 'role', 'authenticated')::text, true);
+    perform set_config('request.jwt.claim.sub', who.sub::text, true);
+    foreach fn in array who.fns || array['my_admin_id'] loop
+      if not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = fn and p.pronargs = 0) then
+        insert into ins_live(step, expected, actual, ok) values (who.label || ': ' || fn || '()', 'works', 'no zero-argument function', true); continue;
+      end if;
+      begin
+        execute 'set local role authenticated';
+        execute format('select left(string_agg(x::text, '',''), 80) from (select public.%I() as x limit 3) s', fn) into res;
+        execute 'reset role'; err := null;
+      exception when others then execute 'reset role'; err := sqlerrm; end;
+      insert into ins_live(step, expected, actual, ok) values (who.label || ': ' || fn || '()', 'works', coalesce(err, 'ok: ' || coalesce(res, 'null')),
+        err is null and (fn <> 'my_admin_id' or res is not null));
+    end loop;
+  end loop;
+end $$;
+
+insert into ins_live(step, expected, actual, ok)
+select 'tables with instinct_ai_block* (' || count(distinct p.polrelid) || ')', 'every RLS table outside system schemas',
+       string_agg(distinct format('%I.%I', n.nspname, c.relname), ' ' order by format('%I.%I', n.nspname, c.relname)), count(*) > 0
+  from pg_policy p join pg_class c on c.oid = p.polrelid join pg_namespace n on n.oid = c.relnamespace where p.polname like 'instinct\_ai\_block%';
+insert into ins_live(step, expected, actual, ok)
+select 'RLS tables WITHOUT the policy', 'none (or only tables not owned by the migration role)',
+       coalesce(string_agg(format('%I.%I', n.nspname, c.relname), ' '), 'none'), true
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+ where c.relkind in ('r', 'p') and c.relrowsecurity and n.nspname not in ('pg_catalog', 'information_schema', 'auth', 'storage', 'realtime', '_realtime',
+       'supabase_functions', 'supabase_migrations', 'extensions', 'graphql', 'graphql_public', 'net', 'pgsodium', 'pgsodium_masks', 'vault', 'cron', 'pgbouncer', '_analytics', 'pg_toast')
+   and n.nspname not like 'pg\_%' and not (n.nspname = 'public' and c.relname like 'instinct\_%')
+   and not exists (select 1 from pg_policy p where p.polrelid = c.oid and p.polname like 'instinct\_ai\_block%');
+insert into ins_live(step, expected, actual, ok)
+select 'system identities (my_admin_id patch)', 'none has role ai_assistant', coalesce(string_agg(coalesce(name, '?') || ':' || role || ':' || active, ', '), 'none'),
+       coalesce(bool_and(role <> 'ai_assistant'), true) from public.admins where is_system_identity;
+
+-- ===== as Instinct: every table / view the dashboard can read returns nothing =====
 do $$
 declare r record; ai_sub uuid; leaked text := ''; checked int := 0; k bigint; err text;
 begin
-  select user_id into ai_sub from public.admins where role = 'ai_assistant' and email like 'instinct-dryrun-%@invalid.test' limit 1;
+  select user_id into ai_sub from public.admins where id = '6bc2a2ff-9947-4a3f-a06d-e10b5130a526';
   perform set_config('request.jwt.claims', jsonb_build_object('sub', ai_sub, 'role', 'authenticated')::text, true);
   perform set_config('request.jwt.claim.sub', ai_sub::text, true);
   for r in select c.oid, format('%I.%I', n.nspname, c.relname) t from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -149,7 +254,7 @@ end $$;
 do $$
 declare r record; ai_sub uuid; res text; returned text := ''; flags text := ''; refused int := 0; empty int := 0; total int := 0;
 begin
-  select user_id into ai_sub from public.admins where role = 'ai_assistant' and email like 'instinct-dryrun-%@invalid.test' limit 1;
+  select user_id into ai_sub from public.admins where id = '6bc2a2ff-9947-4a3f-a06d-e10b5130a526';
   perform set_config('request.jwt.claims', jsonb_build_object('sub', ai_sub, 'role', 'authenticated')::text, true);
   perform set_config('request.jwt.claim.sub', ai_sub::text, true);
   for r in select p.oid, p.oid::regproc::text fn,
@@ -157,7 +262,7 @@ begin
              from pg_proc p join pg_namespace n on n.oid = p.pronamespace
             where n.nspname = 'public' and p.prokind = 'f' and p.provariadic = 0 and p.prorettype <> 'trigger'::regtype
               and has_function_privilege('authenticated', p.oid, 'EXECUTE')
-              and p.proname ~ '^(clinic_finance|clinic_reception|finance|treasury|accounting|patient|patients|lead|leads|archive|booking|hr_|inventory|task_|tasks|personal_home|kpi|staff_kpi|price_list|contract|reports?_|report_catalog|media_buyer|meta_ads)'
+              and p.proname ~ '^(clinic_finance|clinic_reception|finance|treasury|accounting|patient|patients|lead|leads|archive|booking|hr_|inventory|task_|tasks|personal_home|kpi|staff_kpi|price_list|workforce|contract|reports?_|report_catalog|media_buyer|meta_ads|content|ad_|digital_|administrative_)'
             order by 2 loop
     total := total + 1;
     begin

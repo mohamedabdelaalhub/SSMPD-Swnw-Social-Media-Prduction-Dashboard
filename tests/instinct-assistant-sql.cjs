@@ -20,7 +20,7 @@ const OWNER = U(1), GM = U(2), RECEP = U(3), DESIGN = U(4), NURSE = U(5), ACC = 
     assert.ok(err, 'should be refused: ' + sql); if (re) assert.match(err.message, re, sql);
   };
   try {
-    await db.exec(`create role authenticated; create role anon; create schema auth; create schema clinic_finance;
+    await db.exec(`create role authenticated; create role anon; create role service_role; create schema auth; create schema clinic_finance;
       create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
       grant usage on schema auth, clinic_finance to authenticated; grant execute on function auth.uid() to authenticated;
       create table public.admins(id uuid primary key, user_id uuid unique, email text not null unique, name text, role text not null,
@@ -109,13 +109,17 @@ const OWNER = U(1), GM = U(2), RECEP = U(3), DESIGN = U(4), NURSE = U(5), ACC = 
     const n1 = (await val(AI_U, "select public.instinct_note_save(null, 'الحجز السريع', 'افتح الاستقبال ثم حجز جديد', 'reception') x")).id;
     const n2 = (await val(AI_U, "select public.instinct_note_save(null, 'للمحاسبين', 'راجع الخزينة', 'finance') x")).id;
     await refused(AI_U, "select public.instinct_note_save(null, 'رقم', 'كلم ٠١٠١٢٣٤٥٦٧٨', 'all')", null, /رقم موبايل/);
-    await val(AI_U, `select public.instinct_note_save('${n1}', 'الحجز السريع', 'افتح الاستقبال ثم اضغط حجز جديد', 'reception') x`);
-    await refused(GM_U, `select public.instinct_note_save('${n1}', 'x12', 'y12', 'all')`, null, /لمساعد إنستنكت أو المالك بس/);
+    await refused(AI_U, `select public.instinct_note_save('${n1}', 'الحجز السريع', 'تعديل', 'reception')`, null, /للمالك بس/);
+    await val(OWNER_U, `select public.instinct_note_save('${n1}', 'الحجز السريع', 'افتح الاستقبال ثم اضغط حجز جديد', 'reception') x`);
+    await refused(GM_U, `select public.instinct_note_save('${n1}', 'x12', 'y12', 'all')`, null, /للمالك بس/);
+    // the AI account cannot write admins at all (own profile included)
+    await refused(AI_U, "update public.admins set name = 'x' where id = $1", [AI], /row-level security|0 rows/).catch(async () => {
+      assert.equal((await one('select name from public.admins where id = $1', [AI])).name, 'إنستنكت', 'own row untouched'); });
     // approve / publish: owner only (not the general manager, not Instinct, not staff)
     for (const u of [AI_U, GM_U, RECEP_U, ACC_U]) await refused(u, `select public.instinct_note_decide('${n1}', 'approve')`, null, /للمالك بس/);
     assert.equal(await val(RECEP_U, 'select jsonb_array_length(public.instinct_notes_list())'), 0, 'drafts are hidden from staff');
     assert.equal((await val(OWNER_U, `select public.instinct_note_decide('${n1}', 'approve') x`)).status, 'approved');
-    await refused(AI_U, `select public.instinct_note_save('${n1}', 'a12', 'b12', 'all')`, null, /اتعتمدت/);
+    await refused(OWNER_U, `select public.instinct_note_save('${n1}', 'a12', 'b12', 'all')`, null, /اتعتمدت/);
     assert.equal(await val(RECEP_U, 'select jsonb_array_length(public.instinct_notes_list())'), 0, 'approved but unpublished: hidden');
     assert.equal((await val(OWNER_U, `select public.instinct_note_decide('${n1}', 'publish') x`)).status, 'published');
     assert.equal((await val(OWNER_U, `select public.instinct_note_decide('${n2}', 'publish') x`)).status, 'published');
@@ -143,6 +147,14 @@ const OWNER = U(1), GM = U(2), RECEP = U(3), DESIGN = U(4), NURSE = U(5), ACC = 
     await val(AI_U, `select public.instinct_reply('${t1}', 'افتح الاستقبال والخدمات ثم حجز جديد') x`);
     const th = await val(RECEP_U, `select public.instinct_thread('${t1}') x`);
     assert.deepEqual(th.messages.map(m => m.author_kind), ['staff', 'staff', 'instinct']);
+    // owner hides the reply: gone for staff, still visible (flagged) to owner + Instinct; logged
+    const rid = th.messages[2].id;
+    for (const u of [AI_U, RECEP_U, GM_U]) await refused(u, `select public.instinct_message_hide('${rid}', true)`, null, /للمالك بس/);
+    await val(OWNER_U, `select public.instinct_message_hide('${rid}', true) x`);
+    assert.equal((await val(RECEP_U, `select public.instinct_thread('${t1}') x`)).messages.length, 2);
+    assert.equal((await val(OWNER_U, `select public.instinct_thread('${t1}') x`)).messages[2].hidden, true);
+    await val(OWNER_U, `select public.instinct_message_hide('${rid}', false) x`);
+    assert.equal((await val(RECEP_U, `select public.instinct_thread('${t1}') x`)).messages.length, 3);
     assert.equal((await val(RECEP_U, 'select public.instinct_threads_list() x'))[0].answered, true);
 
     // notifications: owner (new draft x2, new question x3), Instinct (questions x3), reception (reply)
@@ -158,6 +170,21 @@ const OWNER = U(1), GM = U(2), RECEP = U(3), DESIGN = U(4), NURSE = U(5), ACC = 
     assert.equal((await val(AI_U, "select public.instinct_unread_since(now() + interval '1 hour') x")).new_questions.length, 0);
     await refused(RECEP_U, 'select public.instinct_unread_since(null)', null, /للمالك ومساعد إنستنكت بس/);
 
+    // e-mail outbox: one line per question / draft, no message text; browser cannot touch it; service_role leases + acks
+    const ob = (await q('select kind, employee_name, role_label, link, to_jsonb(o)::text j from public.instinct_notify_outbox o order by created_at')).rows;
+    assert.deepEqual(ob.map(r => r.kind).sort(), ['new_draft', 'new_draft', 'new_question', 'new_question', 'new_question']);
+    assert.ok(ob.every(r => !r.j.includes('إزاي') && !r.j.includes('الخزينة')), 'no message text in the outbox');
+    assert.ok(ob.some(r => r.employee_name === 'مازن' && /استقبال/.test(r.role_label) && r.link.endsWith('#instinct')));
+    for (const u of [OWNER_U, AI_U]) await refused(u, 'select public.instinct_outbox_lease(10, 60)', null, /permission denied/);
+    await db.exec('set role service_role');
+    const lease = (await q('select public.instinct_outbox_lease(3, 60) x')).rows[0].x;
+    assert.equal(lease.items.length, 3);
+    assert.equal((await q('select public.instinct_outbox_ack($1, $2, true) x', [lease.lease_token, lease.items.map(i => i.id)])).rows[0].x, 3);
+    assert.equal((await q('select public.instinct_outbox_lease(10, 60) x')).rows[0].x.items.length, 2, 'only the unsent ones');
+    await db.exec('reset role');
+    // rate limit: 60 replies / hour
+    await q("insert into public.instinct_audit_log(actor_id, actor_kind, action, entity_type, entity_id) select $1, 'instinct', 'reply', 'thread', $2 from generate_series(1, 60)", [AI, t1]);
+    await refused(AI_U, `select public.instinct_reply('${t2}', 'رد')`, null, /حد المسموح في الساعة/);
     // hidden staff descriptions: owner + Instinct only; no contact data
     const prof = await val(AI_U, 'select public.instinct_staff_profiles() x');
     const mazen = prof.find(p => p.admin_id === RECEP);
@@ -168,14 +195,19 @@ const OWNER = U(1), GM = U(2), RECEP = U(3), DESIGN = U(4), NURSE = U(5), ACC = 
 
     // audit: every step recorded, append-only for everyone (even the table owner)
     const audit = await val(OWNER_U, 'select public.instinct_audit_list(100) x');
-    assert.deepEqual([...new Set(audit.map(a => a.action))].sort(), ['note_approve', 'note_create', 'note_edit', 'note_publish', 'question', 'reply']);
+    assert.deepEqual([...new Set(audit.map(a => a.action))].sort(), ['note_approve', 'note_create', 'note_edit', 'note_publish', 'question', 'reply', 'reply_hide', 'reply_unhide']);
     await refused(AI_U, 'select public.instinct_audit_list(10)', null, /للمالك بس/);
     await assert.rejects(() => q('update public.instinct_audit_log set action = action'), /للإضافة فقط/);
     await assert.rejects(() => q('delete from public.instinct_audit_log'), /للإضافة فقط/);
     await assert.rejects(() => q('truncate public.instinct_audit_log'), /للإضافة فقط/);
-    // an inactive AI account is shut out of the assistant too
-    await q('update public.admins set active = false where id = $1', [AI]);
+    // kill switch: owner only, logged; an inactive AI account is shut out of everything
+    assert.deepEqual((await val(OWNER_U, 'select public.instinct_context() x')).ai_accounts.map(a => a.active), [true]);
+    for (const u of [GM_U, AI_U, RECEP_U]) await refused(u, `select public.instinct_set_ai_active('${AI}', false)`, null, /للمالك بس/);
+    await refused(OWNER_U, `select public.instinct_set_ai_active('${RECEP}', false)`, null, /مش حساب مساعد إنستنكت/);
+    await val(OWNER_U, `select public.instinct_set_ai_active('${AI}', false) x`);
     await refused(AI_U, 'select public.instinct_context()', null, /سجّل الدخول/);
+    await refused(AI_U, `select public.instinct_reply('${t1}', 'رد')`, null, /لمساعد إنستنكت بس/);
+    assert.ok((await val(OWNER_U, 'select public.instinct_audit_list(10) x')).some(a => a.action === 'ai_disable'));
     assert.equal(await val(AI_U, 'select count(*)::int from public.patients'), 0);
 
     // rollback: refused while an ai_assistant exists; then everything back

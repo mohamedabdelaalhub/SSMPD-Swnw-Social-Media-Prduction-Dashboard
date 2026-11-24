@@ -7,7 +7,8 @@
 --    a. public.my_admin_id() no longer resolves an ai_assistant account (old definition saved in public.instinct_saved_defs),
 --       so every role-generic RPC that starts from my_admin_id() refuses it; has_role()/has_any_role()/is_super() never match it.
 --    b. One RESTRICTIVE policy «instinct_ai_block» on every RLS-enabled table in the application schemas (public + clinic_* + …):
---       an ai_assistant caller sees / writes nothing. public.admins: its own row only (login).
+--       an ai_assistant caller sees / writes nothing. public.admins: it reads its own row only (login) and writes nothing
+--       (instinct_ai_block_insert / _update / _delete). For every other caller the policies are a no-op (true).
 --    The only doors left are the instinct_* RPCs below.
 -- 3. Notes (title, date, body, target group, status draft → approved → published). Instinct writes drafts; ONLY the owner
 --    (public.administrative_assistant_config.owner_admin_id — the same single account as public.digital_chat_owner()) approves or
@@ -15,7 +16,11 @@
 -- 4. Questions: staff open threads, Instinct replies in the same thread. Staff see only their own threads; owner + Instinct see all.
 -- 5. Every message / note is checked server-side for patient identifiers (Egyptian mobile, P-YYYY-NNNNNN, national id, «مريض» + a
 --    long number) in Arabic or Latin digits, and refused with a clear Arabic error.
--- 6. In-dashboard notifications (public.instinct_notifications, read through RPCs) + public.instinct_unread_since(ts) for Phase 2.
+-- 6. In-dashboard notifications (public.instinct_notifications, read through RPCs) + public.instinct_unread_since(ts), and an
+--    e-mail outbox (public.instinct_notify_outbox: id, display name, role label, time, link — NO message text) leased / acked only
+--    by service_role (instinct_outbox_lease / instinct_outbox_ack) for a Phase 2 server worker.
+-- 6b. Owner only: hide an Instinct reply (instinct_message_hide) and switch the AI account off / on (instinct_set_ai_active).
+--    The AI writes drafts (20 / hour) and replies (60 / hour) only; it never edits, approves, publishes or deletes.
 -- 7. Append-only audit log (public.instinct_audit_log): no update / delete / truncate for anyone (triggers), no client grants.
 -- 8. Hidden per-user description (role + permission summary, generated from admins + admin_extra_roles; no free text, no
 --    contact data): public.instinct_staff_profiles(), owner + ai_assistant only.
@@ -102,7 +107,8 @@ $$;
 revoke all on function public.my_admin_id() from public;
 grant execute on function public.my_admin_id() to authenticated;
 
--- caller identity helpers
+-- caller identity helpers. instinct_not_ai() is what every restrictive policy calls (once per query, as an initplan): one
+-- lookup on the unique index admins(user_id); true for every caller that is not an ai_assistant account → a no-op for them.
 create function public.instinct_not_ai() returns boolean
 language sql stable security definer set search_path = pg_catalog, public as $$
   select not exists (select 1 from public.admins where user_id = auth.uid() and role = 'ai_assistant');
@@ -152,9 +158,15 @@ begin
             order by 2 loop
     if not pg_has_role(current_user, r.relowner, 'USAGE') then skipped := skipped || ' ' || r.t; continue; end if;
     if r.nspname = 'public' and r.relname = 'admins' then
-      execute 'create policy instinct_ai_block on public.admins as restrictive for all to authenticated
-                 using ((select public.instinct_not_ai()) or user_id = (select auth.uid()))
-                 with check ((select public.instinct_not_ai()) or user_id = (select auth.uid()))';
+      -- read: its own row only (login). write: nothing (no profile / role / flag change by the AI itself).
+      execute 'create policy instinct_ai_block on public.admins as restrictive for select to authenticated
+                 using ((select public.instinct_not_ai()) or user_id = (select auth.uid()))';
+      execute 'create policy instinct_ai_block_insert on public.admins as restrictive for insert to authenticated
+                 with check ((select public.instinct_not_ai()))';
+      execute 'create policy instinct_ai_block_update on public.admins as restrictive for update to authenticated
+                 using ((select public.instinct_not_ai())) with check ((select public.instinct_not_ai()))';
+      execute 'create policy instinct_ai_block_delete on public.admins as restrictive for delete to authenticated
+                 using ((select public.instinct_not_ai()))';
     else
       execute format('create policy instinct_ai_block on %s as restrictive for all to authenticated
                         using ((select public.instinct_not_ai())) with check ((select public.instinct_not_ai()))', r.t);
@@ -200,7 +212,9 @@ create table public.instinct_messages (
   author_id uuid not null references public.admins(id),
   author_kind text not null check (author_kind in ('staff', 'instinct')),
   body text not null check (char_length(btrim(body)) between 2 and 4000),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  hidden_at timestamptz,
+  hidden_by uuid references public.admins(id)
 );
 create index instinct_messages_thread_idx on public.instinct_messages(thread_id, created_at);
 create index instinct_messages_created_idx on public.instinct_messages(created_at);
@@ -222,12 +236,32 @@ create table public.instinct_audit_log (
   at timestamptz not null default now(),
   actor_id uuid,
   actor_kind text not null check (actor_kind in ('owner', 'instinct', 'staff')),
-  action text not null check (action in ('note_create', 'note_edit', 'note_approve', 'note_publish', 'question', 'reply')),
-  entity_type text not null check (entity_type in ('note', 'thread')),
+  action text not null check (action in ('note_create', 'note_edit', 'note_approve', 'note_publish', 'question', 'reply',
+    'reply_hide', 'reply_unhide', 'ai_disable', 'ai_enable')),
+  entity_type text not null check (entity_type in ('note', 'thread', 'message', 'account')),
   entity_id uuid not null,
   detail jsonb not null default '{}'::jsonb
 );
 create index instinct_audit_log_entity_idx on public.instinct_audit_log(entity_type, entity_id, at);
+
+-- e-mail outbox for a server worker (Phase 2 sender, same pattern as ops/vo-worker): ONE line per new question / new draft,
+-- with no message text at all (Instinct's own request): item id, display name, role label, time, deep link.
+create table public.instinct_notify_outbox (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('new_question', 'new_draft')),
+  item_id uuid not null,
+  employee_name text not null,
+  role_label text not null,
+  link text not null,
+  created_at timestamptz not null default now(),
+  status text not null default 'pending' check (status in ('pending', 'leased', 'sent', 'failed')),
+  attempts integer not null default 0,
+  lease_token uuid,
+  leased_until timestamptz,
+  sent_at timestamptz,
+  last_error text
+);
+create index instinct_notify_outbox_pending_idx on public.instinct_notify_outbox(status, created_at);
 
 create function public.instinct_audit_immutable() returns trigger
 language plpgsql set search_path = pg_catalog as $$
@@ -239,7 +273,8 @@ create trigger instinct_audit_no_update before update or delete on public.instin
 create trigger instinct_audit_no_truncate before truncate on public.instinct_audit_log for each statement execute function public.instinct_audit_immutable();
 
 do $$ declare t text; begin
-  foreach t in array array['public.instinct_notes', 'public.instinct_threads', 'public.instinct_messages', 'public.instinct_notifications', 'public.instinct_audit_log'] loop
+  foreach t in array array['public.instinct_notes', 'public.instinct_threads', 'public.instinct_messages', 'public.instinct_notifications', 'public.instinct_audit_log',
+                           'public.instinct_notify_outbox'] loop
     execute format('alter table %s enable row level security', t);
     execute format('revoke all on %s from public, anon, authenticated', t);
   end loop;
@@ -291,7 +326,31 @@ language sql volatile security definer set search_path = pg_catalog, public as $
   select p_recipient, p_kind, p_type, p_id, left(p_message, 300)
    where p_recipient is not null and exists (select 1 from public.admins a where a.id = p_recipient and a.active);
 $$;
-revoke all on function public.instinct_audit(uuid, text, text, text, uuid, jsonb), public.instinct_notify(uuid, text, text, uuid, text)
+-- writes of the AI account per hour (drafts 20, replies 60)
+create function public.instinct_rate_limit(p_actor uuid, p_action text, p_max integer) returns void
+language plpgsql volatile security definer set search_path = pg_catalog, public as $$
+begin
+  if (select count(*) from public.instinct_audit_log where actor_id = p_actor and action = p_action and at > now() - interval '1 hour') >= p_max then
+    raise exception 'وصلت للحد المسموح في الساعة (%) — جرّب بعد شوية', p_max using errcode = '54000';
+  end if;
+end $$;
+create function public.instinct_role_label(p_admin uuid) returns text
+language sql stable security definer set search_path = pg_catalog, public as $$
+  select coalesce(string_agg(distinct coalesce(l.v, x.role), '، '), 'موظف') from (
+    select a.role from public.admins a where a.id = p_admin
+    union select e.role from public.admin_extra_roles e where e.admin_id = p_admin) x
+  left join lateral (select ('{"page_manager":"مسؤول المحتوى","designer":"مصمم جرافيك","approver":"مسؤول اعتماد","general_manager":"مدير عام",
+    "super_admin":"سوبر أدمن","reception":"استقبال","customer_service":"خدمة عملاء","accountant":"محاسب","financial_manager":"مدير مالي",
+    "ai_assistant":"مساعد إنستنكت"}'::jsonb)->>x.role v) l on true;
+$$;
+create function public.instinct_outbox_add(p_kind text, p_item uuid, p_admin uuid) returns void
+language sql volatile security definer set search_path = pg_catalog, public as $$
+  insert into public.instinct_notify_outbox(kind, item_id, employee_name, role_label, link)
+  select p_kind, p_item, coalesce((select name from public.admins where id = p_admin), 'موظف'), public.instinct_role_label(p_admin),
+         'https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/#instinct';
+$$;
+revoke all on function public.instinct_audit(uuid, text, text, text, uuid, jsonb), public.instinct_notify(uuid, text, text, uuid, text),
+  public.instinct_rate_limit(uuid, text, integer), public.instinct_role_label(uuid), public.instinct_outbox_add(text, uuid, uuid)
   from public, anon, authenticated;
 
 -- who may open the assistant at all
@@ -326,6 +385,9 @@ begin
     'can_draft', c->>'kind' = 'instinct',
     'can_decide', (c->>'owner')::boolean,
     'sees_all_threads', c->>'kind' in ('owner', 'instinct'),
+    'can_hide', (c->>'owner')::boolean,
+    'ai_accounts', case when (c->>'owner')::boolean then coalesce((select jsonb_agg(jsonb_build_object('id', a.id, 'name', coalesce(a.name, 'إنستنكت'),
+      'active', a.active) order by a.name, a.id) from public.admins a where a.role = 'ai_assistant'), '[]'::jsonb) else '[]'::jsonb end,
     'unread', (select count(*) from public.instinct_notifications where recipient_id = (c->>'id')::uuid and read_at is null));
 end $$;
 
@@ -344,7 +406,7 @@ begin
                     where n.status = 'published' and (n.target_role = 'all' or n.target_role = any(g))), '[]'::jsonb);
 end $$;
 
--- Instinct creates (p_id null) or edits its own draft; the owner may edit any draft.
+-- Instinct creates drafts (p_id null). Editing a draft is owner-only; nobody edits after approval; nobody deletes.
 create function public.instinct_note_save(p_id uuid, p_title text, p_body text, p_target text) returns jsonb
 language plpgsql volatile security definer set search_path = pg_catalog, public as $$
 declare c jsonb := public.instinct_require(); me uuid := (c->>'id')::uuid; n public.instinct_notes; owner_id uuid := public.instinct_owner_id();
@@ -356,18 +418,18 @@ begin
   perform public.instinct_check_text(p_title || E'\n' || p_body);
   if p_id is null then
     if c->>'kind' <> 'instinct' then raise exception 'كتابة مسودات الملاحظات لمساعد إنستنكت بس' using errcode = '42501'; end if;
+    perform public.instinct_rate_limit(me, 'note_create', 20);
     insert into public.instinct_notes(title, body, target_role, created_by) values (p_title, p_body, p_target, me) returning * into n;
     perform public.instinct_audit(me, 'instinct', 'note_create', 'note', n.id, jsonb_build_object('title', n.title, 'body', n.body, 'target_role', n.target_role));
     perform public.instinct_notify(owner_id, 'new_draft', 'note', n.id, 'مسودة ملاحظة جديدة من مساعد إنستنكت: ' || n.title);
+    perform public.instinct_outbox_add('new_draft', n.id, me);
   else
     select * into n from public.instinct_notes where id = p_id for update;
     if n.id is null then raise exception 'الملاحظة مش موجودة' using errcode = 'P0002'; end if;
     if n.status <> 'draft' then raise exception 'الملاحظة دي اتعتمدت — مينفعش تتعدل' using errcode = '42501'; end if;
-    if not ((c->>'owner')::boolean or (c->>'kind' = 'instinct' and n.created_by = me)) then
-      raise exception 'تعديل المسودة لمساعد إنستنكت أو المالك بس' using errcode = '42501';
-    end if;
+    if not (c->>'owner')::boolean then raise exception 'تعديل المسودة للمالك بس' using errcode = '42501'; end if;
     update public.instinct_notes set title = p_title, body = p_body, target_role = p_target, updated_at = now() where id = n.id returning * into n;
-    perform public.instinct_audit(me, case when c->>'kind' = 'instinct' then 'instinct' else 'owner' end, 'note_edit', 'note', n.id,
+    perform public.instinct_audit(me, 'owner', 'note_edit', 'note', n.id,
       jsonb_build_object('title', n.title, 'body', n.body, 'target_role', n.target_role));
   end if;
   return public.instinct_note_json(n);
@@ -422,6 +484,7 @@ begin
   for r in select id from public.admins where active and role = 'ai_assistant' loop
     perform public.instinct_notify(r.id, 'new_question', 'thread', t.id, 'سؤال جديد من ' || who);
   end loop;
+  perform public.instinct_outbox_add('new_question', t.id, me);
   return jsonb_build_object('thread_id', t.id, 'message_id', m.id, 'created_at', m.created_at);
 end $$;
 
@@ -434,6 +497,7 @@ begin
   p_body := btrim(coalesce(p_body, ''));
   if char_length(p_body) < 2 or char_length(p_body) > 4000 then raise exception 'الرد لازم يكون من 2 لـ 4000 حرف' using errcode = '22023'; end if;
   perform public.instinct_check_text(p_body);
+  perform public.instinct_rate_limit(ai, 'reply', 60);
   select * into t from public.instinct_threads where id = p_thread for update;
   if t.id is null then raise exception 'المحادثة مش موجودة' using errcode = 'P0002'; end if;
   insert into public.instinct_messages(thread_id, author_id, author_kind, body) values (t.id, ai, 'instinct', p_body) returning * into m;
@@ -464,8 +528,9 @@ begin
     raise exception 'المحادثة دي مش بتاعتك' using errcode = '42501';
   end if;
   return jsonb_build_object('id', t.id, 'staff_name', (select coalesce(a.name, 'موظف') from public.admins a where a.id = t.staff_id),
-    'messages', coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'author_kind', m.author_kind, 'body', m.body, 'created_at', m.created_at)
-      order by m.created_at) from public.instinct_messages m where m.thread_id = t.id), '[]'::jsonb));
+    'messages', coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'author_kind', m.author_kind, 'body', m.body, 'created_at', m.created_at,
+      'hidden', m.hidden_at is not null) order by m.created_at) from public.instinct_messages m
+      where m.thread_id = t.id and (m.hidden_at is null or c->>'kind' in ('owner', 'instinct'))), '[]'::jsonb));
 end $$;
 
 create function public.instinct_notifications_list() returns jsonb
@@ -504,6 +569,68 @@ begin
                             from public.instinct_messages m where m.author_kind = 'staff' and m.created_at > since), '[]'::jsonb),
     'unread_notifications', (select count(*) from public.instinct_notifications where recipient_id = (c->>'id')::uuid and read_at is null));
 end $$;
+
+-- owner only: hide / show one Instinct reply (logged)
+create function public.instinct_message_hide(p_message uuid, p_hidden boolean) returns jsonb
+language plpgsql volatile security definer set search_path = pg_catalog, public as $$
+declare me uuid; m public.instinct_messages;
+begin
+  if not public.instinct_caller_is_owner() then raise exception 'إخفاء الردود للمالك بس' using errcode = '42501'; end if;
+  me := public.instinct_owner_id();
+  select * into m from public.instinct_messages where id = p_message for update;
+  if m.id is null or m.author_kind <> 'instinct' then raise exception 'الرد مش موجود' using errcode = 'P0002'; end if;
+  update public.instinct_messages set hidden_at = case when p_hidden then now() end, hidden_by = case when p_hidden then me end
+   where id = m.id returning * into m;
+  perform public.instinct_audit(me, 'owner', case when p_hidden then 'reply_hide' else 'reply_unhide' end, 'message', m.id,
+    jsonb_build_object('thread_id', m.thread_id));
+  return jsonb_build_object('id', m.id, 'hidden', m.hidden_at is not null);
+end $$;
+
+-- owner only: kill switch for an ai_assistant account (admins.active). Every instinct RPC requires an ACTIVE ai_assistant row.
+create function public.instinct_set_ai_active(p_admin uuid, p_active boolean) returns jsonb
+language plpgsql volatile security definer set search_path = pg_catalog, public as $$
+declare me uuid;
+begin
+  if not public.instinct_caller_is_owner() then raise exception 'إيقاف حساب إنستنكت للمالك بس' using errcode = '42501'; end if;
+  me := public.instinct_owner_id();
+  if not exists (select 1 from public.admins where id = p_admin and role = 'ai_assistant') then
+    raise exception 'ده مش حساب مساعد إنستنكت' using errcode = '22023';
+  end if;
+  update public.admins set active = coalesce(p_active, false) where id = p_admin;
+  perform public.instinct_audit(me, 'owner', case when p_active then 'ai_enable' else 'ai_disable' end, 'account', p_admin, '{}'::jsonb);
+  return jsonb_build_object('id', p_admin, 'active', coalesce(p_active, false));
+end $$;
+
+-- server worker only (service_role, e.g. an edge function holding a shared secret): lease pending outbox lines, then ack them
+create function public.instinct_outbox_lease(p_limit integer default 20, p_lease_seconds integer default 300) returns jsonb
+language plpgsql volatile security definer set search_path = pg_catalog, public as $$
+declare tok uuid := gen_random_uuid(); rows jsonb;
+begin
+  with picked as (
+    select id from public.instinct_notify_outbox
+     where status = 'pending' or (status = 'leased' and leased_until < now())
+     order by created_at limit least(greatest(coalesce(p_limit, 20), 1), 100) for update skip locked)
+  update public.instinct_notify_outbox o set status = 'leased', lease_token = tok, attempts = o.attempts + 1,
+         leased_until = now() + make_interval(secs => least(greatest(coalesce(p_lease_seconds, 300), 30), 3600))
+    from picked where o.id = picked.id;
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'kind', kind, 'item_id', item_id, 'employee_name', employee_name, 'role_label', role_label,
+           'link', link, 'created_at', created_at) order by created_at), '[]'::jsonb) into rows
+    from public.instinct_notify_outbox where lease_token = tok;
+  return jsonb_build_object('lease_token', tok, 'items', rows);
+end $$;
+create function public.instinct_outbox_ack(p_lease_token uuid, p_ids uuid[], p_ok boolean, p_error text default null) returns integer
+language plpgsql volatile security definer set search_path = pg_catalog, public as $$
+declare k integer;
+begin
+  update public.instinct_notify_outbox set status = case when p_ok then 'sent' when attempts >= 5 then 'failed' else 'pending' end,
+         sent_at = case when p_ok then now() end, last_error = case when p_ok then null else left(p_error, 500) end,
+         lease_token = null, leased_until = null
+   where lease_token = p_lease_token and id = any(p_ids) and status = 'leased';
+  get diagnostics k = row_count;
+  return k;
+end $$;
+revoke all on function public.instinct_outbox_lease(integer, integer), public.instinct_outbox_ack(uuid, uuid[], boolean, text) from public, anon, authenticated;
+grant execute on function public.instinct_outbox_lease(integer, integer), public.instinct_outbox_ack(uuid, uuid[], boolean, text) to service_role;
 
 -- 8. hidden per-user description: owner + Instinct only. Generated, no free text, no contact data.
 create function public.instinct_staff_profiles() returns jsonb
@@ -546,7 +673,8 @@ do $$ declare f text; begin
   foreach f in array array['public.instinct_context()', 'public.instinct_notes_list()', 'public.instinct_note_save(uuid,text,text,text)',
     'public.instinct_note_decide(uuid,text)', 'public.instinct_ask(uuid,text)', 'public.instinct_reply(uuid,text)', 'public.instinct_threads_list()',
     'public.instinct_thread(uuid)', 'public.instinct_notifications_list()', 'public.instinct_notifications_read(uuid[])',
-    'public.instinct_unread_since(timestamptz)', 'public.instinct_staff_profiles()', 'public.instinct_audit_list(integer)'] loop
+    'public.instinct_unread_since(timestamptz)', 'public.instinct_staff_profiles()', 'public.instinct_audit_list(integer)',
+    'public.instinct_message_hide(uuid,boolean)', 'public.instinct_set_ai_active(uuid,boolean)'] loop
     execute format('revoke all on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated', f);
   end loop;

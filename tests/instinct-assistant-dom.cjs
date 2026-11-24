@@ -14,7 +14,7 @@ const PEOPLE = {
 const GROUP = { reception: 'reception', customer_service: 'customer_service', page_manager: 'content', designer: 'content', approver: 'content',
   accountant: 'finance', financial_manager: 'finance', general_manager: 'management', super_admin: 'management' };
 function server() {
-  const S = { notes: [], threads: [], messages: [], notifs: [], calls: [], seq: 0, me: null };
+  const S = { notes: [], threads: [], messages: [], notifs: [], calls: [], seq: 0, me: null, aiActive: true };
   const id = () => 'id' + (++S.seq), now = () => new Date(Date.UTC(2026, 10, 24, 10, S.seq)).toISOString();
   const err = m => ({ data: null, error: { message: m } });
   const ctx = () => {
@@ -27,10 +27,11 @@ function server() {
   S.rpc = (name, a) => {
     S.calls.push({ who: S.me.id, name, args: a || {} });
     const c = ctx(); if (!c) return err('مساعد إنستنكت مش متاح لحسابك');
+    if (c.kind === 'instinct' && !S.aiActive) return err('سجّل الدخول');
     const all = c.kind !== 'staff';
     switch (name) {
       case 'instinct_context': return { data: Object.assign({}, c, { can_ask: c.kind !== 'instinct', can_reply: c.kind === 'instinct', can_draft: c.kind === 'instinct',
-        can_decide: c.owner, sees_all_threads: all, unread: S.notifs.filter(n => n.recipient === c.id && !n.read).length }) };
+        can_decide: c.owner, can_hide: c.owner, sees_all_threads: all, ai_accounts: c.owner ? [{ id: 'ai', name: 'إنستنكت', active: S.aiActive }] : [], unread: S.notifs.filter(n => n.recipient === c.id && !n.read).length }) };
       case 'instinct_notes_list': return { data: S.notes.filter(n => c.owner || (c.kind === 'instinct' ? (n.status === 'published' || n.created_by === c.id) : (n.status === 'published' && (n.target_role === 'all' || c.groups.includes(n.target_role))))) };
       case 'instinct_note_save': {
         const why = patient(a.p_title + a.p_body); if (why) return err(why);
@@ -38,7 +39,7 @@ function server() {
           const n = { id: id(), title: a.p_title, body: a.p_body, target_role: a.p_target, status: 'draft', created_by: c.id, created_at: now(), updated_at: now() };
           S.notes.push(n); notify('own', 'new_draft', 'note', n.id, 'مسودة ملاحظة جديدة من مساعد إنستنكت: ' + n.title); return { data: n }; }
         const n = S.notes.find(x => x.id === a.p_id); if (n.status !== 'draft') return err('الملاحظة دي اتعتمدت — مينفعش تتعدل');
-        if (!(c.owner || (c.kind === 'instinct' && n.created_by === c.id))) return err('تعديل المسودة لمساعد إنستنكت أو المالك بس');
+        if (!c.owner) return err('تعديل المسودة للمالك بس');
         Object.assign(n, { title: a.p_title, body: a.p_body, target_role: a.p_target, updated_at: now() }); return { data: n };
       }
       case 'instinct_note_decide': {
@@ -67,7 +68,9 @@ function server() {
       }
       case 'instinct_threads_list': return { data: S.threads.filter(t => all || t.staff_id === c.id).map(t => Object.assign({}, t, { first_question: (S.messages.find(m => m.thread === t.id) || {}).body })) };
       case 'instinct_thread': { const t = S.threads.find(x => x.id === a.p_thread); if (!t || !(all || t.staff_id === c.id)) return err('المحادثة دي مش بتاعتك');
-        return { data: { id: t.id, staff_name: t.staff_name, messages: S.messages.filter(m => m.thread === t.id) } }; }
+        return { data: { id: t.id, staff_name: t.staff_name, messages: S.messages.filter(m => m.thread === t.id && (all || !m.hidden)) } }; }
+      case 'instinct_message_hide': { if (!c.owner) return err('إخفاء الردود للمالك بس'); const m = S.messages.find(x => x.id === a.p_message); m.hidden = !!a.p_hidden; return { data: { id: m.id, hidden: m.hidden } }; }
+      case 'instinct_set_ai_active': if (!c.owner) return err('إيقاف حساب إنستنكت للمالك بس'); S.aiActive = !!a.p_active; return { data: { id: a.p_admin, active: S.aiActive } };
       case 'instinct_notifications_list': return { data: S.notifs.filter(n => n.recipient === c.id) };
       case 'instinct_notifications_read': { let k = 0; S.notifs.forEach(n => { if (n.recipient === c.id && !n.read) { n.read = true; k++; } }); return { data: k }; }
       case 'instinct_staff_profiles': if (!all) return err('الوصف ده للمالك ومساعد إنستنكت بس'); return { data: [{ admin_id: 'maz', description: 'مازن — الدور: استقبال' }] };
@@ -110,9 +113,8 @@ function server() {
   await click($('[data-ins-save]')); assert.match($('[data-ins-error]').textContent, /رقم موبايل/); assert.equal(calls('instinct_note_save').length, 0, 'client check stops it before the server');
   $('[data-ins-body]').value = 'افتح الاستقبال والخدمات ثم حجز جديد';
   await click($('[data-ins-save]')); assert.equal(calls('instinct_note_save').length, 1); assert.equal(calls('instinct_note_save')[0].who, 'ai');
-  assert.deepEqual(txt('.ins-chip'), ['مسودة']); assert.deepEqual(txt('.ins-note button'), ['تعديل'], 'Instinct may edit its draft, never approve/publish');
-  await click($('[data-ins-edit]')); $('[data-ins-body]').value = 'افتح الاستقبال والخدمات ثم اضغط حجز جديد'; await click($('[data-ins-save]'));
-  assert.equal(calls('instinct_note_save')[1].args.p_id, S.notes[0].id); assert.match($('.ins-body').textContent, /اضغط/);
+  assert.deepEqual(txt('.ins-chip'), ['مسودة']); assert.deepEqual(txt('.ins-note button'), [], 'Instinct never edits, approves or publishes');
+  assert.ok(d.body.classList.contains('ins-ai-only'), 'AI-only shell hides the other header tools');
   // a second draft for finance
   await click($('[data-ins-new-note]')); $('[data-ins-title]').value = 'قفل الوردية'; $('[data-ins-body]').value = 'راجع الخزينة قبل القفل'; $('[data-ins-target]').value = 'finance';
   await click($('[data-ins-save]')); await click($('[data-ins-new-note]')); await click($('[data-ins-cancel]')); assert.equal($('[data-ins-form]'), null);
@@ -140,11 +142,14 @@ function server() {
   await as('owner');
   assert.deepEqual(buttons().slice(0, 2), ['اسأل إنستنكت', 'تحديث']);
   assert.deepEqual(txt('.ins-note button'), ['تعديل', 'اعتماد', 'نشر', 'تعديل', 'اعتماد', 'نشر']);
+  assert.ok(!d.body.classList.contains('ins-ai-only'));
+  await click($(`[data-ins-edit="${S.notes[0].id}"]`)); $('[data-ins-body]').value = 'افتح الاستقبال والخدمات ثم اضغط حجز جديد'; await click($('[data-ins-save]'));
+  assert.equal(calls('instinct_note_save').at(-1).args.p_id, S.notes[0].id); assert.equal(calls('instinct_note_save').at(-1).who, 'own');
   assert.equal(txt('[data-ins-unread]')[0], '5', '2 drafts + 3 questions'); assert.equal(d.querySelector('[data-goto="instinct"] .ins-menu-badge').textContent, '5');
   await click($(`[data-ins-approve="${S.notes[0].id}"]`)); assert.equal(calls('instinct_note_decide')[0].args.p_action, 'approve'); assert.equal(calls('instinct_note_decide')[0].who, 'own');
   assert.deepEqual(txt(`[data-ins-note="${S.notes[0].id}"] button`), ['نشر'], 'approved: publish only, no edit');
   await click($(`[data-ins-publish="${S.notes[0].id}"]`)); await click($(`[data-ins-publish="${S.notes[1].id}"]`));
-  assert.deepEqual(calls('instinct_note_decide').map(c => c.args.p_action), ['approve', 'publish', 'publish']); assert.deepEqual(txt('.ins-chip'), ['منشورة', 'منشورة']);
+  assert.deepEqual(calls('instinct_note_decide').map(c => c.args.p_action), ['approve', 'publish', 'publish']); assert.deepEqual(txt('.ins-note .ins-chip'), ['منشورة', 'منشورة']);
   assert.equal($$('.ins-thread').length, 2, 'owner sees all threads');
   await click($(`[data-ins-thread="${S.threads[0].id}"]`)); assert.equal(chat().querySelector('[data-ins-send]'), null, 'owner reads staff threads only');
   assert.equal(chat().querySelector('.ins-chat-ro').textContent, 'عرض فقط');
@@ -163,7 +168,7 @@ function server() {
   await click($(`[data-ins-thread="${S.threads[0].id}"]`)); assert.equal(chat().querySelector('[data-ins-send]').textContent, 'إرسال الرد');
   chat().querySelector('[data-ins-input]').value = 'افتح «الاستقبال والخدمات» ثم «حجز جديد».'; await click(chat().querySelector('[data-ins-send]')); await tick();
   assert.equal(calls('instinct_reply').length, 1); assert.equal(calls('instinct_reply')[0].args.p_thread, S.threads[0].id);
-  assert.equal(chat().querySelectorAll('.ins-msg.them').length, 1);
+  assert.equal(chat().querySelectorAll('.ins-msg.them').length, 1); assert.equal(chat().querySelectorAll('[data-ins-hide]').length, 0, 'only the owner hides');
   S.rpc = (orig => (n, a) => n === 'instinct_reply' ? { data: null, error: { message: 'ممنوع كتابة كود ملف مريض (P-…) في مساعد إنستنكت.' } } : orig(n, a))(S.rpc);
   chat().querySelector('[data-ins-input]').value = 'تمام'; await click(chat().querySelector('[data-ins-send]'));
   assert.match(chat().querySelector('[data-ins-chat-error]').textContent, /كود ملف مريض/, 'server refusal shown in Arabic');
@@ -171,6 +176,20 @@ function server() {
   // 6. Mazen sees the reply, his group's note only; the accountant sees the finance note only; designer none
   await as('mazen'); assert.deepEqual(txt('.ins-note h4'), ['الحجز السريع']); assert.equal($$('.ins-thread').length, 1); assert.match($('.ins-thread small').textContent, /اترد عليه/);
   await click($('.ins-thread')); assert.equal(chat().querySelectorAll('.ins-msg').length, 3); assert.ok(chat().querySelector('[data-ins-send]'), 'own thread: can follow up');
+  assert.equal(chat().querySelector('.ins-msg.them .ins-ai-label').textContent, 'رد من مساعد آلي (إنستنكت) — مش تعليمات رسمية من الإدارة');
+  assert.equal(chat().querySelectorAll('[data-ins-hide]').length, 0);
+  // the owner hides the reply → Mazen no longer sees it; then shows it again
+  await as('owner'); await click($(`[data-ins-thread="${S.threads[0].id}"]`)); await click(chat().querySelector('[data-ins-hide]'));
+  assert.equal(calls('instinct_message_hide')[0].args.p_hidden, true); assert.equal(chat().querySelector('[data-ins-hide]').textContent, 'إظهار الرد');
+  await as('mazen'); await click($('.ins-thread')); assert.equal(chat().querySelectorAll('.ins-msg').length, 2);
+  await as('owner'); await click($(`[data-ins-thread="${S.threads[0].id}"]`)); await click(chat().querySelector('[data-ins-hide]')); assert.equal(calls('instinct_message_hide')[1].args.p_hidden, false);
+  // kill switch: one click (after confirm) as the owner; the AI is then refused everywhere; switch back on
+  w.confirm = () => true; assert.equal($('[data-ins-kill]').textContent, 'إيقاف الحساب'); await click($('[data-ins-kill]'));
+  assert.equal(JSON.stringify(calls('instinct_set_ai_active')[0].args), JSON.stringify({ p_admin: 'ai', p_active: false })); assert.equal($('[data-ins-kill]').textContent, 'تشغيل الحساب');
+  await as('ai'); assert.match(view.textContent, /سجّل الدخول/); assert.equal(view.querySelectorAll('button').length, 0);
+  await as('owner'); await click($('[data-ins-kill]')); assert.equal(calls('instinct_set_ai_active')[1].args.p_active, true);
+  await as('gm'); assert.equal($('[data-ins-kill]'), null, 'kill switch: owner only');
+  await as('mazen'); await click($('.ins-thread'));
   assert.ok(/[0-9]{2}\/[0-9]{2}\/2026/.test($('.ins-meta').textContent.replace(/\u200f/g, '')) && !/[٠-٩]/.test(view.textContent), 'Latin digits in dates');
   await as('acc'); assert.deepEqual(txt('.ins-note h4'), ['قفل الوردية']);
   await as('designer'); assert.equal($$('.ins-note').length, 0); assert.equal($$('.ins-thread').length, 0);

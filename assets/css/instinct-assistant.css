@@ -53,3 +53,12 @@ details.ins-block[open]>summary{margin-bottom:8px}
 .ins-chat-form [data-ins-send]{justify-self:end}
 .ins-chat-ro{padding:10px;text-align:center;color:#7A8194;font-size:12.5px;border-top:1px solid #E2E6EF}
 @media (max-width:560px){.ins-chat{inset-inline-start:0;width:100vw;height:calc(100vh - 60px)}}
+.ins-ai-label{display:block;font-style:normal;font-size:11px;font-weight:700;color:#B8441A;margin-bottom:4px}
+.ins-hidden-label{display:block;font-style:normal;font-size:11px;color:#D0402A;margin-bottom:4px}
+.ins-msg.hidden-reply{opacity:.6;border-style:dashed}
+.ins-msg .btn{margin-top:6px}
+.ins-account{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* حساب إنستنكت: التاب بتاعه بس — كل أدوات الهيدر والقائمة التانية مخفية (السيرفر قافلها كمان) */
+body.ins-ai-only .ssmpd-ea-launch,body.ins-ai-only #dashboard-help-toggle,body.ins-ai-only #hdr-help-row,body.ins-ai-only .global-search,
+body.ins-ai-only #kudos-send-btn,body.ins-ai-only #hdr-kudos-row,body.ins-ai-only #notif-bell-btn,body.ins-ai-only #notif-panel,
+body.ins-ai-only #ud-change-pass,body.ins-ai-only .ssmpd-sono-ai,body.ins-ai-only #tabs-bar{display:none!important}
