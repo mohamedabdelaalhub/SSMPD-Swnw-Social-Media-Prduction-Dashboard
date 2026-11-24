@@ -3,7 +3,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
 const root=path.resolve(__dirname,'..'),out=process.env.SHOTS||'';
 const items=[{id:'m1',name:'كيتولاك أمبول',unit:'أمبول',pricing_kind:'supply',markup_percent:35,sale_price:32.4,purchase_price:24},{id:'g1',name:'جلافز',unit:'قطعة',pricing_kind:'supply',markup_percent:35,sale_price:2.43,purchase_price:1.8}];
 const preview={supplier:'شركة أدوية تجريبية',month:'2026-11-01',basis:14000,existing:null,invoices:[{reference:'PH-1102',invoice_date:'2026-11-03',total:4800,excluded:0,basis:4800},{reference:'PH-1131',invoice_date:'2026-11-14',total:6250,excluded:450,basis:5800}]};
-const list=[{id:'d1',supplier:'مورد أدوية تاني',basis:3200,amount:320,percent:10,created_by_name:'محاسب تجريبي',status:'pending'}];
+const list=[{id:'d1',supplier:'مورد أدوية تاني',basis:3200,amount:320,percent:10,created_by_name:'محاسب تجريبي',created_by:'acc1',status:'pending'}];
 const report={month:'2026-11-01',discounts:1680,sales:{medicine:{revenue:12400,cost:12400},shortage:{revenue:540,cost:450}},suppliers:[{supplier:'شركة أدوية تجريبية',purchases:14450,basis:14000,discount:1680,percent:12,status:'approved'},{supplier:'مورد أدوية تاني',purchases:3200,basis:3200,discount:null,percent:null,status:'missing'}]};
 (async()=>{const b=await chromium.launch({args:['--no-sandbox']});
 for(const width of [1280,390]){const p=await b.newPage({viewport:{width,height:900}});
@@ -26,7 +26,7 @@ for(const width of [1280,390]){const p=await b.newPage({viewport:{width,height:9
  let c=(await p.evaluate(()=>window.__c)).find(x=>x[0]==='inventory_set_pricing_kind');assert.deepEqual(c[1],{p_item:'m1',p_kind:'medicine',p_markup:null});
  await p.click('[data-rx-sheet-close]');
  // discount
- await p.evaluate(()=>window.SSMPDMedicines.discount([{id:'s1',name:'شركة أدوية تجريبية'}]));await p.waitForSelector('[data-mdd]');
+ await p.evaluate(()=>window.SSMPDMedicines.discount([{id:'s1',name:'شركة أدوية تجريبية'}],{can_create:true,can_review:true,me:'me1'}));await p.waitForSelector('[data-mdd]');
  await p.selectOption('[data-mdd] [name="supplier"]','s1');await p.waitForSelector('[data-mdd-create]');
  await p.fill('[data-mdd] [name="percent"]','12');assert.equal((await p.textContent('[data-mdd-amt]')).trim(),'1,680.00 ج');
  if(out)await p.screenshot({path:path.join(out,'discount-'+width+'.png'),fullPage:true});
@@ -40,6 +40,12 @@ for(const width of [1280,390]){const p=await b.newPage({viewport:{width,height:9
  await p.waitForSelector('[data-mdd-ok="d1"]');await p.click('[data-mdd-ok="d1"]');await p.waitForTimeout(100);
  c=(await p.evaluate(()=>window.__c)).find(x=>x[0]==='clinic_finance_supplier_discount'&&x[1].p_action==='review');assert.deepEqual(c[1].p_payload,{id:'d1',approve:true,note:''});
  await p.click('[data-rx-sheet-close]');
+ // button rule: an accountant (no review) sees no «اعتماد/رفض»; a viewer (no create) has no «إرسال للمراجعة»; the creator can't review own
+ await p.evaluate(()=>window.SSMPDMedicines.discount([{id:'s1',name:'شركة أدوية تجريبية'}],{can_create:false,can_review:false,me:'acc1'}));await p.waitForSelector('[data-mdd]');
+ await p.selectOption('[data-mdd] [name="supplier"]','s1');await p.waitForSelector('.mdd-foot');
+ assert.equal(await p.locator('[data-mdd-create]').count(),0);assert.equal(await p.locator('[data-mdd-ok]').count(),0);await p.click('[data-rx-sheet-close]');
+ await p.evaluate(()=>window.SSMPDMedicines.discount([],{can_create:true,can_review:true,me:'acc1'}));await p.waitForSelector('[data-mdd]');await p.waitForTimeout(100);
+ assert.equal(await p.locator('[data-mdd-ok]').count(),0,'creator cannot review own discount');await p.click('[data-rx-sheet-close]');
  // report
  await p.evaluate(()=>window.SSMPDMedicines.report());await p.waitForSelector('[data-mdr] .mdr-kpi.hero');
  assert.match(await p.textContent('[data-mdr] .mdr-kpi.hero'),/1,770.00/);

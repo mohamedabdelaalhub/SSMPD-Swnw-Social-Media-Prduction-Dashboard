@@ -12142,6 +12142,46 @@
       "reviewed": true
     },
     {
+      "title": "بحث",
+      "labels": [
+        "بحث",
+        "بحث عن مادة"
+      ],
+      "text": "اكتب اسم القسم أو جزءًا من اسم السجل المطلوب. النتائج تعتمد على صلاحية حسابك والبيانات المتاحة، والبحث لا يغير السجلات.",
+      "article": "personal",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ابحث باسم الخدمة عند الجهة أو عندنا…",
+      "labels": [
+        "ابحث باسم الخدمة عند الجهة أو عندنا…"
+      ],
+      "text": "اكتب جزء من اسم الخدمة زي ما هو مكتوب في لائحة الجهة أو زي ما هو عندنا. الأسماء اللي فيها الكلام ده بس هتفضل ظاهرة، ومش فارقة أ/ا ولا ة/ه ولا ى/ي.",
+      "article": "price-name-review",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ابحث في خدماتنا",
+      "labels": [
+        "ابحث في خدماتنا"
+      ],
+      "text": "اكتب جزء من اسم الخدمة عندنا أو كودها، واختار الخدمة الصح من النتايج. الاختيار بيربط الاسم بالخدمة دي في كل اللوايح اللي فيها الاسم.",
+      "article": "price-name-review",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اسم المريض من كلمتين على الأقل",
       "labels": [
         "اسم المريض من كلمتين على الأقل"
@@ -12394,19 +12434,6 @@
       "reviewed": true
     },
     {
-      "title": "خصم على الحجز ده (اختياري)",
-      "labels": [
-        "خصم على الحجز ده (اختياري)"
-      ],
-      "text": "علّمها لو المريض له خصم نقابة أو نادي أو خصم خاص. لو مش متعلمة الحجز بيتعمل بسعره العادي.",
-      "article": "reception-booking-discount",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "مثلاً نقابة المهندسين",
       "labels": [
         "مثلاً نقابة المهندسين",
@@ -12485,6 +12512,21 @@
         "reception_services"
       ],
       "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الخدمة",
+      "labels": [
+        "الخدمة"
+      ],
+      "text": "اختار أو اكتب الخدمة التي يخصها هذا السجل، مع مطابقة كودها وقسمها. في الحجز استخدم الخدمة الجاهزة، وفي الربط اختار تعريفها الأصلي من التسعير.",
+      "article": "booking-flow",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "خصم على الزيارة (قبل التحصيل)"
+      ],
       "reviewed": true
     },
     {
@@ -13385,6 +13427,72 @@
       "reviewed": true
     },
     {
+      "title": "جلسات",
+      "labels": [
+        "جلسات"
+      ],
+      "text": "عدد جلسات الخدمة دي في الباكج.",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ المدفوع",
+      "labels": [
+        "المبلغ المدفوع"
+      ],
+      "text": "المبلغ اللي المريض دفعه في الخدمة دي (كل الجلسات).",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً ليزر نص إيد + منطقة تانية",
+      "labels": [
+        "مثلاً ليزر نص إيد + منطقة تانية",
+        "اسم الباكج"
+      ],
+      "text": "اسم يوضح الباكج، مثلاً «12 جلسة علاج طبيعي».",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دفع يوم",
+      "labels": [
+        "دفع يوم"
+      ],
+      "text": "اليوم اللي المريض دفع فيه الباكج — لازم يكون قبل النهارده.",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم الإيصال القديم أو صورته (لو موجود)",
+      "labels": [
+        "رقم الإيصال القديم أو صورته (لو موجود)"
+      ],
+      "text": "رقم أو مكان الإيصال الورق القديم — بيساعد اللي بيعتمد يراجع.",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك.",
       "labels": [
         "حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك."
@@ -13523,6 +13631,181 @@
       ],
       "text": "اكتب سبب التعديل أو المسح عشان المدير يراجعه، زي «الحساب اتدفع».",
       "article": "home-visit-notes",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الجهة (العقود المتفعّلة بس)",
+      "labels": [
+        "الجهة (العقود المتفعّلة بس)"
+      ],
+      "text": "الجهات اللي عقدها وقايمة أسعارها متفعّلين بس، وجنب كل واحدة سعر الخدمة في عقدها. لو فاضية: الحسابات تفعّل العقد الأول.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم الكوبون / الكارنيه *",
+      "labels": [
+        "رقم الكوبون / الكارنيه *"
+      ],
+      "text": "رقم كوبون أو كارنيه المريض عند الجهة — إجباري. بيتسجّل مع ربط المريض بعقد الجهة.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم موافقة التغطية *",
+      "labels": [
+        "رقم موافقة التغطية *"
+      ],
+      "text": "رقم الموافقة اللي الجهة أدتها للخدمة دي — إجباري، وبيروح على المطالبة.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نسبة تحمّل الجهة ٪ * ٪",
+      "labels": [
+        "نسبة تحمّل الجهة ٪ * ٪",
+        "نسبة تحمّل الجهة ٪ *"
+      ],
+      "text": "النسبة اللي الجهة بتدفعها من سعر العقد، من الموافقة والكارت الطبي للمريض (من 0 لـ 100). المريض بيدفع الباقي.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "النقابة / النادي",
+      "labels": [
+        "النقابة / النادي",
+        "مثلاً نادي الصيد",
+        "اسم النقابة / النادي"
+      ],
+      "text": "اختار النقابة أو النادي اللي المريض جاي بكارنيهها، أو «أخرى» واكتب الاسم. الخصم ثابت ٣٠٪.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم كارنيه النقابة / النادي",
+      "labels": [
+        "رقم كارنيه النقابة / النادي"
+      ],
+      "text": "رقم كارنيه النقابة أو النادي — إجباري.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "كارنيه النقابة / النادي ساري لحد",
+      "labels": [
+        "كارنيه النقابة / النادي ساري لحد"
+      ],
+      "text": "آخر يوم الكارنيه ساري فيه — لازم يكون يوم الزيارة أو بعده.",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الخدمة",
+      "labels": [
+        "الخدمة"
+      ],
+      "text": "اختار أو اكتب الخدمة التي يخصها هذا السجل، مع مطابقة كودها وقسمها. في الحجز استخدم الخدمة الجاهزة، وفي الربط اختار تعريفها الأصلي من التسعير.",
+      "article": "booking-flow",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "طريقة الدفع / الخصم (قبل التحصيل)"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "اختار الطبيب",
+      "labels": [
+        "اختار الطبيب"
+      ],
+      "text": "طبيب المركز اللي حوّل المريض.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "د. …",
+      "labels": [
+        "د. …",
+        "اسم الطبيب"
+      ],
+      "text": "اسم الطبيب اللي حوّل المريض من بره المركز — إجباري لو اخترت «من بره المركز».",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تخصص الطبيب المحوِّل",
+      "labels": [
+        "تخصص الطبيب المحوِّل"
+      ],
+      "text": "تخصص الطبيب اللي حوّل المريض (اختياري) — بيطلع جنب اسمه في الفاتورة.",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "العيادة / المستشفى",
+      "labels": [
+        "العيادة / المستشفى"
+      ],
+      "text": "عيادة أو مستشفى الطبيب المحوِّل (اختياري).",
+      "article": "reception-referring-doctor",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تليفون الطبيب المحوِّل",
+      "labels": [
+        "تليفون الطبيب المحوِّل"
+      ],
+      "text": "رقم الطبيب المحوِّل لو معاك (اختياري) — مش بيطلع في الفاتورة.",
+      "article": "reception-referring-doctor",
       "tabs": [
         "reception_services"
       ],
@@ -20394,6 +20677,20 @@
       "reviewed": true
     },
     {
+      "title": "ابحث عن الخدمة",
+      "labels": [
+        "ابحث عن الخدمة",
+        "ابحث باسم الخدمة أو الكود أو القسم"
+      ],
+      "text": "اكتب جزء من اسم الخدمة أو كودها أو قسمها — القايمة تحتها بتصغر للنتايج، ولو نتيجة واحدة بتتختار لوحدها.",
+      "article": "reception-service-search",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الصورة",
       "labels": [
         "الصورة"
@@ -21487,19 +21784,6 @@
       ],
       "text": "اكتب عنوان المادة أو جزءًا منه للعثور عليها في قائمة النشر حسب المرشح الحالي. البحث لا يضيف مادة جديدة.",
       "article": "publishing-guide",
-      "tabs": [
-        "production"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "بحث عن مادة",
-      "labels": [
-        "بحث عن مادة"
-      ],
-      "text": "اكتب اسم القسم أو جزءًا من اسم السجل المطلوب. النتائج تعتمد على صلاحية حسابك والبيانات المتاحة، والبحث لا يغير السجلات.",
-      "article": "personal",
       "tabs": [
         "production"
       ],
@@ -22756,9 +23040,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1958,
-    "labels": 1425,
-    "files": 151,
-    "groups": 1540
+    "definitions": 1987,
+    "labels": 1448,
+    "files": 156,
+    "groups": 1561
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

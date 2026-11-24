@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1958,
-    "labels": 1425,
-    "files": 151,
-    "groups": 1540
+    "definitions": 1987,
+    "labels": 1448,
+    "files": 156,
+    "groups": 1561
   },
   "fields": [
     {
@@ -10603,6 +10603,36 @@
       "text_sha256": "36d18535f8819df363f4660cb7a5968ad62dc0aae5b0b4ac1c32f77ef3a8c6ff"
     },
     {
+      "file": "price-name-review.js",
+      "label": "بحث",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "price-name-review.js",
+      "label": "ابحث باسم الخدمة عند الجهة أو عندنا…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "price-name-review",
+      "text_sha256": "7570ba900fc7d302017de90cc8b0cab119b3f916b0e7a70bd8cdbdbfa4877048"
+    },
+    {
+      "file": "price-name-review.js",
+      "label": "ابحث في خدماتنا",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "price-name-review",
+      "text_sha256": "8885a08a9013bc00537cd13c8f85da38509e050aa7e902d8246204d912573c99"
+    },
+    {
       "file": "psychology-workspace.js",
       "label": "اسم المريض من كلمتين على الأقل",
       "name": "full_name",
@@ -10784,16 +10814,6 @@
     },
     {
       "file": "reception-booking-discount.js",
-      "label": "خصم على الحجز ده (اختياري)",
-      "name": "",
-      "kind": "label",
-      "forms": [],
-      "tab": "reception_services",
-      "article": "reception-booking-discount",
-      "text_sha256": "b0d38c7798b6e6eb8ef38cc817ffffb304919a5325d575936d4e9432d2c12162"
-    },
-    {
-      "file": "reception-booking-discount.js",
       "label": "مثلاً نقابة المهندسين",
       "name": "",
       "kind": "placeholder",
@@ -10871,6 +10891,18 @@
       "tab": "reception_services",
       "article": "reception-booking-discount",
       "text_sha256": "4b70bc45a899abf71656228cc7d3b888ccf6900569117fbc2659417a292465bd"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "خصم على الزيارة (قبل التحصيل)"
+      ],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
     },
     {
       "file": "reception-booking-plus.js",
@@ -11727,6 +11759,76 @@
       "text_sha256": "c0edd5c53ed9c7c4bf2e18f784f76fe4c74a7aa96666563f1a27453b2f028ece"
     },
     {
+      "file": "reception-legacy-package.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "جلسات",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "a544dd605dcb7df2489aae16284d7701ffd6795f8dfdab9d37b9bd75887de308"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "المبلغ المدفوع",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "39fca68dac850123cdd9979ad6784f4631c0f1d287864820d0e684926af7ad1d"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "مثلاً ليزر نص إيد + منطقة تانية",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "1c3d1df117453eb3b9b7e1fccdec7a621bdd28f121a2a42365cbd57ba5cba3f4"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "اسم الباكج",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "1c3d1df117453eb3b9b7e1fccdec7a621bdd28f121a2a42365cbd57ba5cba3f4"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "دفع يوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "ae114342ab75c8c6dafc92779b92cbd123ec5b779a9ffc7418651d1cc102d0bb"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "رقم الإيصال القديم أو صورته (لو موجود)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "06d153a4125dac472f2b0c119cd2ad3449287d7e0f2fbdf4ffcb9e9ee0f15d95"
+    },
+    {
       "file": "reception-manual-time.js",
       "label": "حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك.",
       "name": "",
@@ -11895,6 +11997,178 @@
       "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "الجهة (العقود المتفعّلة بس)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "69aed6a6c4724877b50c09093bf6f08f7cf5a73f5d705acaee8b09a5f52af7c5"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "رقم الكوبون / الكارنيه *",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "0d0d8a7f034417fd255aafb957a71efa9bc33d9fb00cda55c396b40219116057"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "رقم موافقة التغطية *",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "3352bc48f3261b42daa98bdf30da3d0c86fddcd859267219364f819fda4cedf0"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "نسبة تحمّل الجهة ٪ * ٪",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "3718ef07f641830e45de3a30654baf62038e715cb4b89dce622c28d02c63f012"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "نسبة تحمّل الجهة ٪ *",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "3718ef07f641830e45de3a30654baf62038e715cb4b89dce622c28d02c63f012"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "النقابة / النادي",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "365f60d27f88de7e7afeb1ecf9249ead0a87e042f0d71f20c335b5363d4b1fa1"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "مثلاً نادي الصيد",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "365f60d27f88de7e7afeb1ecf9249ead0a87e042f0d71f20c335b5363d4b1fa1"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "اسم النقابة / النادي",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "365f60d27f88de7e7afeb1ecf9249ead0a87e042f0d71f20c335b5363d4b1fa1"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "رقم كارنيه النقابة / النادي",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "7a0be09f7b3d9383a6547ea599713649b7088400b45ab5fabd60cbc172624fe7"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "كارنيه النقابة / النادي ساري لحد",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "b21ca52bd738b07227e14981108fcb61dd06c68d0ebaf2b8e7150e7be88f8191"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "طريقة الدفع / الخصم (قبل التحصيل)"
+      ],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "اختار الطبيب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "0fc558266cf9a5b92f983866a5df7ac8d8a72b21907dd6832c0335742697a3b8"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "د. …",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "42ff4f9acfc4a955939df4059f528560553ef142da2ca0586b0a58620fbce252"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "اسم الطبيب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "42ff4f9acfc4a955939df4059f528560553ef142da2ca0586b0a58620fbce252"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "تخصص الطبيب المحوِّل",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "5e4fd7b401cd817b30a7aa2243bc156ea57c76fdcb5244ee004966b450200043"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "العيادة / المستشفى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "db9ec55819f3843d9165fe300fc5c18a526201ca0abe6da7d923d82a7734ee9b"
+    },
+    {
+      "file": "reception-referrer.js",
+      "label": "تليفون الطبيب المحوِّل",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-referring-doctor",
+      "text_sha256": "69fe73e0dd6f32f980047b67af2d5c8487f940a68b1b1e23d5b03457c7a4554b"
     },
     {
       "file": "reception-service-later.js",
@@ -18788,6 +19062,26 @@
       "tab": "price_lists",
       "article": "price-lists",
       "text_sha256": "b1d1459fd5eeeb8271a40be29c53268a6bc8c27bd1dd5d9189fe29a6b1611077"
+    },
+    {
+      "file": "service-select-search.js",
+      "label": "ابحث عن الخدمة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "reception-service-search",
+      "text_sha256": "01a12ff45a1e047d0ed561e0881bf0252018a79d8fd24d38af25af6b7d19f45f"
+    },
+    {
+      "file": "service-select-search.js",
+      "label": "ابحث باسم الخدمة أو الكود أو القسم",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "reception-service-search",
+      "text_sha256": "01a12ff45a1e047d0ed561e0881bf0252018a79d8fd24d38af25af6b7d19f45f"
     },
     {
       "file": "staff-profile.js",
