@@ -3,7 +3,8 @@
 -- shift, colleagues with an open shift, main treasury shift) and, when each target is open, that its button's RPC succeeds:
 --   «تسليم للخزينة الرئيسية» → clinic_finance_treasury_command('transfer_request', 1 ج)
 --   «تسليم التحصيل لزميل»    → clinic_finance_peer_handover('request', 1 ج)
--- An option whose target has no open shift is shown DISABLED by the UI (no RPC) — reported as «hidden/disabled». Nothing is kept.
+-- An option whose target has no open shift is shown DISABLED by the UI (no RPC) — reported as «hidden/disabled». When the user's open
+-- shift has no cash yet, a REAL 2 ج cash collection (reception 'collect' → patient credit) is recorded first so both RPCs run. Nothing is kept.
 begin;
 create temp table ho_live(n serial, who text, step text, expected text, actual text, ok boolean);
 do $$
@@ -24,6 +25,25 @@ begin
       coalesce(o->'shift'->>'register', 'NO OPEN SHIFT → «تسليم» not shown') || ' · available ' || coalesce(o->'shift'->>'available', '-') ||
       ' · main ' || coalesce(o->'main'->>'name', 'closed') || ' · colleagues ' || coalesce((select string_agg(c->>'name', '، ') from jsonb_array_elements(coalesce(o->'colleagues', '[]')) c), 'none'),
       true);
+    -- an open shift with no cash yet: record a REAL 2 ج cash collection into it (reception collect → patient credit), rolled back
+    if o->'shift' is not null and jsonb_typeof(o->'shift') = 'object' and coalesce((o->'shift'->>'available')::numeric, 0) < 2 then
+      declare ws uuid; rs uuid; pat uuid; me uuid;
+      begin
+        select x.id into me from public.admins x where x.user_id = a.user_id;
+        select s.workspace_id, s.id into ws, rs from clinic_reception.shifts s join clinic_reception.workspaces w on w.id = s.workspace_id and w.mode = 'live'
+         where s.cashier_id = me and s.status = 'open' order by s.opened_at desc limit 1;
+        select p.id into pat from clinic_reception.patients p where p.workspace_id = ws order by p.created_at limit 1;
+        begin
+          execute 'set local role authenticated';
+          r := public.clinic_reception_command(ws, 'collect', jsonb_build_object('patient_id', pat, 'method', 'cash', 'shift_id', rs, 'amount', '2',
+                 'reference', 'HO-TEST-CASH', 'note', 'تجربة تراجع — تحصيل 2 ج علشان يبقى فيه كاش للتسليم'), gen_random_uuid());
+          execute 'reset role'; err := 'ok';
+        exception when others then execute 'reset role'; err := sqlerrm; end;
+        execute 'set local role authenticated'; o := public.clinic_finance_peer_handover('options', '{}'::jsonb, null); execute 'reset role';
+        insert into ho_live(who, step, expected, actual, ok) values (a.name, 'real cash collect 2 ج into the open shift (reception collect)', 'ok, available ≥ 2',
+          err || ' · available ' || coalesce(o->'shift'->>'available', '-'), err = 'ok' and coalesce((o->'shift'->>'available')::numeric, 0) >= 2);
+      end;
+    end if;
     if o->'shift' is null or jsonb_typeof(o->'shift') <> 'object' or coalesce((o->'shift'->>'available')::numeric, 0) < 1 then
       insert into ho_live(who, step, expected, actual, ok) values (a.name, 'RPCs', 'needs an open shift with ≥ 1 ج', 'not testable now (no open shift / no cash)', null); continue; end if;
     -- «تسليم للخزينة الرئيسية»
