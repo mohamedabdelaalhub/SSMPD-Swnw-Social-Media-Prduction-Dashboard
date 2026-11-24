@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: أزرار «أرشيف الليدز»</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button{font:inherit;color:inherit;cursor:pointer}
+svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.tabs{background:#fff;border-radius:20px;padding:10px;display:flex;gap:6px;overflow-x:auto;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.tabs span{padding:10px 16px;border-radius:14px;white-space:nowrap;color:#475467;font-weight:600}.tabs .on{background:var(--brand);color:#fff}
+.card{background:#fff;border-radius:24px;padding:20px;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.head h3{margin:0;font-size:18px}.head small{color:var(--muted);display:block;margin-top:4px}
+.ghost{border:1px solid var(--line);background:#fff;border-radius:12px;min-height:44px;padding:0 16px;font-weight:600;color:var(--brand)}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile{border:1px solid var(--line);background:#fff;border-radius:18px;padding:14px 16px;text-align:start;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;min-height:88px;transition:.15s}
+.tile:hover{border-color:#C9D5F2;box-shadow:0 6px 18px rgba(15,54,157,.10);transform:translateY(-1px)}
+.tile:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.tile i{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--tint);color:var(--brand)}
+.tile b{display:block;font-size:26px;line-height:1.1}.tile span{display:block;font-size:13px;color:#475467;font-weight:600;margin-top:2px}
+.tile em{font-style:normal;color:var(--muted);font-size:20px}
+.tile.today i{background:#E6F4EC;color:var(--pos)}.tile.open i{background:#FFF1E8;color:var(--accent)}
+.tile.urgent{border-color:#F4C7BF;background:#FFF8F6}.tile.urgent i{background:#FDECEA;color:var(--neg)}.tile.urgent b{color:var(--neg)}
+.list{margin-top:16px;color:var(--muted);font-size:13px;border-top:1px dashed var(--line);padding-top:14px}
+/* popup */
+.ov{position:fixed;inset:0;background:rgba(22,33,46,.45);display:none;align-items:center;justify-content:center;padding:14px;z-index:9}
+.ov.on{display:flex}
+.pop{background:#fff;border-radius:24px;width:min(720px,100%);max-height:86vh;overflow:auto;padding:18px 20px;box-shadow:0 24px 64px rgba(15,54,157,.25)}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.ph h4{margin:0;font-size:18px}.ph small{display:block;color:var(--muted);margin-top:4px;font-size:12px}
+.x{width:44px;height:44px;border:1px solid var(--line);border-radius:12px;background:#fff;display:grid;place-items:center;flex:none}
+table{width:100%;border-collapse:collapse}th{text-align:start;font-size:12px;color:var(--muted);font-weight:600;padding:8px;border-bottom:1px solid var(--line)}td{padding:10px 8px;border-bottom:1px solid var(--line)}
+.bar{height:6px;background:var(--soft);border-radius:6px;margin-top:6px}.bar>div{height:100%;background:var(--brand);border-radius:6px}
+.row{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line)}.row:last-child{border:0}
+.row .nm{flex:1;min-width:0}.row .nm b{display:block}.row .nm small{color:var(--muted);font-size:12px}
+.pill{border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;background:var(--soft);color:#475467;white-space:nowrap}
+.pill.new{background:#E6F4EC;color:var(--pos)}.pill.fu{background:#FFF1E8;color:#B54708}.pill.late{background:#FDECEA;color:var(--neg)}
+.mini{border:1px solid var(--line);background:#fff;border-radius:10px;min-height:40px;padding:0 14px;font-weight:600;color:var(--brand)}
+.hint{background:#FFF8F6;border:1px solid #F4C7BF;color:#8A2A1B;border-radius:14px;padding:10px 12px;font-size:12.5px;margin-bottom:10px}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.tiles{grid-template-columns:minmax(0,1fr)}.tile{min-height:72px}.card{padding:16px}.pop{border-radius:24px 24px 0 0;align-self:flex-end;max-height:90vh}.ov{padding:0}.hide-sm{display:none}}
+</style>
+</head>
+<body>
+<p class="note"><b>تصور</b> — «أرشيف الليدز»: الجدول الكبير اتحوّل لزرار، وجنبه 3 زراير بالأعداد. دوس على أي زرار يفتح تفاصيله. (أرقام وأسماء تجريبية)</p>
+<div class="wrap">
+ <div class="tabs"><span>الاستقبال</span><span>خدمة العملاء</span><span>تقييمات العملاء</span><span>داشبورد الإدارة</span><span>الحجوزات الفعلية</span><span class="on">أرشيف الليدز</span><span>تحويلات الأطباء</span><span>عملاء ناقصين بيانات</span><span>رفع ملف إكسيل</span></div>
+ <section class="card">
+  <div class="head"><div><h3>ملخص الليدز</h3><small>كل الفترات · دوس على أي مربع يفتح التفاصيل</small></div><button class="ghost">تحديث</button></div>
+  <div class="tiles">
+   <button class="tile" data-open="emp"><i><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.7 3.1 2.5 3.5 5.2"/></svg></i><div><b>308</b><span>تسجيل الليدز حسب الموظف</span></div><em>‹</em></button>
+   <button class="tile today" data-open="today"><i><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M12 13v4M10 15h4"/></svg></i><div><b>7</b><span>ليدز جديدة النهارده</span></div><em>‹</em></button>
+   <button class="tile open" data-open="open"><i><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></i><div><b>41</b><span>ليدز مفتوحة</span></div><em>‹</em></button>
+   <button class="tile urgent" data-open="urgent"><i><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/></svg></i><div><b>5</b><span>محتاجة متابعة عاجلة</span></div><em>‹</em></button>
+  </div>
+  <div class="list">⬇ تحت المربعات: نفس قائمة الأرشيف والبحث والفلاتر زي ما هي من غير تغيير.</div>
+ </section>
+</div>
+
+<div class="ov" id="ov"><div class="pop" role="dialog" aria-modal="true"><div class="ph"><div><h4 id="pt"></h4><small id="ps"></small></div><button class="x" data-close aria-label="إغلاق"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><div id="pb"></div></div></div>
+
+<script>
+var lead=function(n,ph,t,st,lbl){return '<div class="row"><div class="nm"><b>'+n+'</b><small dir="ltr">'+ph+'</small> <small style="white-space:nowrap">· '+t+'</small></div><span class="pill '+st+'">'+lbl+'</span><button class="mini">فتح</button></div>'};
+var P={
+ emp:['تسجيل الليدز حسب الموظف','كل الفترات · إجمالي التسجيلات 308',
+  '<table><thead><tr><th>الموظف</th><th>الليدز</th><th class="hide-sm">النسبة</th><th class="hide-sm">آخر تسجيل</th><th></th></tr></thead><tbody>'+
+  [['Zeina Badr',292,94.8,'11/22/2026 08:10 PM'],['تسجيل آلي / بدون مسجل',10,3.2,'11/24/2026 10:31 PM'],['سمر أبو بكر بحر',2,0.6,'08/28/2026 06:36 PM'],['محمد عبدالعال',2,0.6,'09/11/2026 02:51 AM'],['أحمد علاء الدين',1,0.3,'09/13/2026 12:49 AM'],['مريم هشام هاشم',1,0.3,'11/19/2026 12:26 AM']].map(function(r){return '<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td class="hide-sm" style="min-width:120px">'+r[2]+'%<div class="bar"><div style="width:'+r[2]+'%"></div></div></td><td class="hide-sm" style="color:var(--muted);font-size:12px">'+r[3]+'</td><td><button class="mini">عرض الليدز</button></td></tr>'}).join('')+'</tbody></table>'],
+ today:['ليدز جديدة النهارده','اتسجلت النهارده من 12:00 ص لحد دلوقتي · 7',
+  lead('منى سعيد','01012345678','10:42 م','new','جديد')+lead('كريم عادل','01122334455','09:15 م','fu','قيد المتابعة')+lead('هبة محمود','01233445566','07:03 م','new','جديد')+lead('عميل واتساب','01544332211','04:20 م','new','جديد')+lead('يوسف طارق','01099887766','01:11 م','fu','قيد المتابعة')+lead('سارة إبراهيم','01188776655','11:30 ص','new','جديد')+lead('أحمد فؤاد','01277665544','09:05 ص','new','جديد')],
+ open:['ليدز مفتوحة','نفس رقم «داشبورد الإدارة» · 41',
+  lead('منى سعيد','01012345678','النهارده 10:42 م','new','جديد')+lead('كريم عادل','01122334455','النهارده 09:15 م','fu','قيد المتابعة')+lead('رانيا سمير','01011122233','امبارح','fu','قيد المتابعة')+lead('عمرو حسن','01233322211','منذ 3 أيام','new','جديد')+'<p style="color:var(--muted);font-size:12px;margin:10px 4px 0">… وباقي الـ41 بالترتيب (الأقدم آخر)</p>'],
+ urgent:['محتاجة متابعة عاجلة','جديدة من غير أي رد لأكتر من 24 ساعة · 5',
+  '<div class="hint">نفس قائمة التنبيه في «داشبورد الإدارة». أول محاولة تواصل بتشيل الليد من هنا تلقائياً.</div>'+lead('عمرو حسن','01233322211','من 3 أيام','late','متأخر 72 س')+lead('نادين وليد','01155544433','من يومين','late','متأخر 50 س')+lead('عميل ماسنجر','—','من يومين','late','متأخر 41 س')+lead('محمد شريف','01066655544','امبارح 06:00 م','late','متأخر 30 س')+lead('إيمان رضا','01299988877','امبارح 02:10 م','late','متأخر 26 س')]
+};
+var ov=document.getElementById('ov');
+document.querySelectorAll('[data-open]').forEach(function(b){b.onclick=function(){var p=P[b.dataset.open];document.getElementById('pt').textContent=p[0];document.getElementById('ps').textContent=p[1];document.getElementById('pb').innerHTML=p[2];ov.classList.add('on');ov.querySelector('.x').focus();}});
+ov.onclick=function(e){if(e.target===ov||e.target.closest('[data-close]'))ov.classList.remove('on')};
+document.onkeydown=function(e){if(e.key==='Escape')ov.classList.remove('on')};
+</script>
+</body>
+</html>
