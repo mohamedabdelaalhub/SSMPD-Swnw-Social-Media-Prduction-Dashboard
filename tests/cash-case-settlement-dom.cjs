@@ -40,5 +40,13 @@ async function await0(){await modalCall.save({kind:'surplus_income',note:'مبل
  await modalCall.save({approve:'true',note:'موافق'},'tok-2');assert.equal(JSON.stringify(calls.pop()[1]),JSON.stringify({p_action:'review',p_payload:{id:'N',approve:true,note:'موافق'},p_token:'tok-2'}));
  // balance fill
  html=C.panel('cases',{...base,me:'FM'},h);B.innerHTML=html;await w.SSMPDCaseSettleFill(B,'cases');assert.match(B.querySelector('[data-cs-bal="M"]').innerHTML,/cs-neg">-550.00/);assert.equal(B.querySelector('[data-cs-bal="X"]').textContent,'—');
+ // cap (20261125050000): a case already included elsewhere → no button; a partial one → warning + capped preview
+ w.SSMPDDb={client:{rpc:(n,a)=>Promise.resolve({data:a.p_action==='list'?[{id:'M',register_balance:-1190,settle_amount:0},{id:'P',register_balance:-1190,settle_amount:1190}]:{}})}};
+ const P={id:'P',register_name:'خزينة مريم',cashier_name:'مريم',cashier_id:'MAR',difference:2280,status:'decided',responsibility:'process_error',decision:'correct_records'};
+ html=C.panel('cases',{...base,cash_cases:[cases[0],P],me:'ACC'},h);B.innerHTML=html;await w.SSMPDCaseSettleFill(B,'cases');
+ assert.equal(rowOf('M').querySelector('[data-fin-action="case-settle"]'),null,'included case: no settle button');assert.match(rowOf('M').textContent,/مفيش رصيد يتسوّى/);
+ assert.ok(rowOf('P').querySelector('[data-fin-action="case-settle"]'));
+ doc.querySelectorAll('.fc-modal').forEach(x=>x.remove());C.act('case-settle','P',{...base,cash_cases:[P],me:'ACC'},h);f=doc.querySelector('.fc-modal form');
+ assert.match(f.textContent,/هيتسوّى 1,190.00 بس من الفرق/);assert.match(f.textContent,/من حـ\/ خزينة مريم\s*1,190.00/);
  assert(fs.readFileSync('assets/js/finance-cash.js','utf8').includes('if(window.SSMPDCaseSettleFill)window.SSMPDCaseSettleFill(body,tab);'));
- console.log('PASS cash case settlement UI: balance column, orange «تسوية الفرق» after decision (maker), «مراجعة التسوية» for another reviewer, nothing for the shift cashier, allowed kinds only (employee kind by decision), entry preview, request/review RPC payloads, balance fill.');}
+ console.log('PASS cash case settlement UI: cap (included case → no button, partial → capped preview); balance column, orange «تسوية الفرق» after decision (maker), «مراجعة التسوية» for another reviewer, nothing for the shift cashier, allowed kinds only (employee kind by decision), entry preview, request/review RPC payloads, balance fill.');}
