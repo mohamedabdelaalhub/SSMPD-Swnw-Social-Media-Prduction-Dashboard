@@ -1157,6 +1157,8 @@ frule('reception-legacy-package.js','جلسات','عدد جلسات الخدمة
 frule('reception-legacy-package.js','المبلغ المدفوع','المبلغ اللي المريض دفعه في الخدمة دي (كل الجلسات).','reception-legacy-package')
 frule('reception-legacy-package.js','رقم الإيصال القديم أو صورته (لو موجود)','رقم أو مكان الإيصال الورق القديم — بيساعد اللي بيعتمد يراجع.','reception-legacy-package')
 frule('reception-legacy-package.js','خصم من باكج المريض','الخدمة دي تاخد جلسة من باكج المريض — المريض يدفع 0.','reception-legacy-package')
+frule('price-name-review.js','ابحث باسم الخدمة عند الجهة أو عندنا…','اكتب جزء من اسم الخدمة زي ما هو مكتوب في لائحة الجهة أو زي ما هو عندنا. الأسماء اللي فيها الكلام ده بس هتفضل ظاهرة، ومش فارقة أ/ا ولا ة/ه ولا ى/ي.','price-name-review')
+frule('price-name-review.js','ابحث في خدماتنا','اكتب جزء من اسم الخدمة عندنا أو كودها، واختار الخدمة الصح من النتايج. الاختيار بيربط الاسم بالخدمة دي في كل اللوايح اللي فيها الاسم.','price-name-review')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'

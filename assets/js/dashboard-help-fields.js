@@ -12142,6 +12142,46 @@
       "reviewed": true
     },
     {
+      "title": "بحث",
+      "labels": [
+        "بحث",
+        "بحث عن مادة"
+      ],
+      "text": "اكتب اسم القسم أو جزءًا من اسم السجل المطلوب. النتائج تعتمد على صلاحية حسابك والبيانات المتاحة، والبحث لا يغير السجلات.",
+      "article": "personal",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ابحث باسم الخدمة عند الجهة أو عندنا…",
+      "labels": [
+        "ابحث باسم الخدمة عند الجهة أو عندنا…"
+      ],
+      "text": "اكتب جزء من اسم الخدمة زي ما هو مكتوب في لائحة الجهة أو زي ما هو عندنا. الأسماء اللي فيها الكلام ده بس هتفضل ظاهرة، ومش فارقة أ/ا ولا ة/ه ولا ى/ي.",
+      "article": "price-name-review",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ابحث في خدماتنا",
+      "labels": [
+        "ابحث في خدماتنا"
+      ],
+      "text": "اكتب جزء من اسم الخدمة عندنا أو كودها، واختار الخدمة الصح من النتايج. الاختيار بيربط الاسم بالخدمة دي في كل اللوايح اللي فيها الاسم.",
+      "article": "price-name-review",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اسم المريض من كلمتين على الأقل",
       "labels": [
         "اسم المريض من كلمتين على الأقل"
@@ -21751,19 +21791,6 @@
       "reviewed": true
     },
     {
-      "title": "بحث عن مادة",
-      "labels": [
-        "بحث عن مادة"
-      ],
-      "text": "اكتب اسم القسم أو جزءًا من اسم السجل المطلوب. النتائج تعتمد على صلاحية حسابك والبيانات المتاحة، والبحث لا يغير السجلات.",
-      "article": "personal",
-      "tabs": [
-        "production"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "حالة السوشيال",
       "labels": [
         "حالة السوشيال"
@@ -23013,9 +23040,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1984,
-    "labels": 1446,
-    "files": 155,
-    "groups": 1559
+    "definitions": 1987,
+    "labels": 1448,
+    "files": 156,
+    "groups": 1561
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

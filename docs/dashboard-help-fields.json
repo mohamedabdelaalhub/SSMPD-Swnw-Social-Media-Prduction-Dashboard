@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1984,
-    "labels": 1446,
-    "files": 155,
-    "groups": 1559
+    "definitions": 1987,
+    "labels": 1448,
+    "files": 156,
+    "groups": 1561
   },
   "fields": [
     {
@@ -10601,6 +10601,36 @@
       "tab": "price_lists",
       "article": "price-lists",
       "text_sha256": "36d18535f8819df363f4660cb7a5968ad62dc0aae5b0b4ac1c32f77ef3a8c6ff"
+    },
+    {
+      "file": "price-name-review.js",
+      "label": "بحث",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "price-name-review.js",
+      "label": "ابحث باسم الخدمة عند الجهة أو عندنا…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "price-name-review",
+      "text_sha256": "7570ba900fc7d302017de90cc8b0cab119b3f916b0e7a70bd8cdbdbfa4877048"
+    },
+    {
+      "file": "price-name-review.js",
+      "label": "ابحث في خدماتنا",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "price-name-review",
+      "text_sha256": "8885a08a9013bc00537cd13c8f85da38509e050aa7e902d8246204d912573c99"
     },
     {
       "file": "psychology-workspace.js",
