@@ -28,7 +28,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  await q('update clinic_reception.package_templates set sell_from=$2, sell_until=$2 where id=$1',[T,date]);
  const P=(await cmd('package_sell',{patient_id:patient,template_id:T})).id;
  let k=(await q('select * from clinic_reception.packages where id=$1',[P]))[0];assert.equal(+k.min_first_percent,25,'snapshot');assert.equal(+k.contract_price,4000);
- assert.equal(String(k.expires_on.toISOString?k.expires_on.toISOString().slice(0,10):k.expires_on).slice(0,10),new Date(Date.parse(date)+120*864e5).toISOString().slice(0,10),'4 months = 120 days');
+ assert.equal(String(k.expires_on.toISOString?k.expires_on.toISOString().slice(0,10):k.expires_on).slice(0,10),(await q("select (current_date+120)::text d"))[0].d,'4 months = 120 days (the sale stamps expires_on from the server date — not the Cairo date the test uses for the sell window; they differ 22:00–24:00 UTC)');
  const minNow=async()=>(await q('select clinic_reception.package_min_payment($1) m',[P]))[0].m;
  let m=await minNow();assert.deepEqual([m.first,+m.minimum,+m.owed],[true,1000,4000]);
  const pay=(amount,ref)=>cmd('collect',{patient_id:patient,package_id:P,method:'wallet',reference:ref,amount:String(amount)});
