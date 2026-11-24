@@ -31,7 +31,6 @@ do $$ declare sys uuid; n int; m int; tot int; begin
    where clinic_reception.is_consult_name((select name from clinic_reception.services where id = clinic_reception.auto_time_service(p.workspace_id, r.provider_id, r.needed_service)));
   insert into ab_live(step, expected, actual, ok) values ('…of which the picker now returns a consultation', tot::text, n::text, n = tot);
 end $$;
-select step, expected, actual, ok from ab_live order by n;
 -- the re-queued rows: doctor, what the source asked, what the picker gives now
 select p.name doctor, r.needed_service, s.code, s.name service from ab_review r join clinic_reception.providers p on p.id = r.provider_id
   left join clinic_reception.services s on s.id = clinic_reception.auto_time_service(p.workspace_id, r.provider_id, r.needed_service) order by 1;
@@ -48,4 +47,6 @@ select left(a.id::text, 8) appt, (a.starts_at at time zone 'Africa/Cairo')::date
  where a.created_by = (select system_admin_id from clinic_reception.auto_book_settings where id)
    and a.status not in ('cancelled', 'no_show', 'completed') and a.starts_at >= date_trunc('day', now() at time zone 'Africa/Cairo') at time zone 'Africa/Cairo'
    and not clinic_reception.is_consult_name(s.name) order by 2, 3;
+-- summary LAST (so a tail of the output shows it)
+select step, expected, actual, ok from ab_live order by n;
 rollback;

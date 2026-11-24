@@ -58,6 +58,14 @@ const fn=(file,name)=>{const s=fs.readFileSync('supabase/migrations/'+file,'utf8
  const lone='00000000-0000-4000-8000-0000000000c1';await q("insert into clinic_reception.providers values($1,$2,'د. وحيد','قسم فاضي')",[lone,ws]);
  assert.equal(await pick(lone),null,'serves nothing → NULL');
  await q("insert into clinic_reception.provider_service_scopes values($1,'0001501')",[lone]);assert.equal(await pick(lone),ns,'scope row → its consultation');
+ // «خدمات الكشف» via scope rows (live): 0001371 كشف الأخصائي 500 / 0001372 كشف الاستشاري 600 / 0001393 الاستشارة (خلال أسبوعين من الكشف) 100
+ const sc=await svc('0001371','كشف الأخصائي','خدمات الكشف',15),sc2=await svc('0001372','كشف الاستشاري','خدمات الكشف',15),win=await svc('0001393','الاستشارة (خلال أسبوعين من الكشف)','خدمات الكشف',10);
+ const intl='00000000-0000-4000-8000-0000000000f1',cons='00000000-0000-4000-8000-0000000000f2';await q("insert into clinic_reception.providers values($1,$3,'د. باطنة','الباطنة'),($2,$3,'د. استشاري','العظام')",[intl,cons,ws]);
+ for(const c of ['0001371','0001372','0001393'])await q("insert into clinic_reception.provider_service_scopes values($1,$2)",[intl,c]);
+ for(const c of ['0001372','0001393'])await q("insert into clinic_reception.provider_service_scopes values($1,$2)",[cons,c]);
+ for(let i=0;i<5;i++)await q("insert into clinic_reception.appointments(provider_id,service_id) values($1,$2)",[intl,win]);
+ for(const nd of [null,'كشف جديد','استشارة','متابعة'])assert.equal(await pick(intl,nd),sc,'«خلال أسبوعين» never auto-picked; كشف الأخصائي ('+nd+')');
+ assert.equal(await pick(cons,'كشف جديد'),sc2,'only كشف الاستشاري in scope → it');
  // the parked «اختار الخدمة» rows were re-queued by the migration
  // rollback
  await db.exec(fs.readFileSync('supabase/rollbacks/20261124210000_auto_book_consult_only.rollback.sql','utf8'));

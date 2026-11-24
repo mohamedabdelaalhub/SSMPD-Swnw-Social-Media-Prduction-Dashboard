@@ -29,13 +29,28 @@ create function clinic_reception.is_consult_name(p_name text) returns boolean
 language sql immutable set search_path = pg_catalog as $$
   select translate(coalesce(p_name, ''), 'أإآة', 'اااه') ~ '(كشف|استشار|متابع)'
 $$;
--- rank: كشف → استشارة → متابعة; the kind the source asked for («كشف جديد» / «استشارة» / «متابعة») comes first
+-- kind of a consultation by its FIRST word (leading «ال» dropped): كشف → 'K', استشارة → 'S', متابعة → 'F'. Names with
+-- «خلال» (e.g. 0001393 «الاستشارة (خلال أسبوعين من الكشف)», the cheap follow-up window) are never auto-picked: that price
+-- depends on the patient's earlier visit, which the picker does not check (main chat 5 dry-run: they won «كشف جديد» because
+-- the name contains «الكشف»).
+create function clinic_reception.consult_kind(p_text text) returns text
+language sql immutable set search_path = pg_catalog as $$
+  select case when w like 'كشف%' then 'K' when w like 'استشار%' then 'S' when w like 'متابع%' then 'F'
+              when t like '%كشف%' then 'K' when t like '%استشار%' then 'S' when t like '%متابع%' then 'F' end
+    from (select translate(btrim(coalesce(p_text, '')), 'أإآة', 'اااه') t) x,
+         lateral (select regexp_replace(split_part(x.t, ' ', 1), '^ال', '') w) y
+$$;
+create function clinic_reception.consult_pickable(p_name text) returns boolean
+language sql immutable set search_path = pg_catalog as $$
+  select clinic_reception.consult_kind(p_name) is not null and coalesce(p_name, '') not like '%خلال%'
+$$;
+-- rank (lower = better): the kind the source asks for («كشف جديد» / unknown → كشف) first, then كشف → استشارة → متابعة;
+-- inside a kind «أخصائي» before «استشاري» before the rest (a doctor with only «كشف استشاري» still gets it)
 create function clinic_reception.consult_rank(p_name text, p_needed text default null) returns int
 language sql immutable set search_path = pg_catalog as $$
-  with k as (select case when p_name like '%كشف%' then 0 when translate(p_name, 'أإآ', 'ااا') like '%استشار%' then 1 else 2 end r,
-                    case when coalesce(p_needed, '') like '%كشف%' then 0 when translate(coalesce(p_needed, ''), 'أإآ', 'ااا') like '%استشار%' then 1
-                         when coalesce(p_needed, '') like '%متابع%' then 2 end w)
-  select case when k.w is not null and k.r = k.w then -1 else k.r end from k
+  select (case when k = coalesce(clinic_reception.consult_kind(p_needed), 'K') then 0 when k = 'K' then 1 when k = 'S' then 2 else 3 end) * 10
+       + case when n like '%اخصائي%' then 0 when n like '%استشاري%' then 1 else 2 end
+    from (select clinic_reception.consult_kind(p_name) k, translate(coalesce(p_name, ''), 'أإآ', 'ااا') n) x
 $$;
 -- the doctor serves this service: his home department, an extra department (provider_departments) or a scope row
 create function clinic_reception.serves_service(p_provider uuid, p_department text, p_code text) returns boolean
@@ -45,6 +60,7 @@ language sql stable security definer set search_path = pg_catalog, public as $$
       or exists (select 1 from clinic_reception.provider_service_scopes sc where sc.provider_id = p_provider and sc.service_code = p_code)
 $$;
 revoke all on function clinic_reception.is_consult_name(text), clinic_reception.consult_rank(text, text),
+  clinic_reception.consult_kind(text), clinic_reception.consult_pickable(text),
   clinic_reception.serves_service(uuid, text, text) from public, anon, authenticated;
 
 create or replace function clinic_reception.auto_time_service(p_workspace uuid, p_provider uuid, p_needed text) returns uuid
@@ -63,13 +79,13 @@ begin
   -- 3) the doctor's most used CONSULTATION service
   select x.service_id into v from clinic_reception.appointments x join clinic_reception.services s on s.id = x.service_id
    where x.provider_id = p_provider and s.active and not coalesce(s.placeholder, false) and x.status not in ('cancelled')
-     and clinic_reception.serves_service(p_provider, s.department, s.code) and clinic_reception.is_consult_name(s.name)
-   group by x.service_id order by (min(clinic_reception.consult_rank(s.name, p_needed)) = -1) desc, count(*) desc, min(clinic_reception.consult_rank(s.name, p_needed)) limit 1;
+     and clinic_reception.serves_service(p_provider, s.department, s.code) and clinic_reception.consult_pickable(s.name)
+   group by x.service_id order by min(clinic_reception.consult_rank(s.name, p_needed)), count(*) desc limit 1;
   if v is not null then return v; end if;
   -- 4) the department's consultation service (كشف, then استشارة, then متابعة); none → NULL = staff picks it once
   select s.id into v from clinic_reception.services s where s.workspace_id = p_workspace and s.active and not coalesce(s.placeholder, false)
-     and clinic_reception.serves_service(p_provider, s.department, s.code) and clinic_reception.is_consult_name(s.name)
-   order by (s.department = dept) desc, clinic_reception.consult_rank(s.name, p_needed), s.minutes, s.name limit 1;
+     and clinic_reception.serves_service(p_provider, s.department, s.code) and clinic_reception.consult_pickable(s.name)
+   order by clinic_reception.consult_rank(s.name, p_needed), (s.department = dept) desc, s.minutes, s.name limit 1;
   return v;
 end $$;
 revoke all on function clinic_reception.auto_time_service(uuid, uuid, text) from public, anon, authenticated;
