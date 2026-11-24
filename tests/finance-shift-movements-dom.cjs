@@ -2,7 +2,7 @@
 const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
 (async()=>{
 const d=new JSDOM('<main id="h"></main>',{runScripts:'outside-only',url:'https://x.test/'}),w=d.window,doc=w.document,errors=[];w.addEventListener('error',e=>errors.push(e.message));
-w.eval(fs.readFileSync('assets/js/finance-shift-movements.js','utf8'));
+w.eval(fs.readFileSync('assets/js/swnw-print.js','utf8'));w.eval(fs.readFileSync('assets/js/finance-shift-movements.js','utf8'));
 const mv=[{at:'2026-11-15T07:14:00Z',cashier_name:'منى',register_name:'خزينة ١',direction:'in',kind:'self',title:'مريض تجربة ١',detail:'كشف · ملف P-1',method:'cash',reference:'R-1',amount:500},
  {at:'2026-11-15T07:40:00Z',cashier_name:'منى',register_name:'خزينة ١',direction:'in',kind:'insurance',title:'مريض تجربة ٢',detail:'جلسة',method:'pos',reference:'VISA 1',amount:150,insurance:{payer:'شركة تأمين (تجربة)',claim:350,total:500,cover:70}},
  {at:'2026-11-15T08:32:00Z',cashier_name:'أحمد',register_name:'خزينة ٢',direction:'in',kind:'self',title:'مريض تجربة ٣',detail:'باكج',method:'instapay',reference:'IP-1',amount:600},
@@ -25,9 +25,15 @@ host.querySelector('[data-mv-export="xlsx"]').click();assert(written&&/\.xlsx$/.
 assert.equal(written.wb.Workbook.Views[0].RTL,true);
 delete w.XLSX;let blob=null;w.URL.createObjectURL=b=>{blob=b;return 'blob:x';};w.URL.revokeObjectURL=()=>{};
 host.querySelector('[data-mv-export="xlsx"]').click();assert(blob);const bytes=new Uint8Array(await blob.arrayBuffer());assert.deepEqual([...bytes.slice(0,3)],[0xEF,0xBB,0xBF],'CSV starts with a BOM for Excel');assert((await blob.text()).includes('"المبلغ"'));
-// PDF: print with only this section visible
-let printed=false;w.print=()=>{printed=doc.documentElement.classList.contains('mv-printing')&&host.querySelector('.mv-section').classList.contains('mv-print-target');};
-host.querySelector('[data-mv-export="pdf"]').click();assert(printed,'print scoped to the section');w.dispatchEvent(new w.Event('afterprint'));assert(!doc.documentElement.classList.contains('mv-printing'));
+// PDF (owner 2026-11-24): a table document on the official letterhead in a new window (swnw-print.js), date + time per row, day subtotals, grand total
+let html='';w.open=()=>({document:{open(){},write(x){html+=x;},close(){},images:[]},focus(){},print(){}});
+host.querySelector('[data-mv-filter="all"]').click();host.querySelector('[data-mv-export="pdf"]').click();
+assert.match(html,/swnw-official-letterhead/,'letterhead');assert.match(html,/<h2>كشف حركات الوردية<\/h2>/);assert.doesNotMatch(html,/<h2>[^<]*(سونو|Swnw)/,'no centre name in the title');
+assert.match(html,/التاريخ والوقت<\/th><th>المريض \/ البيان<\/th><th>الخدمة<\/th><th>رقم الملف<\/th><th>الموظف<\/th><th>طريقة الدفع<\/th><th>نوع السداد<\/th><th>رقم الإيصال \/ المرجع<\/th><th>المبلغ/);
+assert.match(html,/<bdi class="ltr">15-11-2026<\/bdi><br>/,'date on every row');assert.match(html,/>P-1</,'file number split out');assert.match(html,/>كشف</);
+assert.match(html,/class="dh"><td colspan="9">[^<]*<bdi class="ltr">15-11-2026<\/bdi> — 5 حركات/,'day header');assert.match(html,/إجمالي يوم/);assert.match(html,/الإجمالي العام للفترة/);
+assert.match(html,/تأمين — حصة المريض/);assert.match(html,/صرف من الخزينة/);assert.match(html,/نقدي ← بطاقة/);assert.match(html,/−200.00/);
+assert(!/[٠-٩]/.test(html.replace(/مريض تجربة [١-٤]|خزينة [١٢]/g,'')),'Latin digits only (rule 8)');
 // manager view: period + employee filters, employee names on rows, open one shift and back
 host.remove();host=doc.createElement('div');doc.body.append(host);calls.length=0;
 const view=w.SSMPDShiftMovements.mount(host,{rpc,manager:true,staff:[{id:'e1',name:'منى'},{id:'e2',name:'أحمد'}]});await tick();
