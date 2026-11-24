@@ -1,6 +1,6 @@
 /* Reviewed operational help; no patient records, network calls or generated AI answers. */
 window.SSMPDHelpData={
-  "version": "20261124-244",
+  "version": "20261124-248",
   "articles": [
     {
       "id": "instinct-assistant",
