@@ -158,7 +158,7 @@ insert into clinic_finance.breakdown_archived(code, name, parent_code) select d.
 
 -- ===== test =====
 do $$
-declare fm uuid; ck uuid; fmid uuid; rc uuid; b jsonb; code text; s numeric; n int; pid uuid; r jsonb; ok boolean; m jsonb; d0 date := (now() at time zone 'Africa/Cairo')::date;
+declare fm uuid; ck uuid; fmid uuid; rc uuid; b jsonb; acc text; s numeric; n int; pid uuid; r jsonb; ok boolean; m jsonb; d0 date := (now() at time zone 'Africa/Cairo')::date;
 begin
   select a.user_id, a.id into fm, fmid from public.admins a where a.active and a.user_id is not null and a.role = 'financial_manager' order by a.id limit 1;
   select a.user_id into ck from public.admins a where a.active and a.user_id is not null and a.role in ('super_admin', 'general_manager') and a.id <> fmid order by a.role desc, a.id limit 1;
@@ -168,14 +168,14 @@ begin
   raise notice 'archived % empty leaf accounts (owner approved 67)', n;
   if n > 67 then raise exception 'archived more than the 67 approved: %', n; end if;
   if exists (select 1 from clinic_finance.breakdown_archived x where clinic_finance.account_in_use(x.code)) then raise exception 'archived a used account'; end if;
-  if exists (select 1 from clinic_finance.account_config where code in ('4119', '5227') and parent_code is null) then raise exception 'loose system accounts still loose'; end if;
+  if exists (select 1 from clinic_finance.account_config ac where ac.code in ('4119', '5227') and ac.parent_code is null) then raise exception 'loose system accounts still loose'; end if;
   select p.id into pid from clinic_reception.payments p where p.method = 'wallet' and p.wallet_kind is null order by p.created_at limit 1;
   perform set_config('request.jwt.claim.sub', fm::text, true); execute 'set local role authenticated';
-  foreach code in array array['1115', '2120', '5111'] loop
-    b := public.clinic_finance_account_breakdown(code, null, null);
+  foreach acc in array array['1115', '2120', '5111'] loop
+    b := public.clinic_finance_account_breakdown(acc, null, null);
     select coalesce(sum((v->>'amount')::numeric), 0) into s from jsonb_array_elements(b->'rows') v;
-    if s + (b->>'other')::numeric <> (b->>'total')::numeric then raise exception '% does not add up: rows % + other % <> total %', code, s, b->>'other', b->>'total'; end if;
-    raise notice '% total % — % rows, other %', code, b->>'total', jsonb_array_length(b->'rows'), b->>'other';
+    if s + (b->>'other')::numeric <> (b->>'total')::numeric then raise exception '% does not add up: rows % + other % <> total %', acc, s, b->>'other', b->>'total'; end if;
+    raise notice '% total % — % rows, other %', acc, b->>'total', jsonb_array_length(b->'rows'), b->>'other';
   end loop;
   if pid is not null then
     b := public.clinic_finance_account_breakdown('1115', null, null);
