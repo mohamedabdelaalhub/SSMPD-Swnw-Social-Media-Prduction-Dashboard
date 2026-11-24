@@ -452,6 +452,25 @@
     setTimeout(function () { win.print(); }, 500);
   }
 
+  // «محتاجة متابعة عاجلة» — ONE definition shared by «داشبورد الإدارة» and the «أرشيف الليدز» tiles (owner 2026-11-24: the numbers must match):
+  // leads still «جديد» (no contact attempt yet) older than the SLA hours in app_settings (default 24), from the same 50-row list the dashboard always used.
+  function loadOverdueLeads() {
+    return Promise.all([
+      window.SSMPDDb.listLeads({ status: "new", page_size: 50 }),
+      window.SSMPDDb.getAppSettings().catch(function () { return null; })
+    ]).then(function (r) {
+      var newLeads = (r[0] && r[0].leads) || [], slaHours = (r[1] && r[1].leads_sla_hours) || 24, slaMs = slaHours * 3600000, nowTs = Date.now();
+      return { slaHours: slaHours, leads: newLeads.filter(function (l) { return l.created_at && (nowTs - new Date(l.created_at).getTime()) > slaMs; }) };
+    });
+  }
+  // Start of today in Cairo as a UTC instant (Egypt has summer time, so the offset is read, not assumed).
+  function cairoDayStartIso(now) {
+    now = now || new Date();
+    var parts = {}; new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(now).forEach(function (x) { parts[x.type] = x.value; });
+    var wall = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute, +parts.second), offset = wall - Math.floor(now.getTime() / 1000) * 1000;
+    return new Date(Date.UTC(+parts.year, +parts.month - 1, +parts.day) - offset).toISOString();
+  }
+
   // ============ ٣) داشبورد الإدارة ============
   function renderDashboardScreen(view, container) {
     var d = state.dashboard;
@@ -474,17 +493,11 @@
     var body = document.getElementById("ld-dash-body");
     Promise.all([
       window.SSMPDDb.getLeadsStats({ from: d.from, to: d.to }),
-      window.SSMPDDb.listLeads({ status: "new", page_size: 50 }),
-      window.SSMPDDb.getAppSettings().catch(function () { return null; })
+      loadOverdueLeads()
     ]).then(function (results) {
       var res = results[0];
-      var newLeads = (results[1] && results[1].leads) || [];
-      var slaHours = (results[2] && results[2].leads_sla_hours) || 24;
-      var slaMs = slaHours * 60 * 60 * 1000;
-      var nowTs = Date.now();
-      var overdueLeads = newLeads.filter(function (l) {
-        return l.created_at && (nowTs - new Date(l.created_at).getTime()) > slaMs;
-      });
+      var slaHours = results[1].slaHours;
+      var overdueLeads = results[1].leads;
 
       var html = '<div style="text-align:left;margin-bottom:10px;">' +
         '<button class="btn ghost sm" id="ld-export-xlsx">⬇ تصدير إكسيل</button> ' +
@@ -701,19 +714,80 @@
       }
       view.querySelectorAll('[data-registrar]').forEach(function (cell) { cell.textContent = registrarName(cell.getAttribute('data-registrar'), cell.getAttribute('data-source')); });
       var period = s.dateFrom || s.dateTo ? 'الفترة ' + (s.dateFrom || 'البداية') + ' — ' + (s.dateTo || 'اليوم') : 'كل الفترات';
-      var html = "<div style=\"display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px;\"><div><h3 style=\"margin:0;\"> <!--ssmpd-i18n:%D8%AA%D8%B3%D8%AC%D9%8A%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->تسجيل الليدز حسب الموظف</h3><p style=\"font-size:12px;color:var(--c-muted);margin:4px 0;\">" + escapeHtml(period) + ' · إجمالي التسجيلات ' + fmtNum(stats.total) + "</p></div><button class=\"btn ghost sm\" id=\"ar-refresh-stats\"> <!--ssmpd-i18n:%D8%AA%D8%AD%D8%AF%D9%8A%D8%AB-->تحديث</button></div>";
-      html += '<p style="font-size:12px;color:var(--c-muted);">كل ليد يُحسب مرة واحدة لمسجله، سواء إدخال يدوي أو رفع إكسيل. المؤشرات تشمل كل الحالات؛ فلتر الموظف والبحث يغيّران القائمة فقط.</p>';
-      if (!stats.employees.length) html += '<p>لا توجد تسجيلات في هذه الفترة.</p>';
+      // Owner 2026-11-24 («طبقه», mockup docs/ui-references/mockups/leads-archive-tiles.html): the staff table became one tile; three more tiles
+      // (new today / open / urgent follow-up) sit next to it, and every tile opens its details in a popup.
+      var L = function (ar) { return window.SSMPDI18n && window.SSMPDI18n.textHtml ? window.SSMPDI18n.textHtml(ar) : escapeHtml(ar); };
+      var empTable;
+      if (!stats.employees.length) empTable = '<p>لا توجد تسجيلات في هذه الفترة.</p>';
       else {
-        html += "<div style=\"overflow-x:auto;\"><table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->الموظف</th><th>الليدز المسجلة</th><th>نسبته من الإجمالي</th><th>آخر تسجيل</th><th></th></tr></thead><tbody>";
+        empTable = '<p style="font-size:12px;color:var(--c-muted);margin-top:0;">كل ليد يُحسب مرة واحدة لمسجله، سواء إدخال يدوي أو رفع إكسيل. المؤشرات تشمل كل الحالات؛ فلتر الموظف والبحث يغيّران القائمة فقط.</p>';
+        empTable += "<div style=\"overflow-x:auto;\"><table class=\"simple\"><thead><tr><th>" + L('الموظف') + "</th><th>الليدز المسجلة</th><th>نسبته من الإجمالي</th><th>آخر تسجيل</th><th></th></tr></thead><tbody>";
         stats.employees.forEach(function (e) {
-          html += '<tr><td>' + escapeHtml(e.employee_name) + (e.employee_id && !e.active ? '<small style="display:block;color:var(--c-muted);">حساب غير نشط</small>' : '') + '</td><td>' + fmtNum(e.count) + '</td><td style="min-width:130px;">' + e.percentage.toFixed(1) + '%<div style="height:4px;background:var(--c-border);border-radius:4px;margin-top:5px;"><div style="height:4px;background:var(--c-primary,#0F369D);border-radius:4px;width:' + Math.min(100, e.percentage) + '%;"></div></div></td><td style="font-size:11px;">' + fmtDate(e.last_registered_at) + '</td><td><button class="btn ghost sm" data-registrar-filter="' + escapeHtml(e.employee_id || '__unrecorded__') + '">عرض الليدز</button></td></tr>';
+          empTable += '<tr><td>' + escapeHtml(e.employee_name) + (e.employee_id && !e.active ? '<small style="display:block;color:var(--c-muted);">حساب غير نشط</small>' : '') + '</td><td>' + fmtNum(e.count) + '</td><td style="min-width:130px;">' + e.percentage.toFixed(1) + '%<div style="height:5px;background:var(--c-border);border-radius:9px;margin-top:4px;"><div style="height:100%;width:' + Math.max(1, e.percentage) + '%;background:var(--c-primary);border-radius:9px;"></div></div></td><td style="font-size:11px;color:var(--c-muted);">' + fmtDate(e.last_registered_at) + '</td><td><button class="btn ghost sm" data-registrar-filter="' + escapeHtml(e.employee_id || '__unrecorded__') + '">عرض الليدز</button></td></tr>';
         });
-        html += '</tbody></table></div>';
+        empTable += '</tbody></table></div>';
       }
+      var ICONS = {
+        emp: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.7 3.1 2.5 3.5 5.2"/></svg>',
+        today: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M12 13v4M10 15h4"/></svg>',
+        open: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+        urgent: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/></svg>'
+      };
+      var tile = function (k, value, label) { return '<button type="button" class="la-tile la-' + k + '" data-la-tile="' + k + '"><i>' + ICONS[k] + '</i><span class="la-txt"><b data-la-count="' + k + '">' + value + '</b><span>' + L(label) + '</span></span><em aria-hidden="true">‹</em></button>'; };
+      var html = '<div class="la-head"><div><h3 style="margin:0;">' + L('ملخص الليدز') + '</h3><p style="font-size:12px;color:var(--c-muted);margin:4px 0 0;">' + escapeHtml(period) + ' · دوس على أي مربع يفتح التفاصيل</p></div><button class="btn ghost sm" id="ar-refresh-stats">' + L('تحديث') + '</button></div>' +
+        '<div class="la-tiles">' + tile('emp', fmtNum(stats.total), 'تسجيل الليدز حسب الموظف') + tile('today', '…', 'ليدز جديدة النهارده') + tile('open', '…', 'ليدز مفتوحة') + tile('urgent', '…', 'محتاجة متابعة عاجلة') + '</div>';
       panel.innerHTML = html;
       panel.querySelector('#ar-refresh-stats').onclick = function () { renderArchiveScreen(view, container, true); };
-      panel.querySelectorAll('[data-registrar-filter]').forEach(function (button) { button.onclick = function () { s.bookedBy = button.getAttribute('data-registrar-filter'); s.search = ''; s.status = ''; s.page = 1; renderArchiveScreen(view, container); }; });
+
+      // live figures — same sources as «داشبورد الإدارة»
+      var live = { today: null, open: null, urgent: null };
+      var setCount = function (k, v) { var b = panel.querySelector('[data-la-count="' + k + '"]'); if (b) b.textContent = v; };
+      window.SSMPDDb.listLeads({ date_from: cairoDayStartIso(), page_size: 50 }).then(function (r) { live.today = r || { leads: [], total: 0 }; setCount('today', fmtNum(live.today.total || 0)); }).catch(function () { setCount('today', '—'); });
+      window.SSMPDDb.getLeadsStats({}).then(function (r) { live.open = (r && r.open) || 0; setCount('open', fmtNum(live.open)); }).catch(function () { setCount('open', '—'); });
+      loadOverdueLeads().then(function (r) { live.urgent = r; setCount('urgent', fmtNum(r.leads.length)); }).catch(function () { setCount('urgent', '—'); });
+
+      var leadRows = function (list, late) {
+        if (!list.length) return '<p class="la-empty">مفيش ليدز هنا دلوقتي.</p>';
+        return '<div class="la-list">' + list.map(function (l) {
+          var hours = late && l.created_at ? Math.floor((Date.now() - new Date(l.created_at).getTime()) / 3600000) : 0;
+          return '<div class="la-row"><div class="la-nm"><b>' + nameHtml(l) + '</b><small><span dir="ltr">' + escapeHtml(l.phone_raw || l.phone_normalized || '—') + '</span> · ' + fmtDate(l.created_at) + '</small></div>' +
+            (late ? '<span class="status-pill revision">متأخر ' + hours + ' س</span>' : '<span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || 'draft') + '">' + (STATUS_LABELS[l.current_status] || escapeHtml(l.current_status)) + '</span>') +
+            '<button type="button" class="btn ghost sm" data-la-open="' + escapeHtml(l.id) + '">' + L('فتح') + '</button></div>';
+        }).join('') + '</div>';
+      };
+      var more = function (shown, total) { return total > shown ? '<p class="la-empty">معروض أحدث ' + fmtNum(shown) + ' من ' + fmtNum(total) + ' — الباقي في قائمة الأرشيف تحت.</p>' : ''; };
+      var popup = function (title, sub, body) {
+        var old = document.querySelector('[data-la-popup]'); if (old) old.remove();
+        var bd = document.createElement('div'); bd.className = 'modal-backdrop'; bd.setAttribute('data-la-popup', '1');
+        bd.innerHTML = '<div class="modal la-pop" role="dialog" aria-modal="true" aria-label="' + escapeHtml(title) + '"><button type="button" class="la-x" data-la-close aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button><header class="la-ph"><h3>' + escapeHtml(title) + '</h3><small>' + escapeHtml(sub) + '</small></header><div data-la-body>' + body + '</div></div>';
+        document.body.appendChild(bd);
+        var close = function () { bd.remove(); document.removeEventListener('keydown', onKey); };
+        var onKey = function (e) { if (e.key === 'Escape') close(); };
+        document.addEventListener('keydown', onKey);
+        bd.onclick = function (e) {
+          if (e.target === bd || e.target.closest('[data-la-close]')) { close(); return; }
+          var o = e.target.closest('[data-la-open]');
+          if (o) { close(); openLeadModal(view, container, o.getAttribute('data-la-open'), function () { renderArchiveScreen(view, container, true); }); return; }
+          var f = e.target.closest('[data-registrar-filter]');
+          if (f) { close(); s.bookedBy = f.getAttribute('data-registrar-filter'); s.search = ''; s.status = ''; s.page = 1; renderArchiveScreen(view, container); }
+        };
+        var x = bd.querySelector('[data-la-close]'); if (x) x.focus();
+        return bd;
+      };
+      var waitMsg = '<p class="la-empty">لسه بيحمّل… جرّب تاني بعد ثانية.</p>';
+      panel.querySelectorAll('[data-la-tile]').forEach(function (b) {
+        b.onclick = function () {
+          var k = b.getAttribute('data-la-tile');
+          if (k === 'emp') { popup('تسجيل الليدز حسب الموظف', period + ' · إجمالي التسجيلات ' + fmtNum(stats.total), empTable); return; }
+          if (k === 'today') { popup('ليدز جديدة النهارده', 'اتسجلت النهارده من 12:00 ص لحد دلوقتي' + (live.today ? ' · ' + fmtNum(live.today.total || 0) : ''), live.today ? leadRows(live.today.leads || [], false) + more((live.today.leads || []).length, live.today.total || 0) : waitMsg); return; }
+          if (k === 'urgent') { popup('محتاجة متابعة عاجلة', live.urgent ? 'جديدة من غير أي رد لأكتر من ' + live.urgent.slaHours + ' ساعة · ' + fmtNum(live.urgent.leads.length) : '', live.urgent ? '<p class="la-hint">نفس قائمة التنبيه في «داشبورد الإدارة». أول محاولة تواصل بتشيل الليد من هنا تلقائياً.</p>' + leadRows(live.urgent.leads, true) : waitMsg); return; }
+          var pop = popup('ليدز مفتوحة', 'نفس رقم «داشبورد الإدارة»' + (live.open != null ? ' · ' + fmtNum(live.open) : ''), '<p class="loading">بيحمّل…</p>');
+          window.SSMPDDb.listLeads({ open_only: true, page_size: 50 }).then(function (r) {
+            var body = pop.querySelector('[data-la-body]'); if (!body) return;
+            body.innerHTML = leadRows((r && r.leads) || [], false) + more(((r && r.leads) || []).length, (r && r.total) || 0);
+          }).catch(function (e) { var body = pop.querySelector('[data-la-body]'); if (body) body.innerHTML = '<p class="err-msg">تعذر التحميل: ' + escapeHtml(e.message) + '</p>'; });
+        };
+      });
     }).catch(function (error) {
       if (!view.isConnected || view.querySelector('#ar-registration-stats') !== panel) return;
       panel.innerHTML = "<h3> <!--ssmpd-i18n:%D8%AA%D8%B3%D8%AC%D9%8A%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->تسجيل الليدز حسب الموظف</h3><p class=\"err-msg\">تعذر تحميل المؤشرات: " + escapeHtml(error.message) + '</p><button class="btn ghost sm" id="ar-refresh-stats">إعادة المحاولة</button>';
