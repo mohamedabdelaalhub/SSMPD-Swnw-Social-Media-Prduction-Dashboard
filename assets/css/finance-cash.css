@@ -127,3 +127,9 @@
 .tx-settings{border-top:1px solid #EEF1F6;padding-top:10px}.tx-settings form{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:end;margin-top:10px}.tx-settings label{display:grid;gap:4px;font-size:13px}.tx-settings .tx-note{grid-column:1/-1}
 .tx-hint{margin:4px 0 8px;font-size:12px;color:#0F369D;background:#F5F8FF;border-radius:8px;padding:6px 10px}.tx-hint:empty{display:none}
 @media (max-width:640px){.tx-kpis,.tx-settings form{grid-template-columns:1fr}.tx-kv{grid-template-columns:120px 1fr}}
+/* «تسوية فروق الخزن» (20261124190000) */
+.cs-st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}.cs-st.ok{background:#E6F4EC;color:#2F7D5C}.cs-st.wait{background:#FFF1E8;color:#F15A22}.cs-st.blue{background:#E8EEFB;color:#0F369D}
+.cs-neg{color:#D0402A;font-weight:700}.btn.btn-orange{background:#F15A22;color:#fff;border-color:#F15A22}
+.cs-facts{display:grid;grid-template-columns:120px 1fr;gap:4px 12px;font-size:13px;margin-bottom:8px}.cs-facts span:nth-child(odd){color:#5B6676}
+.cs-entry{border:1px dashed #C5CDDB;border-radius:12px;padding:10px 12px;font-size:13px;display:grid;gap:4px;background:#FBFCFE;margin:8px 0}.cs-entry div{display:flex;justify-content:space-between;gap:12px}
+.cs-warn{background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px;margin:8px 0}.cs-note{font-size:12px;color:#5B6676;margin:4px 0}
