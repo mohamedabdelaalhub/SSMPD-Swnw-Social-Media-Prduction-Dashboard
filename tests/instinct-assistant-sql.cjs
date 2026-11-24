@@ -26,8 +26,7 @@ const OWNER = U(1), GM = U(2), RECEP = U(3), DESIGN = U(4), NURSE = U(5), ACC = 
       create table public.admins(id uuid primary key, user_id uuid unique, email text not null unique, name text, role text not null,
         active boolean not null default true, has_archive_access boolean not null default false, can_delete_leads boolean not null default false,
         is_system_identity boolean not null default false,
-        constraint admins_role_check check (role in ('page_manager','designer','approver','general_manager','super_admin','reception',
-          'customer_service','nursing','accountant','financial_manager','digital_agent','some_live_only_role')));
+        constraint admins_role_check check (role = any ('{accountant,approver,customer_service,designer,digital_agent,financial_manager,general_manager,nursing,page_manager,reception,some_live_only_role,super_admin}'::text[])));
       create table public.admin_extra_roles(admin_id uuid references public.admins(id), role text,
         constraint admin_extra_roles_role_check check (role in ('reception','customer_service','designer','accountant')));
       create table public.administrative_assistant_config(id int primary key, owner_admin_id uuid);
@@ -68,7 +67,17 @@ const OWNER = U(1), GM = U(2), RECEP = U(3), DESIGN = U(4), NURSE = U(5), ACC = 
     await q("insert into public.administrative_assistant_config values (1, $1)", [OWNER]);
     await assert.rejects(() => q("insert into public.admins(id, email, role) values ($1, 'ai@x', 'ai_assistant')", [AI]), /admins_role_check/);
 
+    // the same parse on the other live forms: IN (...) works; a list that misses a role in use is refused loudly
+    for (const [form, ok] of [["role in ('page_manager','designer','approver','general_manager','super_admin','reception','customer_service','nursing','accountant','financial_manager','digital_agent','some_live_only_role')", true],
+                              ["role = any (array['reception'::text, 'super_admin'::text])", false]]) {
+      await db.exec('begin'); await db.exec(`alter table public.admins drop constraint admins_role_check; alter table public.admins add constraint admins_role_check check (${form}) not valid`);
+      if (ok) { await db.exec(MIG.replace(/^begin;$/m, '').replace(/^commit;$/m, ''));
+        assert.match((await one("select pg_get_constraintdef(oid) d from pg_constraint where conname = 'admins_role_check'")).d, /accountant.*ai_assistant.*some_live_only_role.*super_admin/); }
+      else await assert.rejects(() => db.exec(MIG.replace(/^begin;$/m, '').replace(/^commit;$/m, '')), /admins_role_check parse failed/);
+      await db.exec('rollback');
+    }
     await db.exec(MIG);
+    assert.match((await one("select pg_get_constraintdef(oid) d from pg_constraint where conname = 'admins_role_check'")).d, /accountant.*ai_assistant.*super_admin/, 'array-literal form (live) keeps every role');
     await assert.rejects(() => db.exec(MIG), /تم تطبيق هذا الملف من قبل/); await db.exec('rollback');
 
     // role check: live-only role kept, ai_assistant accepted; never an extra role, never an access flag

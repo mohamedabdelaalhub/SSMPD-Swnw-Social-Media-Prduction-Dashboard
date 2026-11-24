@@ -42,18 +42,28 @@ create table public.instinct_saved_defs(name text primary key, def text not null
 alter table public.instinct_saved_defs enable row level security;
 revoke all on public.instinct_saved_defs from public, anon, authenticated;
 
--- 1. role check (rebuilt from the live list + ai_assistant) ---------------------------------------------------------------
+-- 1. role check (rebuilt from the live list + ai_assistant). The live definition can be either form:
+--    CHECK (role IN ('a', 'b', …)) / role = ANY (ARRAY['a'::text, …])  or  role = ANY ('{a,b,…}'::text[]) (20261120290000).
+--    Every quoted literal is read, array literals are split, and the result must contain every role in use today.
 do $$
-declare d text; vals text[];
+declare d text; vals text[]; missing text;
 begin
   select pg_get_constraintdef(oid) into d from pg_constraint where conname = 'admins_role_check' and conrelid = 'public.admins'::regclass;
   if d is null then raise exception 'admins_role_check not found'; end if;
   insert into public.instinct_saved_defs(name, def) values ('constraint:public.admins:admins_role_check', d);
-  select array_agg(distinct m[1] order by m[1]) into vals from regexp_matches(d, '''([a-z_]+)''', 'g') m;
-  if not ('reception' = any(vals) and 'super_admin' = any(vals)) then raise exception 'unexpected admins_role_check definition'; end if;
+  select coalesce(array_agg(distinct v order by v), '{}') into vals
+    from (select btrim(x, ' "') v
+            from regexp_matches(d, '''([^'']+)''', 'g') m
+            cross join lateral unnest(string_to_array(btrim(m[1], '{}'), ',')) x) q
+   where v ~ '^[a-z_]+$';
+  select string_agg(distinct r.role, ', ') into missing from public.admins r where not (r.role = any(vals));
+  if coalesce(cardinality(vals), 0) < 10 or missing is not null or not ('reception' = any(vals)) or not ('super_admin' = any(vals)) then
+    raise exception 'admins_role_check parse failed (got %, missing %): %', vals, missing, d;
+  end if;
   vals := array(select distinct x from unnest(vals || array['ai_assistant']) x order by 1);
   alter table public.admins drop constraint admins_role_check;
   execute format('alter table public.admins add constraint admins_role_check check (role = any (%L::text[]))', vals);
+  raise notice 'admins_role_check: % roles', cardinality(vals);
 end $$;
 
 -- Instinct is a program: no access flag and no extra role, ever.
