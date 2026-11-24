@@ -82,7 +82,9 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
       // Booking flow first (state per conversation); general info questions fall back to decideReply.
       const { data: st } = await db.from("messenger_flow_state").select("*").eq("conversation_id", conv.id).maybeSingle();
       const hist = msgs.slice(Math.max(0, lastPage - 3), lastPage + 1).map((m: any) => `${selfIds.has(m.from?.id) ? "الصفحة" : "العميل"}: ${m.message || ""}`);
-      let decision = await decideReply({ brand, channel: "message", text: waitingText, history: hist, clinicInfo: await clinicInfo() });
+      let decision: any;
+      try { decision = await decideReply({ brand, channel: "message", text: waitingText, history: hist, clinicInfo: await clinicInfo() }); }
+      catch (e) { decision = { ok: false, error: `decideReply threw: ${String((e as any)?.message || e).slice(0, 200)}` }; }
       if (!decision.ok) {
         // Don't stop the whole inbox for one failing conversation: record why and move on.
         report.errors.push(`${brand} message reply: ${decision.error}`);

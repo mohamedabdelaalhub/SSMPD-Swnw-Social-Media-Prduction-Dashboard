@@ -249,7 +249,7 @@ async function postContext(db: any, c: any): Promise<string> {
 async function suggestReply(db: any, id: string): Promise<{ ok: boolean; text?: string; error?: string }> {
   const { data: c } = await db.from("social_comments").select("*").eq("id", id).maybeSingle();
   if (!c || c.author_is_page || ["replied", "sending", "approved"].includes(c.status)) return { ok: false, error: "التعليق غير متاح" };
-  const d = await decideReply({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: await clinicInfo() });
+  const d = await safeDecide({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: await clinicInfo() });
   if (!d.ok) return { ok: false, error: d.error };
   if (!d.reply) return { ok: false, error: "التعليق ده شكله سبام — مفيش رد مناسب" };
   await db.from("social_comments").update({
@@ -278,7 +278,7 @@ async function autopilotComments(db: any, report: any) {
   const info = await clinicInfo();
   let consecutive = 0, lastError = "";
   for (const c of data || []) {
-    const d = await decideReply({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: info });
+    const d = await safeDecide({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: info });
     const now = new Date().toISOString();
     if (!d.ok) {
       // One bad comment must not block the queue: record why, skip it, try the next. 3 failures in a row = real outage.
@@ -317,6 +317,14 @@ async function autoSuggest(db: any, report: any) {
   }
 }
 
+// One stage throwing must not skip the stages after it (a thrown error used to abort the whole run silently).
+async function stage(report: any, name: string, fn: () => Promise<unknown>) {
+  try { await fn(); } catch (e) { report.errors.push(`${name} threw: ${String((e as any)?.message || e).slice(0, 200)}`); }
+}
+// decideReply wrapped so a thrown error (network, bad JSON) is a normal failure we can record.
+async function safeDecide(input: Parameters<typeof decideReply>[0]) {
+  try { return await decideReply(input); } catch (e) { return { ok: false as const, error: `decideReply threw: ${String((e as any)?.message || e).slice(0, 200)}` }; }
+}
 async function runSync(db: any, report: any) {
   const cutoff = new Date(Date.now() - MAX_POST_AGE_DAYS * 864e5).toISOString();
   const { data: jobs, error } = await db.from("meta_publish_jobs")
@@ -330,13 +338,13 @@ async function runSync(db: any, report: any) {
   const auto = await autopilotSettings(db);
   for (const [brand, list] of Object.entries(byBrand)) {
     const cfg = (cfgs || []).find((c: any) => c.brand === brand);
-    await syncBrand(db, brand, cfg, list, report);
+    await stage(report, `${brand} syncBrand`, () => syncBrand(db, brand, cfg, list, report));
     const token = pageToken(brand);
-    if (token) await syncMessages(db, brand, cfg, token, report, auto.messages);
+    if (token) await stage(report, `${brand} syncMessages`, () => syncMessages(db, brand, cfg, token, report, auto.messages));
   }
-  await autoReply(db, report);
-  if (auto.comments) await autopilotComments(db, report);
-  await sendApproved(db, report);
+  await stage(report, "autoReply", () => autoReply(db, report));
+  if (auto.comments) await stage(report, "autopilotComments", () => autopilotComments(db, report));
+  await stage(report, "sendApproved", () => sendApproved(db, report));
 }
 
 async function sendApproved(db: any, report: any, onlyId?: string) {
@@ -427,6 +435,7 @@ Deno.serve(async (req) => {
 
   const report = { seen: 0, sent: 0, errors: [] as string[] };
   await runSync(db, report);
-  if (!(await autopilotSettings(db)).comments) await autoSuggest(db, report);
+  if (!(await autopilotSettings(db)).comments) await stage(report, "autoSuggest", () => autoSuggest(db, report));
+  if (report.errors.length) console.log("meta-comments run errors:", JSON.stringify(report.errors.slice(0, 20))); // visible in function logs
   return reply({ ok: true, ...report });
 });
