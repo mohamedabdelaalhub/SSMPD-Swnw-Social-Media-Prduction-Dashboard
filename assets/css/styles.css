@@ -848,3 +848,6 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .po-note{margin-top:6px}
 .po-hint{display:block;margin-top:4px;color:#D0402A}
 .po-tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11px;background:#E8EEFB;color:#0F369D;margin-inline-start:6px;vertical-align:middle}
+/* «تسليم» choice (owner 2026-11-24): الخزينة الرئيسية / زميل */
+.peer-choice{display:grid;gap:4px;margin:6px 0 10px}.peer-choice .btn{width:100%;justify-content:center}.peer-choice small{color:#5b6577;font-size:12px;line-height:1.6;margin:0 2px 6px}
+.peer-choice .btn[disabled]{opacity:.55;cursor:not-allowed}
