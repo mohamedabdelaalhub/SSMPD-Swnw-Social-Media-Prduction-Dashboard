@@ -41,7 +41,7 @@ function pricing(onDone){var st={rows:[],q:'',kind:''};
  call('inventory_pricing_list').then(function(rows){st.rows=rows||[];draw();}).catch(function(x){toast((x&&x.message)||'تعذر فتح التسعير','error');});}
 
 /* ---------- 2) month-end supplier discount + medicines report ---------- */
-function discount(suppliers){var st={supplier:'',month:thisMonth(),pv:null,list:[],token:uuid(),busy:false};
+function discount(suppliers,rights){rights=rights||{};var st={supplier:'',month:thisMonth(),pv:null,list:[],token:uuid(),busy:false};
  function html(){var pv=st.pv;
   return '<div class="mdd" data-mdd><div class="mdd-form"><label>المورد<select name="supplier"><option value="">اختار المورد</option>'+(suppliers||[]).map(function(s){return '<option value="'+esc(s.id)+'"'+(st.supplier===s.id?' selected':'')+'>'+esc(s.name)+'</option>';}).join('')+'</select></label>'+
    '<label>الشهر<input name="month" type="month" value="'+esc(st.month)+'" max="'+thisMonth()+'"></label>'+
@@ -49,10 +49,10 @@ function discount(suppliers){var st={supplier:'',month:thisMonth(),pv:null,list:
    '<label class="mdd-wide">رابط صورة إشعار الخصم (اختياري)<input name="document_url" type="url" dir="ltr"></label><label class="mdd-wide">ملاحظة<input name="note" maxlength="500"></label></div>'+
    (pv?'<div class="mdp-tw"><table class="mdp-t"><thead><tr><th>فاتورة المورد</th><th>التاريخ</th><th>إجمالي الفاتورة</th><th>منها أدوية ناقصة (مستبعدة)</th><th>عليها الخصم</th></tr></thead><tbody>'+
      (pv.invoices.length?pv.invoices.map(function(i){return '<tr><td>'+esc(i.reference)+'</td><td dir="ltr">'+esc(i.invoice_date)+'</td><td dir="ltr">'+money(i.total)+'</td><td dir="ltr">'+money(i.excluded)+'</td><td dir="ltr">'+money(i.basis)+'</td></tr>';}).join(''):'<tr><td colspan="5">مفيش فواتير للمورد ده في الشهر ده.</td></tr>')+'</tbody></table></div>'+
-     '<div class="mdd-foot"><span>إجمالي عليه الخصم <b dir="ltr">'+money(pv.basis)+' ج</b> — الخصم <b dir="ltr" data-mdd-amt>—</b></span>'+(pv.existing?'<span class="mdd-chip">'+esc(STATUS[pv.existing.status])+' — '+money(pv.existing.amount)+' ج</span>':'<button type="button" class="btn btn-primary" data-mdd-create>إرسال للمراجعة</button>')+'</div>'
+     '<div class="mdd-foot"><span>إجمالي عليه الخصم <b dir="ltr">'+money(pv.basis)+' ج</b> — الخصم <b dir="ltr" data-mdd-amt>—</b></span>'+(pv.existing?'<span class="mdd-chip">'+esc(STATUS[pv.existing.status])+' — '+money(pv.existing.amount)+' ج</span>':(rights.can_create?'<button type="button" class="btn btn-primary" data-mdd-create>إرسال للمراجعة</button>':'<span class="mdd-chip">التسجيل للمحاسب</span>'))+'</div>'
     :'<p class="mdp-note">اختار المورد والشهر عشان تظهر فواتيره.</p>')+
    '<h4>خصومات الشهر</h4><div class="mdp-tw"><table class="mdp-t"><thead><tr><th>المورد</th><th>عليها الخصم</th><th>الخصم</th><th>سجّله</th><th>الحالة</th><th></th></tr></thead><tbody>'+
-   (st.list.length?st.list.map(function(x){return '<tr><td>'+esc(x.supplier)+'</td><td dir="ltr">'+money(x.basis)+'</td><td dir="ltr">'+money(x.amount)+(x.percent?' ('+Number(x.percent)+'%)':'')+'</td><td>'+esc(x.created_by_name)+'</td><td>'+esc(STATUS[x.status])+(x.review_note?' — '+esc(x.review_note):'')+'</td><td>'+(x.status==='pending'?'<button type="button" class="btn" data-mdd-ok="'+esc(x.id)+'">اعتماد</button> <button type="button" class="btn" data-mdd-no="'+esc(x.id)+'">رفض</button>':'')+'</td></tr>';}).join(''):'<tr><td colspan="6">مفيش خصومات متسجلة للشهر ده.</td></tr>')+'</tbody></table></div>'+
+   (st.list.length?st.list.map(function(x){return '<tr><td>'+esc(x.supplier)+'</td><td dir="ltr">'+money(x.basis)+'</td><td dir="ltr">'+money(x.amount)+(x.percent?' ('+Number(x.percent)+'%)':'')+'</td><td>'+esc(x.created_by_name)+'</td><td>'+esc(STATUS[x.status])+(x.review_note?' — '+esc(x.review_note):'')+'</td><td>'+(x.status==='pending'&&rights.can_review&&x.created_by!==rights.me?'<button type="button" class="btn" data-mdd-ok="'+esc(x.id)+'">اعتماد</button> <button type="button" class="btn" data-mdd-no="'+esc(x.id)+'">رفض</button>':'')+'</td></tr>';}).join(''):'<tr><td colspan="6">مفيش خصومات متسجلة للشهر ده.</td></tr>')+'</tbody></table></div>'+
    '<p class="mdp-note">بعد الاعتماد: حساب المورد بيقل بقيمة الخصم، والخصم بيتسجل «خصم مشتريات مكتسب» كإيراد للشهر. أسعار شراء الأدوية مش بتتغير. الاعتماد للمدير المالي، ومن شخص غير اللي سجّل.</p></div>';}
  function amt(el){var b=st.pv&&Number(st.pv.basis),p=Number(el.querySelector('[name="percent"]').value),a=Number(el.querySelector('[name="amount"]').value),out=el.querySelector('[data-mdd-amt]');if(!out)return;out.textContent=p>0?money(b*p/100)+' ج':a>0?money(a)+' ج':'—';}
  function load(){var jobs=[call('clinic_finance_supplier_discount',{p_action:'list',p_payload:{month:st.month+'-01'}}).then(function(l){st.list=l||[];})];
@@ -93,5 +93,5 @@ w.SSMPDMedicines={pricing:pricing,discount:discount,report:report};
 var prior=w.SSMPDFinanceControls;
 if(prior){w.SSMPDFinanceControls={panel:function(tab,dd,h){var out=prior.panel(tab,dd,h);if(tab!=='suppliers')return out;
   return '<div class="fc-actions">'+h.btn('month-discount','','خصم آخر الشهر')+h.btn('medicines-report','','تقرير الأدوية')+'</div>'+out;},
- act:function(action,id,dd,h){if(action==='month-discount'){discount(dd.suppliers||[]);return true;}if(action==='medicines-report'){report();return true;}return prior.act(action,id,dd,h);},due:prior.due};}
+ act:function(action,id,dd,h){if(action==='month-discount'){discount(dd.suppliers||[],{can_create:!!dd.can_create,can_review:!!dd.can_review,me:dd.me});return true;}if(action==='medicines-report'){report();return true;}return prior.act(action,id,dd,h);},due:prior.due};}
 })(window,document);
