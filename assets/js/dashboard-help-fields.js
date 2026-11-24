@@ -16205,6 +16205,48 @@
       "reviewed": true
     },
     {
+      "title": "يتباع من (اختياري)",
+      "labels": [
+        "يتباع من (اختياري)"
+      ],
+      "text": "أول يوم الباكج ده يظهر في «تعاقد على باكج». فاضي = من دلوقتي.",
+      "article": "package-offers",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "يتباع لحد (اختياري)",
+      "labels": [
+        "يتباع لحد (اختياري)"
+      ],
+      "text": "آخر يوم العرض. بعده الباكج مش بيتباع، واللي اتباع بيفضل ساري مدته.",
+      "article": "package-offers",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "أقل دفعة أولى % من قيمة الباكج",
+      "labels": [
+        "أقل دفعة أولى % من قيمة الباكج"
+      ],
+      "text": "المريض لازم يدفع النسبة دي قبل أول جلسة، وكل دفعة بعدها متقلش عنها أو عن الباقي على الزيارات اللي فاضلة. فاضي = مفيش حد.",
+      "article": "package-offers",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "رقم الزيارة",
       "labels": [
         "رقم الزيارة"
@@ -23040,9 +23082,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1987,
-    "labels": 1448,
+    "definitions": 1990,
+    "labels": 1451,
     "files": 156,
-    "groups": 1561
+    "groups": 1564
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

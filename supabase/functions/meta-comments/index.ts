@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decideReply, clinicInfo, withContact } from "./ai.ts";
 import { syncMessages, sendManualMessage, suggestMessage } from "./messages.ts";
+import { readFbThreads } from "./fb-comments.ts";
 import { isWhatsApp, queueText, queueTemplate, queueReturn, listTemplates, outboxStatus } from "./whatsapp.ts";
 
 // Meta Comments & Messages — inbox + autopilot replies.
@@ -108,15 +109,12 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
   const pageReplied = new Set<string>();
   for (const job of jobs) {
     if (job.facebook_post_id) {
-      const r = await gget(`${job.facebook_post_id}/comments`, {
-        fields: "id,message,from{id,name},created_time,permalink_url,comments.limit(50){id,message,from{id,name},created_time,permalink_url}",
-        filter: "toplevel", order: "reverse_chronological", limit: "50", access_token: token
-      });
-      if (!r.ok) { report.errors.push(`${brand} facebook: ${r.error}`); failed.add(job.facebook_post_id); }
-      else for (const c of r.data.data || []) {
+      const t = await readFbThreads(gget, job.facebook_post_id, token, report.errors, brand);
+      if (!t.ok) failed.add(job.facebook_post_id);
+      else for (const { comment: c, replies } of t.threads) {
         const isPage = c.from?.id === cfg?.facebook_page_id;
         rows.push(fbRow(brand, job, c, null, isPage));
-        for (const s of c.comments?.data || []) {
+        for (const s of replies) {
           const sIsPage = s.from?.id === cfg?.facebook_page_id;
           if (sIsPage) pageReplied.add(`facebook:${c.id}`);
           rows.push(fbRow(brand, job, s, c.id, sIsPage));
@@ -251,13 +249,23 @@ async function postContext(db: any, c: any): Promise<string> {
 async function suggestReply(db: any, id: string): Promise<{ ok: boolean; text?: string; error?: string }> {
   const { data: c } = await db.from("social_comments").select("*").eq("id", id).maybeSingle();
   if (!c || c.author_is_page || ["replied", "sending", "approved"].includes(c.status)) return { ok: false, error: "التعليق غير متاح" };
-  const d = await decideReply({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: await clinicInfo() });
+  const d = await safeDecide({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: await clinicInfo() });
   if (!d.ok) return { ok: false, error: d.error };
   if (!d.reply) return { ok: false, error: "التعليق ده شكله سبام — مفيش رد مناسب" };
   await db.from("social_comments").update({
     suggested_reply: d.reply, category: d.category, status: c.status === "new" || c.status === "failed" ? "drafted" : c.status, updated_at: new Date().toISOString()
   }).eq("id", id).in("status", ["new", "drafted", "failed"]);
   return { ok: true, text: d.reply };
+}
+// Hub alert (dashboard notification to super admins) at most once every 2 hours, so a failing AI call can't stay silent.
+async function raiseAiAlert(db: any, text: string) {
+  try {
+    const { data } = await db.from("social_settings").select("value").eq("key", "ai_alert").maybeSingle();
+    const last = Date.parse(data?.value?.at || "") || 0;
+    if (Date.now() - last < 2 * 3600e3) return;
+    await db.rpc("messenger_flow_notify", { p_message: text, p_role: "super_admin" });
+    await db.from("social_settings").upsert({ key: "ai_alert", value: { at: new Date().toISOString(), text }, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  } catch { /* alerting must never break the run */ }
 }
 // Autopilot: answer waiting comments directly (owner's decision). Complaints/emergencies get the fixed
 // templates and a red alert in the dashboard; spam is ignored.
@@ -268,10 +276,19 @@ async function autopilotComments(db: any, report: any) {
     .or(`auto_checked.eq.true,commented_at.lt.${new Date(Date.now() - 7 * 864e5).toISOString()}`)
     .order("commented_at", { ascending: false }).limit(8);
   const info = await clinicInfo();
+  let consecutive = 0, lastError = "";
   for (const c of data || []) {
-    const d = await decideReply({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: info });
+    const d = await safeDecide({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: info });
     const now = new Date().toISOString();
-    if (!d.ok) { report.errors.push(`autopilot ${c.id}: ${d.error}`); break; }
+    if (!d.ok) {
+      // One bad comment must not block the queue: record why, skip it, try the next. 3 failures in a row = real outage.
+      report.errors.push(`autopilot ${c.id}: ${d.error}`);
+      lastError = String(d.error || "decideReply failed");
+      await db.from("social_comments").update({ last_error: lastError.slice(0, 300), updated_at: now }).eq("id", c.id).in("status", ["new", "drafted"]);
+      if (++consecutive >= 3) { await raiseAiAlert(db, `الرد الآلي على التعليقات واقف: ${lastError}`.slice(0, 280)); break; }
+      continue;
+    }
+    consecutive = 0;
     if (d.category === "spam" || !d.reply) {
       await db.from("social_comments").update({ status: "ignored", category: d.category, updated_at: now }).eq("id", c.id).in("status", ["new", "drafted"]);
       continue;
@@ -300,6 +317,14 @@ async function autoSuggest(db: any, report: any) {
   }
 }
 
+// One stage throwing must not skip the stages after it (a thrown error used to abort the whole run silently).
+async function stage(report: any, name: string, fn: () => Promise<unknown>) {
+  try { await fn(); } catch (e) { report.errors.push(`${name} threw: ${String((e as any)?.message || e).slice(0, 200)}`); }
+}
+// decideReply wrapped so a thrown error (network, bad JSON) is a normal failure we can record.
+async function safeDecide(input: Parameters<typeof decideReply>[0]) {
+  try { return await decideReply(input); } catch (e) { return { ok: false as const, error: `decideReply threw: ${String((e as any)?.message || e).slice(0, 200)}` }; }
+}
 async function runSync(db: any, report: any) {
   const cutoff = new Date(Date.now() - MAX_POST_AGE_DAYS * 864e5).toISOString();
   const { data: jobs, error } = await db.from("meta_publish_jobs")
@@ -313,13 +338,13 @@ async function runSync(db: any, report: any) {
   const auto = await autopilotSettings(db);
   for (const [brand, list] of Object.entries(byBrand)) {
     const cfg = (cfgs || []).find((c: any) => c.brand === brand);
-    await syncBrand(db, brand, cfg, list, report);
+    await stage(report, `${brand} syncBrand`, () => syncBrand(db, brand, cfg, list, report));
     const token = pageToken(brand);
-    if (token) await syncMessages(db, brand, cfg, token, report, auto.messages);
+    if (token) await stage(report, `${brand} syncMessages`, () => syncMessages(db, brand, cfg, token, report, auto.messages));
   }
-  await autoReply(db, report);
-  if (auto.comments) await autopilotComments(db, report);
-  await sendApproved(db, report);
+  await stage(report, "autoReply", () => autoReply(db, report));
+  if (auto.comments) await stage(report, "autopilotComments", () => autopilotComments(db, report));
+  await stage(report, "sendApproved", () => sendApproved(db, report));
 }
 
 async function sendApproved(db: any, report: any, onlyId?: string) {
@@ -410,6 +435,7 @@ Deno.serve(async (req) => {
 
   const report = { seen: 0, sent: 0, errors: [] as string[] };
   await runSync(db, report);
-  if (!(await autopilotSettings(db)).comments) await autoSuggest(db, report);
+  if (!(await autopilotSettings(db)).comments) await stage(report, "autoSuggest", () => autoSuggest(db, report));
+  if (report.errors.length) console.log("meta-comments run errors:", JSON.stringify(report.errors.slice(0, 20))); // visible in function logs
   return reply({ ok: true, ...report });
 });

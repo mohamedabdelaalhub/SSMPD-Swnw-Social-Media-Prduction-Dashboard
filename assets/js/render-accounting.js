@@ -657,7 +657,8 @@
       '<h3>' + (pkg.id ? "تعديل باكج" : "إضافة باكج") + '</h3>' +
       '<div class="field"><label>اسم الباكج</label><input id="pk-name" value="' + (pkg.name || "") + '"></div>' +
       '<div class="field"><label>نسبة الربح % (على إجمالي الباكج)</label><input id="pk-margin" type="number" step="any" value="' + (pkg.profit_margin_percent != null ? pkg.profit_margin_percent : "") + '"></div>' +
-      '<fieldset><legend>زيارات الباكج</legend><label><input id="pk-booking" type="checkbox" '+(pkg.booking_enabled?'checked':'')+'> متاح للتعاقد من الحجز</label><label><input id="pk-variable" type="checkbox" '+(pkg.booking_variable_visits?'checked':'')+'> عدد الزيارات تحدده المريضة عند التعاقد (الباكج يمثّل زيارة واحدة والسعر للزيارة)</label><label><input id="pk-conditional" type="checkbox" '+(pkg.conditional_offer?'checked':'')+'> عرض مشروط — الخصم بشرط إكمال الباكدج (عند الإلغاء الجلسات المستخدمة تتحسب بسعرها المنفرد، والشرط بيتطبع في عقد المريض)</label><div class="field"><label>عدد الزيارات</label><input id="pk-visits" type="number" min="1" max="365" value="'+esc(pkg.booking_visits||1)+'"></div><div class="field"><label>الصلاحية بالأيام</label><input id="pk-validity" type="number" min="1" max="3650" value="'+esc(pkg.booking_validity_days||30)+'"></div><div class="field"><label>شروط التعاقد والمشمولات</label><textarea id="pk-terms">'+esc(pkg.booking_terms)+'</textarea></div></fieldset>' +
+      '<fieldset><legend>زيارات الباكج</legend><label><input id="pk-booking" type="checkbox" '+(pkg.booking_enabled?'checked':'')+'> متاح للتعاقد من الحجز</label><label><input id="pk-variable" type="checkbox" '+(pkg.booking_variable_visits?'checked':'')+'> عدد الزيارات تحدده المريضة عند التعاقد (الباكج يمثّل زيارة واحدة والسعر للزيارة)</label><label><input id="pk-conditional" type="checkbox" '+(pkg.conditional_offer?'checked':'')+'> عرض مشروط — الخصم بشرط إكمال الباكدج (عند الإلغاء الجلسات المستخدمة تتحسب بسعرها المنفرد، والشرط بيتطبع في عقد المريض)</label><div class="field"><label>عدد الزيارات</label><input id="pk-visits" type="number" min="1" max="365" value="'+esc(pkg.booking_visits||1)+'"></div><div class="field"><label>الصلاحية بالأيام</label><input id="pk-validity" type="number" min="1" max="3650" value="'+esc(pkg.booking_validity_days||(pkg.id?30:120))+'"> <button class="btn" type="button" id="pk-4m">4 شهور (120 يوم)</button></div><div class="field"><label>شروط التعاقد والمشمولات</label><textarea id="pk-terms">'+esc(pkg.booking_terms)+'</textarea></div></fieldset>' +
+      '<fieldset data-pk-offer><legend>العرض ودفع الباكج</legend><div class="field"><label>يتباع من (اختياري)</label><input id="pk-sell-from" type="date" value="'+esc(pkg.booking_sell_from||"")+'"></div><div class="field"><label>يتباع لحد (اختياري)</label><input id="pk-sell-until" type="date" value="'+esc(pkg.booking_sell_until||"")+'"></div><div class="field"><label>أقل دفعة أولى % من قيمة الباكج</label><input id="pk-min-first" type="number" min="0" max="100" step="0.01" value="'+esc(pkg.id?(pkg.booking_min_first_percent==null?"":pkg.booking_min_first_percent):25)+'"></div><p style="font-size:12px;color:#5b6577;margin:0">بعد آخر يوم في العرض الباكج مش بيظهر في «تعاقد على باكج»، واللي اتباع بيفضل ساري مدته. المريض لازم يدفع النسبة دي قبل أول جلسة، وكل دفعة بعدها متقلش عن النسبة دي أو الباقي على الزيارات اللي فاضلة. سيبها فاضية = مفيش حد.</p></fieldset>' +
       '<h4>الخدمات المضمومة (غير محدودة)</h4>' +
       '<div id="pk-lines"></div>' +
       '<button class="btn" id="pk-add-line" type="button">+ إضافة خدمة للباكج</button>' +
@@ -703,6 +704,7 @@
       function sync() { if (variable.checked) visits.value = 1; visits.disabled = variable.checked; }
       variable.onchange = sync; sync();
     })();
+    document.getElementById("pk-4m").onclick = function () { document.getElementById("pk-validity").value = 120; };
     document.getElementById("pk-margin").oninput = updateTotals;
     renderLines();
 
@@ -721,8 +723,13 @@
         booking_variable_visits: backdrop.querySelector('#pk-variable').checked,
         conditional_offer: backdrop.querySelector('#pk-conditional').checked,
         booking_validity_days: Number(backdrop.querySelector('#pk-validity').value)||null,
-        booking_terms: backdrop.querySelector('#pk-terms').value.trim()
+        booking_terms: backdrop.querySelector('#pk-terms').value.trim(),
+        booking_sell_from: backdrop.querySelector('#pk-sell-from').value || null,
+        booking_sell_until: backdrop.querySelector('#pk-sell-until').value || null,
+        booking_min_first_percent: backdrop.querySelector('#pk-min-first').value === '' ? null : Number(backdrop.querySelector('#pk-min-first').value)
       };
+      if (patch.booking_sell_from && patch.booking_sell_until && patch.booking_sell_from > patch.booking_sell_until) { window.SSMPDToast && window.SSMPDToast.error && window.SSMPDToast.error("«يتباع لحد» لازم يكون بعد «يتباع من»"); return; }
+      if (patch.booking_min_first_percent != null && !(patch.booking_min_first_percent >= 0 && patch.booking_min_first_percent <= 100)) { window.SSMPDToast && window.SSMPDToast.error && window.SSMPDToast.error("أقل دفعة أولى بين 0 و100 ٪"); return; }
       window.SSMPDDb.savePricingPackage(patch, me && me.id).then(function () {
         backdrop.remove();
         state.loaded = false;
