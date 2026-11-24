@@ -117,6 +117,11 @@
     return on.length ? "الرد التلقائي شغال على: " + on.join(" و") + "." : "الرد التلقائي متوقف — الردود بتستنى اعتماد.";
   }
   // تنبيهات حمرا: شكاوى/طوارئ اترد عليها تلقائياً ولسه محدش من الفريق اتعامل معاها.
+  // Meta sometimes sends a placeholder instead of the profile name; show «عميل» until the server replaces it with the real name.
+  function custName(n) {
+    var t = String(n == null ? '' : n).replace(/\s+/g, ' ').trim();
+    return !t || /^(user|users|facebook user|instagram user|meta user|unknown)$/i.test(t) || /^مستخدم( (فيسبوك|انستجرام|إنستجرام))?$/.test(t) ? 'عميل' : t;
+  }
   function alertList(data) {
     var out = [];
     data.comments.forEach(function (c) { if (c.alert && !c.alert_resolved_at) out.push({ kind: "comment", id: c.id, platform: c.platform, brand: c.brand, who: c.author_name, text: c.message, reply: c.final_reply, at: c.commented_at, url: c.comment_url, category: c.category }); });
@@ -124,7 +129,7 @@
     data.messages.forEach(function (m) {
       if (!m.alert || m.alert_resolved_at || seen[m.conversation_id]) return;
       seen[m.conversation_id] = 1;
-      out.push({ kind: "message", id: m.id, platform: m.platform, brand: m.brand, who: m.sender_name, text: m.message, reply: m.reply_text, at: m.sent_at, url: m.conversation_url, category: m.category });
+      out.push({ kind: "message", id: m.id, platform: m.platform, brand: m.brand, who: custName(m.sender_name), text: m.message, reply: m.reply_text, at: m.sent_at, url: m.conversation_url, category: m.category });
     });
     return out.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
   }
@@ -160,7 +165,7 @@
     return intro + '<div class="cm-conversations">' + convs.slice(0, 80).map(function (c) {
       var cust = c.list.filter(function (m) { return !m.is_page; });
       var lastCust = cust[cust.length - 1] || c.last;
-      var contact = lastCust.sender_name || 'عميل';
+      var contact = custName(lastCust.sender_name);
       var h = '<article class="cm-card cm-conversation' + (lastCust.alert ? " sensitive" : "") + '"><header class="cm-conversation-head"><div class="cm-contact"><span class="cm-avatar" aria-hidden="true">' + esc(contact.trim().charAt(0) || '؟') + '</span><div><h3>' + esc(contact) + '</h3><span class="muted cm-last-time">' + when(c.last.sent_at) + '</span></div></div><div class="cm-meta">' +
         '<span class="cm-badge ' + c.last.platform + '">' + (c.last.platform === "facebook" ? "ماسنجر" : (PLAT[c.last.platform] || c.last.platform)) + "</span>" +
         '<span class="cm-badge">' + (BRANDS[c.last.brand] || c.last.brand) + "</span>" +
@@ -168,7 +173,7 @@
         (lastCust.category ? '<span class="cm-badge">' + (CATEGORY[lastCust.category] || lastCust.category) + "</span>" : "") +
         (c.last.conversation_url ? '<a class="cm-open" href="' + esc(c.last.conversation_url) + '" target="_blank" rel="noopener">افتح المحادثة ↗</a>' : "") + "</div></header><div class=\"cm-thread\">";
       c.list.slice(-6).forEach(function (m) {
-        h += '<div class="cm-reply cm-bubble' + (m.is_page ? " page" : "") + '"><div class="cm-bubble-meta"><b>' + esc(m.is_page ? "الصفحة" : (m.sender_name || "عميل")) + '</b> <span class="muted">' + when(m.sent_at) + "</span></div><p>" + rich(m.message) + "</p></div>";
+        h += '<div class="cm-reply cm-bubble' + (m.is_page ? " page" : "") + '"><div class="cm-bubble-meta"><b>' + esc(m.is_page ? "الصفحة" : custName(m.sender_name)) + '</b> <span class="muted">' + when(m.sent_at) + "</span></div><p>" + rich(m.message) + "</p></div>";
       });
       if (lastCust.status === "replied" && lastCust.reply_text && !c.list.some(function (m) { return m.is_page && new Date(m.sent_at) >= new Date(lastCust.sent_at); }))
         h += '<div class="cm-reply cm-bubble page"><div class="cm-bubble-meta"><b>ردنا</b> <span class="muted">' + when(lastCust.replied_at) + "</span></div><p>" + rich(lastCust.reply_text) + "</p></div>";
@@ -219,12 +224,12 @@
       var lastPageIdx = -1; c.list.forEach(function (m, i) { if (m.is_page) lastPageIdx = i; });
       var waiting = c.list.slice(lastPageIdx + 1).filter(function (m) { return !m.is_page && ["new", "failed"].indexOf(m.status) !== -1; }).length;
       var lastShown = c.list.filter(function (m) { return !sysText(m.message); }).slice(-1)[0] || c.last;
-      return { key: "m:" + c.id, kind: "message", conv: c, lastCust: lastCust, name: lastCust.sender_name || "عميل", platform: c.last.platform, brand: c.last.brand,
+      return { key: "m:" + c.id, kind: "message", conv: c, lastCust: lastCust, name: custName(lastCust.sender_name), platform: c.last.platform, brand: c.last.brand,
         pending: waiting > 0, unread: waiting, status: lastCust.status, at: c.last.sent_at, preview: (lastShown.is_page ? (c.last.platform === "whatsapp" && !lastShown.sent_by ? "البوت: " : "أنت: ") : "") + (lastShown.message || ""),
         sensitive: !!(lastCust.alert && !lastCust.alert_resolved_at), url: c.last.conversation_url,
         open24: !!lastCust.sent_at && Date.now() - new Date(lastCust.sent_at).getTime() <= WINDOW_MS,
         bot: (c.list.filter(function (m) { return m.bot_state; }).slice(-1)[0] || {}).bot_state || "",
-        search: [lastCust.sender_name].concat(c.list.map(function (m) { return m.message; })).join(" ").toLowerCase() };
+        search: [custName(lastCust.sender_name)].concat(c.list.map(function (m) { return m.message; })).join(" ").toLowerCase() };
     }).filter(function (it) {
       var q = state.q.trim().toLowerCase();
       if (q && it.search.indexOf(q) < 0) return false;

@@ -4,6 +4,7 @@
 import { decideReply, clinicInfo } from "./ai.ts";
 import { advance, serviceLabel, MESSAGES } from "./flow.mjs";
 import { reviewHandoffs } from "./review.ts";
+import { isGenericName, GENERIC_NAME_FILTER, makeNameResolver, backfillSenderNames } from "./names.ts";
 
 const GRAPH = "https://graph.facebook.com/v26.0/";
 const LEAD_NAME_PLACEHOLDER = "عميل ماسنجر";
@@ -27,6 +28,7 @@ async function gpostJson(path: string, token: string, body: unknown) {
 export async function syncMessages(db: any, brand: string, cfg: any, token: string, report: any, autopilot: boolean) {
   if (!cfg?.facebook_page_id) return;
   const pageId = cfg.facebook_page_id, igId = cfg.instagram_business_account_id;
+  const resolveName = makeNameResolver(gget, token, report, brand);
   for (const platform of ["messenger", "instagram"] as const) {
     if (platform === "instagram" && !igId) continue;
     // Instagram rejects nested messages on the conversations list ("reduce the amount of data"/timeout),
@@ -48,10 +50,19 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
     for (const conv of r.data.data || []) {
       const msgs = (conv.messages?.data || []).slice().reverse(); // oldest → newest
       if (!msgs.length) continue;
+      // Placeholder names ("User") are replaced by the profile name, read once per sender per run.
+      const names = new Map<string, string>();
+      for (const m of msgs) {
+        const sid = m.from?.id, raw = m.from?.name || m.from?.username || null;
+        if (!sid || selfIds.has(sid) || names.has(sid) || !isGenericName(raw)) continue;
+        const real = await resolveName(sid, plat as "facebook" | "instagram");
+        if (real) names.set(sid, real);
+      }
+      for (const [sid, nm] of names) await db.from("social_messages").update({ sender_name: nm }).eq("platform", plat).eq("sender_id", sid).eq("is_page", false).or(GENERIC_NAME_FILTER);
       const rows = msgs.map((m: any) => ({
         id: `${plat}:${m.id}`, platform: plat, brand, conversation_id: conv.id,
         conversation_url: conv.link ? (String(conv.link).startsWith("http") ? conv.link : `https://www.facebook.com${conv.link}`) : null,
-        sender_id: m.from?.id || null, sender_name: m.from?.name || m.from?.username || null,
+        sender_id: m.from?.id || null, sender_name: names.get(m.from?.id) || m.from?.name || m.from?.username || null,
         is_page: selfIds.has(m.from?.id), message: m.message || "", sent_at: m.created_time || null,
         status: selfIds.has(m.from?.id) ? "replied" : "new"
       }));
@@ -96,7 +107,7 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
         await db.from("social_messages").update({ status: "skipped", category: decision.category, updated_at: now }).in("id", ids);
         continue;
       }
-      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0, seed: conv.id, defaultService: brand === "sono" ? "physiotherapy" : undefined, profileName: latest.from?.name });
+      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0, seed: conv.id, defaultService: brand === "sono" ? "physiotherapy" : undefined, profileName: names.get(latest.from?.id) || latest.from?.name });
       if (flow.silent) { await db.from("social_messages").update({ status: "skipped", category: "handoff", updated_at: now }).in("id", ids); continue; }
       if (flow.passthrough) { /* thanks: keep decideReply's text, no state change */ }
       else {
@@ -154,6 +165,7 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
       }
     }
   }
+  await backfillSenderNames(db, brand, (id, p) => resolveName(id, p), 15).then((r) => { report.nameBackfill = (report.nameBackfill || 0) + r.named; }).catch((e) => report.errors.push(`${brand} name backfill: ${e?.message}`));
   await sendFlowReminders(db, brand, pageId, token, report).catch((e) => report.errors.push(`${brand} flow reminders: ${e?.message}`));
   await reviewHandoffs(db, brand, token, new Set([pageId, igId].filter(Boolean)), report).catch((e) => report.errors.push(`${brand} flow review: ${e?.message}`));
 }
