@@ -8,6 +8,8 @@ import { handle } from "./sync.ts";
 //   (none) / "event"  one WhatsApp turn -> public.social_messages (customer, bot or staff; bot_state = who answers now)
 //   "lease" / "ack"   the dashboard's queued sends (ops_private.whatsapp_outbox, migration 20261122170000)
 //   "templates"       refresh the approved template list for the dashboard picker
+//   "template_lease" / "template_ack" / "template_sync"  templates the owner asked for in the dashboard (migration 20261124230000):
+//                     lease a request, POST it to Meta with the agent's own token, ack PENDING|FAILED; sync = Meta's review statuses
 // The dashboard never calls the agent; nothing here is reachable without the secret.
 
 const SECRET = Deno.env.get("WHATSAPP_ALERT_SECRET");

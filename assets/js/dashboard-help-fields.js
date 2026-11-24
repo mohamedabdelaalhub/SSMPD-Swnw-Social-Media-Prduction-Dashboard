@@ -16530,6 +16530,19 @@
       "reviewed": true
     },
     {
+      "title": "نص القالب (بالعربي، من غير متغيرات)",
+      "labels": [
+        "نص القالب (بالعربي، من غير متغيرات)"
+      ],
+      "text": "المالك بس: اكتب نص قالب واتساب بالعربي من غير متغيرات {{ }} ومن غير بيانات مريض أو أرقام تليفون أو أرقام ملفات (الحد 1024 حرف). بعد «تقديم لميتا» الوكيل بيقدّمه وميتا بتراجعه، وبعد الموافقة بيظهر في اختيار القوالب بعد 24 ساعة.",
+      "article": "social-chat-inbox",
+      "tabs": [
+        "comments"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "دوّر باسم أو كلمة",
       "labels": [
         "دوّر باسم أو كلمة"
@@ -23082,9 +23095,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1990,
-    "labels": 1451,
+    "definitions": 1991,
+    "labels": 1452,
     "files": 156,
-    "groups": 1564
+    "groups": 1565
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
