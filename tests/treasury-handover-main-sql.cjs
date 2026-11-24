@@ -40,6 +40,12 @@ try{
  // 5. a part from Mazen via transfer_request, then a rejection shows as rejected only after an end
  await as(5);await treasury('transfer_request',{from_shift:s2,to_register:main.id,amount:200,reference:'HO-1',reason:'تسليم تحصيل للخزينة الرئيسية'});
  await as(3);v=await drawers();assert.equal(Number(v.drawers.find(d=>d.shift_id===s2).pending.amount),200);
+ // 5b. 20261123180000: options exposes the pending main handover (the «تسليم» choice disables «لزميل» then); rollback restores the wrapper
+ await db.exec('reset role');await db.exec(fs.readFileSync('supabase/migrations/20261123180000_handover_options_pending.sql','utf8'));
+ await as(5);o=await ph('options',{});assert.equal(Number(o.main_pending.amount),200);assert.equal(o.main_pending.reference,'HO-1');assert(o.main,'main still listed');
+ await as(4);{const x=await ph('options',{});assert(!x.shift||x.main_pending===null,'no pending on another shift');}
+ await db.exec('reset role');await db.exec(fs.readFileSync('supabase/rollbacks/20261123180000_handover_options_pending.rollback.sql','utf8'));
+ await as(5);o=await ph('options',{});assert.equal(o.main_pending,undefined);
  // 6. rollback restores the peer function byte for byte and removes the list
  await db.exec('reset role');await db.exec(fs.readFileSync('supabase/rollbacks/20261122010000_treasury_handover_main_target.rollback.sql','utf8'));
  assert.equal(await md5(),before);assert.equal((await owner("select to_regprocedure('public.clinic_finance_open_drawers()') r"))[0].r,null);
