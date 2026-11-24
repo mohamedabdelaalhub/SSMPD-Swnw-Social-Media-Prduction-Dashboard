@@ -31,7 +31,7 @@ const tick = (ms = 15) => new Promise(r => setTimeout(r, ms));
   const html = AB.body({ code: '1115', total: 5, rows: [], other: 0, unset: [{ id: 'P3', amount: 5, pending: 'valu', pending_mine: true }, { id: 'P4', amount: 1 }], can_propose: false, can_review: true });
   assert.ok(!/data-ab-review|data-ab-propose/.test(html), 'own pending not reviewable, no propose without create');
   // 2120 by doctor
-  const dh = AB.body({ code: '2120', total: 775, rows: [{ key: 'EMP-24', label: 'د. أحمد سمير', amount: 775 }], other: 0, unset: [] }); assert.match(dh, /د\. أحمد سمير/); assert.match(dh, /كشف حساب الطبيب/);
+  const dh = AB.body({ code: '2120', total: 775, rows: [{ key: 'EMP-24', label: 'د. أحمد سمير', amount: 775 }], other: 0, unset: [] }); assert.match(dh, /د\. أحمد سمير/); assert.match(dh, /كشف حساب الطبيب/); assert.match(AB.body({ code: '2120', total: 1905, rows: [], other: 180, unset: [] }), /قيود قديمة من غير طبيب محدد/);
   // collection form: «أنهي محفظة؟» appears only for wallet and is required then
   d.getElementById('b').innerHTML = '<form><label>طريقة السداد<select name="method"><option value="cash">نقدي</option><option value="wallet">محفظة إلكترونية</option></select></label><input name="amount" value="70"></form>';
   await tick(); const f = d.querySelector('form'), k = f.querySelector('[name="wallet_kind"]'); assert.ok(k, 'injected');

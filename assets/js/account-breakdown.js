@@ -23,7 +23,7 @@
     var h = '<p class="ab-total">رصيد الحساب: <b><bdi dir="ltr">' + money(b.total) + '</bdi></b>' + (b.from ? ' — من ' + esc(day(b.from)) + ' لحد ' + esc(day(b.to)) : '') + '</p>';
     h += '<div class="fc-table"><table class="simple ab-table"><thead><tr><th>' + (b.code === '1115' ? 'المحفظة' : 'الطبيب') + '</th><th>المبلغ</th>' + (b.code === '1115' ? '<th>الإيصالات</th>' : '') + '</tr></thead><tbody>';
     (b.rows || []).forEach(function (r) { h += '<tr data-ab-row="' + esc(r.key) + '"><td>' + esc(r.label) + '</td><td><bdi dir="ltr">' + money(r.amount) + '</bdi></td>' + (b.code === '1115' ? '<td>' + Number(r.count || 0) + '</td>' : '') + '</tr>'; });
-    if (Math.abs(Number(b.other || 0)) >= 0.005) h += '<tr data-ab-row="other" class="ab-other"><td>حركات تانية على الحساب (تسويات / مرتجعات / عمليات قديمة)</td><td><bdi dir="ltr">' + money(b.other) + '</bdi></td>' + (b.code === '1115' ? '<td>—</td>' : '') + '</tr>';
+    if (Math.abs(Number(b.other || 0)) >= 0.005) h += '<tr data-ab-row="other" class="ab-other"><td>' + (b.code === '1115' ? 'حركات تانية على الحساب (تسويات / مرتجعات / عمليات قديمة)' : 'قيود قديمة من غير طبيب محدد (قبل ربط الأطباء بالسيستم)') + '</td><td><bdi dir="ltr">' + money(b.other) + '</bdi></td>' + (b.code === '1115' ? '<td>—</td>' : '') + '</tr>';
     if (!(b.rows || []).length && Math.abs(Number(b.other || 0)) < 0.005) h += '<tr><td colspan="3">مفيش حركة على الحساب ده.</td></tr>';
     h += '</tbody></table></div>';
     if (b.code === '1115' && (b.unset || []).length) {
