@@ -29,6 +29,6 @@ function world(orders,invoices,failOn){let data={workspace:{mode:'live'},visits:
  W=world([],[]);assert.equal(await run('zz',W.ctx),'no_visit');
  const src=fs.readFileSync('assets/js/reception-workspace.js','utf8');
  assert(/\(a\.status==='arrived'\|\|a\.status==='completed'\)&&window\.SSMPDArrivedCollect\?btn\('arrived-collect',a\.id,'تحصيل'\)/.test(src),'button on arrived cards');
- assert(/if\(action==='arrived-collect'\)\{if\(window\.SSMPDArrivedCollect\)window\.SSMPDArrivedCollect\.run\(id,context\);return;\}/.test(src));
+ assert(/if\(action==='arrived-collect'\)\{if\(fx\('SSMPDArrivedCollect','run'\)\)window\.SSMPDArrivedCollect\.run\(id,context\);return;\}/.test(src),'arrived-collect handler (guarded: module + run must exist)');
  console.log('PASS «تحصيل» on the arrived card: execute after confirmation, then collect on the due invoice');
 })().catch(e=>{console.error(e);process.exit(1);});
