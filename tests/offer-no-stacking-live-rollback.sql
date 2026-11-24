@@ -29,4 +29,24 @@ union all
 select 'differences', jsonb_agg(to_jsonb(n)) from (select * from ns_cmp where not(new_price is not distinct from old_price and (new_err is null)=(old_err is null)) limit 20) n
 union all
 select 'cash today', jsonb_agg(jsonb_build_array(p.booking_code,p.base_price,clinic_prices.resolve(p.id,p.base_price,current_date)->>'price')) from public.pricing_services p where p.booking_code in ('0001239','0001333','0001228');
+
+-- Synthetic union case (no live contract prices these services yet): a temporary 20% «discount off the center price» list
+-- linked to one contract, all inside this transaction. Face laser 0001239: center 150, offer 140 → union must pay 120, not 112.
+create temp table ns_syn(step text,detail jsonb) on commit drop;
+do $$
+declare sid uuid;center numeric;cid uuid;lid uuid;r jsonb;
+begin
+ select id into sid from public.pricing_services where booking_code='0001239' and active;
+ center:=(clinic_prices.resolve_before_offer(sid,(select base_price from public.pricing_services where id=sid),current_date,null)->>'price')::numeric;
+ select id into cid from public.contracting_entity_contracts order by id limit 1;
+ insert into clinic_prices.lists(name,version,mode,fallback,discount_percent,discount_amount,valid_from,valid_to,created_by,status,contract_id,list_kind,issue_year,application_year)
+  values('اختبار نقابة 20% (يرجع)',1,'discount','discount',20,0,current_date-1,current_date+30,'bd5a528f-af8d-4ada-afe9-ce64e68b1d92','active',cid,'center',2026,2026) returning id into lid;
+ update public.contracting_entity_contracts set status='active',start_date=current_date-1,end_date=current_date+30,price_list_id=lid,price_list_link_status='active',
+   booking_billing_kind='discount' where id=cid;
+ r:=clinic_prices.resolve(sid,(clinic_prices.resolve(sid,0,current_date)->>'price')::numeric,current_date,cid);
+ insert into ns_syn values('union 20% on face laser',jsonb_build_object('center',center,'offer_cash',clinic_prices.resolve(sid,0,current_date)->>'price',
+   'union_price',r->>'price','expected',round(center*0.8,2),'PASS',(r->>'price')::numeric=round(center*0.8,2),'base_without_offer',r->>'base_without_offer'));
+ if (r->>'price')::numeric<>round(center*0.8,2) then raise exception 'stacking check FAILED: union got % (expected %)',r->>'price',round(center*0.8,2);end if;
+end $$;
+select 'synthetic' part, jsonb_agg(detail) from ns_syn;
 rollback;
