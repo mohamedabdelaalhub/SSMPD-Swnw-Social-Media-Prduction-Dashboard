@@ -98,7 +98,7 @@ function cardActions(a,c){
  if(hasDue(a)&&can('collect')&&a.due_invoices&&a.due_invoices.length){if(!main)main=action('collect_due',a.id,'حصّل '+money(a.patient_due),'btn-primary journey-main-collect');else rest=action('collect_due',a.id,'تحصيل '+money(a.patient_due))+rest;}
  /* owner 2026-11-23 (20261123060000): «خصم» on a booked card, «خصم على الزيارة» after arrival while the service is still ordered */
  var PY=fx('SSMPDReceptionPayer','canBooking','canVisit','label')?window.SSMPDReceptionPayer:null,BD=PY||(fx('SSMPDReceptionBookingDiscount','canBooking','canVisit')?window.SSMPDReceptionBookingDiscount:null),ra=!c.sandbox&&BD&&can('book')&&((c.data&&c.data.appointments)||[]).find(function(x){return x.id===a.id;});
- if(ra&&['expected','on_the_way'].includes(s)&&BD.canBooking(ra))rest+=action('booking_discount',a.id,PY?PY.label(ra):ra.discount_kind?'تعديل / شيل الخصم':'خصم (نقابة / نادي / فيزيتا / العيلة / خاص)');
+ if(ra&&['expected','on_the_way'].includes(s)&&BD.canBooking(ra,c.data))rest+=action('booking_discount',a.id,PY?PY.label(ra):ra.discount_kind?'تعديل / شيل الخصم':'خصم (نقابة / نادي / فيزيتا / العيلة / خاص)');
  if(ra&&['waiting','called','in_service','on_hold'].includes(s)&&BD.canVisit(ra,c.data))rest+=action('visit_discount',a.id,PY?PY.label(ra)+' (قبل التحصيل)':'خصم على الزيارة (قبل التحصيل)');
  var BDS=window.SSMPDReceptionBookingDiscount;if(ra&&fx('SSMPDReceptionBookingDiscount','canSame','sameLabel')&&['waiting','called','in_service','on_hold'].includes(s)&&BDS.canSame(ra,c.data))rest+=action('visit_same_discount',a.id,BDS.sameLabel(ra,c.data));
  if(c.sandbox&&s==='completed')rest+=action('sandbox_feedback',a.id,'تقييم التجربة');

@@ -17,6 +17,8 @@ function uploadCard(ws,file){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c||!c.storage
       rnd=(w.crypto&&w.crypto.randomUUID)?w.crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2),
       path=u.id+'/'+ws+'/'+rnd+'.'+ext;
   return Promise.resolve(c.storage.from('booking-discount-cards').upload(path,file,{upsert:false,contentType:file.type||undefined})).then(function(x){if(x&&x.error)throw x.error;return path;});});}
+function isOfferService(id,d){var s=((d&&d.services)||[]).find(function(x){return x.id===id;});return !!(s&&s.pricing_evidence&&s.pricing_evidence.source==='offer');}
+function isOfferOrder(o,d){var ev=o&&o.snapshot&&o.snapshot.pricing_evidence;return ev?ev.source==='offer':isOfferService(o&&o.service_id,d);}
 function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.elements.service_id)return;
  var data=(ctx&&ctx.data)||{},ws=ctx&&ctx.workspace;
  var box=document.createElement('section');box.className='rbd';box.setAttribute('data-rbd','');box.setAttribute('data-wide','');
@@ -102,7 +104,11 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
  var src=form.elements.source,srcHint=null;if(src&&src.closest){srcHint=document.createElement('small');srcHint.className='rbd-srchint';srcHint.setAttribute('data-rbd-srchint','');srcHint.textContent=payer?'ده مصدر الحجز بس — خصم النقابة / النادي من «طريقة الدفع» فوق':'ده مصدر الحجز بس — الخصم من خانة «خصم» تحت';srcHint.hidden=true;(src.closest('label')||src).after(srcHint);
   var hint=function(){srcHint.hidden=!(src.value==='syndicate'||src.value==='club');};src.addEventListener('change',hint);hint();}
  function syncClear(){if(clear)clear.disabled=on.checked||!(ap&&ap.discount_kind);}
- form.addEventListener('input',paint);form.addEventListener('change',paint);on.addEventListener('change',function(){paint();syncClear();});paint();syncClear();}
+ /* owner 2026-11-24 «العروض ملهاش اي خصومات تانية»: an offer-priced service takes no other discount (server 20261123200000) */
+ var offerNote=document.createElement('p');offerNote.className='rbd-offer';offerNote.setAttribute('data-rbd-offer','');offerNote.textContent='السعر ده عرض — مفيش خصم تاني عليه';offerNote.hidden=true;box.appendChild(offerNote);
+ function offerNow(){var o=ctx&&ctx.order;if(o)return isOfferOrder(o,data);return isOfferService(form.elements.service_id&&form.elements.service_id.value,data);}
+ function offerGate(){var off=offerNow();offerNote.hidden=!off;if(off&&on.checked){on.checked=false;paint();syncClear();}on.disabled=off;on.closest('label').classList.toggle('is-off',off);}
+ form.addEventListener('input',paint);form.addEventListener('change',paint);on.addEventListener('change',function(){paint();syncClear();});form.addEventListener('change',offerGate);paint();syncClear();offerGate();}
 /* «⋯ ← خصم» on a booked card (booking_discount) and on an arrived card while the service is still «ordered» (order_discount).
    c = the reception context {data, workspace, modal, command}. */
 function dayOf(iso){try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(iso));}catch(_){return '';}}
@@ -116,7 +122,7 @@ function openForBooking(apId,c){var d=c.data||{},ap=(d.appointments||[]).find(fu
  var on=form.querySelector('[data-rbd-on]');if(!ap.discount_kind&&on){on.checked=true;on.dispatchEvent(new Event('change',{bubbles:true}));}return true;}
 function openForVisit(apId,c){var d=c.data||{},ap=(d.appointments||[]).find(function(x){return x.id===apId;});if(!ap)return false;
  var visit=(d.visits||[]).find(function(v){return v.appointment_id===ap.id;});
- var orders=visit?(d.orders||[]).filter(function(o){return o.visit_id===visit.id&&o.status==='ordered'&&!o.entitlement_id&&!(+o.discount>0);}):[];
+ var orders=visit?(d.orders||[]).filter(function(o){return o.visit_id===visit.id&&o.status==='ordered'&&!o.entitlement_id&&!(+o.discount>0)&&!isOfferOrder(o,d);}):[];if(visit&&!orders.length&&(d.orders||[]).some(function(o){return o.visit_id===visit.id&&o.status==='ordered'&&isOfferOrder(o,d);}))throw new Error('السعر ده عرض — مفيش خصم تاني عليه');
  if(ap.discount_kind)throw new Error('الزيارة دي عليها خصم بالفعل — خصم واحد بس لكل زيارة');
  if(!orders.length)throw new Error('مفيش خدمة لسه متنفذتش على الزيارة دي — الخصم قبل التحصيل بس');
  var svcName=function(o){return (o.snapshot&&o.snapshot.name)||((d.services||[]).find(function(s){return s.id===o.service_id;})||{}).name||'خدمة';};
@@ -126,13 +132,13 @@ function openForVisit(apId,c){var d=c.data||{},ap=(d.appointments||[]).find(func
  if(!root)return true;var form=root.querySelector('form'),sel=form.elements.order_id;sel.addEventListener('change',function(){form.elements.service_id.value=sel.options[sel.selectedIndex].getAttribute('data-svc');form.dispatchEvent(new Event('change'));});
  enhance(form,{data:d,workspace:c.workspace,appointment:ap,order:true});var on=form.querySelector('[data-rbd-on]');if(on){on.checked=true;on.dispatchEvent(new Event('change',{bubbles:true}));}return true;}
 /* which ⋯ item a card gets (shown only when the server would accept it) */
-function canBooking(ap){return !!ap&&ap.status==='booked'&&!ap.package_id;}
-function canVisit(ap,d){if(!ap||ap.discount_kind||(ap.status!=='arrived'))return false;var v=((d&&d.visits)||[]).find(function(x){return x.appointment_id===ap.id;});return !!v&&((d.orders||[]).some(function(o){return o.visit_id===v.id&&o.status==='ordered'&&!o.entitlement_id&&!(+o.discount>0);}));}
+function canBooking(ap,d){return !!ap&&ap.status==='booked'&&!ap.package_id&&!(d&&isOfferService(ap.service_id,d));}
+function canVisit(ap,d){if(!ap||ap.discount_kind||(ap.status!=='arrived'))return false;var v=((d&&d.visits)||[]).find(function(x){return x.appointment_id===ap.id;});return !!v&&((d.orders||[]).some(function(o){return o.visit_id===v.id&&o.status==='ordered'&&!o.entitlement_id&&!(+o.discount>0)&&!isOfferOrder(o,d);}));}
 /* owner case 2026-11-23 (20261123130000): «نفس خصم الزيارة» — the visit's approved discount on every other ordered service */
 function sameInfo(ap,d){if(!ap||ap.status!=='arrived')return null;var v=((d&&d.visits)||[]).find(function(x){return x.appointment_id===ap.id;});if(!v)return null;
  var ords=(d.orders||[]).filter(function(o){return o.visit_id===v.id&&o.status!=='cancelled';}),ids=ords.map(function(o){return o.id;}),reqs=(d.discounts||[]);
  var appr=reqs.filter(function(r){return ids.indexOf(r.order_id)>=0&&r.status==='approved'&&+r.percent>0;}).sort(function(a,b){return b.percent-a.percent;})[0];if(!appr)return null;
- var todo=ords.filter(function(o){return o.status==='ordered'&&!o.entitlement_id&&!(+o.discount>0)&&!reqs.some(function(r){return r.order_id===o.id&&(r.status==='pending'||r.status==='approved');});});
+ var todo=ords.filter(function(o){return o.status==='ordered'&&!o.entitlement_id&&!(+o.discount>0)&&!isOfferOrder(o,d)&&!reqs.some(function(r){return r.order_id===o.id&&(r.status==='pending'||r.status==='approved');});});
  return todo.length?{visit_id:v.id,percent:+appr.percent,count:todo.length}:null;}
 function canSame(ap,d){return !!sameInfo(ap,d);}
 function sameLabel(ap,d){var i=sameInfo(ap,d);return i?'نفس خصم الزيارة ('+i.percent+'٪) على باقي الخدمات':'';}
