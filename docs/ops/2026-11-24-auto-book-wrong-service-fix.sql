@@ -6,8 +6,9 @@
 -- Each one keeps its doctor and time; ONLY its service changes (direct update, v2 after main chat's dry-run: 'reschedule'
 -- re-checked the slot and refused 9 rows that overlap only because of the new service length). No message is queued (the
 -- outbox reacts to time / doctor changes only); no order exists yet (status 'booked'):
---   * to a consultation the doctor serves (home + extra departments + scope rows; كشف / استشارة / متابعة — the kind the
---     source asked for first, then his most used, then his home department), else
+--   * to a consultation the doctor serves (home + extra departments + scope rows) — the kind the source asked for
+--     («كشف جديد» / unknown → كشف), «أخصائي» before «استشاري», then his most used; never a «خلال …» follow-up-window
+--     service such as 0001393 (its price depends on an earlier visit) — else
 --   * to «الخدمة تتحدد عند الحضور» (service_later) when he serves no consultation service.
 -- Part 1 is read-only. Part 2 applies; dry-run it with ROLLBACK first.
 
@@ -17,8 +18,8 @@ cand as (
   select a.id, a.workspace_id, a.provider_id, a.starts_at, a.status, s.code, s.name service, pr.name doctor, pr.department,
          e.needed_service,
          (select s2.id from clinic_reception.services s2 where s2.workspace_id = a.workspace_id and s2.active and not s2.placeholder
-             and clinic_reception.serves_service(a.provider_id, s2.department, s2.code) and clinic_reception.is_consult_name(s2.name)
-           order by (clinic_reception.consult_rank(s2.name, e.needed_service) = -1) desc,
+             and clinic_reception.serves_service(a.provider_id, s2.department, s2.code) and clinic_reception.consult_pickable(s2.name)
+           order by clinic_reception.consult_rank(s2.name, e.needed_service),
                     (select count(*) from clinic_reception.appointments x where x.provider_id = a.provider_id and x.service_id = s2.id and x.status <> 'cancelled') desc,
                     (s2.department = pr.department) desc, clinic_reception.consult_rank(s2.name, e.needed_service), s2.minutes, s2.name limit 1) target
     from clinic_reception.appointments a join sys on a.created_by = sys.id
@@ -52,8 +53,8 @@ begin
      order by a.starts_at
   loop
     tgt := (select s2.id from clinic_reception.services s2 where s2.workspace_id = r.workspace_id and s2.active and not s2.placeholder
-             and clinic_reception.serves_service(r.provider_id, s2.department, s2.code) and clinic_reception.is_consult_name(s2.name)
-           order by (clinic_reception.consult_rank(s2.name, r.needed_service) = -1) desc,
+             and clinic_reception.serves_service(r.provider_id, s2.department, s2.code) and clinic_reception.consult_pickable(s2.name)
+           order by clinic_reception.consult_rank(s2.name, r.needed_service),
                     (select count(*) from clinic_reception.appointments x where x.provider_id = r.provider_id and x.service_id = s2.id and x.status <> 'cancelled') desc,
                     (s2.department = r.department) desc, clinic_reception.consult_rank(s2.name, r.needed_service), s2.minutes, s2.name limit 1);
     begin
