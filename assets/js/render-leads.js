@@ -38,6 +38,10 @@
   // الاستقبال — الإقفال الفعلي بقى بس عند "تم إجراء الخدمة" أو أي حالة رفض/عدم رد
   var CLOSED_STATUSES = ["service_done", "rejected", "no_response", "invalid_number"];
 
+  // Name taken from the customer's Facebook/Instagram profile (Messenger bot): small tag so reception confirms it on the call.
+  function nameHtml(l) {
+    return escapeHtml(l.customer_name) + (l.customer_name_source === 'facebook' ? ' <span title="الاسم من فيسبوك — أكده في المكالمة" style="font-size:10px;background:#EAF0FF;color:#0F369D;padding:1px 6px;border-radius:8px;white-space:nowrap;">من فيسبوك</span>' : '');
+  }
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
@@ -184,7 +188,7 @@
         if (!leads.length) { box.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش ليدز لسه.</p>'; return; }
         box.innerHTML = "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>" +
           leads.map(function (l) {
-            return '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+            return '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
               '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
               '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
               '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td></tr>';
@@ -261,7 +265,7 @@
       } else {
         html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>معاد متابعة</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
-          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+          html += '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + (l.next_follow_up_date ? fmtDateOnly(l.next_follow_up_date) : "—") + '</td>' +
@@ -650,7 +654,7 @@
       } else {
         html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th>رقم الحجز</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%AD%D8%AC%D8%B2-->تاريخ الحجز</th><th>أنهى الحجز</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
-          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+          html += '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + escapeHtml(l.booking_reference || "—") + '</td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDateOnly(l.booking_date) + '</td>' +
             '<td style="font-size:11px;">' + escapeHtml(employeeName(l.booked_by)) + '</td>' +
@@ -751,7 +755,7 @@
       } else {
         html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>مسجل الليد</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->تاريخ الإضافة</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
-          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+          html += '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
             '<td data-registrar="' + escapeHtml(l.received_by || '') + '" data-source="' + escapeHtml(l.source || '') + '">' + escapeHtml(registrarName(l.received_by, l.source)) + '</td>' +
@@ -850,7 +854,7 @@
       } else {
         html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>تاريخ التحويل</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
-          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+          html += '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td>' +
             '<td><button class="btn ghost sm" data-open="' + l.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button></td></tr>";
@@ -901,7 +905,7 @@
       } else {
         html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->تاريخ الإضافة</th><th></th></tr></thead><tbody>";
         pending.forEach(function (l) {
-          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+          html += '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td>' +
             '<td><button class="btn ghost sm" data-complete="' + l.id + '">استكمال بيانات</button></td></tr>';
@@ -1049,7 +1053,7 @@
 
     function renderLeadModal(backdrop, view, container, data, onChange) {
       var lead = data.lead, attempts = data.attempts, statusLog = data.statusLog, invoices = data.invoices;
-      var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(lead.customer_name) + '</h3>' +
+      var html = '<div class="modal"><div class="modal-head"><h3>' + nameHtml(lead) + '</h3>' +
         (canDeleteLead() ? '<button class="btn danger sm" id="lm-delete" style="margin-inline-end:8px;">حذف الليد</button>' : '') +
         '<button class="modal-close">×</button></div>';
       html += '<div class="status-pill ' + (STATUS_PILL_CLASS[lead.current_status] || "draft") + '" id="lm-pill" style="margin-bottom:12px;">' + (STATUS_LABELS[lead.current_status] || lead.current_status) + '</div>';
