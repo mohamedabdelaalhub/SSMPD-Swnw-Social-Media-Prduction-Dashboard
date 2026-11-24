@@ -128,5 +128,15 @@ function openForVisit(apId,c){var d=c.data||{},ap=(d.appointments||[]).find(func
 /* which ⋯ item a card gets (shown only when the server would accept it) */
 function canBooking(ap){return !!ap&&ap.status==='booked'&&!ap.package_id;}
 function canVisit(ap,d){if(!ap||ap.discount_kind||(ap.status!=='arrived'))return false;var v=((d&&d.visits)||[]).find(function(x){return x.appointment_id===ap.id;});return !!v&&((d.orders||[]).some(function(o){return o.visit_id===v.id&&o.status==='ordered'&&!o.entitlement_id&&!(+o.discount>0);}));}
-w.SSMPDReceptionBookingDiscount={enhance:enhance,preview:preview,MAX:MAX,openForBooking:openForBooking,openForVisit:openForVisit,canBooking:canBooking,canVisit:canVisit};
+/* owner case 2026-11-23 (20261123130000): «نفس خصم الزيارة» — the visit's approved discount on every other ordered service */
+function sameInfo(ap,d){if(!ap||ap.status!=='arrived')return null;var v=((d&&d.visits)||[]).find(function(x){return x.appointment_id===ap.id;});if(!v)return null;
+ var ords=(d.orders||[]).filter(function(o){return o.visit_id===v.id&&o.status!=='cancelled';}),ids=ords.map(function(o){return o.id;}),reqs=(d.discounts||[]);
+ var appr=reqs.filter(function(r){return ids.indexOf(r.order_id)>=0&&r.status==='approved'&&+r.percent>0;}).sort(function(a,b){return b.percent-a.percent;})[0];if(!appr)return null;
+ var todo=ords.filter(function(o){return o.status==='ordered'&&!o.entitlement_id&&!(+o.discount>0)&&!reqs.some(function(r){return r.order_id===o.id&&(r.status==='pending'||r.status==='approved');});});
+ return todo.length?{visit_id:v.id,percent:+appr.percent,count:todo.length}:null;}
+function canSame(ap,d){return !!sameInfo(ap,d);}
+function sameLabel(ap,d){var i=sameInfo(ap,d);return i?'نفس خصم الزيارة ('+i.percent+'٪) على باقي الخدمات':'';}
+function applySame(apId,c){var d=c.data||{},ap=(d.appointments||[]).find(function(x){return x.id===apId;}),i=sameInfo(ap,d);if(!i)throw new Error('مفيش خدمات محتاجة نفس الخصم');
+ return c.command('visit_same_discount',{visit_id:i.visit_id},crypto.randomUUID()).then(function(r){if(w.SSMPDToast)w.SSMPDToast.show('اتطبّق نفس خصم الزيارة '+(r&&r.percent)+'٪ على '+(r&&r.services)+' خدمة ✓');if(c.load)c.load();return r;});}
+w.SSMPDReceptionBookingDiscount={canSame:canSame,sameLabel:sameLabel,applySame:applySame,enhance:enhance,preview:preview,MAX:MAX,openForBooking:openForBooking,openForVisit:openForVisit,canBooking:canBooking,canVisit:canVisit};
 })(window);
