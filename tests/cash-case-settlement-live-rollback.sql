@@ -142,7 +142,7 @@ begin
   r := public.clinic_finance_case_settle('review', jsonb_build_object('id', c.id, 'approve', true, 'note', 'اختبار تراجع — اعتماد'), gen_random_uuid());
   execute 'reset role';
   b1 := clinic_finance.treasury_balance(reg);
-  if r->>'settle_status' <> 'approved' or b1 <> b0 - c.difference then raise exception 'Settlement wrong: % (balance % → %, difference %)', r, b0, b1, c.difference; end if;
+  if r->>'settle_status' <> 'approved' or b1 <> b0 + c.difference then raise exception 'Settlement wrong: % (balance % → %, difference %)', r, b0, b1, c.difference; end if;
   if exists (select 1 from clinic_finance.lines group by entry_id having sum(debit - credit) <> 0) then raise exception 'Unbalanced ledger'; end if;
   raise notice 'cash case settlement live rollback OK: case % difference %, drawer % → %', c.id, c.difference, b0, b1;
 end $$;
