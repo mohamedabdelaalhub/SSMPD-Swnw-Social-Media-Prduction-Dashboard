@@ -275,3 +275,19 @@
  .cm-lead-facts dd{margin:0;font-size:13px;font-weight:600;text-align:end;min-width:0;overflow-wrap:anywhere}
  .cm-lead-go{color:#0F369D;font-size:12px;font-weight:700}
 }
+/* WhatsApp template requests (owner only) */
+.cm-tpl-admin{display:grid;gap:10px;margin-top:8px;padding-top:10px;border-top:1px dashed #D5DBE6}
+.cm-tpl-admin-row{display:flex;flex-wrap:wrap;gap:8px}
+.cm-tpl-form{display:grid;gap:8px;min-width:0}
+.cm-tpl-form label{display:grid;gap:4px;font-weight:600}
+.cm-tpl-form textarea{width:100%;box-sizing:border-box;resize:vertical}
+.cm-tpl-cat{display:flex;flex-wrap:wrap;gap:14px}
+.cm-tpl-cat label{display:flex;align-items:center;gap:6px;font-weight:600}
+.cm-warn{margin:0;color:#B4361E;font-size:12px;font-weight:600}
+.cm-tpl-preview{white-space:pre-wrap;overflow-wrap:anywhere;background:#DCF5E3;color:#16212E;border-radius:12px;padding:10px 12px;line-height:1.8;min-width:0}
+.cm-reqs{display:grid;gap:8px}
+.cm-req{border:1px solid #E3E8F2;border-radius:12px;padding:8px 10px;min-width:0;overflow-wrap:anywhere}
+.cm-req p{margin:4px 0}
+.cm-badge.st-APPROVED{background:#E3F4EB;color:#2F7D5C}
+.cm-badge.st-REJECTED,.cm-badge.st-FAILED{background:#FBE7E3;color:#D0402A}
+.cm-badge.st-PENDING,.cm-badge.st-QUEUED,.cm-badge.st-LEASED{background:#EAF0FF;color:#0F369D}

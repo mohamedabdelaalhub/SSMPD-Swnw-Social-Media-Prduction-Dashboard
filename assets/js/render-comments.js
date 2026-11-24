@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var state = { filter: "pending", brand: "", platform: "", section: "inbox", mfilter: "all", q: "", category: "", postRef: "", open: { inbox: "", messages: "" }, info: true, sheet: false, drafts: {}, waTemplates: null, leads: {} };
+  var state = { filter: "pending", brand: "", platform: "", section: "inbox", mfilter: "all", q: "", category: "", postRef: "", open: { inbox: "", messages: "" }, info: true, sheet: false, drafts: {}, waTemplates: null, waReq: null, waForm: null, leads: {} };
   var BRANDS = { sono: "سونو", dr_dina: "د. دينا" };
   var STATUS = {
     "new": "محتاج رد", drafted: "رد مقترح", approved: "في الطريق", sending: "بيتنشر",
@@ -297,6 +297,46 @@
     if (it.kind !== "message" || it.platform !== "whatsapp" || !it.bot) return "";
     return it.bot === "human" ? '<span class="cm-bot human">موظف ماسك المحادثة</span>' : '<span class="cm-bot ai">البوت شغّال</span>';
   }
+  // WhatsApp template requests (owner only): the dashboard queues them, the WhatsApp agent submits to Meta, statuses come back here.
+  var TPL_STATUS = { QUEUED: "في الطابور", LEASED: "بيتقدّم لميتا", PENDING: "بانتظار مراجعة ميتا", APPROVED: "معتمد", REJECTED: "مرفوض", FAILED: "فشل التقديم" };
+  function isOwner() {
+    var a = window.SSMPDAuth && window.SSMPDAuth.currentAdmin;
+    if (!a) return false;
+    return window.SSMPDRoles && window.SSMPDRoles.hasRole ? !!window.SSMPDRoles.hasRole(a, "super_admin") : a.role === "super_admin";
+  }
+  function tplTextError(text) {
+    var t = String(text || "").trim();
+    if (t.length < 10) return "نص القالب قصير — اكتب جملة كاملة";
+    if (t.length > 1024) return "نص القالب طويل — الحد 1024 حرف";
+    if (/\{\{|\}\}/.test(t)) return "القوالب من غير متغيرات {{ }} في الإصدار ده";
+    var digits = t.replace(/[٠-٩]/g, function (d) { return "٠١٢٣٤٥٦٧٨٩".indexOf(d); }).replace(/[\s\-.()+/]/g, "");
+    if (/[0-9]{8,}/.test(digits)) return "ممنوع أرقام تليفون أو أرقام ملفات في القالب";
+    return "";
+  }
+  function tplAdmin() {
+    if (!isOwner()) return "";
+    var f = state.waForm, h = '<div class="cm-tpl-admin"><div class="cm-tpl-admin-row"><button type="button" class="btn ghost sm" data-wa-new-tpl>+ قالب جديد</button>' +
+      '<button type="button" class="btn ghost sm" data-wa-req-load>حالة القوالب</button></div>';
+    if (f) h += '<div class="cm-tpl-form" data-wa-form><label>نص القالب (بالعربي، من غير متغيرات)<textarea class="cm-input" data-wa-form-text rows="4" maxlength="1024">' + esc(f.text) + '</textarea></label>' +
+      '<small class="muted" data-wa-count>' + String(f.text.length) + ' / 1024</small>' +
+      '<div class="cm-tpl-cat"><label><input type="radio" name="wa-cat" value="UTILITY"' + (f.cat === "UTILITY" ? " checked" : "") + '> خدمي</label>' +
+      '<label><input type="radio" name="wa-cat" value="MARKETING"' + (f.cat === "MARKETING" ? " checked" : "") + '> تسويقي</label></div>' +
+      '<p class="cm-hint">الخدمي: متابعة حجز أو زيارة فعلية. التسويقي: عروض أو إعادة تواصل — ومحتاج موافقة العميل على الرسايل التسويقية.</p>' +
+      '<p class="cm-warn">ممنوع كتابة بيانات مريض أو أرقام تليفون أو أرقام ملفات في القالب.</p>' +
+      '<div class="cm-tpl-preview" data-wa-preview>' + esc(f.text || "معاينة الرسالة هتظهر هنا") + '</div>' +
+      '<p class="err-msg" data-wa-form-err hidden></p>' +
+      '<div class="cm-composer-row"><button type="button" class="btn sm" data-wa-form-send>تقديم لميتا</button><button type="button" class="btn ghost sm" data-wa-form-cancel>إلغاء</button></div>' +
+      '<small class="muted">الاسم بيتولّد تلقائي (sono_…_ar)، واللغة عربي.</small></div>';
+    var r = state.waReq;
+    if (r === "loading") h += '<span class="cm-hint">بيجيب حالة القوالب…</span>';
+    else if (r && r.length) h += '<div class="cm-reqs">' + r.map(function (x) {
+      return '<div class="cm-req"><div><b>' + esc(x.name) + '</b> <span class="cm-badge st-' + esc(x.status) + '">' + esc(TPL_STATUS[x.status] || x.status) + '</span> <small class="muted">' + esc(x.category === "UTILITY" ? "خدمي" : "تسويقي") + '</small></div>' +
+        '<p>' + esc(x.text) + '</p>' + (x.reason ? '<p class="err-msg">' + esc(x.reason) + '</p>' : '') +
+        '<small class="muted">قدّمه ' + esc(x.submitted_by || "—") + ' · ' + when(x.submitted_at) + '</small></div>';
+    }).join("") + '</div>';
+    else if (r) h += '<span class="cm-hint">لسه ما قدّمتش قوالب من الداشبورد.</span>';
+    return h + "</div>";
+  }
   function whatsappFoot(it) {
     var id = it.conv.id, back = it.bot === "human" ? '<button type="button" class="btn ghost sm" data-wa-return="' + esc(id) + '">رجّع للبوت</button>' : "";
     if (!it.open24) {
@@ -305,7 +345,7 @@
         : t === "loading" ? '<span class="cm-hint">بيجيب القوالب…</span>'
         : !t.length ? '<span class="cm-hint">مفيش قوالب معتمدة من غير بيانات لسه.</span>'
         : t.map(function (x) { return '<button type="button" class="cm-tpl" data-wa-tpl="' + esc(x.name) + '" data-wa-lang="' + esc(x.language) + '"><b>' + esc(x.name) + "</b>" + (x.text ? "<span>" + esc(x.text) + "</span>" : "") + "</button>"; }).join("");
-      return '<div class="cm-closed cm-wa-closed" data-window-closed data-wa-conv="' + esc(id) + '"><p>عدّى 24 ساعة من آخر رسالة للعميل — ميتا مش بتسمح بالرد إلا بقالب معتمد.</p><div class="cm-tpls">' + list + "</div>" + (back ? '<div class="cm-composer-row">' + back + "</div>" : "") + "</div>";
+      return '<div class="cm-closed cm-wa-closed" data-window-closed data-wa-conv="' + esc(id) + '"><p>عدّى 24 ساعة من آخر رسالة للعميل — ميتا مش بتسمح بالرد إلا بقالب معتمد.</p><div class="cm-tpls">' + list + "</div>" + tplAdmin() + (back ? '<div class="cm-composer-row">' + back + "</div>" : "") + "</div>";
     }
     return composer(it.key, "اكتب رسالة واتساب…", state.drafts[it.key] || "",
       '<button type="button" class="btn ghost sm cm-sug" data-msuggest="' + esc(id) + '">✨ <span>اقترح رد</span></button>' +
@@ -588,6 +628,42 @@
           if (r.error || !d.ok) throw new Error(d.error || "تعذر جلب القوالب");
           state.waTemplates = d.templates || [];
         }).catch(function (e) { state.waTemplates = null; fail(e); }).then(redraw);
+      };
+    });
+    // Owner only: «+ قالب جديد» (queue a template for Meta's review) and «حالة القوالب».
+    var loadReq = function () {
+      state.waReq = "loading"; redraw();
+      return db().functions.invoke("meta-comments", { body: { action: "wa_template_requests" } }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || !d.ok) throw new Error(d.error || "تعذر جلب حالة القوالب");
+        state.waReq = d.requests || [];
+      }).catch(function (e) { state.waReq = null; fail(e); }).then(redraw);
+    };
+    q("[data-wa-req-load]").forEach(function (b) { b.onclick = loadReq; });
+    q("[data-wa-new-tpl]").forEach(function (b) {
+      b.onclick = function () { state.waForm = state.waForm ? null : { text: "", cat: "UTILITY" }; redraw(); };
+    });
+    q("[data-wa-form]").forEach(function (form) {
+      var txt = form.querySelector("[data-wa-form-text]"), err = form.querySelector("[data-wa-form-err]");
+      txt.oninput = function () {
+        state.waForm.text = txt.value;
+        form.querySelector("[data-wa-count]").textContent = txt.value.length + " / 1024";
+        form.querySelector("[data-wa-preview]").textContent = txt.value || "معاينة الرسالة هتظهر هنا";
+        err.hidden = true;
+      };
+      form.querySelectorAll('input[name="wa-cat"]').forEach(function (r) { r.onchange = function () { if (r.checked) state.waForm.cat = r.value; }; });
+      form.querySelector("[data-wa-form-cancel]").onclick = function () { state.waForm = null; redraw(); };
+      form.querySelector("[data-wa-form-send]").onclick = function (ev) {
+        var f = state.waForm, bad = tplTextError(f.text);
+        if (bad) { err.textContent = bad; err.hidden = false; return; }
+        if (!confirm("تأكيد: تقديم القالب ده لميتا باسم حضرتك؟ بعد التقديم ميتا بتراجعه وممكن ترفضه.")) return;
+        var b = ev.currentTarget; b.disabled = true; b.textContent = "بيتقدّم…";
+        db().functions.invoke("meta-comments", { body: { action: "wa_template_submit", category: f.cat, text: f.text.trim() } }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || !d.ok) throw new Error(d.error || "تعذر تقديم القالب");
+          state.waForm = null; toast("القالب اتحط في الطابور — الوكيل بيقدّمه لميتا وبعدها بيبان «بانتظار مراجعة ميتا»");
+          return loadReq();
+        }).catch(function (e) { b.disabled = false; b.textContent = "تقديم لميتا"; err.textContent = e.message || "تعذر تقديم القالب"; err.hidden = false; });
       };
     });
     q("[data-wa-tpl]").forEach(function (b) {
