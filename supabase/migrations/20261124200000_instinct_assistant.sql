@@ -189,6 +189,83 @@ begin
   raise notice 'instinct_ai_block on % tables%', cnt, case when skipped <> '' then '; skipped (not owner):' || skipped else '' end;
 end $$;
 
+-- 2c. leaks found by the live rolled-back dry-run (AI sweep, 2026-11-24) -------------------------------------------------------
+-- (1) definer functions that answered an ai_assistant caller: first statement now refuses it. For everyone else
+--     instinct_assert_not_ai() is a no-op (one indexed lookup). Old definitions saved in instinct_saved_defs ('fn:…').
+create function public.instinct_assert_not_ai() returns void
+language plpgsql stable security definer set search_path = pg_catalog, public as $$
+begin
+  if not public.instinct_not_ai() then raise exception 'حساب مساعد إنستنكت مالوش صلاحية على الإجراء ده' using errcode = '42501'; end if;
+end $$;
+revoke all on function public.instinct_assert_not_ai() from public, anon;
+grant execute on function public.instinct_assert_not_ai() to authenticated, service_role;
+
+do $$
+declare r record; d text; src text; n int := 0;
+begin
+  for r in select p.oid, p.oid::regprocedure::text sig, l.lanname, p.prosrc, p.prosqlbody is not null atomic
+             from pg_proc p join pg_namespace s on s.oid = p.pronamespace join pg_language l on l.oid = p.prolang
+            where s.nspname = 'public' and p.prokind = 'f'
+              and p.proname in ('clinic_reception_message_claim', 'clinic_reception_agent_health', 'content_archive_candidates',
+                                'content_archive_pending_cleanup', 'content_learning_brief', 'content_learning_brief_core',
+                                'contracting_partner_snapshot', 'contracting_progressive_incentive', 'lead_capture_gap')
+              and position('instinct_assert_not_ai' in p.prosrc) = 0 loop
+    if r.atomic then raise exception '% uses BEGIN ATOMIC — patch it by hand', r.sig; end if;
+    d := pg_get_functiondef(r.oid);
+    if r.lanname = 'plpgsql' then
+      src := regexp_replace(r.prosrc, '(^|[^a-z_])begin([^a-z_])', '\1begin perform public.instinct_assert_not_ai();\2', 'i');
+    elsif r.lanname = 'sql' then
+      src := E'select public.instinct_assert_not_ai();\n' || r.prosrc;
+    else
+      raise exception '% is %, not plpgsql/sql', r.sig, r.lanname;
+    end if;
+    if src = r.prosrc or position(r.prosrc in d) = 0 then raise exception 'could not patch %', r.sig; end if;
+    insert into public.instinct_saved_defs(name, def) values ('fn:' || r.sig, d);
+    execute replace(d, r.prosrc, src);
+    n := n + 1;
+  end loop;
+  raise notice 'instinct guard added to % functions', n;
+end $$;
+
+-- (2) system tables/views the browser role never needs: no SELECT for anon / authenticated. What was revoked is saved for the
+--     rollback ('grant:…'). A table this role cannot change is reported, not fatal (the dry-run sweep shows what remains).
+do $$
+declare t text; done text := ''; skipped text := '';
+begin
+  foreach t in array array['extensions.pg_stat_statements', 'extensions.pg_stat_statements_info', 'net._http_response',
+                           'realtime.subscription', 'supabase_functions.migrations'] loop
+    if to_regclass(t) is null then continue; end if;
+    if not (has_table_privilege('authenticated', t, 'SELECT') or has_table_privilege('anon', t, 'SELECT')) then continue; end if;
+    begin
+      insert into public.instinct_saved_defs(name, def) values ('grant:' || t,
+        concat_ws(',', case when has_table_privilege('anon', t, 'SELECT') then 'anon' end, case when has_table_privilege('authenticated', t, 'SELECT') then 'authenticated' end));
+      execute format('revoke select on %s from public, anon, authenticated', t);
+      if has_table_privilege('authenticated', t, 'SELECT') or has_table_privilege('anon', t, 'SELECT') then
+        raise insufficient_privilege;   -- a non-owner revoke only warns; treat «still readable» as not done
+      end if;
+      done := done || ' ' || t;
+    exception when insufficient_privilege then
+      delete from public.instinct_saved_defs where name = 'grant:' || t;
+      skipped := skipped || ' ' || t;
+    end;
+  end loop;
+  raise notice 'select revoked on:% ; not owner (left as is):%', done, skipped;
+end $$;
+
+-- (3) public.ops_backup_* (manual backups with real data, no RLS): RLS on, no policies → service_role / owner only.
+do $$
+declare r record;
+begin
+  for r in select format('%I.%I', n.nspname, c.relname) t from pg_class c join pg_namespace n on n.oid = c.relnamespace
+            where n.nspname = 'public' and c.relkind = 'r' and c.relname like 'ops\_backup\_%' and not c.relrowsecurity loop
+    begin
+      execute format('alter table %s enable row level security', r.t);
+      insert into public.instinct_saved_defs(name, def) values ('rls:' || r.t, 'off');
+    exception when insufficient_privilege then raise notice 'not owner of % — RLS left off', r.t;
+    end;
+  end loop;
+end $$;
+
 -- 3-7. tables ---------------------------------------------------------------------------------------------------------------
 create table public.instinct_notes (
   id uuid primary key default gen_random_uuid(),

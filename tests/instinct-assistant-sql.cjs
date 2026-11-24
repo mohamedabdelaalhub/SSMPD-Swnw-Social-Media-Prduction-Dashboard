@@ -57,7 +57,20 @@ const OWNER = U(1), GM = U(2), RECEP = U(3), DESIGN = U(4), NURSE = U(5), ACC = 
       grant select, insert on clinic_finance.treasury to authenticated;
       create function public.clinic_finance_overview() returns jsonb language plpgsql security definer set search_path = public as $$
         begin if public.my_admin_id() is null then raise exception 'سجّل الدخول' using errcode = '42501'; end if; return '{}'::jsonb; end $$;
-      grant execute on function public.clinic_finance_overview() to authenticated;`);
+      grant execute on function public.clinic_finance_overview() to authenticated;
+      -- leaks of the kind the live sweep found: unguarded definer functions, a backup table without RLS, a system table
+      create function public.lead_capture_gap(p_day date default current_date) returns jsonb language sql stable security definer set search_path = public as $$
+        select jsonb_build_object('n', (select count(*) from public.patients)) $$;
+      create function public.clinic_reception_message_claim(p_limit integer default 10) returns jsonb language plpgsql security definer set search_path = public as $$
+      declare result jsonb;
+      begin
+        select jsonb_agg(name) into result from public.patients; return result;
+      end $$;
+      grant execute on function public.lead_capture_gap(date), public.clinic_reception_message_claim(integer) to authenticated;
+      create table public.ops_backup_20261120_home(id int, secret text); insert into public.ops_backup_20261120_home values (1, 'x');
+      grant select on public.ops_backup_20261120_home to authenticated;
+      create schema net; create table net._http_response(id int, content text); insert into net._http_response values (1, 'token');
+      grant usage on schema net to authenticated; grant select on net._http_response to authenticated;`);
     await q(`insert into public.admins(id, user_id, email, name, role) values
       ($1,$2,'o@x','المالك','super_admin'), ($3,$4,'g@x','مدير','general_manager'), ($5,$6,'r@x','مازن','reception'),
       ($7,$8,'d@x','مصمم','designer'), ($9,$10,'n@x','ممرضة','nursing'), ($11,$12,'a@x','محاسب','accountant')`,
@@ -105,6 +118,14 @@ const OWNER = U(1), GM = U(2), RECEP = U(3), DESIGN = U(4), NURSE = U(5), ACC = 
     for (const t of ['instinct_notes', 'instinct_threads', 'instinct_messages', 'instinct_notifications', 'instinct_audit_log'])
       await refused(OWNER_U, `select * from public.${t}`, null, /permission denied/);
 
+    // 2c: guarded functions refuse the AI only; system table revoked; backup table behind RLS
+    await refused(AI_U, 'select public.lead_capture_gap()', null, /مالوش صلاحية/);
+    await refused(AI_U, 'select public.clinic_reception_message_claim(5)', null, /مالوش صلاحية/);
+    assert.equal((await val(RECEP_U, 'select public.lead_capture_gap() x')).n, 1, 'staff unaffected (sql)');
+    assert.deepEqual(await val(RECEP_U, 'select public.clinic_reception_message_claim(5) x'), ['x'], 'staff unaffected (plpgsql)');
+    await refused(RECEP_U, 'select * from net._http_response', null, /permission denied/);
+    assert.equal(await val(RECEP_U, 'select count(*)::int from public.ops_backup_20261120_home'), 0, 'backup: RLS on, no policies');
+    assert.equal((await one('select count(*)::int n from public.ops_backup_20261120_home')).n, 1, 'data kept');
     // context per role
     assert.equal((await val(AI_U, 'select public.instinct_context() x')).kind, 'instinct');
     assert.equal((await val(OWNER_U, 'select public.instinct_context() x')).can_decide, true);
@@ -227,6 +248,10 @@ const OWNER = U(1), GM = U(2), RECEP = U(3), DESIGN = U(4), NURSE = U(5), ACC = 
     assert.equal((await one("select count(*)::int n from pg_policy where polname = 'instinct_ai_block'")).n, 0);
     assert.equal((await one("select count(*)::int n from pg_proc where proname like 'instinct\\_%'")).n, 0);
     assert.ok(!(await one("select prosrc from pg_proc where proname = 'my_admin_id'")).prosrc.includes('ai_assistant'));
+    assert.ok(!(await one("select prosrc from pg_proc where proname = 'lead_capture_gap'")).prosrc.includes('instinct'), 'functions restored');
+    assert.ok(!(await one("select prosrc from pg_proc where proname = 'clinic_reception_message_claim'")).prosrc.includes('instinct'));
+    assert.equal((await one("select has_table_privilege('authenticated', 'net._http_response', 'SELECT') x")).x, true, 'grant restored');
+    assert.equal((await one("select relrowsecurity x from pg_class where relname = 'ops_backup_20261120_home'")).x, false, 'RLS restored');
     await q("insert into public.admins(id, email, role) values (gen_random_uuid(), 'l2@x', 'some_live_only_role')");
     console.log('instinct assistant sql: ok');
   } catch (e) { console.error(e); process.exitCode = 1; } finally { await db.close(); }

@@ -226,6 +226,10 @@ select 'RLS tables WITHOUT the policy', 'none (or only tables not owned by the m
    and n.nspname not like 'pg\_%' and not (n.nspname = 'public' and c.relname like 'instinct\_%')
    and not exists (select 1 from pg_policy p where p.polrelid = c.oid and p.polname like 'instinct\_ai\_block%');
 insert into ins_live(step, expected, actual, ok)
+select '2c: guarded functions / revoked grants / RLS on backups', '9 fns guarded; system tables revoked or reported; ops_backup_* RLS on',
+       coalesce(string_agg(name, ' ' order by name), 'none'), count(*) filter (where name like 'fn:%') >= 9
+  from public.instinct_saved_defs where name like 'fn:%' or name like 'grant:%' or name like 'rls:%';
+insert into ins_live(step, expected, actual, ok)
 select 'system identities (my_admin_id patch)', 'none has role ai_assistant', coalesce(string_agg(coalesce(name, '?') || ':' || role || ':' || active, ', '), 'none'),
        coalesce(bool_and(role <> 'ai_assistant'), true) from public.admins where is_system_identity;
 

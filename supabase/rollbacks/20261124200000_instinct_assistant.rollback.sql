@@ -39,6 +39,18 @@ do $$ begin
 end $$;
 drop function if exists public.instinct_guard_ai_admin(), public.instinct_guard_ai_extra_role();
 
+-- functions guarded in 2c, revoked grants, ops_backup RLS: back as they were
+do $$ declare r record; g text; begin
+  for r in select name, def from public.instinct_saved_defs where name like 'fn:%' or name like 'grant:%' or name like 'rls:%' loop
+    if r.name like 'fn:%' then execute r.def;
+    elsif r.name like 'grant:%' then
+      foreach g in array string_to_array(r.def, ',') loop execute format('grant select on %s to %I', substr(r.name, 7), g); end loop;
+    else execute format('alter table %s disable row level security', substr(r.name, 5));
+    end if;
+  end loop;
+end $$;
+drop function if exists public.instinct_assert_not_ai();
+
 -- my_admin_id() and admins_role_check back to their saved definitions
 do $$ declare d text; begin
   select def into d from public.instinct_saved_defs where name = 'public.my_admin_id()';
