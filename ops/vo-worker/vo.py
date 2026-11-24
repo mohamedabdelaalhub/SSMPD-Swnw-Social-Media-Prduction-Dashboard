@@ -11,11 +11,15 @@ done (the mp3, base64) or fail. A database job with no mp3 30 minutes after it w
 (the reel task has already fallen back to ElevenLabs by then). No secret file = folder jobs only, exactly as before.
 Suggested shots (owner 2026-11-22): Instinct also sends links to footage that fits the script. Every link in a reply on the
 job's thread (text or HTML, before, with or after the mp3, up to 2 hours after done) is kept in the job file ("clips") and,
-for database jobs, sent to the database. They are optional ideas for the reel task."""
-import base64, re, email, email.utils, imaplib, json, os, smtplib, subprocess, sys, time, glob, urllib.request
+for database jobs, sent to the database. They are optional ideas for the reel task.
+Instinct question notices (owner 2026-11-24, «مساعد إنستنكت»): with the same secret, every tick leases new lines from the
+instinct-notify edge function and sends Instinct ONE e-mail per new staff question: one line — staff name, role, Cairo time.
+No question text, no patient data (the outbox has none). Draft lines (Instinct's own drafts) are acked without an e-mail."""
+import base64, re, email, email.utils, imaplib, json, os, smtplib, subprocess, sys, time, glob, urllib.request, datetime
 from email.message import EmailMessage
 BASE = os.path.expanduser("~/vo-worker"); ADDR = "swnw.voiceover@gmail.com"; TO = "ryxq6r@mail.instinct.com"
 API = os.environ.get("VO_API", "https://api.swnwclinics.com/functions/v1/vo-worker")
+NOTIFY_API = os.environ.get("INSTINCT_NOTIFY_API", "https://api.swnwclinics.com/functions/v1/instinct-notify")
 DB_TIMEOUT = 30 * 60  # owner 2026-11-22: wait 30 min before the fallback
 def log(*a): print(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), *a, flush=True)
 def jobs(): return sorted(glob.glob(os.path.join(BASE, "queue", "*.json")))
@@ -48,10 +52,10 @@ def add_clips(j, found):
 def secret():
     f = os.path.join(BASE, ".vo-worker-secret")
     return open(f).read().strip() if os.path.exists(f) else ""
-def api(action, payload):
+def api(action, payload, url=None):
     """-> the function's result dict, or None on any network/HTTP error (then the step is retried next tick)."""
     try:
-        req = urllib.request.Request(API, data=json.dumps({"action": action, "payload": payload}).encode(), method="POST",
+        req = urllib.request.Request(url or API, data=json.dumps({"action": action, "payload": payload}).encode(), method="POST",
                                      headers={"Content-Type": "application/json", "X-VO-Worker-Secret": secret(), "User-Agent": "swnw-vo-worker/1"})
         with urllib.request.urlopen(req, timeout=60) as r: d = json.loads(r.read())
         return d.get("result") if d.get("ok") else None
@@ -82,6 +86,44 @@ def report_db():
         if time.time() - j.get("taken_at", time.time()) > DB_TIMEOUT:
             r = api("fail", {"id": j["db_id"], "reason": "timeout", "error": "no mp3 from Instinct within 30 minutes"})
             if r is not None: j["timeout"] = True; finish(p, j); log("db timeout", os.path.basename(p))
+
+# ---- «مساعد إنستنكت»: one-line e-mail per new staff question ----
+def cairo_time(iso):
+    """'2026-11-24T21:05:00+00:00' -> '2026-11-24 23:05' in Africa/Cairo (Latin digits)."""
+    try:
+        t = datetime.datetime.fromisoformat(str(iso).replace("Z", "+00:00"))
+        try:
+            from zoneinfo import ZoneInfo
+            return t.astimezone(ZoneInfo("Africa/Cairo")).strftime("%Y-%m-%d %H:%M")
+        except Exception:
+            return t.astimezone(datetime.timezone(datetime.timedelta(hours=2))).strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return time.strftime("%Y-%m-%d %H:%M", time.gmtime()) + " UTC"
+def notice_line(item):
+    """The whole e-mail body: name — role — time. Nothing else (Instinct asked for no message text; the outbox has no patient data)."""
+    clean = lambda v: re.sub(r"\s+", " ", str(v or "")).strip()[:80]
+    return "%s — %s — %s" % (clean(item.get("employee_name")) or "موظف", clean(item.get("role_label")) or "موظف", cairo_time(item.get("created_at")))
+def instinct_notify(send=None):
+    """Lease new outbox lines, e-mail each new question, ack sent / failed (a failed line comes back next tick, 5 tries max)."""
+    if not secret(): return
+    res = api("lease", {"limit": 10}, NOTIFY_API)
+    items = (res or {}).get("items") or []
+    if not items: return
+    token = res.get("lease_token"); ok_ids, bad = [], []
+    for it in items:
+        if it.get("kind") != "new_question": ok_ids.append(it["id"]); continue   # drafts: Instinct wrote them itself
+        try:
+            m = EmailMessage(); m["From"] = ADDR; m["To"] = TO; m["Subject"] = "Swnw | سؤال جديد في مساعد إنستنكت"
+            m["Message-ID"] = email.utils.make_msgid(domain="swnw.voiceover")
+            m.set_content(notice_line(it))
+            if send: send(m)
+            else:
+                with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s: s.login(ADDR, password()); s.send_message(m)
+            ok_ids.append(it["id"]); log("instinct notice sent", it["id"])
+        except Exception as e:
+            bad.append((it["id"], type(e).__name__ + ": " + str(e)[:200])); log("instinct notice error", it["id"], type(e).__name__)
+    if ok_ids: api("ack", {"lease_token": token, "ids": ok_ids, "ok": True}, NOTIFY_API)
+    for i, err in bad: api("ack", {"lease_token": token, "ids": [i], "ok": False, "error": err}, NOTIFY_API)
 
 def send_new():
     for p in jobs():
@@ -155,4 +197,4 @@ def poll():
     M.logout()
 if __name__ == "__main__":
     for d in ("queue", "out", "done"): os.makedirs(os.path.join(BASE, d), exist_ok=True)
-    pull_db(); send_new(); poll(); report_db()
+    instinct_notify(); pull_db(); send_new(); poll(); report_db()
