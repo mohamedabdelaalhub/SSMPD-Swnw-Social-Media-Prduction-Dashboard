@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — ربط طرق الدفع بالشجرة ونقل المبالغ القديمة</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}.sub{color:#5B6676;margin:0}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
+.card h2{margin:0;font-size:17px}.card h2 small{display:block;color:#5B6676;font-weight:400;font-size:12px}
+.row{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:10px 8px;border-bottom:1px solid #EEF1F6;vertical-align:middle}th{color:#5B6676;font-weight:400;white-space:nowrap}
+.sel{display:inline-flex;align-items:center;gap:8px;border:1px solid #C5CDDB;border-radius:10px;padding:6px 12px;background:#fff;min-width:230px;justify-content:space-between}.sel:after{content:"▾";color:#5B6676}
+.sel.new{border-color:#0F369D;background:#F2F5FD}
+.code{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#5B6676}
+.old{color:#9AA3B2;text-decoration:line-through}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}.st.ok{background:#E6F4EC;color:#2F7D5C}.st.wait{background:#FFF1E8;color:#F15A22}.st.fix{background:#EEF2FD;color:#0F369D}
+.btn{border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:700;background:#0F369D;color:#fff}.btn.ghost{background:#fff;color:#0F369D;border:1px solid #0F369D}
+.note{font-size:12px;color:#5B6676;margin:0}
+.warn{background:#FFF7F2;border:1px solid #FAD3BF;border-radius:12px;padding:10px 14px;font-size:13px}
+.entry{border:1px solid #E3E8F2;border-radius:12px;overflow:hidden}.entry table td,.entry table th{padding:8px 12px}.entry .tot td{font-weight:700;background:#F7F9FC}
+.num{direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.step{border:1px solid #E3E8F2;border-radius:12px;padding:12px;display:grid;gap:4px}.step b{font-size:13px}.step span{font-size:12px;color:#5B6676}.step.on{border-color:#0F369D;background:#F2F5FD}
+.q{background:#FFF;border:1px dashed #F15A22;border-radius:12px;padding:12px 14px;font-size:13px}
+.chk{display:inline-block;width:18px;height:18px;border-radius:5px;background:#0F369D;color:#fff;text-align:center;line-height:18px;font-size:12px}
+@media (max-width:760px){.wrap{padding:14px}.flow{grid-template-columns:1fr}table{display:block;overflow-x:auto}th,td{white-space:nowrap}.sel{min-width:190px}}
+</style></head><body><div class="wrap">
+<div><span class="tag">تصور — مش متنفذ</span><h1>ربط طرق الدفع بحسابات الشجرة + نقل المبالغ القديمة</h1>
+<p class="sub">كل تحصيل يروح لوحده لحسابه الصح في الشجرة (إنستا باي، فودافون كاش، فاليو، الفيزا)، والمبالغ اللي اتسجّلت قبل كده في الحسابات العامة تتنقل بقيد واحد متراجع.</p></div>
+
+<section class="card">
+ <h2>1) ربط طرق الدفع بالشجرة<small>الحسابات ← المحاسبة والأصول ← شجرة الحسابات ← «ربط طرق الدفع» — مرة واحدة، وأي تعديل بعد كده محتاج موافقة شخص تاني</small></h2>
+ <table><thead><tr><th>طريقة الدفع في الاستقبال</th><th>بتروح النهارده على</th><th>تروح بعد الربط على</th><th>الحالة</th></tr></thead><tbody>
+  <tr><td><b>نقدي</b></td><td>دُرج الموظف</td><td>دُرج الموظف (زي ما هو — مش بيتغير)</td><td><span class="st ok">ثابت</span></td></tr>
+  <tr><td><b>إنستا باي</b></td><td class="old">البنك (عام)</td><td><span class="sel new">إنستا باي <span class="code">0102010301</span></span></td><td><span class="st wait">مستني الموافقة</span></td></tr>
+  <tr><td><b>محفظة — فودافون كاش</b></td><td class="old">المحافظ والتحويلات (عام)</td><td><span class="sel new">فودافون كاش <span class="code">0102010302</span></span></td><td><span class="st wait">مستني الموافقة</span></td></tr>
+  <tr><td><b>محفظة — فاليو</b></td><td class="old">المحافظ والتحويلات (عام)</td><td><span class="sel new">الفاليو <span class="code">0102010303</span></span></td><td><span class="st wait">مستني الموافقة</span></td></tr>
+  <tr><td><b>فيزا</b></td><td class="old">الفيزا (عام)</td><td><span class="sel new">الفيزا <span class="code">0102010304</span></span></td><td><span class="st wait">مستني الموافقة</span></td></tr>
+  <tr><td><b>تحويل بنكي</b></td><td>البنك (عام)</td><td><span class="sel">حساب البنك في الشجرة</span></td><td><span class="st fix">اختار الحساب</span></td></tr>
+ </tbody></table>
+ <div class="row"><div class="row"><button class="btn">حفظ الربط</button><span class="note">اقترحه: المحاسب — يأكده: المدير المالي (مش نفس الشخص)</span></div><span class="note">القائمة بتعرض حسابات الحركة اللي تحت «الصناديق والبنوك» بس.</span></div>
+ <div class="warn"><b>في شاشة التحصيل:</b> لما الموظف يختار «محفظة إلكترونية» هيظهرله سؤال صغير «أنهي محفظة؟ فودافون كاش / فاليو»، علشان الفلوس تروح للحساب الصح من أول مرة.</div>
+</section>
+
+<section class="card">
+ <h2>2) نقل المبالغ القديمة لحساباتها الصح<small>نفس الشاشة ← «مبالغ في الحسابات العامة» — بيظهر كل إيصال اتسجّل قبل الربط، والحساب اللي هيتنقل له</small></h2>
+ <div class="flow"><div class="step on"><b>1. المحاسب يراجع ويسجّل</b><span>يأكد الحساب الصح لكل إيصال (ويقدر يغيّره)</span></div><div class="step"><b>2. المدير المالي يوافق</b><span>القيد ما بيتسجّلش غير بعد موافقته</span></div><div class="step"><b>3. الأرصدة تتظبط</b><span>«المحافظ والتحويلات» تبقى صفر و«إنستا باي» يبقى فيها الـ1,000</span></div></div>
+ <table><thead><tr><th></th><th>الإيصال</th><th>التاريخ</th><th>الموظف</th><th>متسجّل كـ</th><th>المبلغ</th><th>من حساب</th><th>إلى حساب</th></tr></thead><tbody>
+  <tr><td><span class="chk">✓</span></td><td class="num">RC-2026-000010</td><td class="num">24/11 12:25</td><td>منار</td><td>محفظة إلكترونية</td><td class="num">1,000.00</td><td>المحافظ والتحويلات</td><td><span class="sel">إنستا باي <span class="code">0102010301</span></span></td></tr>
+  <tr><td><span class="chk">✓</span></td><td class="num">RC-2026-0000xx</td><td>…</td><td>…</td><td>فيزا</td><td class="num">…</td><td>الفيزا (عام)</td><td><span class="sel">الفيزا <span class="code">0102010304</span></span></td></tr>
+ </tbody></table>
+ <div class="entry"><table><thead><tr><th>القيد اللي هيتسجّل بعد الموافقة</th><th>مدين</th><th>دائن</th></tr></thead><tbody>
+  <tr><td>إنستا باي <span class="code">0102010301</span></td><td class="num">1,000.00</td><td>—</td></tr>
+  <tr><td>المحافظ والتحويلات (عام)</td><td>—</td><td class="num">1,000.00</td></tr>
+  <tr class="tot"><td>الإجمالي</td><td class="num">1,000.00</td><td class="num">1,000.00</td></tr>
+ </tbody></table></div>
+ <div class="row"><button class="btn">سجّل قيد النقل (مستني موافقة)</button><span class="note">القيود القديمة ما بتتمسحش — القيد ده بينقل الرصيد بس، وكل إيصال بيتعلّم إنه اتنقل علشان ما يتنقلش مرتين.</span></div>
+</section>
+
+<div class="q"><b>محتاجين قرارك في حاجتين:</b> (1) الـ1,000 بتوع منار اتحوّلوا فعلاً «إنستا باي» ولا «فودافون كاش»؟ (2) «التحويل البنكي» يروح على أنهي حساب بنك في الشجرة — ولا نسيبه على حساب البنك العام لحد ما المحاسب يحدد؟</div>
+</div></body></html>
