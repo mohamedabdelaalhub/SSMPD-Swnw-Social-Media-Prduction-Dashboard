@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1991,
-    "labels": 1452,
-    "files": 156,
-    "groups": 1565
+    "definitions": 1994,
+    "labels": 1453,
+    "files": 157,
+    "groups": 1567
   },
   "fields": [
     {
@@ -8609,6 +8609,36 @@
       "tab": "indicator_reports",
       "article": "tasks-guide",
       "text_sha256": "9cdebb04e65e31491e60f7a341bb8a23fe481498eb3ff1298f06b2e511f480f3"
+    },
+    {
+      "file": "instinct-assistant.js",
+      "label": "العنوان",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "content",
+      "text_sha256": "92518474c189325a2ad4b3b0d9c66321a4bdd4de73fe7cbc53f7115d177fd4c5"
+    },
+    {
+      "file": "instinct-assistant.js",
+      "label": "لمين",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "instinct-assistant",
+      "text_sha256": "04ddd72fb7d5ddfee23ee3052f1210c61d098550ec63ff0ad5927458be17e698"
+    },
+    {
+      "file": "instinct-assistant.js",
+      "label": "النص",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "instinct-assistant",
+      "text_sha256": "a8b2c54c44d834c63f28a0c8859289a3f1ea7c82c72c8ed291f54c64147f24c2"
     },
     {
       "file": "insurance-billing.js",
