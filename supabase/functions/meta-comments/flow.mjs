@@ -42,7 +42,8 @@ const MSG = {
   greet: "أهلاً بحضرتك في مركز عيادات سونو التخصصية 🌿 أنا المساعد الآلي، هساعدك تحجز وزميلنا في الاستقبال هيأكد الميعاد معاك.",
   service: "حضرتك محتاج/ة أنهي خدمة؟ (علاج طبيعي، ليزر، أسنان، أو خدمة تانية)",
   name: "اسم حضرتك إيه؟",
-  phone: "رقم موبايل حضرتك علشان زميلنا في الاستقبال يكلمك ويأكد الميعاد؟",
+  phone: "ممكن رقم موبايل حضرتك علشان زميلنا في الاستقبال يكلمك ويحجزلك الميعاد؟",
+  reminder: "لو حابب زميلنا في الاستقبال يكلمك ويحجزلك الميعاد، ابعتلنا رقم موبايلك هنا 🌿",
   time: "إيه اليوم أو الوقت المناسب لحضرتك؟",
   unclear: "محتاج توضيح أكتر علشان أفهم حضرتك 🙏",
   unclear2: "هنحوّل حضرتك لزميل من فريقنا يكمل معاك 🙏",
@@ -78,10 +79,11 @@ export const MESSAGES = MSG;
 const DEFAULT = { stage: "collecting", name: null, phone: null, service: null, preferred_time: null, expect: null, unclear: 0, handoff_reason: null };
 const askOf = (expect) => MSG[expect] || null;
 
+// Order (owner 2026-11-24): phone first (the reception needs it), then the name, then the time. The service is never asked:
+// it comes from the text, or from ctx.defaultService (the Messenger ad is physiotherapy), so people don't stop at a pointless question.
 function missing(s) {
-  if (!s.service) return "service";
-  if (!s.name) return "name";
   if (!s.phone) return "phone";
+  if (!s.name) return "name";
   if (!s.preferred_time) return "time";
   return null;
 }
@@ -89,7 +91,7 @@ function missing(s) {
 // advance(state, text, { category, firstContact }) → { state, reply, handoff, alert, ready, infoReply, silent, passthrough }
 export function advance(prev, text, ctx = {}) {
   const s = { ...DEFAULT, ...(prev || {}) };
-  const out = (extra) => ({ state: s, reply: null, handoff: null, alert: false, ready: false, infoReply: false, silent: false, passthrough: false, ...extra });
+  const out = (extra) => ({ state: s, reply: null, handoff: null, alert: false, ready: false, leadNow: false, infoReply: false, silent: false, passthrough: false, ...extra });
   if (s.stage === "handoff" || s.stage === "ready") return out({ silent: true });
 
   const cat = ctx.category || "general";
@@ -102,11 +104,19 @@ export function advance(prev, text, ctx = {}) {
   if (cat === "complaint") return toHandoff("complaint", null, true);   // caller sends the approved complaint template + red alert
   if (cat === "thanks" || cat === "spam") return out({ passthrough: true });
 
-  let progress = false;
+  if (!s.service && ctx.defaultService) s.service = ctx.defaultService;
+  let progress = false, phoneJustCaptured = false;
   const ph = extractPhone(t);
-  if (ph && !s.phone) { s.phone = ph; progress = true; }
+  if (ph && !s.phone) { s.phone = ph; progress = true; phoneJustCaptured = true; }
   const sv = extractService(t);
-  if (sv && !s.service) { s.service = sv; progress = true; }
+  // A service named in the text wins over the default (e.g. someone on the physio ad asking about laser).
+  if (sv && (!s.service || (ctx.defaultService && s.service === ctx.defaultService && sv !== s.service))) { s.service = sv; progress = true; }
+  // "منى 01012345678" in one message: take the name from what is left once the number is removed.
+  if (phoneJustCaptured && !s.name) {
+    const rest = digits(t).replace(/[+\d][\d\s\-().]{8,}/g, " ").replace(/\s+/g, " ").trim();
+    const n = rest ? extractName(rest) : null;
+    if (n) s.name = n;
+  }
   if (s.expect === "name" && !s.name) { const n = extractName(t); if (n) { s.name = n; progress = true; } }
   if (s.expect === "time" && !s.preferred_time) {
     const clean = t.trim();
@@ -122,9 +132,10 @@ export function advance(prev, text, ctx = {}) {
   }
 
   const need = missing(s);
-  if (!need) { s.stage = "ready"; s.expect = null; return out({ ready: true, reply: `تمام يا ${s.name} 🌿 سجّلنا طلبك لـ${serviceLabel(s.service)}. زميلنا من الاستقبال هيتواصل مع حضرتك على رقمك لتأكيد الميعاد.` }); }
+  if (!need) { s.stage = "ready"; s.expect = null; return out({ ready: true, leadNow: phoneJustCaptured && !s.lead_id, reply: `تمام يا ${s.name} 🌿 سجّلنا طلبك لـ${serviceLabel(s.service)}. زميلنا من الاستقبال هيتواصل مع حضرتك على رقمك لتأكيد الميعاد.` }); }
   s.expect = need;
   const question = askOf(need);
+  const leadNow = phoneJustCaptured && !s.lead_id;   // the lead is created the moment the phone arrives, not at the end
   if (q && !progress) return out({ infoReply: true, reply: question });
-  return out({ reply: ctx.firstContact ? MSG.greet + "\n" + question : question });
+  return out({ leadNow, reply: ctx.firstContact ? MSG.greet + "\n" + question : question });
 }

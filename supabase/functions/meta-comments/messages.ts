@@ -2,10 +2,11 @@
 // and answer the latest customer message within Meta's 24-hour window (autopilot), using the same
 // reply rules as comments. Complaints raise a red alert in the dashboard.
 import { decideReply, clinicInfo } from "./ai.ts";
-import { advance, serviceLabel } from "./flow.mjs";
+import { advance, serviceLabel, MESSAGES } from "./flow.mjs";
 import { reviewHandoffs } from "./review.ts";
 
 const GRAPH = "https://graph.facebook.com/v26.0/";
+const LEAD_NAME_PLACEHOLDER = "عميل ماسنجر";
 const WINDOW_MS = 23.5 * 3600e3; // stay inside Meta's 24h standard messaging window
 
 async function gget(path: string, params: Record<string, string>) {
@@ -95,7 +96,7 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
         await db.from("social_messages").update({ status: "skipped", category: decision.category, updated_at: now }).in("id", ids);
         continue;
       }
-      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0, seed: conv.id });
+      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0, seed: conv.id, defaultService: brand === "sono" ? "physiotherapy" : undefined });
       if (flow.silent) { await db.from("social_messages").update({ status: "skipped", category: "handoff", updated_at: now }).in("id", ids); continue; }
       if (flow.passthrough) { /* thanks: keep decideReply's text, no state change */ }
       else {
@@ -108,17 +109,26 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
           preferred_time: s.preferred_time, expect: s.expect, unclear: s.unclear, handoff_reason: s.handoff_reason, updated_at: now,
           ...((flow.handoff || flow.ready) && !st?.handoff_at ? { handoff_at: now } : {}) };
         let leadId = st?.lead_id || null;
-        if (flow.ready) {
+        const where = platform === "messenger" ? "ماسنجر" : "انستجرام";
+        const leadMsg = `حجز ${serviceLabel(s.service)}${s.preferred_time ? " — الوقت المفضل: " + s.preferred_time : ""}`;
+        // The lead is created the moment the phone arrives (flow.leadNow), not at the end of the questions.
+        if (flow.leadNow || (flow.ready && !leadId)) {
           // Ad attribution from the webhook referral (if the webhook is live); campaign/adset come from the synced ad rows.
           const { data: ref } = await db.from("messenger_referrals").select("ad_id").eq("sender_id", recipient).eq("page_id", pageId).maybeSingle();
           const { data: adRow } = ref?.ad_id ? await db.from("meta_ads_daily").select("adset_id,campaign_id").eq("ad_id", ref.ad_id).limit(1).maybeSingle() : { data: null };
-          const { data: lead, error: le } = await db.rpc("ingest_lead", { p_event_id: `${plat}:flow:${conv.id}`, p_source: platform, p_name: s.name, p_phone: s.phone,
-            p_message: `حجز ${serviceLabel(s.service)} — الوقت المفضل: ${s.preferred_time}`, p_ad_id: ref?.ad_id || null, p_adset_id: adRow?.adset_id || null, p_campaign_id: adRow?.campaign_id || null });
+          const { data: lead, error: le } = await db.rpc("ingest_lead", { p_event_id: `${plat}:flow:${conv.id}`, p_source: platform, p_name: s.name || LEAD_NAME_PLACEHOLDER, p_phone: s.phone,
+            p_message: leadMsg, p_ad_id: ref?.ad_id || null, p_adset_id: adRow?.adset_id || null, p_campaign_id: adRow?.campaign_id || null });
           if (le) { report.errors.push(`${brand} ingest_lead: ${le.message}`); continue; }
           leadId = Array.isArray(lead) ? lead[0]?.lead_id : lead?.lead_id;
-          await db.rpc("messenger_flow_notify", { p_message: `حجز جديد من ${platform === "messenger" ? "ماسنجر" : "انستجرام"}: ${s.name} — ${serviceLabel(s.service)} — ${s.phone} — ${s.preferred_time}` });
+          await db.rpc("messenger_flow_notify", { p_message: `ليد جديد من ${where}: ${s.name || "بدون اسم لسه"} — ${serviceLabel(s.service)} — ${s.phone}` });
+        }
+        if (flow.ready && leadId) {
+          // Name/time arrived after the lead existed: complete it (only the placeholder name and this flow's own leads are touched).
+          await db.from("leads").update({ customer_name: s.name, updated_at: now }).eq("id", leadId).eq("customer_name", LEAD_NAME_PLACEHOLDER);
+          await db.from("leads").update({ message_text: leadMsg, updated_at: now }).eq("id", leadId).eq("source", platform);
+          await db.rpc("messenger_flow_notify", { p_message: `اكتملت بيانات حجز ${where}: ${s.name} — ${serviceLabel(s.service)} — ${s.phone} — ${s.preferred_time}` });
         } else if (flow.handoff) {
-          await db.rpc("messenger_flow_notify", { p_message: `محادثة محتاجة موظف (${flow.handoff}) على ${platform === "messenger" ? "ماسنجر" : "انستجرام"} — ${brand}` });
+          await db.rpc("messenger_flow_notify", { p_message: `محادثة محتاجة موظف (${flow.handoff}) على ${where} — ${brand}` });
         }
         await db.from("messenger_flow_state").upsert({ ...row, lead_id: leadId }, { onConflict: "conversation_id" });
       }
@@ -137,6 +147,7 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
       }
     }
   }
+  await sendFlowReminders(db, brand, pageId, token, report).catch((e) => report.errors.push(`${brand} flow reminders: ${e?.message}`));
   await reviewHandoffs(db, brand, token, new Set([pageId, igId].filter(Boolean)), report).catch((e) => report.errors.push(`${brand} flow review: ${e?.message}`));
 }
 
@@ -197,4 +208,19 @@ export async function sendManualMessage(db: any, opts: { conversationId: string;
   const ids = chrono.slice(lastPage + 1).filter((m) => !m.is_page && ["new", "failed", "expired"].includes(m.status)).map((m) => m.id);
   if (ids.length) await db.from("social_messages").update({ status: "replied", reply_text: text, replied_at: at, reply_platform_id: mid, sent_by: opts.adminId, last_error: null, updated_at: at }).in("id", ids);
   return { ok: true, id: `${platform}:${mid}`, saved: !ins.error };
+}
+
+// One gentle reminder (owner 2026-11-24): a conversation that stopped before giving a phone gets a single nudge ~2 hours after the
+// bot's last question, still inside Meta's 24h window. Never twice (reminded_at), never once the phone is known.
+export async function sendFlowReminders(db: any, brand: string, pageId: string, token: string, report: any) {
+  const from = new Date(Date.now() - 20 * 3600e3).toISOString(), to = new Date(Date.now() - 2 * 3600e3).toISOString();
+  const { data: rows } = await db.from("messenger_flow_state").select("conversation_id,sender_id,platform")
+    .eq("brand", brand).eq("stage", "collecting").is("phone", null).is("reminded_at", null).gte("updated_at", from).lte("updated_at", to).limit(10);
+  for (const r of rows || []) {
+    if (!r.sender_id) continue;
+    const sent = await gpostJson(`${pageId}/messages`, token, { recipient: { id: r.sender_id }, messaging_type: "RESPONSE", message: { text: MESSAGES.reminder } });
+    const now = new Date().toISOString();
+    await db.from("messenger_flow_state").update({ reminded_at: now }).eq("conversation_id", r.conversation_id);
+    if (sent.ok) report.flowReminders = (report.flowReminders || 0) + 1; else report.errors.push(`${brand} flow reminder: ${sent.error}`);
+  }
 }
