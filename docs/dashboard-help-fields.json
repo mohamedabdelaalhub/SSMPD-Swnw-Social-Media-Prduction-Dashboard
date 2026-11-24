@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1987,
-    "labels": 1448,
+    "definitions": 1990,
+    "labels": 1451,
     "files": 156,
-    "groups": 1561
+    "groups": 1564
   },
   "fields": [
     {
@@ -14519,6 +14519,36 @@
       "tab": "accounting",
       "article": "package",
       "text_sha256": "ef50d85d1745ebd23f3da4dde97bf1e102b2c6fa481b5d60bd73d2ed20b25cb3"
+    },
+    {
+      "file": "render-accounting.js",
+      "label": "يتباع من (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "package-offers",
+      "text_sha256": "67e2c2276d875669c458cfc9d6be54bb0ecca7d22adeaf045c489e46d961a12d"
+    },
+    {
+      "file": "render-accounting.js",
+      "label": "يتباع لحد (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "package-offers",
+      "text_sha256": "7e1c733b21f55cd2fb9dc4acf6581487b3b9ba5d96e861df8a1cb3eb5aaabc5a"
+    },
+    {
+      "file": "render-accounting.js",
+      "label": "أقل دفعة أولى % من قيمة الباكج",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "package-offers",
+      "text_sha256": "ac17563dcd923085645b15e36084f59589980634026ed0f3335a95d03636ff62"
     },
     {
       "file": "render-accounting.js",
