@@ -15699,6 +15699,16 @@
     },
     {
       "file": "render-leads.js",
+      "label": "رسالة افتتاحية جاهزة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "6054dcc0058002c931fcc44639d7582a0397d3a11f9b7f0134f63ab278d361f8"
+    },
+    {
+      "file": "render-leads.js",
       "label": "الحالة",
       "name": "",
       "kind": "label",
