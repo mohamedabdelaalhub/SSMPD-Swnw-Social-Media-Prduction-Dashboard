@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1993,
-    "labels": 1452,
+    "definitions": 1994,
+    "labels": 1453,
     "files": 157,
-    "groups": 1566
+    "groups": 1567
   },
   "fields": [
     {
@@ -15686,6 +15686,16 @@
       "tab": "leads",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "render-leads.js",
+      "label": "رسالة افتتاحية جاهزة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "6054dcc0058002c931fcc44639d7582a0397d3a11f9b7f0134f63ab278d361f8"
     },
     {
       "file": "render-leads.js",

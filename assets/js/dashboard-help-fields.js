@@ -17327,6 +17327,19 @@
       "reviewed": true
     },
     {
+      "title": "رسالة افتتاحية جاهزة",
+      "labels": [
+        "رسالة افتتاحية جاهزة"
+      ],
+      "text": "نص جاهز تبدأ بيه المحادثة مع الليد: اختار ليزر أو علاج طبيعي، عدّل النص براحتك، وبعدين «انسخ الرسالة» أو «افتح واتساب بالرسالة». مفيش حاجة بتتبعت من الداشبورد — إنت اللي بتدوس إرسال.",
+      "article": "leads-guide",
+      "tabs": [
+        "leads"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الحالة",
       "labels": [
         "الحالة"
@@ -23108,9 +23121,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1993,
-    "labels": 1452,
+    "definitions": 1994,
+    "labels": 1453,
     "files": 157,
-    "groups": 1566
+    "groups": 1567
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
