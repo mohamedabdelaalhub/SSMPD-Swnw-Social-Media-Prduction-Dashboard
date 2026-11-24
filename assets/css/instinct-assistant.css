@@ -37,10 +37,11 @@ details.ins-block[open]>summary{margin-bottom:8px}
 .ins-profile,.ins-audit-row{font-size:13px;padding:6px 0;border-bottom:1px solid #EEF1F6}
 /* محادثة بتطلع من تحت زي ماسنجر */
 .ins-chat{position:fixed;bottom:0;inset-inline-start:16px;width:min(380px,calc(100vw - 24px));height:min(560px,calc(100vh - 80px));display:flex;flex-direction:column;
-  background:#fff;border:1px solid #D5DBE8;border-bottom:none;border-radius:16px 16px 0 0;box-shadow:0 -8px 28px rgba(15,54,157,.18);z-index:80;animation:ins-up .22s ease-out}
+  background:#fff;border:1px solid #D5DBE8;border-bottom:none;border-radius:16px 16px 0 0;box-shadow:0 -8px 28px rgba(15,54,157,.18);z-index:80}
+.ins-chat.ins-anim{animation:ins-up .22s ease-out}
 .ins-chat[hidden]{display:none}
 @keyframes ins-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
-@media (prefers-reduced-motion:reduce){.ins-chat{animation:none}}
+@media (prefers-reduced-motion:reduce){.ins-chat.ins-anim{animation:none}}
 .ins-chat-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#0F369D;color:#fff;border-radius:16px 16px 0 0}
 .ins-x{background:none;border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer}
 .ins-chat-msgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:#F6F8FC}
