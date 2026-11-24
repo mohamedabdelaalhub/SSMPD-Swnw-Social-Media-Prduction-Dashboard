@@ -91,7 +91,7 @@
 
   function visibleSubScreens() {
     return SUB_SCREENS.filter(function (s) {
-      if (s.key === "reception") return isReception();
+      if (s.key === "reception") return isReception() || isCS(); // owner 2026-11-24: customer service gets the intake form without the reception role (leads-create already allows customer_service)
       if (s.key === "cs") return isCS();
       if (s.key === "experience_ratings") return isCS() || isManager();
       if (s.key === "bulk") return isReception();
