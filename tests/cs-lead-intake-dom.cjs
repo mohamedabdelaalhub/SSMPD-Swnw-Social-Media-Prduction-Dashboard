@@ -6,15 +6,15 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
 const edge=fs.readFileSync('supabase/functions/leads-create/index.ts','utf8');
 const gate=(edge.match(/const allowed = roleIn\(caller, (\[[^\]]+\])\)/)||[])[1];assert(gate,'leads-create role gate moved; update this test');
 const allowed=JSON.parse(gate.replace(/'/g,'"'));assert(allowed.includes('customer_service'),'server allows customer_service');
-async function boot(role){
+async function boot(role,extra){
  const dom=new JSDOM('<main id="c"></main>',{url:'https://x.test/',runScripts:'outside-only'}),w=dom.window,errors=[],calls=[],toasts=[];
  w.addEventListener('error',e=>errors.push(e.message));w.SSMPDToast={show:(m,k)=>toasts.push([m,k])};
- w.SSMPDAuth={currentAdmin:{id:'u1',role,active:true}};
- w.SSMPDRoles={hasRole:(a,r)=>a.role===r,hasAnyRole:(a,l)=>l.includes(a.role),isSuperAdmin:a=>a.role==='super_admin',canSeeTab:()=>true};
+ w.SSMPDAuth={currentAdmin:{id:'u1',role,roles:[role].concat(extra||[]),active:true}};
+ w.eval(fs.readFileSync('assets/js/roles.js','utf8'));   // the real role helpers (primary + extra roles)
  const leads=[];
  w.SSMPDDb={listEmployees:async()=>({employees:[]}),listLeads:async()=>({leads:leads.slice(),total:leads.length}),getLeadsStats:async()=>({}),listLeadArchive:async()=>({leads:[]}),
   getLeadRegistrationStats:async()=>({}),
-  createLead:async p=>{calls.push(['leads-create',p]);if(!allowed.includes(role)){const e=new Error('مفيش صلاحية موديول الليدز');e.status=403;throw e;}
+  createLead:async p=>{calls.push(['leads-create',p]);if(![role].concat(extra||[]).some(x=>allowed.includes(x))){const e=new Error('مفيش صلاحية موديول الليدز');e.status=403;throw e;}
    leads.unshift({id:'l'+leads.length,customer_name:p.customer_name,phone_raw:p.phone,source:p.source,current_status:'new',created_at:new Date().toISOString()});return {lead:leads[0]};}};
  const db=w.SSMPDDb;w.SSMPDDb=new Proxy(db,{get:(t,k)=>k in t?t[k]:async()=>({})});
  w.eval(fs.readFileSync('assets/js/render-leads.js','utf8'));
@@ -32,6 +32,9 @@ async function boot(role){
  assert.equal(cs.calls.length,1);assert.equal(cs.calls[0][1].customer_name,'عميل تجربة');
  assert.deepEqual(cs.toasts.pop(),['اتضاف الليد بنجاح',undefined]);assert.match(d.getElementById('nl-recent').textContent,/عميل تجربة/);
  assert.deepEqual(cs.errors,[]);
+ // live: no active admin has customer_service as PRIMARY role — it is an EXTRA role (main chat 5)
+ const ex=await boot('page_manager',['customer_service']);assert(ex.subs.includes('reception'),'extra-role customer service sees «الاستقبال»');
+ ex.c.querySelector('[data-sub="reception"]').click();await new Promise(r=>setTimeout(r,30));const d2=ex.w.document;d2.getElementById('nl-name').value='عميل 2';d2.getElementById('nl-phone').value='01000000001';d2.getElementById('nl-save').click();await new Promise(r=>setTimeout(r,30));assert.equal(ex.calls.length,1,'extra-role CS saves');assert.deepEqual(ex.errors,[]);
  const rec=await boot('reception');assert(rec.subs.includes('reception')&&rec.subs.includes('bulk'),'reception unchanged');
  const des=await boot('designer');assert(!des.subs.includes('reception'),'other roles: no intake');
  console.log('PASS customer service intake: «الاستقبال» sub-tab shown to customer_service (opens on «خدمة العملاء»), «حفظ الليد» → leads-create (server gate allows customer_service) → saved + listed; bulk stays reception-only; reception unchanged; others hidden.');process.exit(0);
