@@ -1,4 +1,5 @@
--- Live rollback test for the «تسليم» choice (owner 2026-11-24; no migration — UI over the EXISTING RPCs). ONE transaction ending in
+-- Live rollback test for the «تسليم» choice (owner 2026-11-24; UI over the EXISTING RPCs + read-only options.main_pending, mig 20261123180000 —
+-- paste its body at the marked spot if not applied). ONE transaction ending in
 -- ROLLBACK, as postgres. For Mazen and Manar (reception): what the choice would show (clinic_finance_peer_handover 'options': own open
 -- shift, colleagues with an open shift, main treasury shift) and, when each target is open, that its button's RPC succeeds:
 --   «تسليم للخزينة الرئيسية» → clinic_finance_treasury_command('transfer_request', 1 ج)
@@ -6,9 +7,10 @@
 -- An option whose target has no open shift is shown DISABLED by the UI (no RPC) — reported as «hidden/disabled». When the user's open
 -- shift has no cash yet, a REAL 2 ج cash collection (reception 'collect' → patient credit) is recorded first so both RPCs run. Nothing is kept.
 begin;
+-- >>> apply supabase/migrations/20261123180000_handover_options_pending.sql here (without its own begin / commit) if not applied yet <<<
 create temp table ho_live(n serial, who text, step text, expected text, actual text, ok boolean);
 do $$
-declare a record; o jsonb; r jsonb; err text; col jsonb;
+declare a record; o jsonb; r jsonb; err text; err2 text; col jsonb; pend jsonb;
 begin
   for a in select x.user_id, coalesce(to_jsonb(x)->>'name', x.id::text) as name from public.admins x
             where x.active and x.user_id is not null and (x.user_id = 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb' or (x.role in ('reception', 'customer_service') and to_jsonb(x)->>'name' like '%منار%'))
@@ -46,26 +48,43 @@ begin
     end if;
     if o->'shift' is null or jsonb_typeof(o->'shift') <> 'object' or coalesce((o->'shift'->>'available')::numeric, 0) < 1 then
       insert into ho_live(who, step, expected, actual, ok) values (a.name, 'RPCs', 'needs an open shift with ≥ 1 ج', 'not testable now (no open shift / no cash)', null); continue; end if;
-    -- «تسليم للخزينة الرئيسية»
+    -- each option from a CLEAN state: run it inside a sub-block, record the result, then raise to undo it (local variables survive)
+    -- «تسليم للخزينة الرئيسية» (+ while it is pending: options.main_pending shown, the peer request refused → the UI disables «لزميل»)
     if o->'main' is not null and jsonb_typeof(o->'main') = 'object' then
+      err := null; err2 := null; pend := null;
       begin
         execute 'set local role authenticated';
         r := public.clinic_finance_treasury_command('transfer_request', jsonb_build_object('from_shift', o->'shift'->>'id', 'to_register', o->'main'->>'register_id',
                'amount', 1, 'reference', 'HO-TEST-' || left(md5(a.user_id::text || clock_timestamp()::text), 8), 'reason', 'تجربة تراجع — تسليم للخزينة الرئيسية'), gen_random_uuid());
-        execute 'reset role'; err := 'ok';
-      exception when others then execute 'reset role'; err := sqlerrm; end;
+        err := 'ok';
+        pend := public.clinic_finance_peer_handover('options', '{}'::jsonb, null)->'main_pending';
+        col := (select c from jsonb_array_elements(coalesce(o->'colleagues', '[]')) c limit 1);
+        if col is not null then
+          begin
+            perform public.clinic_finance_peer_handover('request', jsonb_build_object('from_shift', o->'shift'->>'id', 'to_shift', col->>'shift_id', 'amount', 1, 'note', 'تجربة'), gen_random_uuid());
+            err2 := 'accepted';
+          exception when others then err2 := sqlerrm; end;
+        end if;
+        raise exception 'HO_UNDO';
+      exception when others then execute 'reset role'; if sqlerrm <> 'HO_UNDO' then err := sqlerrm; end if; end;
       insert into ho_live(who, step, expected, actual, ok) values (a.name, '«تسليم للخزينة الرئيسية» transfer_request 1 ج', 'ok', err, err = 'ok');
+      insert into ho_live(who, step, expected, actual, ok) values (a.name, 'while it is pending: options.main_pending (mig 180000)', 'amount 1', coalesce(pend::text, 'null — apply 20261123180000'), (pend->>'amount')::numeric = 1);
+      if err2 is not null then
+        insert into ho_live(who, step, expected, actual, ok) values (a.name, 'while it is pending: peer request', 'refused → UI shows «لزميل» disabled', err2, err2 like '%معلّق%');
+      end if;
     else
       insert into ho_live(who, step, expected, actual, ok) values (a.name, '«تسليم للخزينة الرئيسية»', 'disabled (main closed)', 'disabled with reason — no RPC', true);
     end if;
-    -- «تسليم التحصيل لزميل»
+    -- «تسليم التحصيل لزميل» (clean state: the main transfer above was undone)
     col := (select c from jsonb_array_elements(coalesce(o->'colleagues', '[]')) c limit 1);
     if col is not null then
+      err := null;
       begin
         execute 'set local role authenticated';
         r := public.clinic_finance_peer_handover('request', jsonb_build_object('from_shift', o->'shift'->>'id', 'to_shift', col->>'shift_id', 'amount', 1, 'note', 'تجربة تراجع'), gen_random_uuid());
-        execute 'reset role'; err := 'ok';
-      exception when others then execute 'reset role'; err := sqlerrm; end;
+        err := 'ok';
+        raise exception 'HO_UNDO';
+      exception when others then execute 'reset role'; if sqlerrm <> 'HO_UNDO' then err := sqlerrm; end if; end;
       insert into ho_live(who, step, expected, actual, ok) values (a.name, '«تسليم التحصيل لزميل» request 1 ج → ' || (col->>'name'), 'ok (pending until the colleague confirms)', err, err = 'ok');
     else
       insert into ho_live(who, step, expected, actual, ok) values (a.name, '«تسليم التحصيل لزميل»', 'disabled (no colleague open)', 'disabled with reason — no RPC', true);

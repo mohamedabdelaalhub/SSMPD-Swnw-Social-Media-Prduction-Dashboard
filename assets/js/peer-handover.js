@@ -133,16 +133,17 @@
      Each option is enabled only when its target has an open shift (else disabled with the reason); both reuse openSend. */
   function openChoice() {
     if (d.querySelector("[data-peer-choice]") || d.querySelector("[data-peer-send]")) return Promise.resolve();
-    return rpc("options").then(function (o) {
-      o = o || {};
+    return Promise.all([rpc("options"), rpc("inbox")]).then(function (res) {
+      var o = res[0] || {}, out = (res[1] && res[1].outgoing) || [], pend = o.main_pending || null;
       if (!o.shift) { var b0 = shell("تسليم", '<p>لازم تكون فاتح وردية تحصيل علشان تسلّم منها.</p><div class="shift-reminder-actions"><button type="button" class="btn" data-peer-close>تمام</button></div>', "data-peer-choice"); b0.querySelector("[data-peer-close]").onclick = function () { close(b0); }; return; }
-      var main = o.main || null, cols = o.colleagues || [];
+      var main = o.main || null, cols = o.colleagues || [], peerOk = cols.length && !pend;
       var box = shell("تسليم", '<p>الكاش المتاح للتسليم من وردية «' + esc(o.shift.register) + '»: <b>' + money(o.shift.available) + '</b>. تسلّم لمين؟</p>' +
         '<div class="peer-choice">' +
         '<button type="button" class="btn btn-primary" data-peer-choice-main' + (main ? '' : ' disabled') + '>تسليم للخزينة الرئيسية</button>' +
         '<small>' + (main ? esc(main.register || 'الخزينة الرئيسية') + ' — ' + esc(main.name) + ' بيعدّ ويأكد الاستلام.' : 'وردية الخزينة الرئيسية مش مفتوحة دلوقتي — خلّي المسؤول يفتحها الأول.') + '</small>' +
-        '<button type="button" class="btn" data-peer-choice-peer' + (cols.length ? '' : ' disabled') + '>تسليم التحصيل لزميل</button>' +
-        '<small>' + (cols.length ? cols.map(function (c) { return esc(c.name); }).join("، ") + ' فاتح وردية دلوقتي.' : 'مفيش زميل فاتح وردية تحصيل دلوقتي.') + '</small>' +
+        '<button type="button" class="btn" data-peer-choice-peer' + (peerOk ? '' : ' disabled') + '>تسليم التحصيل لزميل</button>' +
+        '<small data-peer-choice-peer-why>' + (pend ? 'فيه تسليم للخزينة الرئيسية معلّق على ورديتك (' + money(pend.amount) + ') — استنى المسؤول يستلمه الأول.' : cols.length ? cols.map(function (c) { return esc(c.name); }).join("، ") + ' فاتح وردية دلوقتي.' : 'مفيش زميل فاتح وردية تحصيل دلوقتي.') + '</small>' +
+        (out.length ? '<small data-peer-choice-out>عندك تسليم معلّق لزميل: ' + out.map(function (h) { return esc(h.to_name) + ' ' + money(h.amount); }).join("، ") + '.</small>' : '') +
         '</div><div class="shift-reminder-actions"><button type="button" class="btn" data-peer-close>إلغاء</button></div>', "data-peer-choice");
       box.querySelector("[data-peer-close]").onclick = function () { close(box); };
       box.querySelector("[data-peer-choice-main]").onclick = function () { close(box); openSend({ only: "main" }); };

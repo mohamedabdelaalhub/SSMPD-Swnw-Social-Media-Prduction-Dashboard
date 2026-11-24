@@ -6,13 +6,13 @@ const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/stri
 (async()=>{
 const d=new JSDOM('<body><a data-goto="reception_services"></a></body>',{url:'https://x.test/',runScripts:'outside-only',pretendToBeVisual:true}),w=d.window,errors=[];
 Object.defineProperty(w,'crypto',{value:webcrypto});w.addEventListener('error',e=>errors.push(e.message));
-const calls=[],tcalls=[],toasts=[];let main={shift_id:'m1',register_id:'R-main',register:'الخزينة الرئيسية',name:'محمود'},cols=[{shift_id:'s2',name:'مازن',register:'خزينة مازن'}];
+const calls=[],tcalls=[],toasts=[];let pending=null,outgoing=[],main={shift_id:'m1',register_id:'R-main',register:'الخزينة الرئيسية',name:'محمود'},cols=[{shift_id:'s2',name:'مازن',register:'خزينة مازن'}];
 w.SSMPDToast={show:m=>toasts.push(m)};w.SSMPDAuth={currentAdmin:{id:'me',role:'reception'}};
 w.SSMPDDb={financeTreasuryCommand:async(a,p,k)=>{tcalls.push([a,p,k]);return {id:'t1'};},client:{rpc:async(fn,a)=>{
  if(fn==='clinic_reception_shift_reminder')return {data:{state:'open'}};
  calls.push([a.p_action,a.p_payload]);
- if(a.p_action==='inbox')return {data:{incoming:[],outgoing:[]}};
- if(a.p_action==='options')return {data:{shift:{id:'s1',register:'خزينة منار',cash:1800,available:1800},colleagues:cols,main:main}};
+ if(a.p_action==='inbox')return {data:{incoming:[],outgoing:outgoing}};
+ if(a.p_action==='options')return {data:{shift:{id:'s1',register:'خزينة منار',cash:1800,available:1800},colleagues:cols,main:main,main_pending:pending}};
  if(a.p_action==='request')return {data:{id:'h1',to_name:'مازن',amount:a.p_payload.amount}};
  return {data:null};}}};
 w.eval(fs.readFileSync('assets/js/peer-handover.js','utf8'));w.eval(fs.readFileSync('assets/js/reception-shift-reminder.js','utf8'));
@@ -46,6 +46,13 @@ cols=[];c=await openChoice();assert.equal(c.querySelector('[data-peer-choice-pee
 assert.equal(c.querySelector('[data-peer-choice-main]').disabled,false);c.querySelector('[data-peer-close]').click();
 main=null;cols=[{shift_id:'s2',name:'مازن',register:'خزينة مازن'}];c=await openChoice();assert.equal(c.querySelector('[data-peer-choice-main]').disabled,true);
 assert.match(c.textContent,/وردية الخزينة الرئيسية مش مفتوحة دلوقتي/);assert.equal(c.querySelector('[data-peer-choice-peer]').disabled,false);c.querySelector('[data-peer-close]').click();
+// 5) a handover to the MAIN treasury pending on the shift → «تسليم التحصيل لزميل» disabled with that reason (the server refuses it then)
+main={shift_id:'m1',register_id:'R-main',register:'الخزينة الرئيسية',name:'محمود'};pending={id:'tr1',amount:500,reference:'HO-1'};c=await openChoice();
+assert.equal(c.querySelector('[data-peer-choice-peer]').disabled,true);assert.match(c.querySelector('[data-peer-choice-peer-why]').textContent,/فيه تسليم للخزينة الرئيسية معلّق على ورديتك \(500/);
+assert.equal(c.querySelector('[data-peer-choice-main]').disabled,false,'main stays available');c.querySelector('[data-peer-close]').click();
+// 6) a pending peer handover does not block main (server allows it) — it is shown as a note
+pending=null;outgoing=[{id:'h9',to_name:'مازن',amount:300}];c=await openChoice();assert.equal(c.querySelector('[data-peer-choice-main]').disabled,false);
+assert.match(c.querySelector('[data-peer-choice-out]').textContent,/عندك تسليم معلّق لزميل: مازن 300/);c.querySelector('[data-peer-close]').click();outgoing=[];
 assert.deepEqual(errors,[]);
-console.log('PASS «تسليم» choice (reception): one «تسليم» on «ورديتك مفتوحة» → «تسليم للخزينة الرئيسية» (form with only the main treasury → transfer_request) / «تسليم التحصيل لزميل» (only colleagues → peer request); each disabled with its reason when no open shift.');process.exit(0);
+console.log('PASS «تسليم» choice (reception): one «تسليم» on «ورديتك مفتوحة» → «تسليم للخزينة الرئيسية» (form with only the main treasury → transfer_request) / «تسليم التحصيل لزميل» (only colleagues → peer request); each disabled with its reason when no open shift; «لزميل» disabled while a main handover is pending; a pending peer handover shown as a note.');process.exit(0);
 })().catch(e=>{console.error(e);process.exit(1);});
