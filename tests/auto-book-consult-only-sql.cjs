@@ -6,7 +6,10 @@ const fn=(file,name)=>{const s=fs.readFileSync('supabase/migrations/'+file,'utf8
 (async()=>{const db=new PGlite();const q=(t,p)=>db.query(t,p),one=async(t,p)=>(await q(t,p)).rows[0];
  await db.exec(`create role anon;create role authenticated;create schema clinic_reception;
   create table clinic_reception.providers(id uuid primary key,workspace_id uuid,name text,department text);
-  create table clinic_reception.services(id uuid primary key default gen_random_uuid(),workspace_id uuid,code text,name text,department text,minutes int default 15,active boolean default true);
+  create table clinic_reception.services(id uuid primary key default gen_random_uuid(),workspace_id uuid,code text,name text,department text,minutes int default 15,active boolean default true,placeholder boolean not null default false);
+  create table clinic_reception.provider_departments(provider_id uuid,department text);
+  create table clinic_reception.external_bookings(id uuid primary key default gen_random_uuid(),state text,review_kind text,reason text,attempts int default 0,updated_at timestamptz,day date);
+  create function clinic_reception.cairo_day(t timestamptz) returns date language sql as $$select (t at time zone 'Africa/Cairo')::date$$;
   create table clinic_reception.appointments(id uuid primary key default gen_random_uuid(),provider_id uuid,service_id uuid,status text default 'booked');
   create table clinic_reception.auto_book_services(provider_id uuid,service_code text);
   create table clinic_reception.provider_service_scopes(provider_id uuid,service_code text);
@@ -30,7 +33,9 @@ const fn=(file,name)=>{const s=fs.readFileSync('supabase/migrations/'+file,'utf8
  assert.equal(await pick(ent),sample,'old: the most used service wins even when it is a procedure');
  assert.equal(await pick(der),derKashf,'old: the department\'s single «كشف…» service (step 2) was already right');
  // apply
+ await q("insert into clinic_reception.external_bookings(state,review_kind,day) values('review','service',current_date+1),('review','full_day',current_date+1),('review','service',current_date-3)");
  await db.exec(fs.readFileSync('supabase/migrations/20261124210000_auto_book_consult_only.sql','utf8'));
+ assert.deepEqual((await q("select state from clinic_reception.external_bookings order by day,review_kind")).rows.map(r=>r.state),['review','review','pending'],'future review/service re-queued; full_day and past untouched');
  assert.equal(await pick(ent),entFollow,'ENT: no كشف/استشارة → متابعة (consultation-type), not the procedure');
  const entCons2=await svc('0001152','استشاره انف واذن','أنف وأذن',15);
  assert.equal(await pick(ent),entCons2,'ENT: استشارة preferred over متابعة');
@@ -42,6 +47,18 @@ const fn=(file,name)=>{const s=fs.readFileSync('supabase/migrations/'+file,'utf8
  assert.equal(await pick(ent,'أخذ عينة من الأذن تحت مخدر موضعي'),sample,'source names the service → used');
  await q("insert into clinic_reception.auto_book_services values($1,'0001400')",[gyn]);
  assert.equal(await pick(gyn),gynProc,'saved per-doctor service → used');
+ // a doctor whose services live in an EXTRA department (home department has none): used to be NULL → review 'service'
+ const neu='00000000-0000-4000-8000-0000000000b1';await q("insert into clinic_reception.providers values($1,$2,'د. أعصاب','مخ وأعصاب')",[neu,ws]);
+ await q("insert into clinic_reception.provider_departments values($1,'المخ والأعصاب')",[neu]);
+ const nk=await svc('0001500','كشف مخ وأعصاب','المخ والأعصاب',15),ns=await svc('0001501','استشارة مخ وأعصاب','المخ والأعصاب',15),ne=await svc('0001502','رسم مخ','المخ والأعصاب',5);
+ assert.equal(await pick(neu),nk,'extra department: كشف (not NULL, not the 5-min procedure)');
+ assert.equal(await pick(neu,'كشف جديد'),nk,'«كشف جديد» → كشف');
+ assert.equal(await pick(neu,'استشارة'),ns,'«استشارة» → استشارة');
+ // a scope row also counts
+ const lone='00000000-0000-4000-8000-0000000000c1';await q("insert into clinic_reception.providers values($1,$2,'د. وحيد','قسم فاضي')",[lone,ws]);
+ assert.equal(await pick(lone),null,'serves nothing → NULL');
+ await q("insert into clinic_reception.provider_service_scopes values($1,'0001501')",[lone]);assert.equal(await pick(lone),ns,'scope row → its consultation');
+ // the parked «اختار الخدمة» rows were re-queued by the migration
  // rollback
  await db.exec(fs.readFileSync('supabase/rollbacks/20261124210000_auto_book_consult_only.rollback.sql','utf8'));
  assert.equal(await pick(ent),sample,'rollback restores the old picker');

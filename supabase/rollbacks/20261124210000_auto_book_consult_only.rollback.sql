@@ -8,5 +8,6 @@ do $$ declare d text; begin
 end $$;
 revoke all on function clinic_reception.auto_time_service(uuid, uuid, text) from public, anon, authenticated;
 drop function clinic_reception.is_consult_name(text);
-drop function clinic_reception.consult_rank(text);
+drop function clinic_reception.consult_rank(text, text);
+drop function clinic_reception.serves_service(uuid, text, text);
 commit;
