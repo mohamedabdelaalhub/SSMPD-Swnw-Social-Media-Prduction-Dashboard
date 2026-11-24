@@ -83,7 +83,12 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
       const { data: st } = await db.from("messenger_flow_state").select("*").eq("conversation_id", conv.id).maybeSingle();
       const hist = msgs.slice(Math.max(0, lastPage - 3), lastPage + 1).map((m: any) => `${selfIds.has(m.from?.id) ? "الصفحة" : "العميل"}: ${m.message || ""}`);
       let decision = await decideReply({ brand, channel: "message", text: waitingText, history: hist, clinicInfo: await clinicInfo() });
-      if (!decision.ok) { report.errors.push(`${brand} message reply: ${decision.error}`); break; }
+      if (!decision.ok) {
+        // Don't stop the whole inbox for one failing conversation: record why and move on.
+        report.errors.push(`${brand} message reply: ${decision.error}`);
+        await db.from("social_messages").update({ last_error: String(decision.error || "decideReply failed").slice(0, 300), updated_at: now }).in("id", ids).eq("status", "new");
+        continue;
+      }
       if (decision.category === "spam" && !st) {
         await db.from("social_messages").update({ status: "skipped", category: decision.category, updated_at: now }).in("id", ids);
         continue;
