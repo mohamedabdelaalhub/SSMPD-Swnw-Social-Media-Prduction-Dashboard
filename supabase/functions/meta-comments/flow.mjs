@@ -38,6 +38,19 @@ export function extractName(text) {
   return t;
 }
 
+
+// A Facebook/Instagram profile name is used as the lead name only when it looks like a real person's name: 2–4 words, letters only
+// (Arabic or Latin), no emoji/digits/symbols, not a generic placeholder. Single words and nicknames are still asked for.
+const GENERIC_NAMES = /^(facebook|instagram|meta)\s+user$|^مستخدم\s+(فيسبوك|انستجرام|إنستجرام)$/i;
+export function looksLikeRealName(raw) {
+  const t = String(raw ?? "").replace(/\s+/g, " ").trim();
+  if (t.length < 5 || t.length > 40 || GENERIC_NAMES.test(t)) return null;
+  if (!/^[\u0621-\u064A\u0671A-Za-z][\u0621-\u064A\u0671A-Za-z'.\-\s]*$/.test(t)) return null;
+  const words = t.split(" ");
+  if (words.length < 2 || words.length > 4 || words.some((w) => w.replace(/[^\u0621-\u064A\u0671A-Za-z]/g, "").length < 2)) return null;
+  return t;
+}
+
 const MSG = {
   greet: "أهلاً بحضرتك في مركز عيادات سونو التخصصية 🌿 أنا المساعد الآلي، هساعدك تحجز وزميلنا في الاستقبال هيأكد الميعاد معاك.",
   service: "حضرتك محتاج/ة أنهي خدمة؟ (علاج طبيعي، ليزر، أسنان، أو خدمة تانية)",
@@ -76,7 +89,7 @@ export function handoffReply(ctx = {}) {
 }
 export const MESSAGES = MSG;
 
-const DEFAULT = { stage: "collecting", name: null, phone: null, service: null, preferred_time: null, expect: null, unclear: 0, handoff_reason: null };
+const DEFAULT = { stage: "collecting", name: null, name_source: null, phone: null, service: null, preferred_time: null, expect: null, unclear: 0, handoff_reason: null };
 const askOf = (expect) => MSG[expect] || null;
 
 // Order (owner 2026-11-24): phone first (the reception needs it), then the name, then the time. The service is never asked:
@@ -104,6 +117,7 @@ export function advance(prev, text, ctx = {}) {
   if (cat === "complaint") return toHandoff("complaint", null, true);   // caller sends the approved complaint template + red alert
   if (cat === "thanks" || cat === "spam") return out({ passthrough: true });
 
+  if (!s.name && ctx.profileName) { const pn = looksLikeRealName(ctx.profileName); if (pn) { s.name = pn; s.name_source = "facebook"; } }
   if (!s.service && ctx.defaultService) s.service = ctx.defaultService;
   let progress = false, phoneJustCaptured = false;
   const ph = extractPhone(t);
@@ -117,7 +131,10 @@ export function advance(prev, text, ctx = {}) {
     const n = rest ? extractName(rest) : null;
     if (n) s.name = n;
   }
-  if (s.expect === "name" && !s.name) { const n = extractName(t); if (n) { s.name = n; progress = true; } }
+  // A name the customer types wins over the profile name ("اسمي …" at any point, or the answer to the name question).
+  const said = t.match(/(?:اسمي|اسمى)\s+([^\n،,.؟?]+)/);
+  if (said) { const n = extractName(said[1]); if (n) { s.name = n; s.name_source = null; progress = true; } }
+  if (s.expect === "name" && (!s.name || s.name_source === "facebook")) { const n = extractName(t); if (n) { s.name = n; s.name_source = null; progress = true; } }
   if (s.expect === "time" && !s.preferred_time) {
     const clean = t.trim();
     if (clean && clean.length <= 140 && !ph && !isQuestion(clean)) { s.preferred_time = clean; progress = true; }
