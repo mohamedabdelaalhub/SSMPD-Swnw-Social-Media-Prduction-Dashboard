@@ -107,3 +107,4 @@
  .rv-tot b,.rv-tot small{white-space:nowrap}
 }
 .rv-mf .rv-btn.rv-danger{color:var(--rv-neg)}
+.rv-change-hint{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:rgba(15,54,157,.07);color:#0F369D;font-size:13px;line-height:1.7}
