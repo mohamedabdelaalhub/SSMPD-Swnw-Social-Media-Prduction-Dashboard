@@ -46,8 +46,9 @@ def links(m):
     return out[:20]
 def add_clips(j, found):
     """-> the links not seen before (also stored in j["clips"])."""
-    new = [u for u in found if u not in j.setdefault("clips", [])]
-    j["clips"] = (j["clips"] + new)[:20]; return new
+    have = j.setdefault("clips", [])  # before the loop: with no links found the comprehension never ran setdefault (KeyError)
+    new = [u for u in found if u not in have]
+    j["clips"] = (have + new)[:20]; return new
 
 def secret():
     f = os.path.join(BASE, ".vo-worker-secret")
@@ -195,6 +196,14 @@ def poll():
             j["db_reported"] = "done" if r.get("ok") else r.get("reason")
         finish(p, j); log("done", jid, j.get("video_out") or j["audio"])
     M.logout()
+def tick(steps=None):
+    """-> number of failed steps. One failing step must not block the others (e.g. poll() must not stop report_db())."""
+    failed = 0
+    for step in steps or (instinct_notify, pull_db, send_new, poll, report_db):
+        try: step()
+        except Exception as e:
+            failed += 1; log("step error", step.__name__, type(e).__name__ + ": " + str(e)[:300])
+    return failed
 if __name__ == "__main__":
     for d in ("queue", "out", "done"): os.makedirs(os.path.join(BASE, d), exist_ok=True)
-    instinct_notify(); pull_db(); send_new(); poll(); report_db()
+    sys.exit(1 if tick() else 0)

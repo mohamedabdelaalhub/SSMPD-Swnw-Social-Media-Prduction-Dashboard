@@ -37,7 +37,29 @@ assert.deepEqual(o.calls.map(c => c[0]), ['lease', 'ack', 'ack']);
 assert.ok(o.calls.every(c => c[2].endsWith('/functions/v1/instinct-notify')));
 assert.deepEqual(o.calls[1][1], { lease_token: '44444444-4444-4444-8444-444444444444', ids: ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'], ok: true }, 'sent question + draft acked ok');
 assert.equal(o.calls[2][1].ok, false); assert.deepEqual(o.calls[2][1].ids, ['33333333-3333-4333-8333-333333333333']); assert.match(o.calls[2][1].error, /smtp down/);
-assert.match(fs.readFileSync('ops/vo-worker/vo.py', 'utf8'), /instinct_notify\(\); pull_db\(\); send_new\(\); poll\(\); report_db\(\)/);
+assert.match(fs.readFileSync('ops/vo-worker/vo.py', 'utf8'), /for step in steps or \(instinct_notify, pull_db, send_new, poll, report_db\):/);
+// 2026-11-24 fix: add_clips on a job file without "clips" and no links found used to raise KeyError and stop every tick;
+// and one failing step no longer blocks the others (report_db still runs when poll() fails).
+const py2 = String.raw`
+import importlib.util, json, os, subprocess, sys, tempfile
+spec = importlib.util.spec_from_file_location("vo", "ops/vo-worker/vo.py"); vo = importlib.util.module_from_spec(spec); spec.loader.exec_module(vo)
+j = {"db_id": "x"}; assert vo.add_clips(j, []) == [] and j["clips"] == []
+j = {}; assert vo.add_clips(j, ["https://a/1"]) == ["https://a/1"] and vo.add_clips(j, ["https://a/1", "https://a/2"]) == ["https://a/2"]
+ran, logs = [], []
+vo.log = lambda *a: logs.append(" ".join(map(str, a)))
+def mk(name, boom=False):
+    def f():
+        ran.append(name)
+        if boom: raise KeyError("clips")
+    f.__name__ = name; return f
+failed = vo.tick([mk("instinct_notify"), mk("pull_db"), mk("send_new"), mk("poll", True), mk("report_db")])
+print(json.dumps({"code": failed, "ran": ran, "out": "\\n".join(logs)}))
+`;
+const r2 = spawnSync('python3', ['-c', py2], { encoding: 'utf8' });
+assert.equal(r2.status, 0, r2.stderr);
+const o2 = JSON.parse(r2.stdout.trim().split('\n').pop());
+assert.equal(o2.code, 1, 'a failed step is counted (exit 1)'); assert.deepEqual(o2.ran, ['instinct_notify', 'pull_db', 'send_new', 'poll', 'report_db']);
+assert.match(o2.out, /step error poll KeyError/);
 // edge function
 const src = fs.readFileSync('supabase/functions/instinct-notify/index.ts', 'utf8');
 const ex = {}; new Function('exports', ts.transpileModule(src.slice(src.indexOf('const UUID'), src.indexOf('Deno.serve')).replace(/export function/g, 'exports.rpcArgs = function'), { compilerOptions: { target: 99, module: 1 } }).outputText)(ex);
