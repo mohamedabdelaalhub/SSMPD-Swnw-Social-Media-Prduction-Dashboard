@@ -9,6 +9,8 @@ file_rules={}
 def frule(files,labels,text,article):
  # File-scoped explanation: the same label can mean different things on other screens.
  for f in files.split('|'):file_rules.setdefault(f,[]).append((set(labels.split('|')),text,article))
+frule('instinct-assistant.js','لمين','الفريق اللي هتظهر له الملاحظة بعد ما المالك ينشرها: كل الموظفين أو الاستقبال أو خدمة العملاء أو فريق المحتوى أو الحسابات أو الإدارة.','instinct-assistant')
+frule('instinct-assistant.js','النص','نص ملاحظة إرشادية من مساعد إنستنكت. ممنوع أي اسم أو رقم أو بيانات مريض؛ السيرفر بيرفض أرقام الموبايل وأكواد الملفات والأرقام القومية.','instinct-assistant')
 rule('ملاحظات الخزينة','اكتب وصفًا للعهدة أو تعليمات الاستلام. الملاحظة لا تغير صلاحيات الخزينة.','ledger-guide')
 rule('نوع الكشف','اختر كشف ماكينة الفيزا أو البنك أو المحفظة ليقارن النظام الحركات بالحساب المقابل.','ledger-guide')
 rule('البنك أو شركة التحصيل|شركة التحصيل أو البنك','اكتب الجهة التي أصدرت الكشف أو الإيصال، مثل فوري أو اسم البنك.','ledger-guide')
