@@ -1,4 +1,6 @@
 window.SSMPD_TRANSLATIONS = {
+  "مساعد إنستنكت": "Instinct assistant",
+  "مساعد إنستنكت (ذكاء اصطناعي)": "Instinct assistant (AI)",
   "أخصائي نفسية": "Psychology specialist",
   "الأقسام والخدمات": "Sections and services",
   "فتح القسم": "Open section",

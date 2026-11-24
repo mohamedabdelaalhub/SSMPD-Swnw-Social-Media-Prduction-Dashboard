@@ -41,7 +41,8 @@
     booking_cash: window.SSMPDBookingCash,
     accounting: window.SSMPDRenderAccounting,
     tasks: window.SSMPDRenderTasks,
-    inventory: window.SSMPDRenderInventory
+    inventory: window.SSMPDRenderInventory,
+    instinct: window.SSMPDInstinct
   };
   var TAB_LABELS = {
     human_resources: "الموارد البشرية",
@@ -72,7 +73,8 @@
     booking_cash: "خزينة الاستقبال والحجوزات",
     accounting: "الحسابات",
     tasks: "المهام",
-    inventory: "المخزن والجرد"
+    inventory: "المخزن والجرد",
+    instinct: "مساعد إنستنكت"
   };
   if(window.SSMPDUITitles)TAB_LABELS=window.SSMPDUITitles.tabs;
 
@@ -197,12 +199,12 @@
     // القائمة المنسدلة فقط — اتشالوا من شريط التابات العادي (وقائمة الموبايل
     // القديمة) عشان ميبقوش متكررين في مكانين، ويبانوا بس في المكان اللي
     // المستخدم طلبه (جوه القائمة المنسدلة).
-    var mainSuiteTabs = tabs.filter(function (t) { return ["human_resources", "training_evaluation", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "org_legal", "reports", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(t) === -1; });
+    var mainSuiteTabs = tabs.filter(function (t) { return ["human_resources", "training_evaluation", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "org_legal", "reports", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports", "instinct"].indexOf(t) === -1; });
 
     function tabButtonsHtml() {
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + window.SSMPDI18n.textHtml(TAB_LABELS[t]) + '</button>'; }).join("");
     }
-    var ddItems = '<button class="ud-item" data-goto="home">الرئيسية الشخصية</button>';
+    var ddItems = tabs.indexOf('home') !== -1 ? '<button class="ud-item" data-goto="home">الرئيسية الشخصية</button>' : '';
     if(tabs.indexOf('human_resources')!==-1)ddItems+='<button class="ud-item" data-goto="human_resources">الموارد البشرية</button>';
     if(tabs.indexOf('training_evaluation')!==-1)ddItems+='<button class="ud-item" data-goto="training_evaluation">التدريب والتقييم</button>';
     if(tabs.indexOf('price_lists')!==-1&&tabs.indexOf('contracting_entities')===-1)ddItems+='<button class="ud-item" data-goto="price_lists">جهات التعاقد ولوائح الأسعار</button>';
@@ -210,6 +212,7 @@
     if (tabs.indexOf("patients") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"patients\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</button>";
     if (tabs.indexOf("leads") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"leads\"> <!--ssmpd-i18n:%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D9%88%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84-->إدارة الليدز والتواصل</button>";
     if (tabs.indexOf("tasks") !== -1) ddItems += '<button class="ud-item" data-goto="tasks">المهام</button>';
+    if (tabs.indexOf("instinct") !== -1) ddItems += '<button class="ud-item" data-goto="instinct">مساعد إنستنكت</button>';
     if (tabs.indexOf("indicator_reports") !== -1) ddItems += '<button class="ud-item" data-goto="indicator_reports">تقارير المؤشرات والإجراءات</button>';
     if (tabs.indexOf("staff_kpi") !== -1) ddItems += '<button class="ud-item" data-goto="staff_kpi">أداء الفريق</button>';
     if (tabs.indexOf("my_kpi") !== -1) ddItems += '<button class="ud-item" data-goto="my_kpi">أدائي</button>';
@@ -357,6 +360,7 @@
     var preferred=R.defaultTab(admin);if(tabs.indexOf('home')!==-1)preferred='home';
     try{if(sessionStorage.getItem('ssmpd_active_tab_owner')!==admin.id)savedTab=null;}catch(e){}
     var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : (tabs.indexOf(preferred)!==-1?preferred:tabs[0]);
+    if (/^#instinct\b/.test(String(window.location.hash || "")) && tabs.indexOf("instinct") !== -1) startTab = "instinct";
     if (window.SSMPDPatientUI && window.SSMPDPatientUI.route() && tabs.indexOf('patients') !== -1) startTab = 'patients';
     switchTab(startTab);
     setupRealtime();
@@ -805,7 +809,7 @@
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["human_resources", "training_evaluation", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "org_legal", "reports", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(tab) !== -1;
+    var isSeparateModule = ["human_resources", "training_evaluation", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "org_legal", "reports", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports", "instinct"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");

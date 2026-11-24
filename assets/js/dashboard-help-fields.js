@@ -9821,6 +9821,46 @@
       "reviewed": true
     },
     {
+      "title": "العنوان",
+      "labels": [
+        "العنوان",
+        "عنوان المحتوى"
+      ],
+      "text": "اكتب عنوانًا يميز المادة أو السجل في هذه الشاشة. في المحتوى هو عنوان الفكرة، وفي بيانات المركز هو عنوان المكان. اتبع اسم النموذج قبل الحفظ.",
+      "article": "content",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "لمين",
+      "labels": [
+        "لمين"
+      ],
+      "text": "الفريق اللي هتظهر له الملاحظة بعد ما المالك ينشرها: كل الموظفين أو الاستقبال أو خدمة العملاء أو فريق المحتوى أو الحسابات أو الإدارة.",
+      "article": "instinct-assistant",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "النص",
+      "labels": [
+        "النص"
+      ],
+      "text": "نص ملاحظة إرشادية من مساعد إنستنكت. ممنوع أي اسم أو رقم أو بيانات مريض؛ السيرفر بيرفض أرقام الموبايل وأكواد الملفات والأرقام القومية.",
+      "article": "instinct-assistant",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اسم المريض / رقم الملف / رقم الزيارة",
       "labels": [
         "اسم المريض / رقم الملف / رقم الزيارة",
@@ -19526,20 +19566,6 @@
       "reviewed": true
     },
     {
-      "title": "عنوان المحتوى",
-      "labels": [
-        "عنوان المحتوى",
-        "العنوان"
-      ],
-      "text": "اكتب عنوانًا يميز المادة أو السجل في هذه الشاشة. في المحتوى هو عنوان الفكرة، وفي بيانات المركز هو عنوان المكان. اتبع اسم النموذج قبل الحفظ.",
-      "article": "content",
-      "tabs": [
-        "production"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "المادة دي لصفحة",
       "labels": [
         "المادة دي لصفحة"
@@ -23082,9 +23108,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1990,
-    "labels": 1451,
-    "files": 156,
-    "groups": 1564
+    "definitions": 1993,
+    "labels": 1452,
+    "files": 157,
+    "groups": 1566
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

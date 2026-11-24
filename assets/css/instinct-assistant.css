@@ -1,0 +1,64 @@
+/* «مساعد إنستنكت» — نفس ألوان الهوية: #0F369D أساسي · #F15A22 تنبيه · #16212E نص · #2F7D5C إيجابي · #D0402A سلبي */
+.ins-page{max-width:980px;margin:0 auto;padding:16px;display:grid;gap:14px;color:#16212E}
+.ins-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ins-head h2{margin:0;color:#0F369D;font-size:22px}
+.ins-head p{margin:4px 0 0;color:#525B6F;font-size:13px}
+.ins-badge,.ins-menu-badge{display:inline-block;min-width:20px;padding:1px 6px;border-radius:10px;background:#D0402A;color:#fff;font-size:11px;line-height:1.5;text-align:center;font-style:normal}
+.ins-menu-badge{margin-inline-start:6px}
+.ins-badge[hidden],.ins-menu-badge[hidden]{display:none}
+.ins-tools{display:flex;flex-wrap:wrap;gap:8px}
+.ins-error,.ins-chat-error{background:#FDECEA;color:#D0402A;border:1px solid #F3C2BB;border-radius:10px;padding:8px 12px;font-size:13px}
+.ins-block{background:var(--c-card,#fff);border:1px solid var(--c-border,#E2E6EF);border-radius:14px;padding:12px 14px}
+.ins-block>h3,.ins-block>summary{margin:0 0 8px;font-size:15px;color:#0F369D;font-weight:700;cursor:default}
+details.ins-block>summary{cursor:pointer;margin:0}
+details.ins-block[open]>summary{margin-bottom:8px}
+.ins-empty{color:#7A8194;font-size:13px;margin:4px 0}
+.ins-note{border:1px solid #E2E6EF;border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.ins-note header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ins-note h4{margin:0;font-size:15px}
+.ins-meta{color:#7A8194;font-size:12px;margin:3px 0 6px}
+.ins-body{white-space:pre-wrap;font-size:14px;line-height:1.7}
+.ins-chip{font-size:11px;border-radius:9px;padding:1px 8px;white-space:nowrap}
+.ins-chip-draft{background:#FFF1EA;color:#B8441A}
+.ins-chip-approved{background:#E8EEFB;color:#0F369D}
+.ins-chip-published{background:#E7F3ED;color:#2F7D5C}
+.ins-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ins-note-form{display:grid;gap:8px;background:#F6F8FC;border:1px solid #E2E6EF;border-radius:14px;padding:12px}
+.ins-note-form label{display:grid;gap:4px;font-size:13px;font-weight:600}
+.ins-note-form input,.ins-note-form select,.ins-note-form textarea,.ins-chat-form textarea{font:inherit;border:1px solid #CBD2E1;border-radius:10px;padding:8px;width:100%;box-sizing:border-box}
+.ins-warning{background:#FFF4EE;border:1px solid #F7C9B3;color:#B8441A;border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:700}
+.ins-thread{display:block;width:100%;text-align:start;background:#fff;border:1px solid #E2E6EF;border-radius:12px;padding:9px 12px;margin-bottom:6px;cursor:pointer;font:inherit;color:inherit}
+.ins-thread:hover,.ins-thread:focus-visible{border-color:#0F369D}
+.ins-thread b{display:block;font-size:14px}
+.ins-thread small,.ins-notif small{display:block;color:#7A8194;font-size:11.5px;margin-top:2px}
+.ins-notif{padding:7px 4px;border-bottom:1px solid #EEF1F6;font-size:13px}
+.ins-notif.read{opacity:.55}
+.ins-notif[role="button"]{cursor:pointer}
+.ins-profile,.ins-audit-row{font-size:13px;padding:6px 0;border-bottom:1px solid #EEF1F6}
+/* محادثة بتطلع من تحت زي ماسنجر */
+.ins-chat{position:fixed;bottom:0;inset-inline-start:16px;width:min(380px,calc(100vw - 24px));height:min(560px,calc(100vh - 80px));display:flex;flex-direction:column;
+  background:#fff;border:1px solid #D5DBE8;border-bottom:none;border-radius:16px 16px 0 0;box-shadow:0 -8px 28px rgba(15,54,157,.18);z-index:80;animation:ins-up .22s ease-out}
+.ins-chat[hidden]{display:none}
+@keyframes ins-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.ins-chat{animation:none}}
+.ins-chat-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#0F369D;color:#fff;border-radius:16px 16px 0 0}
+.ins-x{background:none;border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer}
+.ins-chat-msgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:#F6F8FC}
+.ins-msg{max-width:82%;padding:8px 11px;border-radius:14px;font-size:14px;line-height:1.6;white-space:pre-wrap}
+.ins-msg small{display:block;font-size:10.5px;opacity:.7;margin-top:3px}
+.ins-msg.me{align-self:flex-start;background:#0F369D;color:#fff;border-end-start-radius:4px}
+.ins-msg.them{align-self:flex-end;background:#fff;border:1px solid #E2E6EF;border-end-end-radius:4px}
+.ins-chat-form{display:grid;gap:6px;padding:10px;border-top:1px solid #E2E6EF}
+.ins-chat-form textarea{min-height:56px;resize:vertical}
+.ins-chat-form [data-ins-send]{justify-self:end}
+.ins-chat-ro{padding:10px;text-align:center;color:#7A8194;font-size:12.5px;border-top:1px solid #E2E6EF}
+@media (max-width:560px){.ins-chat{inset-inline-start:0;width:100vw;height:calc(100vh - 60px)}}
+.ins-ai-label{display:block;font-style:normal;font-size:11px;font-weight:700;color:#B8441A;margin-bottom:4px}
+.ins-hidden-label{display:block;font-style:normal;font-size:11px;color:#D0402A;margin-bottom:4px}
+.ins-msg.hidden-reply{opacity:.6;border-style:dashed}
+.ins-msg .btn{margin-top:6px}
+.ins-account{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* حساب إنستنكت: التاب بتاعه بس — كل أدوات الهيدر والقائمة التانية مخفية (السيرفر قافلها كمان) */
+body.ins-ai-only .ssmpd-ea-launch,body.ins-ai-only #dashboard-help-toggle,body.ins-ai-only #hdr-help-row,body.ins-ai-only .global-search,
+body.ins-ai-only #kudos-send-btn,body.ins-ai-only #hdr-kudos-row,body.ins-ai-only #notif-bell-btn,body.ins-ai-only #notif-panel,
+body.ins-ai-only #ud-change-pass,body.ins-ai-only .ssmpd-sono-ai,body.ins-ai-only #tabs-bar{display:none!important}
