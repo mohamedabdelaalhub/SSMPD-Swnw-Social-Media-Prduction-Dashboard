@@ -4668,6 +4668,7 @@
       "labels": [
         "شرح المستند وسبب العملية",
         "سبب الطلب",
+        "السبب والمستند",
         "سبب الطلب / بيان المستند"
       ],
       "text": "اكتب الحدث الذي يستدعي الطلب وسببه والمستند الذي يثبته، مثل رد دفعة عن موعد ملغي. لا تكتب سببًا عامًا لا يسمح للمراجع بفهم العملية.",
@@ -5642,6 +5643,52 @@
         "booking_cash"
       ],
       "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "طريقة التسوية",
+      "labels": [
+        "طريقة التسوية"
+      ],
+      "text": "اختار إزاي فرق الخزينة يتسجّل: الزيادة «إيراد فروق زيادة الخزينة»، والعجز «مصروف عجز الخزينة» أو «على الموظف» لو القرار كده. القيد بيستنى موافقة شخص تاني ومفيش خصم من المرتب تلقائي.",
+      "article": "cash-case-settlement",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "القرار",
+      "labels": [
+        "القرار"
+      ],
+      "text": "اعتماد أو رفض بعد فحص المستند والبيانات. اكتب سبب القرار؛ قد يُشترط حساب آخر مستقل عن منشئ الطلب.",
+      "article": "requests",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "مراجعة تسوية الفرق — "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "سبب القرار",
+      "labels": [
+        "سبب القرار"
+      ],
+      "text": "اكتب نتيجة ما راجعته ولماذا اعتمدت أو رفضت، مع الإشارة للمستند أو الفرق والإجراء التالي. المراجعة تحتاج حسابًا مستقلًا إذا اشترط المسار ذلك.",
+      "article": "requests",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "مراجعة تسوية الفرق — "
+      ],
       "reviewed": true
     },
     {
@@ -23108,9 +23155,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1993,
-    "labels": 1452,
+    "definitions": 1997,
+    "labels": 1453,
     "files": 157,
-    "groups": 1566
+    "groups": 1569
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
