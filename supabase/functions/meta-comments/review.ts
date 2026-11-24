@@ -1,6 +1,7 @@
 // After the bot hands a conversation to a human: watch what the staff member does.
 //  1) no human reply within NO_REPLY_MIN  -> alert the owner (once)
 //  2) human replied and the chat went quiet -> AI review: outcome, summary, staff quality -> lead note/status + owner alert if poor
+import { claudeJson } from "./claude.ts";
 const GRAPH = "https://graph.facebook.com/v26.0/";
 const NO_REPLY_MIN = 30, QUIET_MIN = 60;
 
@@ -10,30 +11,21 @@ async function conversationMessages(convId: string, token: string) {
   const r = await fetch(u.toString()); const d = await r.json().catch(() => ({}));
   return r.ok && !d.error ? (d.data || []).slice().reverse() : null;
 }
-function responseText(data: any): string {
-  if (typeof data?.output_text === "string") return data.output_text;
-  const parts: string[] = [];
-  for (const item of data?.output || []) for (const c of item?.content || []) if (typeof c?.text === "string") parts.push(c.text);
-  return parts.join("");
-}
 const RULES = `أنت مراجع جودة لمحادثات مركز عيادات سونو التخصصية. هتقرا محادثة ماسنجر/انستجرام اتحوّلت من بوت لموظف بشري ("الموظف" = رسائل الصفحة بعد التحويل).
 حدّد: outcome (booked لو اتحدد ميعاد حجز فعلاً، declined لو العميل رفض، pending لو لسه مفتوح، unclear)، summary جملتين بالعامية المصرية، booking_time لو اتحدد.
 قيّم الموظف: staff_quality = good/ok/poor. اكتب issues لأي مشكلة (مثلاً: ماعرفش يجاوب، رد متأخر أو ناقص، أسلوب غير مهذب أو جاف، معلومة طبية/سعر غير مؤكد، تجاهل سؤال). needs_owner=true لو الموظف ماعرفش يرد أو سلوكه غير مناسب. بدون بيانات تعريفية للعميل غير الاسم الأول.`;
 
 async function aiReview(transcript: string) {
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!apiKey) return null;
-  const r = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST", headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "gpt-5.6-sol", instructions: RULES, input: transcript.slice(0, 12000),
-      text: { format: { type: "json_schema", name: "flow_review", strict: true, schema: {
-        type: "object", additionalProperties: false, required: ["outcome", "summary", "booking_time", "staff_quality", "issues", "needs_owner"],
-        properties: { outcome: { type: "string", enum: ["booked", "pending", "declined", "unclear"] }, summary: { type: "string" }, booking_time: { type: "string" },
-          staff_quality: { type: "string", enum: ["good", "ok", "poor"] }, issues: { type: "array", items: { type: "string" } }, needs_owner: { type: "boolean" } } } } } })
+  const out = await claudeJson<any>({
+    label: "flowReview", system: RULES, input: transcript.slice(0, 12000), toolName: "flow_review",
+    toolDescription: "Return the review of the conversation.",
+    schema: {
+      type: "object", additionalProperties: false, required: ["outcome", "summary", "booking_time", "staff_quality", "issues", "needs_owner"],
+      properties: { outcome: { type: "string", enum: ["booked", "pending", "declined", "unclear"] }, summary: { type: "string" }, booking_time: { type: "string" },
+        staff_quality: { type: "string", enum: ["good", "ok", "poor"] }, issues: { type: "array", items: { type: "string" } }, needs_owner: { type: "boolean" } }
+    }
   });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) return null;
-  try { return JSON.parse(responseText(d)); } catch { return null; }
+  return out.ok ? out.data : null;
 }
 
 export async function reviewHandoffs(db: any, brand: string, pageToken: string, selfIds: Set<string>, report: any) {
