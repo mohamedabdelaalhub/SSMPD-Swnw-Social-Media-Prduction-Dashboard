@@ -30,7 +30,7 @@ select b.name, b.department, so.name old_service, sn.name new_service
   left join clinic_reception.services sn on sn.id = x.v
  where b.svc is distinct from x.v order by b.department, b.name;
 -- the open / future auto-booked appointments with a non-consultation service (ids only, no patient data)
-select left(a.id::text, 8) appt, (a.starts_at at time zone 'Africa/Cairo')::date day, pr.name doctor, s.code, s.name service
+select left(a.id::text, 8) appt, (a.starts_at at time zone 'Africa/Cairo')::date as appt_day, pr.name doctor, s.code, s.name service
   from clinic_reception.appointments a join clinic_reception.services s on s.id = a.service_id join clinic_reception.providers pr on pr.id = a.provider_id
  where a.created_by = (select system_admin_id from clinic_reception.auto_book_settings where id)
    and a.status not in ('cancelled', 'no_show', 'completed') and a.starts_at >= date_trunc('day', now() at time zone 'Africa/Cairo') at time zone 'Africa/Cairo'
