@@ -3,6 +3,8 @@
 'use strict';
 if(window.__SWNWTodayOperationsV1)return;
 window.__SWNWTodayOperationsV1=true;
+/* a cross-file helper is used only when the module AND every named function exist (a stale cached file must never take down the board) */
+function fx(m){var o=window[m];if(!o)return false;for(var i=1;i<arguments.length;i++)if(typeof o[arguments[i]]!=='function')return false;return true;}
 
 var css=document.createElement('link');
 css.rel='stylesheet';css.href='assets/css/today-operations.css?v=today-phone-scroll-20261123-1';css.dataset.todayOperations='1';
@@ -95,10 +97,10 @@ function cardActions(a,c){
  else if(s==='on_hold'){main=action('resume',a.id,'عودة للطبيب','btn-primary');rest=action('request_service',a.id,'طلب خدمة')+detail+v2('finish',a.id,'إنهاء الزيارة وانتظار النتيجة')+action('help',a.id,'طلب دعم');}
  if(hasDue(a)&&can('collect')&&a.due_invoices&&a.due_invoices.length){if(!main)main=action('collect_due',a.id,'حصّل '+money(a.patient_due),'btn-primary journey-main-collect');else rest=action('collect_due',a.id,'تحصيل '+money(a.patient_due))+rest;}
  /* owner 2026-11-23 (20261123060000): «خصم» on a booked card, «خصم على الزيارة» after arrival while the service is still ordered */
- var PY=window.SSMPDReceptionPayer,BD=PY||window.SSMPDReceptionBookingDiscount,ra=!c.sandbox&&BD&&can('book')&&((c.data&&c.data.appointments)||[]).find(function(x){return x.id===a.id;});
+ var PY=fx('SSMPDReceptionPayer','canBooking','canVisit','label')?window.SSMPDReceptionPayer:null,BD=PY||(fx('SSMPDReceptionBookingDiscount','canBooking','canVisit')?window.SSMPDReceptionBookingDiscount:null),ra=!c.sandbox&&BD&&can('book')&&((c.data&&c.data.appointments)||[]).find(function(x){return x.id===a.id;});
  if(ra&&['expected','on_the_way'].includes(s)&&BD.canBooking(ra))rest+=action('booking_discount',a.id,PY?PY.label(ra):ra.discount_kind?'تعديل / شيل الخصم':'خصم (نقابة / نادي / فيزيتا / العيلة / خاص)');
  if(ra&&['waiting','called','in_service','on_hold'].includes(s)&&BD.canVisit(ra,c.data))rest+=action('visit_discount',a.id,PY?PY.label(ra)+' (قبل التحصيل)':'خصم على الزيارة (قبل التحصيل)');
- var BDS=window.SSMPDReceptionBookingDiscount;if(ra&&BDS&&BDS.canSame&&['waiting','called','in_service','on_hold'].includes(s)&&BDS.canSame(ra,c.data))rest+=action('visit_same_discount',a.id,BDS.sameLabel(ra,c.data));
+ var BDS=window.SSMPDReceptionBookingDiscount;if(ra&&fx('SSMPDReceptionBookingDiscount','canSame','sameLabel')&&['waiting','called','in_service','on_hold'].includes(s)&&BDS.canSame(ra,c.data))rest+=action('visit_same_discount',a.id,BDS.sameLabel(ra,c.data));
  if(c.sandbox&&s==='completed')rest+=action('sandbox_feedback',a.id,'تقييم التجربة');
  /* «الزيارة اتسجلت غلط» (20261122040000): files the existing «إلغاء خدمة اتدخلت بالغلط» for the whole visit; finance approves */
  if(!c.sandbox&&s==='completed'&&a.visit_id&&can('collect'))rest+=action('visit_void',a.id,'الزيارة اتسجلت غلط');
@@ -232,7 +234,7 @@ function paintBoard(c){
  var groups=[],at={};apps.forEach(function(a){var h=hourOf(a.starts_at);if(!(h in at)){at[h]=groups.length;groups.push({h:h,items:[]});}groups[at[h]].items.push(a);});
  host.innerHTML=(filtered?'<p class="journey-filter-note" role="status">بيظهر '+num(apps.length)+' من '+num(all.length)+' '+action('clear_filter','','عرض الكل')+'</p>':'')+
   (groups.length?'<div class="journey-board journey-hours journey-rail">'+railHtml(groups,c)+'</div>':'<p class="journey-empty">'+(filtered?'مفيش حد بالفلتر ده.':'مفيش حجوزات في اليوم ده.')+'</p>');
- if(window.SSMPDReceptionExtras&&c&&!c.sandbox&&c.workspace)window.SSMPDReceptionExtras.decorate(host,c.workspace,apps);
+ if(fx('SSMPDReceptionExtras','decorate')&&c&&!c.sandbox&&c.workspace)window.SSMPDReceptionExtras.decorate(host,c.workspace,apps);
 }
 function dayText(day){
  var t=cairoDay(),rel=day===t?'النهارده':day===shiftDay(t,-1)?'امبارح':day===shiftDay(t,1)?'بكرة':'';
@@ -270,7 +272,7 @@ function bind(root,c){
   var sr=e.target.closest('[data-staff-range]');if(sr&&state.staff){e.preventDefault();var rr=staffRange(sr.dataset.staffRange);state.staff.from=rr[0];state.staff.to=rr[1];state.staff.open=null;staffLoad(c);return;}
   var sp=e.target.closest('[data-staff-pick]');if(sp&&state.staff){e.preventDefault();state.staff.who=state.staff.who===sp.dataset.staffPick?'':sp.dataset.staffPick;state.staff.whoName=sp.querySelector('span')?sp.querySelector('span').textContent:'';state.staff.open=null;staffLoad(c);return;}
   var dtab=e.target.closest('[data-tds-doctab]');if(dtab){e.preventDefault();state.docTab=dtab.dataset.tdsDoctab;paint(state.context||c);return;}
-  var dpick=e.target.closest('[data-tds-doctor]');if(dpick){e.preventDefault();state.doctor=String(dpick.dataset.tdsDoctor);if(window.SSMPDTodayShortcuts)window.SSMPDTodayShortcuts.close();paint(state.context||c);return;}
+  var dpick=e.target.closest('[data-tds-doctor]');if(dpick){e.preventDefault();state.doctor=String(dpick.dataset.tdsDoctor);if(fx('SSMPDTodayShortcuts','close'))window.SSMPDTodayShortcuts.close();paint(state.context||c);return;}
   var dt=e.target.closest('[data-journey-docs-toggle]');if(dt){e.preventDefault();state.docsOpen=!state.docsOpen;var wrap=dt.closest('.journey-docs-wrap'),sec=wrap&&wrap.querySelector('.journey-doctors');if(wrap)wrap.classList.toggle('is-open',state.docsOpen);if(sec)sec.hidden=!state.docsOpen;dt.setAttribute('aria-expanded',String(state.docsOpen));dt.textContent='تفاصيل '+(state.docsOpen?'⌃':'⌄');return;}
   if(e.target.closest('[data-journey-day-label]')&&!e.target.matches('input')){e.preventDefault();pickDay(root);return;}
   var f=e.target.closest('[data-journey-filter]');if(f){e.preventDefault();state.filter=(f.dataset.journeyFilter==='all'||state.filter===f.dataset.journeyFilter)?'all':f.dataset.journeyFilter;paintBoard(c);return;}
@@ -331,7 +333,7 @@ function priorityModal(c,id){var a=findAppointment(id);if(!a){toast('تعذر ا
 function helpModal(c,id){c.modal('طلب مساعدة',c.select('kind','النوع',[['assistance','مساعدة'],['priority','أولوية إنسانية'],['complaint','شكوى'],['other','أخرى']])+c.field('message','التفاصيل','text','','required'),function(v){return run(c,'patient_help',{appointment_id:id,kind:v.kind,message:v.message});});}
 function handle(name,id,c){
  try{
-  if(name==='visit_same_discount'){var BDs=window.SSMPDReceptionBookingDiscount;if(BDs)Promise.resolve().then(function(){return BDs.applySame(id,state.context||c);}).catch(function(e){window.alert(e.message||e);});return;}if(name==='booking_discount'||name==='visit_discount'){var BDx=window.SSMPDReceptionPayer||window.SSMPDReceptionBookingDiscount;if(BDx)BDx[name==='booking_discount'?'openForBooking':'openForVisit'](id,state.context||c);return;}
+  if(name==='visit_same_discount'){var BDs=window.SSMPDReceptionBookingDiscount;if(fx('SSMPDReceptionBookingDiscount','applySame'))Promise.resolve().then(function(){return BDs.applySame(id,state.context||c);}).catch(function(e){window.alert(e.message||e);});return;}if(name==='booking_discount'||name==='visit_discount'){var BDx=fx('SSMPDReceptionPayer','openForBooking','openForVisit')?window.SSMPDReceptionPayer:fx('SSMPDReceptionBookingDiscount','openForBooking','openForVisit')?window.SSMPDReceptionBookingDiscount:null;if(BDx)BDx[name==='booking_discount'?'openForBooking':'openForVisit'](id,state.context||c);return;}
   if(name==='sandbox_enter'){switchMode(c,true);return;}if(name==='sandbox_exit'){switchMode(state.context,false);return;}
   if(c.sandbox){
    var save=function(a,p,k){return run(c,a,p,k);};
