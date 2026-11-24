@@ -96,7 +96,7 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
         await db.from("social_messages").update({ status: "skipped", category: decision.category, updated_at: now }).in("id", ids);
         continue;
       }
-      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0, seed: conv.id, defaultService: brand === "sono" ? "physiotherapy" : undefined });
+      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0, seed: conv.id, defaultService: brand === "sono" ? "physiotherapy" : undefined, profileName: latest.from?.name });
       if (flow.silent) { await db.from("social_messages").update({ status: "skipped", category: "handoff", updated_at: now }).in("id", ids); continue; }
       if (flow.passthrough) { /* thanks: keep decideReply's text, no state change */ }
       else {
@@ -105,7 +105,7 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
         else if (flow.alert && !reply) reply = decision.reply; // approved emergency/complaint template from ai.ts
         decision = { ...decision, category: flow.handoff === "emergency" ? "emergency" : flow.handoff === "complaint" ? "complaint" : decision.category, reply };
         const s = flow.state;
-        const row = { conversation_id: conv.id, platform: plat, brand, sender_id: recipient, stage: s.stage, name: s.name, phone: s.phone, service: s.service,
+        const row = { conversation_id: conv.id, platform: plat, brand, sender_id: recipient, stage: s.stage, name: s.name, name_source: s.name_source || null, phone: s.phone, service: s.service,
           preferred_time: s.preferred_time, expect: s.expect, unclear: s.unclear, handoff_reason: s.handoff_reason, updated_at: now,
           ...((flow.handoff || flow.ready) && !st?.handoff_at ? { handoff_at: now } : {}) };
         let leadId = st?.lead_id || null;
@@ -119,12 +119,19 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
           const { data: lead, error: le } = await db.rpc("ingest_lead", { p_event_id: `${plat}:flow:${conv.id}`, p_source: platform, p_name: s.name || LEAD_NAME_PLACEHOLDER, p_phone: s.phone,
             p_message: leadMsg, p_ad_id: ref?.ad_id || null, p_adset_id: adRow?.adset_id || null, p_campaign_id: adRow?.campaign_id || null });
           if (le) { report.errors.push(`${brand} ingest_lead: ${le.message}`); continue; }
-          leadId = Array.isArray(lead) ? lead[0]?.lead_id : lead?.lead_id;
-          await db.rpc("messenger_flow_notify", { p_message: `ليد جديد من ${where}: ${s.name || "بدون اسم لسه"} — ${serviceLabel(s.service)} — ${s.phone}` });
+          const leadRow = Array.isArray(lead) ? lead[0] : lead;
+          leadId = leadRow?.lead_id;
+          // Name from the Facebook/Instagram profile: mark it unconfirmed so reception checks it on the call (only for a lead this flow just created).
+          if (leadId && leadRow?.was_new && s.name_source === "facebook") await db.from("leads").update({ customer_name_source: "facebook", updated_at: now }).eq("id", leadId);
+          await db.rpc("messenger_flow_notify", { p_message: `ليد جديد من ${where}: ${s.name ? s.name + (s.name_source === "facebook" ? " (الاسم من فيسبوك)" : "") : "بدون اسم لسه"} — ${serviceLabel(s.service)} — ${s.phone}` });
         }
         if (flow.ready && leadId) {
           // Name/time arrived after the lead existed: complete it (only the placeholder name and this flow's own leads are touched).
-          await db.from("leads").update({ customer_name: s.name, updated_at: now }).eq("id", leadId).eq("customer_name", LEAD_NAME_PLACEHOLDER);
+          if (s.name_source !== "facebook" && s.name) {
+            // The customer typed the name: it replaces the placeholder or the unconfirmed Facebook name.
+            await db.from("leads").update({ customer_name: s.name, customer_name_source: null, updated_at: now }).eq("id", leadId).eq("customer_name", LEAD_NAME_PLACEHOLDER);
+            await db.from("leads").update({ customer_name: s.name, customer_name_source: null, updated_at: now }).eq("id", leadId).eq("customer_name_source", "facebook");
+          }
           await db.from("leads").update({ message_text: leadMsg, updated_at: now }).eq("id", leadId).eq("source", platform);
           await db.rpc("messenger_flow_notify", { p_message: `اكتملت بيانات حجز ${where}: ${s.name} — ${serviceLabel(s.service)} — ${s.phone} — ${s.preferred_time}` });
         } else if (flow.handoff) {

@@ -117,9 +117,13 @@
     return on.length ? "الرد التلقائي شغال على: " + on.join(" و") + "." : "الرد التلقائي متوقف — الردود بتستنى اعتماد.";
   }
   // تنبيهات حمرا: شكاوى/طوارئ اترد عليها تلقائياً ولسه محدش من الفريق اتعامل معاها.
+  // Meta hides most Facebook commenters' names from the page (Standard Access): show a clear label instead of an empty name.
+  function commenterName(c) {
+    return c.author_name || (c.platform === 'instagram' ? 'زائر انستجرام' : 'زائر فيسبوك');
+  }
   function alertList(data) {
     var out = [];
-    data.comments.forEach(function (c) { if (c.alert && !c.alert_resolved_at) out.push({ kind: "comment", id: c.id, platform: c.platform, brand: c.brand, who: c.author_name, text: c.message, reply: c.final_reply, at: c.commented_at, url: c.comment_url, category: c.category }); });
+    data.comments.forEach(function (c) { if (c.alert && !c.alert_resolved_at) out.push({ kind: "comment", id: c.id, platform: c.platform, brand: c.brand, who: commenterName(c), text: c.message, reply: c.final_reply, at: c.commented_at, url: c.comment_url, category: c.category }); });
     var seen = {};
     data.messages.forEach(function (m) {
       if (!m.alert || m.alert_resolved_at || seen[m.conversation_id]) return;
@@ -136,7 +140,7 @@
         '<div class="cm-meta"><span class="cm-badge danger">' + (CATEGORY[a.category] || "تنبيه") + "</span>" +
         '<span class="cm-badge ' + a.platform + '">' + (PLAT[a.platform] || a.platform) + " · " + (a.kind === "comment" ? "تعليق" : "رسالة") + "</span>" +
         '<span class="cm-badge">' + (BRANDS[a.brand] || a.brand) + "</span></div>" +
-        '<div class="cm-msg"><b>' + esc(a.who || "مستخدم") + '</b> <span class="muted">' + when(a.at) + " · " + ago(a.at) + "</span>" +
+        '<div class="cm-msg"><b>' + esc(a.who || "عميل") + '</b> <span class="muted">' + when(a.at) + " · " + ago(a.at) + "</span>" +
         (a.url ? ' <a class="cm-open" href="' + esc(a.url) + '" target="_blank" rel="noopener">' + (a.platform === "whatsapp" ? "كلّمه على واتساب" : "افتح " + (a.kind === "comment" ? "التعليق" : "المحادثة")) + " ↗</a>" : "") +
         "<p>" + rich(a.text) + "</p></div>" +
         (a.reply ? '<div class="cm-reply page"><b>ردنا التلقائي</b><p>' + rich(a.reply) + "</p></div>" : "") +
@@ -202,7 +206,7 @@
       var thread = byParent[c.platform_comment_id] || [], last = thread.length ? thread[thread.length - 1] : null;
       var lastAt = last && new Date(last.commented_at) > new Date(c.replied_at || 0) ? last.commented_at : (c.replied_at || c.commented_at);
       var preview = c.status === "replied" && c.final_reply && (!last || new Date(c.replied_at) >= new Date(last.commented_at)) ? "أنت: " + c.final_reply : last ? (last.author_is_page ? "أنت: " : "") + last.message : c.message;
-      return { key: "c:" + c.id, kind: "comment", c: c, thread: thread, name: c.author_name || "مستخدم", platform: c.platform, brand: c.brand,
+      return { key: "c:" + c.id, kind: "comment", c: c, thread: thread, name: commenterName(c), platform: c.platform, brand: c.brand,
         pending: isPending(c), status: c.status, at: lastAt, preview: preview, sensitive: !!c.sensitive, url: c.comment_url, post: data.titles[c.content_id] || "بوست",
         search: [c.author_name, c.message, c.final_reply, data.titles[c.content_id]].concat(thread.map(function (r) { return r.message; })).join(" ").toLowerCase() };
     }).filter(function (it) {
@@ -273,7 +277,7 @@
   }
   function commentChat(it, data) {
     var c = it.c, items = [{ at: c.commented_at, html: bubble("them", c.message, c.commented_at) }];
-    it.thread.forEach(function (r) { items.push({ at: r.commented_at, html: r.author_is_page ? bubble("me", r.message, r.commented_at, "الصفحة") : bubble("them", r.message, r.commented_at, r.author_name || "مستخدم") }); });
+    it.thread.forEach(function (r) { items.push({ at: r.commented_at, html: r.author_is_page ? bubble("me", r.message, r.commented_at, "الصفحة") : bubble("them", r.message, r.commented_at, commenterName(r)) }); });
     if (c.status === "replied" && c.final_reply && !it.thread.some(function (r) { return r.author_is_page && r.message === c.final_reply; }))
       items.push({ at: c.replied_at, html: bubble("me", c.final_reply, c.replied_at, c.handled_by ? staffName(c.handled_by, data) : "رد تلقائي", c.handled_by ? "staff" : "auto") });
     items.sort(function (a, b) { return new Date(a.at) - new Date(b.at); });
@@ -439,11 +443,11 @@
       (c.sensitive ? '<span class="cm-badge danger">حساس — راجعه بنفسك</span>' : "") + autoNote +
       (isOverdue(c) ? '<span class="cm-badge danger">متأخر ' + ago(c.commented_at).replace("من ", "") + "</span>" : "") +
       '<span class="muted cm-post">على: ' + esc(title) + "</span></div>" +
-      '<div class="cm-msg"><b>' + link(c.author_url, esc(c.author_name || "مستخدم")) + '</b> <span class="muted">' + when(c.commented_at) + " · " + ago(c.commented_at) + "</span>" +
+      '<div class="cm-msg"><b>' + link(c.author_url, esc(commenterName(c))) + '</b> <span class="muted">' + when(c.commented_at) + " · " + ago(c.commented_at) + "</span>" +
       (c.comment_url ? ' <a class="cm-open" href="' + esc(c.comment_url) + '" target="_blank" rel="noopener">افتح على ' + (c.platform === "facebook" ? "فيسبوك" : "انستجرام") + " ↗</a>" : "") +
       "<p>" + rich(c.message) + "</p></div>";
     thread.forEach(function (r) {
-      h += '<div class="cm-reply' + (r.author_is_page ? " page" : "") + '"><b>' + esc(r.author_is_page ? "رد الصفحة" : (r.author_name || "مستخدم")) + "</b> <span class=\"muted\">" + when(r.commented_at) + "</span><p>" + rich(r.message) + "</p></div>";
+      h += '<div class="cm-reply' + (r.author_is_page ? " page" : "") + '"><b>' + esc(r.author_is_page ? "رد الصفحة" : commenterName(r)) + "</b> <span class=\"muted\">" + when(r.commented_at) + "</span><p>" + rich(r.message) + "</p></div>";
     });
     if (c.status === "replied" && c.final_reply) {
       h += '<div class="cm-reply page"><b>ردنا</b> <span class="muted">' + when(c.replied_at) + "</span><p>" + rich(c.final_reply) + "</p></div>";
