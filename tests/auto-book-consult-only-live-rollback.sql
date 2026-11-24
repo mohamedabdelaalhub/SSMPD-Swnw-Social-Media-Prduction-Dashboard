@@ -4,6 +4,9 @@
 --     with no named / saved service, before vs after (only rows that change are listed + a summary). Nothing is kept.
 begin;
 create temp table ab_live(n serial, step text, expected text, actual text, ok boolean);
+create temp table ab_review as
+  select e.id, e.provider_id, e.needed_service from clinic_reception.external_bookings e
+   where e.state = 'review' and e.review_kind = 'service' and e.day >= clinic_reception.cairo_day(now());
 create temp table ab_before as
   select p.id provider_id, p.name, p.department, clinic_reception.auto_time_service(p.workspace_id, p.id, null) svc
     from clinic_reception.providers p join clinic_reception.workspaces w on w.id = p.workspace_id and w.mode = 'live' where p.active;
@@ -20,8 +23,18 @@ do $$ declare sys uuid; n int; m int; tot int; begin
    join clinic_reception.services s on s.id = x.v where not clinic_reception.is_consult_name(s.name)
      and not exists (select 1 from clinic_reception.auto_book_services d where d.provider_id = b.provider_id);
   insert into ab_live(step, expected, actual, ok) values ('after: unsaved fallback that is NOT consultation-type', '0', n::text, n = 0);
+  -- the parked «اختار الخدمة» rows: re-queued, and each now gets a consultation the doctor serves
+  select count(*) into tot from ab_review;
+  select count(*) into n from ab_review r join clinic_reception.external_bookings e on e.id = r.id where e.state = 'pending';
+  insert into ab_live(step, expected, actual, ok) values ('review «service» rows (today on) re-queued', tot || ' pending', n::text, n = tot);
+  select count(*) into n from ab_review r join clinic_reception.providers p on p.id = r.provider_id
+   where clinic_reception.is_consult_name((select name from clinic_reception.services where id = clinic_reception.auto_time_service(p.workspace_id, r.provider_id, r.needed_service)));
+  insert into ab_live(step, expected, actual, ok) values ('…of which the picker now returns a consultation', tot::text, n::text, n = tot);
 end $$;
 select step, expected, actual, ok from ab_live order by n;
+-- the re-queued rows: doctor, what the source asked, what the picker gives now
+select p.name doctor, r.needed_service, s.code, s.name service from ab_review r join clinic_reception.providers p on p.id = r.provider_id
+  left join clinic_reception.services s on s.id = clinic_reception.auto_time_service(p.workspace_id, r.provider_id, r.needed_service) order by 1;
 -- the providers whose fallback changes (old → new; new NULL = staff picks it once in «حجوزات تحتاج استكمال»)
 select b.name, b.department, so.name old_service, sn.name new_service
   from ab_before b
