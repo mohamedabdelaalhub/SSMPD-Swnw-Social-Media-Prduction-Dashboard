@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — تسوية فروق الخزن</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}.sub{color:#5B6676;margin:0}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
+.card h2{margin:0;font-size:17px}.card h2 small{display:block;color:#5B6676;font-weight:400;font-size:12px}
+.steps{display:flex;gap:8px;flex-wrap:wrap;font-size:13px}.steps b{border-radius:999px;padding:4px 12px;background:#EEF1F6;color:#3B4658}.steps b.on{background:#0F369D;color:#fff}.steps b.new{background:#FFF1E8;color:#F15A22;border:1px dashed #F15A22}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:10px 8px;border-bottom:1px solid #EEF1F6;white-space:nowrap}th{color:#5B6676;font-weight:400}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}.st.ok{background:#E6F4EC;color:#2F7D5C}.st.wait{background:#FFF1E8;color:#F15A22}.st.blue{background:#E8EEFB;color:#0F369D}
+.btn{border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;background:#0F369D;color:#fff}.btn.ghost{background:#fff;color:#0F369D;border:1px solid #0F369D}.btn.orange{background:#F15A22}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.modal{border:1px solid #E3E8F2;border-radius:16px;overflow:hidden;background:#fff}.mh{background:linear-gradient(135deg,#0F369D,#1E4FC7);color:#fff;padding:14px 18px;font-weight:700;font-size:16px}
+.mb{padding:16px 18px;display:grid;gap:12px}
+.fact{display:grid;grid-template-columns:140px 1fr;gap:6px 12px;font-size:13px}.fact span:nth-child(odd){color:#5B6676}
+.opt{border:2px solid #E3E8F2;border-radius:12px;padding:10px 12px;display:grid;gap:4px}.opt.on{border-color:#0F369D;background:#F5F8FF}.opt b{font-size:14px}.opt small{color:#5B6676}
+.entry{border:1px dashed #C5CDDB;border-radius:12px;padding:10px 12px;font-size:13px;display:grid;gap:4px;background:#FBFCFE}.entry .ln{display:flex;justify-content:space-between;gap:12px}
+.note{font-size:12px;color:#5B6676;margin:0}.warn{background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px}
+.field{display:grid;gap:4px;font-size:13px}.field i{display:block;border:1px solid #D7DDEA;border-radius:10px;height:38px;background:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pos{color:#2F7D5C;font-weight:700}.neg{color:#D0402A;font-weight:700}
+@media (max-width:760px){.grid{grid-template-columns:1fr}.wrap{padding:14px}table{display:block;overflow-x:auto}.fact{grid-template-columns:110px 1fr}}
+</style></head><body><div class="wrap">
+<div><span class="tag">تصور — مش متنفذ</span><h1>تسوية فروق الخزن</h1><p class="sub">بعد ما الفرق يتراجع ويتحدد سببه وقراره، خطوة رابعة «تسوية الفرق» بترجّع رصيد الخزينة مظبوط في الحسابات — بموافقة شخص تاني.</p></div>
+
+<section class="card">
+ <h2>1) المسار بقى 4 خطوات<small>نفس الخطوات التلاتة الموجودة + خطوة التسوية في الآخر</small></h2>
+ <div class="steps"><b class="on">1 المراجعة</b><b class="on">2 المسؤولية</b><b class="on">3 القرار</b><b class="new">4 تسوية الفرق (جديد)</b><b>تمت التسوية</b></div>
+ <table><thead><tr><th>الخزينة</th><th>الموظف</th><th>الفرق</th><th>المرحلة</th><th>القرار</th><th>رصيد الخزينة دلوقتي</th><th>الإجراء</th></tr></thead><tbody>
+  <tr><td>خزينة مازن</td><td>مازن أحمد علي</td><td class="pos"><bdi dir="ltr">+550.00</bdi> زيادة</td><td><span class="st blue">اتقرر</span></td><td>تصحيح السجلات</td><td class="neg"><bdi dir="ltr">−550.00</bdi></td><td><button class="btn orange">تسوية الفرق</button></td></tr>
+  <tr><td>خزينة منار</td><td>منار موسى عريقي</td><td class="neg"><bdi dir="ltr">−1,500.00</bdi> عجز</td><td><span class="st wait">مستني موافقة التسوية</span></td><td>مفيش خصم على الموظف</td><td><bdi dir="ltr">+1,500.00</bdi></td><td><button class="btn ghost">مراجعة التسوية</button></td></tr>
+  <tr><td>خزينة مريم</td><td>مريم هشام هاشم</td><td class="pos"><bdi dir="ltr">+1,090.00</bdi> زيادة</td><td><span class="st ok">تمت التسوية</span></td><td>تصحيح السجلات</td><td>0.00</td><td>—</td></tr>
+  <tr><td>خزينة مريم</td><td>مريم هشام هاشم</td><td class="pos"><bdi dir="ltr">+2,280.00</bdi> زيادة</td><td>فرق مسجل</td><td>—</td><td><bdi dir="ltr">−2,280.00</bdi></td><td><button class="btn ghost">استكمال المسار</button></td></tr>
+ </tbody></table>
+ <p class="note">«رصيد الخزينة دلوقتي» = اللي ظاهر في الحسابات بسبب الفرق. بعد التسوية بيرجع صفر.</p>
+</section>
+
+<div class="grid">
+ <section class="modal"><div class="mh">تسوية الفرق — خزينة مازن (زيادة 550.00)</div><div class="mb">
+  <div class="fact"><span>الوردية</span><span>23-11-2026 من 05:21 م لـ 24-11-2026 06:31 م</span><span>المتوقع / المعدود</span><span>0.00 / 550.00</span><span>المراجعة</span><span>مبلغ اتحصّل ومتسجّلش — مش معروف لمين</span><span>القرار</span><span>تصحيح السجلات</span></div>
+  <div class="opt on"><b>◉ إيراد فروق جرد خزينة</b><small>الفلوس الزيادة دخلت الرئيسية فعلاً — تتسجّل إيراد علشان رصيد خزينة مازن يرجع صفر.</small></div>
+  <div class="warn">لو عرفت إن الـ550 تحصيل لمريض معيّن، الأفضل تسجّل التحصيل ده بدل التسوية — كده الإيراد يتنسب للخدمة الصح.</div>
+  <div class="entry"><b>القيد اللي هيتسجّل:</b><div class="ln"><span>من حـ/ خزينة مازن</span><span>550.00</span></div><div class="ln"><span>إلى حـ/ إيراد فروق جرد خزينة</span><span>550.00</span></div></div>
+  <div class="field">السبب والمستند<i></i></div>
+  <div class="row"><button class="btn">ابعت للموافقة</button><span class="note">القيد ما بيتسجّلش غير بعد موافقة شخص تاني.</span></div>
+ </div></section>
+
+ <section class="modal"><div class="mh">تسوية الفرق — خزينة منار (عجز 1,500.00)</div><div class="mb">
+  <div class="fact"><span>المراجعة</span><span>خدمتين اتعدلوا واتلغوا ومتحصلوش تاني</span><span>المسؤولية</span><span>خطأ في الإجراء</span><span>القرار</span><span>مفيش خصم على الموظف</span></div>
+  <div class="opt on"><b>◉ مصروف عجز خزينة</b><small>المركز بيتحمّل العجز. ده الاختيار الوحيد لو القرار «مفيش خصم على الموظف».</small></div>
+  <div class="opt"><b>○ على الموظف (سلفة عليه)</b><small>بيظهر بس لو المسؤولية «خطأ من موظف معيّن» والقرار «تحويل للإدارة». بيتسجّل سلفة على الموظف — مفيش خصم من المرتب تلقائي.</small></div>
+  <div class="entry"><b>القيد اللي هيتسجّل:</b><div class="ln"><span>من حـ/ مصروف عجز خزينة</span><span>1,500.00</span></div><div class="ln"><span>إلى حـ/ خزينة منار</span><span>1,500.00</span></div></div>
+  <div class="field">السبب والمستند<i></i></div>
+  <div class="row"><button class="btn">ابعت للموافقة</button><span class="note">المراجع يشوف نفس القيد ويدوس «اعتماد» أو «رفض».</span></div>
+ </div></section>
+</div>
+
+<section class="card"><h2>القواعد<small>ثابتة في السيستم، مش في الشاشة بس</small></h2>
+ <ul style="margin:0;padding-right:20px;display:grid;gap:4px;font-size:13px">
+  <li>التسوية بتظهر بعد «القرار» بس، وبمبلغ الفرق كله.</li>
+  <li>اللي يطلب التسوية غير اللي يوافق عليها، وصاحب الوردية ما يقدرش يعمل أي واحدة فيهم.</li>
+  <li>تتعمل مرة واحدة لكل فرق، والقيد بيتسجّل على وردية الفرق نفسها، فكشف الخزينة بيبيّنه.</li>
+  <li>مفيش أي خصم من المرتب تلقائي.</li>
+ </ul></section>
+</div></body></html>

@@ -41,6 +41,21 @@ assert.equal((await call('clinic_finance_shift_movements',[])).movements.length,
 await as(3);m=await call('clinic_finance_shift_movements',[null,date,date]);assert(m.manager);assert(m.movements.length>=3);assert(m.movements.every(x=>x.cashier_name&&x.register_name));
 m=await call('clinic_finance_shift_movements',[sid]);assert(m.movements.length>=3,'manager can open any shift');
 await assert.rejects(()=>call('clinic_finance_shift_movements',[null,'2026-01-01','2026-03-01']),e=>/٣١ يوم/.test(e.message));
-await db.close();console.log('PASS shift movements: cashier sees own shift (cash, instapay without drawer, refund out, insurance payer/claim/total) without expected cash; other staff refused; managers by shift/period with names; range limit.');})().catch(e=>{console.error(e);process.exit(1);});`;
+// 20261124220000 «اعرض الرقمين»: each row carries the reception receipt number (RC-…) next to the reference
+{const sig="'public.clinic_finance_shift_movements(uuid,date,date,uuid,uuid)'::regprocedure";await db.exec('reset role');
+ if(!(await db.query("select to_regprocedure('public.clinic_finance_shift_movements(uuid,date,date,uuid,uuid)') f")).rows[0].f){console.log('skip receipt_no: 5-arg movements not in fixture');}else{
+ // emulate 20261122390000 3b (source_id on each row), which this fixture does not load
+ await db.exec("do $x$ declare d text:=pg_get_functiondef("+sig+"); begin if position('''source_id''' in d)=0 then execute replace(d,$a$'insurance',a.insurance) order by a.at_time$a$,$b$'insurance',a.insurance,'source_id',a.source_id) order by a.at_time$b$); end if; end $x$");
+ const before=(await db.query('select pg_get_functiondef('+sig+') d')).rows[0].d;
+ const M=require('fs').readFileSync('supabase/migrations/20261124220000_shift_movements_receipt_no.sql','utf8');
+ await db.exec(M);await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+ await db.exec("alter table clinic_reception.payments add column if not exists receipt_no text; update clinic_reception.payments set receipt_no=coalesce(receipt_no,'RC-TEST-000123') where reference='LIVE-CASH'");
+ const rc=(await q("select receipt_no from clinic_reception.payments where reference='LIVE-CASH'"))[0].receipt_no;assert(rc,'payment has a receipt number');await as(3);m=await call('clinic_finance_shift_movements',[sid]);
+ assert.equal(m.movements.find(x=>x.reference==='LIVE-CASH').receipt_no,rc,'receipt number on the movement row');
+ assert(m.movements.every(x=>'receipt_no' in x),'every row carries receipt_no (null when not a reception payment)');
+ await db.exec('reset role');await db.exec(require('fs').readFileSync('supabase/rollbacks/20261124220000_shift_movements_receipt_no.rollback.sql','utf8'));
+ assert.equal((await db.query('select pg_get_functiondef('+sig+') d')).rows[0].d,before,'rollback restores the movements function');
+ assert(!(await db.query("select to_regclass('clinic_finance.receipt_no_saved_defs') t")).rows[0].t,'rollback drops the saved defs');}}
+await db.close();console.log('PASS shift movements: receipt number per row (+rollback); cashier sees own shift (cash, instapay without drawer, refund out, insurance payer/claim/total) without expected cash; other staff refused; managers by shift/period with names; range limit.');})().catch(e=>{console.error(e);process.exit(1);});`;
 const file=path.join(require('os').tmpdir(),'shift-movements-run-'+process.pid+'.cjs');
 fs.writeFileSync(file,prefix+body);try{require(file);}finally{setTimeout(()=>{try{fs.unlinkSync(file);}catch(_){}},0);}
