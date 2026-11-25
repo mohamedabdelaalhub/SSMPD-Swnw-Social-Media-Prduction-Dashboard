@@ -95,7 +95,7 @@ button,input{font:inherit;color:inherit}button{cursor:pointer}
 ["د. سارة مراد","EMP-09",3,"30%",[["v","ساري 3"]],0],
 ["د. طارق عزت","EMP-18",1,"50%",[["v","ساري 1"]],0],
 ["د. ياسمين خالد","EMP-25",1,"45%",[["v","ساري 1"]],0]],cur=null,openAll=false;
-function pills(p){return p.map(function(x){return '<span class="pill '+x[0]+'">'+x[1]+'</span>';}).join('');}
+function n(c){return c===1?'عقد واحد':c===2?'عقدين':c+' عقود';}function pills(p){return p.map(function(x){return '<span class="pill '+x[0]+'">'+x[1]+'</span>';}).join('');}
 function body(d){return '<div class="body"><div class="dh"><div class="terms"><span><b>النسبة بتتحسب على:</b>الخدمة من غير المستلزمات</span><span><b>خصم المستلزمات:</b>لا</span><span><b>الاستحقاق:</b>عند تنفيذ الخدمة</span></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm">حساب الدكتور</button><button class="btn sm">الصورة والنشر</button></div></div><p class="sub" style="padding:10px 16px;margin:0">'+d[2]+' عقود — شكلها زي الدكتور المفتوح تحت ↓</p></div>';}
 function draw(){var q=document.getElementById('q').value.trim(),l=D.filter(function(d){return !q||(d[0]+d[1]).indexOf(q)>=0;}),a=l.filter(function(d){return d[5];}),r=l.filter(function(d){return !d[5];});
  function row(d){var op=openAll||cur===d[1];return '<div class="drow'+(d[5]?' attn':'')+(op?' open':'')+'"><button onclick="cur=cur===\''+d[1]+'\'?null:\''+d[1]+'\';openAll=false;draw()" aria-expanded="'+op+'"><span class="nm"><b>'+d[0]+' — '+d[1]+'</b><small>'+d[2]+' عقود</small></span><span class="rt">'+d[3]+'</span><span class="ps">'+pills(d[4])+'</span><span class="chev">▾</span></button>'+(op?body(d):'')+'</div>';}
