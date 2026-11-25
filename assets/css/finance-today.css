@@ -58,3 +58,14 @@
 .fc-ho-diff.is-bad{background:#FCEDEB;color:#D0402A}.fc-ho-diff.is-ok{background:#E7F3EC;color:#2F7D5C}
 .fc-sub{display:block;color:#667085;font-size:12px}.fc-muted{color:#98A2B3;font-size:12.5px}
 @media(max-width:760px){.fc-ho{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.fc-ho-w{grid-column:1/-1;order:-1}.fc-ho-s{grid-column:1/-1;justify-content:flex-start}}
+/* help 279 — doctor accounts */
+.fc-da-name{border:0;background:none;padding:0;font:inherit;font-weight:700;font-size:15px;color:#0F369D;cursor:pointer;text-align:start}
+.fc-da-name:hover{text-decoration:underline}
+.fc-da-now{color:#2F7D5C}.fc-da-wait{color:#C2410C;font-weight:600}
+.fc-da-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.fc-da-acts [data-fin-action="doctor-dues"]{background:#F15A22;border-color:#F15A22;color:#fff}
+.fc-da-more{position:relative}.fc-da-more>summary{list-style:none;cursor:pointer;min-width:34px;min-height:34px;display:grid;place-items:center;border:1px solid #E6EBF3;border-radius:10px;background:#fff;font-weight:700}
+.fc-da-more>summary::-webkit-details-marker{display:none}
+.fc-da-more[open]>:not(summary){position:absolute;inset-inline-end:0;top:40px;z-index:5;background:#fff;border:1px solid #E6EBF3;border-radius:12px;box-shadow:0 10px 26px rgba(15,54,157,.12);padding:8px;display:grid;gap:4px;min-width:220px}
+.fc-da-more[open]{display:grid}
+.fc-st-eq{background:#F3F6FB;border-radius:12px;padding:8px 12px}

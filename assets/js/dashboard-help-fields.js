@@ -5918,12 +5918,12 @@
       "reviewed": true
     },
     {
-      "title": "بحث باسم الدكتور أو كوده",
+      "title": "ابحث باسم الدكتور",
       "labels": [
-        "بحث باسم الدكتور أو كوده"
+        "ابحث باسم الدكتور"
       ],
-      "text": "اكتب اسم الطبيب أو كوده لتصفية القائمة. البحث مابيغيرش حاجة.",
-      "article": "payroll",
+      "text": "اكتب جزء من اسم الدكتور علشان القايمة تتصفّى عليه.",
+      "article": "doctor-accounts-plain",
       "tabs": [
         "accounting",
         "booking_cash"
@@ -6049,6 +6049,20 @@
         "المبلغ الثابت (جنيه) لكل خدمة تُنفَّذ"
       ],
       "text": "مبلغ ثابت للطبيب عن كل خدمة بيعملها، من غير نسبة. لو الفاتورة اتخفضت أو اتمرتجعت بيقل بنفس النسبة.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "بحث باسم الدكتور أو كوده",
+      "labels": [
+        "بحث باسم الدكتور أو كوده"
+      ],
+      "text": "اكتب اسم الطبيب أو كوده لتصفية القائمة. البحث مابيغيرش حاجة.",
       "article": "payroll",
       "tabs": [
         "accounting",
@@ -23367,8 +23381,8 @@
   "coverage": {
     "version": "20261117-1",
     "definitions": 2018,
-    "labels": 1464,
+    "labels": 1465,
     "files": 160,
-    "groups": 1585
+    "groups": 1586
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

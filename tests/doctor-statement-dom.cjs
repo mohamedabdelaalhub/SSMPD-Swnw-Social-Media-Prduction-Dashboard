@@ -27,7 +27,8 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
   assert.deepEqual(calls[0], ['EMP-1', '2026-08-10', '2026-11-08'], 'last 90 days up to today');
   const txt = d.querySelector('.fc-modal form').textContent;
-  for (const s of ['إجمالي المستحق', '700.00', 'مستحق الصرف الآن', '250.00', 'بانتظار التحصيل', '450.00', 'INV-1', 'حشو', 'مستحق للصرف الآن (1)', 'غير مستحق بعد (3)', 'بانتظار دفعة التأمين (شركة ب) — متبقي 300.00', 'آجل — لم يُسدَّد شيء', 'مدفوعة جزئيًا — متبقي 150.00', 'متبقي للتحصيل 650.00']) assert(txt.includes(s), 'statement shows ' + s);
+  /* help 279: 3 cards + one explaining line; plain section titles */
+  for (const s of ['إجمالي اللي ليه', 'يتصرف له دلوقتي', '250.00', 'مستني فلوس المريض أو التأمين', '450.00', 'INV-1', 'حشو', 'يتصرف دلوقتي (1)', 'مستني فلوس (3)', 'بانتظار دفعة التأمين (شركة ب) — متبقي 300.00', 'آجل — لم يُسدَّد شيء', 'مدفوعة جزئيًا — متبقي 150.00', 'متبقي للتحصيل 650.00']) assert(txt.includes(s), 'statement shows ' + s);
   const secs = [...d.querySelectorAll('.fc-modal form .fc-st-h')]; assert.equal(secs.length, 2, 'two sections');
   const tabs = [...d.querySelectorAll('.fc-modal form table')]; assert.equal(tabs[0].querySelectorAll('tbody tr').length, 1, 'paid section: INV-1 only'); assert.equal(tabs[1].querySelectorAll('tbody tr').length, 3, 'not-yet section: 3 invoices');
   assert(tabs[0].textContent.includes('INV-1') && !tabs[0].textContent.includes('INV-2'), 'paid rows are not in the waiting table'); assert(tabs[1].textContent.includes('INV-2') && !tabs[1].textContent.includes('INV-1'));
@@ -46,7 +47,7 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   let detCalls = 0; w.SSMPDDb.financeDoctorStatementDetail = async (k, f, t) => { detCalls++; return DET; }; w.SSMPDDb.financeDoctorStatement = async () => STMT;
   d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
   const dt = d.querySelector('.fc-modal form').textContent; assert.equal(detCalls, 1, 'detail RPC preferred');
-  for (const s2 of ['بانتظار حصة المريض — متبقي 150.00', 'بانتظار التأمين (شركة ب) — متبقي 300.00', 'بانتظار التأمين (شركة ج) — متبقي 300.00', 'خدمات بدون عقد ساري (2)', 'مفيش عقد ساري يغطي الخدمة', 'العقد بيبدأ بعد تاريخ التنفيذ', 'تحليل', '360.00', 'أوردرات الاستقبال']) assert(dt.includes(s2), 'detail shows ' + s2);
+  for (const s2 of ['بانتظار حصة المريض — متبقي 150.00', 'بانتظار التأمين (شركة ب) — متبقي 300.00', 'بانتظار التأمين (شركة ج) — متبقي 300.00', 'خدمات بدون عقد ساري (2)', 'مفيش عقد ساري يغطي الخدمة', 'العقد بيبدأ بعد تاريخ التنفيذ', 'تحليل', '360.00', 'طلبات الاستقبال']) assert(dt.includes(s2), 'detail shows ' + s2);
   assert(!dt.includes('بانتظار حصة المريض — متبقي 0.00'), 'a closed part is not shown'); assert.equal((dt.match(/بانتظار حصة المريض/g) || []).length, 1, 'patient part only where it is open');
   // doctor without an active contract: no uncovered section
   DET.uncovered = null; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); assert(!d.querySelector('.fc-modal form').textContent.includes('بدون عقد ساري'));

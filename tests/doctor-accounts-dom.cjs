@@ -45,7 +45,13 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   const rows = () => [...box.querySelectorAll('.fc-da-table tbody tr')];
   assert.equal(rows().length, 3, 'exactly the accounts the server returned');
   const txt = box.textContent;
-  for (const s of ['د. أحمد', 'EMP-000038', '800.00', '500.00', '300.00', '(2 فاتورة)', '50.00', 'بدون عقد معتمد']) assert(txt.includes(s), 'shows ' + s);
+  /* help 279: no code column; the waiting count and contract note sit under the numbers/name */
+  assert(!txt.includes('EMP-000038'), 'no EMP code when the doctor has a name');
+  for (const s of ['د. أحمد', '500.00', '300.00', '2 فاتورة', '50.00', 'مفيش عقد معتمد']) assert(txt.includes(s), 'shows ' + s);
+  /* help 279: «اصرف» only when there is something to pay now; the no-invoice payout stays in each row's «⋯» menu (finance chat: opening/legacy balances) */
+  assert.equal(box.querySelectorAll('.fc-da-table [data-fin-action="doctor-dues"]').length, 2, 'pay button only for payable_now > 0');
+  assert.equal(box.querySelectorAll('.fc-da-table .fc-da-more [data-fin-action="open-disbursement"][data-id="doctor_payment"]').length, 3, 'generic payout in every row menu');
+  assert.equal(box.querySelectorAll('.fc-actions [data-fin-action="open-disbursement"]').length, 0, 'no duplicate top pay button');
   const cards = box.querySelector('.fc-st-cards').textContent; assert(cards.includes('575.00'), 'payable now total 500+0+75'); assert(cards.includes('أطباء ليهم حساب') && cards.includes('3'), 'doctor count'); const cv = [...box.querySelectorAll('.fc-st-card strong')].map(x => x.textContent); assert.deepEqual(cv, ['3', '575.00', '500.00'], 'cards: doctors with an account, payable now total, waiting total');
   assert.equal(accCalls, 1); assert.equal(hrCalls, 1);
   draw('doctor-accounts'); await tick(); assert.equal(accCalls, 1, 'cached for 30s: no new request on every redraw'); assert.equal(navigated.length, 1, 'no re-draw loop');
@@ -60,7 +66,7 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   // a click on the doctor name opens the EXISTING statement (finance-doctors.js), no new statement code
   rows()[0].querySelector('[data-fin-action="doctor-statement"]').click(); await tick();
   assert.deepEqual(stmtCalls[0], ['EMP-000038', '2026-08-10', '2026-11-08'], 'statement of the clicked doctor, last 90 days');
-  assert(d.querySelector('.fc-modal form').textContent.includes('مستحق الصرف الآن'), 'statement content shown');
+  assert(d.querySelector('.fc-modal form').textContent.includes('يتصرف له دلوقتي'), 'statement content shown');
   d.querySelectorAll('.fc-modal').forEach(x => x.remove());
   assert.equal(rows()[0].querySelectorAll('[data-fin-action="doctor-statement"]').length, 2, 'name and an explicit button both open it');
   // payout entry point is only offered to users who can create
