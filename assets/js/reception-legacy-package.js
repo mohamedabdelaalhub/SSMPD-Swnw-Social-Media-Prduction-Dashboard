@@ -9,6 +9,7 @@
 (function(w){'use strict';
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function money(n){return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2})+' ج.م';}
+function num(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});}
 function r2(n){return Math.round(n*100)/100;}
 function client(){return w.SSMPDDb&&w.SSMPDDb.client;}
 function rpc(n,a){var c=client();if(!c)return Promise.reject(new Error('تعذر الاتصال'));return Promise.resolve(c.rpc(n,a)).then(function(r){if(r&&r.error)throw r.error;return r?r.data:null;});}
@@ -72,10 +73,10 @@ function openUse(apId,c){var d=c.data||{},ap=(d.appointments||[]).find(function(
   if(!pairs.length)throw new Error('المريض مالوش جلسات باكج للخدمات دي');
   var name=function(o){return (o.snapshot&&o.snapshot.name)||((d.services||[]).find(function(x){return x.id===o.service_id;})||{}).name||'خدمة';};
   var body=pairs.map(function(x,i){return '<label class="rlp-ent'+(i?'':' on')+'"><input type="radio" name="rlp_pick" value="'+i+'"'+(i?'':' checked')+' required><span><b>'+esc(name(x.o))+'</b> — '+money(x.o.price*(x.o.quantity||1))+(x.o.status==='completed'?' (اتنفذت ولسه متدفعتش)':'')+
-   '<small>'+esc(x.s.package)+' · فاضل '+x.s.left+' من '+x.s.of+' · قيمة الجلسة '+money(x.s.value)+'</small></span>'+(x.s.legacy_paid_on?'<em class="rlp-badge">مدفوع قبل التشغيل</em>':'')+'</label>';}).join('')+
+   '<small>'+esc(x.s.package)+' · '+(x.s.pulses?'فاضل '+num(x.s.remaining)+' نبضة من '+num(x.s.quantity)+' (بيتخصم اللي اتضرب فعلاً من عداد الجهاز)':'فاضل '+x.s.left+' من '+x.s.of+' · قيمة الجلسة '+money(x.s.value))+'</small></span>'+(x.s.legacy_paid_on?'<em class="rlp-badge">مدفوع قبل التشغيل</em>':'')+'</label>';}).join('')+
    '<div class="rlp-sum" data-wide><span>المريض يدفع</span><b>0 ج.م</b></div>';
   c.modal('خصم من باكج المريض',body,function(v){var x=pairs[+v.rlp_pick];
-   return c.command('order_use_package',{order_id:x.o.id,entitlement_id:x.s.entitlement_id},crypto.randomUUID()).then(function(res){if(w.SSMPDToast)w.SSMPDToast.show('الجلسة اتخصمت من الباكج ✓ — فاضل '+(res&&res.left)+' من '+x.s.of);return res;});},null,{ok:'خصم من الباكج'});
+   return c.command('order_use_package',{order_id:x.o.id,entitlement_id:x.s.entitlement_id},crypto.randomUUID()).then(function(res){if(w.SSMPDToast)w.SSMPDToast.show(res&&res.pulses?'اتربطت بنبضات الباكج ✓ — فاضل '+num(res.remaining)+' نبضة. عند «تنفيذ» اكتب قراءة العداد قبل وبعد':'الجلسة اتخصمت من الباكج ✓ — فاضل '+(res&&res.left)+' من '+x.s.of);return res;});},null,{ok:'خصم من الباكج'});
  }).catch(function(e){w.alert((e&&e.message)||e);});}
 w.SSMPDLegacyPackage={openRequest:openRequest,approvals:approvals,canUse:canUse,openUse:openUse};
 })(window);
