@@ -6,6 +6,7 @@ import { cleanText, saveCommentRows, releaseStuckSending } from "./comment-store
 import { readFbThreads } from "./fb-comments.ts";
 import { gget, gpost } from "./graph.ts";
 import { createRunLog } from "./run-log.ts";
+import { mapPool, isPermanentGraphError } from "./pool.ts";
 import { isWhatsApp, queueText, queueTemplate, queueReturn, listTemplates, outboxStatus, submitTemplate, listTemplateRequests } from "./whatsapp.ts";
 
 // Meta Comments & Messages — inbox + autopilot replies.
@@ -22,6 +23,7 @@ import { isWhatsApp, queueText, queueTemplate, queueReturn, listTemplates, outbo
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const CRON_SECRET = Deno.env.get("META_PUBLISH_CRON_SECRET");
 const MAX_POST_AGE_DAYS = 30;
+const RUN_BUDGET_MS = Number(Deno.env.get("META_COMMENTS_BUDGET_MS")) || 40000; // soft budget; the runtime stops a run after about a minute
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
@@ -78,8 +80,10 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
   }
   const { data: watched } = await db.from("social_comment_watch").select("post_ref,last_count,checked_at").eq("brand", brand);
   const watch = new Map((watched || []).map((w: any) => [w.post_ref, w]));
+  const PERMANENT = -2; // watch marker: the post cannot be read (deleted / no access); skipped for 6 hours, then tried again
   const stale = (ref: string) => {
     const w: any = watch.get(ref), c = counts.get(ref);
+    if (w && w.last_count === PERMANENT) return Date.now() - Date.parse(w.checked_at) > 6 * 3600e3;
     if (!w || c === undefined || c < 0 || w.last_count !== c) return true;
     return Date.now() - Date.parse(w.checked_at) > 6 * 3600e3; // safety re-read every 6 hours
   };
@@ -96,17 +100,21 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
   const rows: Row[] = [];
   const failed = new Set<string>();
   const pageReplied = new Set<string>();
-  for (const job of jobs) {
+  // Posts are read with up to 5 requests in flight (one after another a brand took ~50 s and the run was cut off).
+  // A post that fails for a permanent reason (deleted, no access) is still marked as read so it is not retried every run.
+  const permanent = new Set<string>();
+  const results = await mapPool(jobs, 5, async (job) => {
+    const out = { rows: [] as Row[], replied: [] as string[], failedRef: null as string | null, permanentRef: null as string | null };
     if (job.facebook_post_id) {
       const t = await readFbThreads(gget, job.facebook_post_id, token, report.errors, brand);
-      if (!t.ok) failed.add(job.facebook_post_id);
+      if (!t.ok) { if (t.permanent) out.permanentRef = job.facebook_post_id; else out.failedRef = job.facebook_post_id; }
       else for (const { comment: c, replies } of t.threads) {
         const isPage = c.from?.id === cfg?.facebook_page_id;
-        rows.push(fbRow(brand, job, c, null, isPage));
+        out.rows.push(fbRow(brand, job, c, null, isPage));
         for (const s of replies) {
           const sIsPage = s.from?.id === cfg?.facebook_page_id;
-          if (sIsPage) pageReplied.add(`facebook:${c.id}`);
-          rows.push(fbRow(brand, job, s, c.id, sIsPage));
+          if (sIsPage) out.replied.push(`facebook:${c.id}`);
+          out.rows.push(fbRow(brand, job, s, c.id, sIsPage));
         }
       }
     }
@@ -114,17 +122,24 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       const r = await gget(`${job.instagram_media_id}/comments`, {
         fields: "id,text,username,timestamp,replies{id,text,username,timestamp}", limit: "50", access_token: token
       });
-      if (!r.ok) { report.errors.push(`${brand} instagram: ${r.error}`); failed.add(job.instagram_media_id); }
+      if (!r.ok) { report.errors.push(`${brand} instagram: ${r.error}`); if (isPermanentGraphError(r.error)) out.permanentRef = job.instagram_media_id; else out.failedRef = job.instagram_media_id; }
       else for (const c of r.data.data || []) {
         const isPage = !!igUsername && c.username === igUsername;
-        rows.push(igRow(brand, job, c, null, isPage));
+        out.rows.push(igRow(brand, job, c, null, isPage));
         for (const s of c.replies?.data || []) {
           const sIsPage = !!igUsername && s.username === igUsername;
-          if (sIsPage) pageReplied.add(`instagram:${c.id}`);
-          rows.push(igRow(brand, job, s, c.id, sIsPage));
+          if (sIsPage) out.replied.push(`instagram:${c.id}`);
+          out.rows.push(igRow(brand, job, s, c.id, sIsPage));
         }
       }
     }
+    return out;
+  });
+  for (const r of results) {
+    rows.push(...r.rows);
+    for (const id of r.replied) pageReplied.add(id);
+    if (r.failedRef) failed.add(r.failedRef);
+    if (r.permanentRef) permanent.add(r.permanentRef);
   }
   if (rows.length) {
     // New comments only; existing rows keep their drafts/status.
@@ -145,6 +160,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     }
   }
   const okWatch = watchRows.filter((w) => !failed.has(w.post_ref as string));
+  for (const w of okWatch) if (permanent.has(w.post_ref as string)) w.last_count = PERMANENT;
   if (okWatch.length) await db.from("social_comment_watch").upsert(okWatch, { onConflict: "post_ref" });
   // Answered directly on Facebook/Instagram → no longer waiting in the dashboard.
   // In chunks: a single request with hundreds of ids is too long and fails silently.
@@ -328,23 +344,30 @@ async function runSync(db: any, report: any) {
   for (const j of jobs || []) (byBrand[j.brand] ||= []).push(j);
   const auto = await autopilotSettings(db);
   RUN_LOG = createRunLog(db);
-  // Order matters when a run is cut short: comments of EVERY brand first (cheap, and a brand must not starve behind another brand's
-  // message sync), then approved replies, then the heavy private-message sync and the AI stages.
-  const brands = Object.entries(byBrand);
+  const t0 = Date.now(), over = () => Date.now() - t0 > RUN_BUDGET_MS;
+  // The edge runtime cuts a run off after about a minute, so: (1) replies staff already approved go out first (cheap, also releases stuck
+  // «sending»), (2) the brands rotate every run so none is always last, (3) before each later stage the run checks its time budget and
+  // skips the rest (they run on the next call) instead of being killed half-way.
+  const all = Object.entries(byBrand), rot = all.length ? Math.floor(Date.now() / 300000) % all.length : 0;
+  const brands = all.slice(rot).concat(all.slice(0, rot));
+  const budgeted = async (name: string, fn: () => Promise<unknown>) => {
+    if (over()) { report.errors.push(`skipped ${name}: run time budget used`); return; }
+    await stage(report, name, fn);
+  };
+  await stage(report, "sendApproved", () => sendApproved(db, report));
   for (const [brand, list] of brands) {
     const cfg = (cfgs || []).find((c: any) => c.brand === brand);
-    await stage(report, `${brand} syncBrand`, () => syncBrand(db, brand, cfg, list, report));
+    await budgeted(`${brand} syncBrand`, () => syncBrand(db, brand, cfg, list, report));
   }
-  await stage(report, "sendApproved", () => sendApproved(db, report));
   for (const [brand] of brands) {
     const cfg = (cfgs || []).find((c: any) => c.brand === brand);
     const token = pageToken(brand);
-    if (token) await stage(report, `${brand} syncMessages`, () => syncMessages(db, brand, cfg, token, report, auto.messages));
+    if (token) await budgeted(`${brand} syncMessages`, () => syncMessages(db, brand, cfg, token, report, auto.messages));
   }
-  await stage(report, "autoReply", () => autoReply(db, report));
+  await budgeted("autoReply", () => autoReply(db, report));
   if (auto.comments) {
-    await stage(report, "autopilotComments", () => autopilotComments(db, report));
-    await stage(report, "sendApproved (autopilot)", () => sendApproved(db, report)); // replies the autopilot just approved go out in this run
+    await budgeted("autopilotComments", () => autopilotComments(db, report));
+    await budgeted("sendApproved (autopilot)", () => sendApproved(db, report)); // replies the autopilot just approved go out in this run
   }
 }
 
