@@ -8,7 +8,9 @@
 -- A partial draw (320 pulses) is then simulated on the entitlement as postgres (the laser execute itself is already live and unchanged)
 -- to prove the line is still listed with 680 left and the next order takes those 680; a second OPEN order on the same line is refused.
 begin;
--- transaction guard: set_config(..., true) lives only inside an explicit transaction; the DO block below refuses to run without it
+-- transaction guard: SAVEPOINT fails outside an explicit begin … rollback block (also when the file is sent as one query
+-- without «begin;»), and then nothing in this file runs and nothing is kept
+savepoint pp_live_guard;
 select set_config('pp_live.in_txn', 'yes', true);
 -- >>> apply supabase/migrations/20261125130000_package_partial_pulse.sql here (without its own begin / commit) if not applied yet <<<
 create temp table pp_live(n serial, step text, expected text, actual text, ok boolean);
