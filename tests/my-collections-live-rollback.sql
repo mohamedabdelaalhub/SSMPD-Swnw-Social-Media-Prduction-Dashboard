@@ -1,4 +1,4 @@
--- Live rollback dry-run for 20261125240000_my_collections_by_method.sql (rule 9). ONE transaction ending with ROLLBACK; nothing kept.
+-- Live rollback dry-run for 20261125235000_my_collections_by_method.sql (rule 9). ONE transaction ending with ROLLBACK; nothing kept.
 -- Read-only: as every active reception user with a login, the call returns only keys shift/methods/count/total (no expected cash);
 -- a user without an open collection shift gets shift = null. Totals are printed via NOTICE (no patient data).
 begin;
@@ -7,7 +7,7 @@ begin;
 -- drawer balance, payouts or expenses: the shift-end count stays blind (20261125110000 count-check).
 -- Receipts = clinic_reception.payments on the shift's reception mirror, or recorded by the cashier during the shift window
 -- (same mapping as public.clinic_finance_shift_movements). Nothing for anyone else's shift; no patient data.
--- Rollback: supabase/rollbacks/20261125240000_my_collections_by_method.rollback.sql
+-- Rollback: supabase/rollbacks/20261125235000_my_collections_by_method.rollback.sql
 
 do $$ begin
   if to_regprocedure('public.clinic_finance_my_collections()') is not null then raise exception 'تم تطبيق هذا الملف من قبل'; end if;

@@ -1,4 +1,4 @@
-// «اتحصّل في ورديتك حسب طريقة الدفع» (20261125240000): the cashier sees count + total per method for HER open collection shift only;
+// «اتحصّل في ورديتك حسب طريقة الدفع» (20261125235000): the cashier sees count + total per method for HER open collection shift only;
 // no expected cash / balance keys; another cashier's receipts and receipts before the shift are excluded; no open shift → empty.
 const boot=require('./helpers/reception-bridge.cjs'),fs=require('fs'),assert=require('assert/strict');
 (async()=>{const x=await boot(['reception_canonical_catalog']),{db,as,fin,key,id,owner,call}=x;
@@ -12,7 +12,7 @@ try{
  const main=await treasury('register_save',{name:'الخزينة الرئيسية',treasury_kind:'main',account_code:parent,assigned_to:id(3),limit:1000});
  const r1=await treasury('register_save',{name:'خزينة مازن',treasury_kind:'collection',account_code:'0101010102',assigned_to:id(4),parent_register_id:main.id});
  const r2=await treasury('register_save',{name:'خزينة منار',treasury_kind:'collection',account_code:'0101010103',assigned_to:id(5),parent_register_id:main.id});
- await db.exec('reset role');const M=mig('20261125240000');await db.exec(M);await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+ await db.exec('reset role');const M=mig('20261125235000');await db.exec(M);await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
  const mine=async n=>{await as(n);const r=(await db.query('select public.clinic_finance_my_collections() v')).rows[0].v;await db.exec('reset role');return r;};
  // no open shift yet → empty
  let r=await mine(4);assert.equal(r.shift,null);assert.equal(+r.count,0);

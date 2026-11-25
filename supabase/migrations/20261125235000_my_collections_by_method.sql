@@ -3,7 +3,7 @@
 -- drawer balance, payouts or expenses: the shift-end count stays blind (20261125110000 count-check).
 -- Receipts = clinic_reception.payments on the shift's reception mirror, or recorded by the cashier during the shift window
 -- (same mapping as public.clinic_finance_shift_movements). Nothing for anyone else's shift; no patient data.
--- Rollback: supabase/rollbacks/20261125240000_my_collections_by_method.rollback.sql
+-- Rollback: supabase/rollbacks/20261125235000_my_collections_by_method.rollback.sql
 begin;
 
 do $$ begin
