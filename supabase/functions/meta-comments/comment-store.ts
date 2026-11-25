@@ -5,6 +5,8 @@
 // an unsaved row are left unmarked and retried on the next run.
 
 // Postgres text cannot hold \u0000; Graph occasionally sends it.
+import { mapPool } from "./pool.ts";
+
 export const cleanText = (s: unknown): string => String(s ?? "").replace(/\u0000/g, "");
 
 export type SaveResult = { saved: number; failedRefs: Set<string> };
@@ -42,4 +44,37 @@ export async function releaseStuckSending(db: any, olderThanMinutes = 15): Promi
   const cutoff = new Date(Date.now() - olderThanMinutes * 60e3).toISOString();
   await db.from("social_comments").update({ status: "failed", last_error: "الرد ما اتأكدش — راجعه على فيسبوك قبل ما تبعته تاني", updated_at: new Date().toISOString() })
     .eq("status", "sending").lt("updated_at", cutoff);
+}
+
+// Sends the replies staff (or the autopilot) approved. Claimed row by row right before the POST, up to `concurrency` at a time, and no new
+// row is claimed after `budgetMs`: the rest stays "approved" for the next run. Before this a run posted them one after another, 8 replies took
+// 64 s, and that single stage used up the whole minute the edge runtime allows (no comment sync happened).
+export async function sendApprovedComments(db: any, report: { errors: string[]; sent: number },
+  deps: { pageToken: (brand: string) => string | null; gpost: (path: string, params: Record<string, string>) => Promise<{ ok: boolean; data: any; error?: string }>; withContact: (t: string) => string },
+  opts: { onlyId?: string; budgetMs?: number; concurrency?: number; now?: () => number } = {}): Promise<void> {
+  const now = opts.now ?? Date.now, started = now(), budgetMs = opts.budgetMs ?? 20000;
+  let q = db.from("social_comments").select("*").eq("status", "approved").limit(20);
+  if (opts.onlyId) q = q.eq("id", opts.onlyId);
+  const { data } = await q;
+  await mapPool((data || []) as any[], opts.concurrency ?? 4, async (c: any) => {
+    if (!opts.onlyId && now() - started > budgetMs) return; // not claimed: stays approved, sent by the next run
+    // Claim the row so two runs never send the same reply twice.
+    const claim = await db.from("social_comments").update({ status: "sending", updated_at: new Date(now()).toISOString() })
+      .eq("id", c.id).eq("status", "approved").select("id");
+    if (!claim.data?.length) return;
+    const token = deps.pageToken(c.brand);
+    const target = c.parent_comment_id || c.platform_comment_id; // reply in the same thread
+    const message = deps.withContact(c.final_reply);
+    const r = !token ? { ok: false, error: "no page token", data: {} as any }
+      : c.platform === "facebook"
+        ? await deps.gpost(`${target}/comments`, { message, access_token: token })
+        : await deps.gpost(`${target}/replies`, { message, access_token: token });
+    if (r.ok) {
+      await db.from("social_comments").update({ status: "replied", final_reply: message, reply_platform_id: r.data.id || null, replied_at: new Date(now()).toISOString(), last_error: null, updated_at: new Date(now()).toISOString() }).eq("id", c.id);
+      report.sent++;
+    } else {
+      await db.from("social_comments").update({ status: "failed", last_error: String(r.error || "send failed").slice(0, 300), updated_at: new Date(now()).toISOString() }).eq("id", c.id);
+      report.errors.push(`send ${c.id}: ${r.error}`);
+    }
+  });
 }
