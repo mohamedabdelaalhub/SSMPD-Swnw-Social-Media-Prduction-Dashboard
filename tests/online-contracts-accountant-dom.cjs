@@ -20,7 +20,9 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
     doctor_allocations: [], doctor_payouts: [], doctor_balances: [] };
   const host = d.querySelector('[data-fc-body]'); host.innerHTML = w.SSMPDFinanceControls.panel('doctors', data, h);
   await new Promise(r => setTimeout(r, 20));
-  const groups = host.querySelectorAll('details.fc-doctor-group'); assert.equal(groups.length, 2);
+  const all = host.querySelectorAll('details.fc-doctor-group'); assert.equal(all.length, 2);
+  // owner 2026-11-25: doctors needing attention (pending) are listed first, so pick each doctor by key, not by position
+  const groups = [host.querySelector('details.fc-doctor-group[data-dc-key="EMP-1"]'), host.querySelector('details.fc-doctor-group[data-dc-key="EMP-2"]')];
   // one send button per active reference group: doctor 1 has R1 and R2, doctor 2 has R1 (with a pending member -> button still shown, server refuses)
   assert.equal(groups[0].querySelectorAll('.fc-sig-btn[data-fin-action="contract-signature-send"]').length, 2, 'two active reference groups for doctor 1');
   assert(groups[0].querySelector('summary .fc-sig-btn[data-fin-action="contract-signature-send"]').textContent.includes('إرسال للتوقيع'));
@@ -40,7 +42,7 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   host.innerHTML = w.SSMPDFinanceControls.panel('doctors', data, h); await new Promise(r => setTimeout(r, 20));
   assert.equal(host.querySelectorAll('.fc-sig-btn[data-fin-action="contract-signature-send"]').length, 3); assert.equal(host.querySelectorAll('[data-sig-templates]').length, 1);
   // click -> modal -> command
-  const sendBtn = host.querySelector('.fc-sig-btn[data-fin-action="contract-signature-send"]'); const handled = w.SSMPDFinanceControls.act(sendBtn.getAttribute('data-fin-action'), sendBtn.getAttribute('data-id'), data, h);
+  const sendBtn = host.querySelector('[data-dc-key="EMP-1"] .fc-sig-btn[data-fin-action="contract-signature-send"]'); const handled = w.SSMPDFinanceControls.act(sendBtn.getAttribute('data-fin-action'), sendBtn.getAttribute('data-id'), data, h);
   assert.equal(handled, true); assert(modalArgs.t.includes('د. أ') && modalArgs.b.includes('(2)') && modalArgs.b.includes('R1'));
   await modalArgs.save({}, 'tok-1'); const sent = calls.filter(c => c[0] === 'clinic_finance_contract_signature_command').pop();
   assert.equal(JSON.stringify(sent[1]), JSON.stringify({ p_action: 'send', p_payload: { doctor_key: 'EMP-1', reference: 'R1' }, p_token: 'tok-1' }));

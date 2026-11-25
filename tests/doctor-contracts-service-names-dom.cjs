@@ -21,7 +21,7 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   await new Promise(r => setTimeout(r, 30));
   assert(first.textContent.includes('كشف تجريبي') && first.textContent.includes('0001374'), 'name + code after load: ' + first.textContent);
   const other = box.querySelector('[data-fc-svc="0001373"]');
-  assert.equal(other.textContent.trim(), '0001373', 'unknown code falls back to the code');
+  assert(other.textContent.trim().startsWith('0001373') && other.querySelector('.dc-noname') && other.querySelector('.dc-noname').textContent === 'مفيش اسم محفوظ للكود ده', 'unknown code falls back to the code + «مفيش اسم محفوظ» note (owner 2026-11-25)');
   assert(box.textContent.includes('كل خدمات قسم الاسنان'), 'department still readable');
   box.innerHTML = w.SSMPDFinanceControls.panel('doctors', data, h);
   assert(box.querySelector('[data-fc-svc="0001374"]').textContent.includes('كشف تجريبي'), 'rendered with the name once cached');
