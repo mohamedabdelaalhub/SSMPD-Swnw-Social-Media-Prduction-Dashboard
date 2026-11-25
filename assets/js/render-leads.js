@@ -91,7 +91,7 @@
 
   function visibleSubScreens() {
     return SUB_SCREENS.filter(function (s) {
-      if (s.key === "reception") return isReception();
+      if (s.key === "reception") return isReception() || isCS(); // owner 2026-11-24: customer service gets the intake form without the reception role (leads-create already allows customer_service)
       if (s.key === "cs") return isCS();
       if (s.key === "experience_ratings") return isCS() || isManager();
       if (s.key === "bulk") return isReception();
@@ -1026,6 +1026,61 @@
     renderPreview();
   }
 
+  // ============ رسالة افتتاحية جاهزة لموظف خدمة العملاء (ليدز الإعلانات) ============
+  // نص جاهز يتعدّل ويتنسخ أو يتفتح في واتساب (بيجهّز الرسالة بس — الموظف هو اللي بيدوس إرسال هناك). مفيش حاجة بتتبعت من الداشبورد.
+  var OPENER_LABELS = { laser: "ليزر", physio: "علاج طبيعي" };
+  var OPENER_BODY = {
+    laser: "معاك {staff} من مركز عيادات سونو التخصصية، فرع حدائق الأهرام.\nوصلنا طلب حضرتك على إعلان الليزر، وحابين نرتبلك موعد استشارة.\nإيه الوقت المناسب لحضرتك للزيارة أو للمكالمة؟ وأنهي منطقة جسم حضرتك مهتمة بيها؟",
+    physio: "معاك {staff} من مركز عيادات سونو التخصصية، فرع حدائق الأهرام.\nشفنا استفسار حضرتك عن العلاج الطبيعي، وحابين نساعد حضرتك ونحجزلك كشف مع الدكتور المختص.\nإيه الوقت المناسب لحضرتك؟ ولو تحب تكتبلنا باختصار الشكوى اللي محتاجة علاج، يبقى أحسن."
+  };
+  function openerKind(lead) {
+    var svc = lead.interested_service || "", msg = String(lead.message_text || "");
+    if (svc === "cosmetic_laser" || /ليزر/.test(msg)) return "laser";
+    if (svc === "physiotherapy" || /علاج طبيعي|علاج طبيعى/.test(msg)) return "physio";
+    return lead.source === "facebook_form" ? "laser" : "physio"; // فورم الليزر على فيسبوك، وماسنجر للعلاج الطبيعي
+  }
+  function openerText(kind, lead, staffName) {
+    var nm = String(lead.customer_name || "").trim();
+    // اسم من فيسبوك أو اسم افتراضي: مش مؤكد، فمنكتبوش في الرسالة
+    if (!nm || lead.customer_name_source === "facebook" || nm === "عميل ماسنجر") nm = "";
+    var greet = "أهلاً بحضرتك" + (nm ? " " + nm : "") + (kind === "laser" ? " 🌸" : "،");
+    return greet + "\n" + OPENER_BODY[kind].replace("{staff}", String(staffName || "").trim() || "[اسم الموظف]");
+  }
+  function staffNameNow() { var a = me || (window.SSMPDAuth && window.SSMPDAuth.currentAdmin) || {}; return a.name || ""; }
+  function openerWaDigits(lead) {
+    var d = String(lead.phone_normalized || lead.phone_raw || "").replace(/\D/g, "");
+    if (/^01\d{9}$/.test(d)) d = "2" + d;
+    return /^\d{8,15}$/.test(d) ? d : "";
+  }
+  function openerHtml(lead) {
+    var kind = openerKind(lead), staff = staffNameNow();
+    return '<div class="field" style="border-top:1px solid var(--c-border);padding-top:14px;" data-opener>' +
+      '<label>رسالة افتتاحية جاهزة</label>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;"><select id="op-kind">' +
+      Object.keys(OPENER_LABELS).map(function (k) { return '<option value="' + k + '"' + (k === kind ? " selected" : "") + '>' + OPENER_LABELS[k] + '</option>'; }).join("") + '</select>' +
+      '<small style="color:var(--c-muted);">عدّل الرسالة براحتك قبل ما تبعتها</small></div>' +
+      '<textarea id="op-text" rows="6" style="width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--c-border);padding:10px 12px;line-height:1.9;">' + escapeHtml(openerText(kind, lead, staff)) + '</textarea>' +
+      (lead.customer_name_source === "facebook" ? '<p style="font-size:12px;color:var(--c-muted);margin:6px 0 0;">الاسم ده من فيسبوك ومش مكتوب في الرسالة — اسأل العميل عن اسمه.</p>' : '') +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"><button type="button" class="btn ghost sm" id="op-copy">انسخ الرسالة</button>' +
+      '<button type="button" class="btn sm" id="op-wa"' + (openerWaDigits(lead) ? "" : " disabled") + '>افتح واتساب بالرسالة</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:6px 0 0;">فتح واتساب بيجهّز الرسالة بس — لازم تدوس إرسال هناك. الرد الحر على واتساب مسموح خلال 24 ساعة من آخر رسالة من العميل؛ لو ما كتبش، اتصل بيه أو ابعت من واتساب الأعمال على الموبايل.</p></div>';
+  }
+  function wireOpener(root, lead) {
+    var box = root.querySelector("[data-opener]");
+    if (!box) return;
+    var kindSel = box.querySelector("#op-kind"), txt = box.querySelector("#op-text");
+    kindSel.onchange = function () { txt.value = openerText(kindSel.value, lead, staffNameNow()); };
+    box.querySelector("#op-copy").onclick = function () {
+      var done = function () { if (T && T.show) T.show("اتنسخت الرسالة"); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt.value).then(done, function () { txt.select(); document.execCommand("copy"); done(); });
+      else { txt.select(); document.execCommand("copy"); done(); }
+    };
+    box.querySelector("#op-wa").onclick = function () {
+      var d = openerWaDigits(lead); if (!d) return;
+      window.open("https://wa.me/" + d + "?text=" + encodeURIComponent(txt.value), "_blank", "noopener");
+    };
+  }
+
   // ============ مودال تفاصيل الليد (مشترك بين كل الشاشات) ============
   function openLeadModal(view, container, leadId, onChange) {
     var backdrop = document.createElement("div");
@@ -1068,6 +1123,8 @@
         (lead.assigned_to ? ('مُسند لـ: ' + escapeHtml(employeeName(lead.assigned_to)) + '<br>') : '') +
         'تاريخ الاستلام: ' + fmtDate(lead.created_at) +
         '</p>';
+
+      html += openerHtml(lead);
 
       // تحديث الحالة والأولوية وتفاصيل الحجز
       html += '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">' +
@@ -1164,6 +1221,7 @@
       }
       if(window.SSMPDSharedReception)window.SSMPDSharedReception.append(backdrop.querySelector('.modal'),{context:'lead',id:lead.id});if(window.SSMPDReception&&window.SSMPDRoles.canSeeTab(window.SSMPDAuth.currentAdmin,'reception_services')){var bookingButton=document.createElement('button');bookingButton.className='btn btn-primary';bookingButton.type='button';bookingButton.textContent='احجز للمريض';backdrop.querySelector('.modal').appendChild(bookingButton);bookingButton.onclick=async function(){bookingButton.disabled=true;try{await window.SSMPDReception.openForLead(lead.id);backdrop.remove();}catch(err){T.show(err.message,'error');}finally{bookingButton.disabled=false;}};}
       backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+      wireOpener(backdrop, lead);
 
       var deleteBtn = document.getElementById("lm-delete");
       if (deleteBtn) {
