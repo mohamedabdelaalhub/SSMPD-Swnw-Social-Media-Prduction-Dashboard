@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2003,
-    "labels": 1458,
+    "definitions": 2007,
+    "labels": 1461,
     "files": 158,
-    "groups": 1574
+    "groups": 1577
   },
   "fields": [
     {
@@ -10985,6 +10985,46 @@
       "tab": "reception_services",
       "article": "invoice",
       "text_sha256": "ea39a04f2d933c5be7f40811637a3ee239a7e73d1b1481ebeb5a5034e4c00575"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "عدد زيارات كارت العيلة اللي العيلة خدتها على السيستم القديم",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-family-legacy-visits",
+      "text_sha256": "296a75937b454595df5fcda790d651ebcd339f6c157080aabbaf1426667b896e"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "مثلاً: العيلة كانت ماشية بكارت العيلة قبل الداشبورد",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-family-legacy-visits",
+      "text_sha256": "b03d89a6a7a9abee7cb790cc774e6c32912cd7722eb892d0a06743a1a08dc688"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "السبب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "…أو ملاحظة (مثلاً: دفتر الاستقبال صفحة كام)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-family-legacy-visits",
+      "text_sha256": "ed824507b72a0c85efa17d2f051c1f7c7c712c83705676aa8fd35dc997be7434"
     },
     {
       "file": "reception-booking-discount.js",
