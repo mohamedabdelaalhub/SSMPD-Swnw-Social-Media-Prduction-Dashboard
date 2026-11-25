@@ -19,9 +19,9 @@ const ins={can_manage:true,can_view_all:true,today:'2026-11-25',people:[{id:'p1'
    if(/_command$/.test(fn)){window.__calls.push([fn,args]);return {data:'x'};}return {data:{rules:[],adjustments:[],devices:[],imports:[],services:[]}};}}};`});
  await page.addScriptTag({content:fs.readFileSync('assets/js/roles.js','utf8')});
  for(const f of ['workforce-prices','hr-payroll-workspace','hr-custody','hr-insurance','hr-navigation'])await page.addScriptTag({content:fs.readFileSync('assets/js/'+f+'.js','utf8')});
- await page.evaluate(()=>SSMPDHumanResources.render(document.getElementById('view-container')));await page.waitForSelector('[data-hr-open=custody]');
+ await page.evaluate(()=>SSMPDHumanResources.render(document.getElementById('view-container')));await page.waitForSelector('[data-hr-group=money]');
  // ---- custody
- await page.click('[data-hr-open=custody]');await page.waitForSelector('[data-custody-table] tbody tr');
+ await page.click('[data-hr-group=money]');await page.click('[data-hr-open=custody]');await page.waitForSelector('[data-custody-table] tbody tr');
  const row=page.locator('[data-custody-table] tbody tr').first();
  assert.equal((await row.locator('.hrl-primary').innerText()).trim(),'إرجاع للمخزن');assert.equal(await row.locator('.hrl-menu').isVisible(),false,'menu closed');
  await row.locator('.hrl-more>summary').click();assert(await row.locator('.hrl-menu').isVisible());
@@ -36,7 +36,7 @@ const ins={can_manage:true,can_view_all:true,today:'2026-11-25',people:[{id:'p1'
  // the primary button still runs the existing return flow
  await row.locator('.hrl-primary').click();await page.waitForSelector('.wp-modal');assert((await page.locator('.wp-modal').innerText()).includes('إرجاع'));await page.locator('.wp-modal [data-close]').first().click();
  // ---- insurance
- await page.click('[data-hr-open=insurance]');await page.waitForSelector('[data-insurance-table] tbody tr');
+ await page.click('[data-hr-group=money]');await page.click('[data-hr-open=insurance]');await page.waitForSelector('[data-insurance-table] tbody tr');
  assert.equal(await page.locator('[data-insurance-table] tbody tr').count(),2,'all by default (stopped row visible)');
  const ban=page.locator('[data-insurance-due]');assert((await ban.innerText()).includes('إخطارات تأمين قرب ميعادها (1)'));assert((await ban.innerText()).includes('فاضل 5 يوم'));
  assert.equal(await page.locator('.hrl-danger[data-insurance="stop"]').count(),1);
@@ -44,7 +44,7 @@ const ins={can_manage:true,can_view_all:true,today:'2026-11-25',people:[{id:'p1'
  ov=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ov<=1,'insurance overflow '+ov);
  if(process.env.HRL_QA)await page.screenshot({path:process.env.HRL_QA+'/hrl-ins-'+width+'.png',fullPage:true});
  // ---- people
- await page.click('[data-hr-open=people]');await page.waitForSelector('.wp-grid [data-wp="person"]:visible');
+ await page.click('[data-hr-group=people]');await page.click('[data-hr-open=people]');await page.waitForSelector('.wp-grid [data-wp="person"]:visible');
  const chips=await page.locator('.wp-grid [data-wp="person"] .hrl-chip').allInnerTexts();assert(chips.includes('يعمل')&&chips.includes('إجازة')&&chips.includes('ملف مبدئي'),'chips '+chips);
  const ended=page.locator('details.hrl-ended');assert.equal(await ended.count(),1);assert((await ended.locator('summary').innerText()).includes('انتهت علاقتهم (1)'));assert.equal(await ended.locator('[data-wp="person"]').isVisible(),false);
  await ended.locator('summary').click();assert(await ended.locator('[data-wp="person"]').isVisible());
