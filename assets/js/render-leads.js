@@ -63,6 +63,9 @@
   function isCS() { return !!(me && (window.SSMPDRoles.hasRole(me, "customer_service") || isManager())); }
   // صلاحية حذف الليد: سوبر أدمن دايماً، أو أي مستخدم مفعّلة له can_delete_leads
   // صراحة من لوحة "المستخدمون والصلاحيات" (نفس نمط has_archive_access)
+  // owner 2026-11-25 «الليدز تشوف كلها»: an active admin with «أرشيف الليدز» (has_leads_archive_access) sees and works ALL
+  // leads (server: leads-* edge functions + RLS 20261125150000) — so «أرشيف الليدز», «الحجوزات الفعلية» and «تحويلات الأطباء» show too
+  function hasLeadsGrant() { return !!(me && me.active !== false && me.has_leads_archive_access === true); }
   function canDeleteLead() { return !!(me && (window.SSMPDRoles.isSuperAdmin(me) || me.can_delete_leads)); }
 
   var SUB_SCREENS = [
@@ -97,6 +100,7 @@
       if (s.key === "bulk") return isReception();
       if (s.key === "dashboard") return isManager() || isCS();
       if (s.key === "missing_data") return isReception() || isCS() || isManager();
+      if (s.key === "archive" || s.key === "booked" || s.key === "referrals") return isManager() || hasLeadsGrant();
       return isManager();
     });
   }
@@ -121,6 +125,7 @@
     if (!state.subTab || !subs.some(function (s) { return s.key === state.subTab; })) {
       if (isReception() && !isManager()) state.subTab = "reception";
       else if (isCS() && !isManager()) state.subTab = "cs";
+      else if (hasLeadsGrant() && !isManager()) state.subTab = "archive";
       else state.subTab = subs[0] ? subs[0].key : "dashboard";
     }
 
@@ -411,6 +416,7 @@
   }
 
   function exportExperienceRatingsExcel(rows) {
+    logExport("ratings_xlsx", (rows || []).length, {}).catch(function () {});
     if (typeof XLSX === "undefined") { T.show("مكتبة الإكسيل لسه مش متحمّلة — جرب ريفريش للصفحة", "error"); return; }
     var questions = window.SSMPDExperienceQuestions || [];
     var header = ["المريض", "الهاتف", "التاريخ"].concat(questions).concat(["المتوسط", "ملاحظات"]);
@@ -431,6 +437,7 @@
   }
 
   function exportExperienceRatingsPdf(rows) {
+    logExport("ratings_pdf", (rows || []).length, {}).catch(function () {});
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
     var html = '<!doctype html><html><head><meta charset="utf-8"><title>تقييمات تجربة المريض</title>' +
@@ -472,6 +479,52 @@
   }
 
   // ============ ٣) داشبورد الإدارة ============
+  // ============ حركة الموظفين على الليدز (owner 2026-11-25 «اي حركة بيعملها عندنا تقرير منها») — managers only ============
+  var ACTIVITY_LABELS = { status: "تغيير حالة", booking: "حجز", attempt: "محاولة / مكالمة", field_edit: "تعديل بيانات", assignment: "إسناد",
+    invoice: "فاتورة", complete_missing_data: "إكمال بيانات ناقصة", delete: "حذف ليد", export: "تصدير" };
+  var ACTIVITY_COLS = ["status", "booking", "attempt", "field_edit", "assignment", "invoice", "complete_missing_data", "delete", "export"];
+  function fmtDateTime(iso) { try { return new Date(iso).toLocaleString("en-GB", { timeZone: "Africa/Cairo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) { return iso || ""; } }
+  function activityRpc(name, args) {
+    var c = window.SSMPDDb && window.SSMPDDb.client;
+    if (!c || typeof c.rpc !== "function") return Promise.reject(new Error("تعذر الاتصال"));
+    return Promise.resolve().then(function () { return c.rpc(name, args); }).then(function (r) { if (r && r.error) throw new Error(r.error.message || "خطأ"); return r ? r.data : null; });
+  }
+  function renderActivityReport(box, d) {
+    if (!box) return;
+    box.innerHTML = '<h3>حركة الموظفين على الليدز</h3><p class="loading">بيحمّل…</p>';
+    activityRpc("leads_activity_report", { p_from: d.from || null, p_to: d.to || null }).then(function (res) {
+      if (!box.isConnected) return;
+      var rows = (res && res.rows) || [];
+      var html = '<h3>حركة الموظفين على الليدز</h3><p style="font-size:12px;color:var(--c-muted);margin:0 0 8px;">كل حركة على أي ليد بتتسجّل باسم اللي عملها ووقتها' +
+        (d.from || d.to ? "" : " — آخر 30 يوم (غيّر الفترة من فوق)") + '. دوس «تفاصيل» عشان تشوف حركات الموظف واحدة واحدة.</p>';
+      if (!rows.length) { box.innerHTML = html + '<p style="font-size:13px;color:var(--c-muted);">مفيش حركة في الفترة دي.</p>'; return; }
+      html += '<div style="overflow:auto"><table class="simple" data-activity-table><thead><tr><th>الموظف</th>' + ACTIVITY_COLS.map(function (k) { return "<th>" + ACTIVITY_LABELS[k] + "</th>"; }).join("") +
+        '<th>الإجمالي</th><th>آخر حركة</th><th></th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          return '<tr data-activity-row="' + escapeHtml(r.admin_id || "") + '"><td>' + escapeHtml(r.name) + (r.has_grant ? ' <span class="tag" title="عنده صلاحية أرشيف الليدز">أرشيف الليدز</span>' : "") + "</td>" +
+            ACTIVITY_COLS.map(function (k) { return "<td>" + fmtNum(r[k]) + "</td>"; }).join("") + "<td><b>" + fmtNum(r.total) + "</b></td><td>" + escapeHtml(fmtDateTime(r.last_at)) + "</td>" +
+            '<td>' + (r.admin_id ? '<button class="btn ghost sm" data-activity-open="' + escapeHtml(r.admin_id) + '" data-activity-name="' + escapeHtml(r.name) + '">تفاصيل</button>' : "") + "</td></tr>";
+        }).join("") + "</tbody></table></div>";
+      box.innerHTML = html;
+      box.querySelectorAll("[data-activity-open]").forEach(function (b) {
+        b.onclick = function () { openActivityFeed(b.getAttribute("data-activity-open"), b.getAttribute("data-activity-name"), d); };
+      });
+    }).catch(function (e) { if (box.isConnected) box.innerHTML = '<h3>حركة الموظفين على الليدز</h3><div class="err-msg">خطأ: ' + escapeHtml(e.message) + "</div>"; });
+  }
+  function openActivityFeed(adminId, name, d) {
+    var bd = document.createElement("div"); bd.className = "modal-backdrop"; bd.setAttribute("data-activity-feed", "");
+    bd.innerHTML = '<div class="modal" style="max-width:860px;"><h3>حركات ' + escapeHtml(name) + '</h3><div data-activity-feed-body><p class="loading">بيحمّل…</p></div>' +
+      '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" data-activity-close>قفل</button></div></div>';
+    document.body.appendChild(bd);
+    bd.onclick = function (e) { if (e.target === bd || e.target.closest("[data-activity-close]")) bd.remove(); };
+    activityRpc("leads_activity_feed", { p_admin: adminId, p_from: d.from || null, p_to: d.to || null, p_limit: 300 }).then(function (list) {
+      var body = bd.querySelector("[data-activity-feed-body]"); list = list || [];
+      body.innerHTML = !list.length ? '<p style="color:var(--c-muted);">مفيش حركات.</p>' : '<div style="max-height:60vh;overflow:auto"><table class="simple"><thead><tr><th>الوقت</th><th>الحركة</th><th>العميل</th><th>التفاصيل</th></tr></thead><tbody>' +
+        list.map(function (x) { return "<tr><td>" + escapeHtml(fmtDateTime(x.at)) + "</td><td>" + escapeHtml(ACTIVITY_LABELS[x.action] || x.action) + "</td><td>" + escapeHtml(x.customer_name || (x.action === "delete" || x.action === "export" ? "—" : "ليد اتحذف")) + "</td><td>" + escapeHtml(x.detail || "") + "</td></tr>"; }).join("") +
+        "</tbody></table></div>";
+    }).catch(function (e) { bd.querySelector("[data-activity-feed-body]").innerHTML = '<div class="err-msg">خطأ: ' + escapeHtml(e.message) + "</div>"; });
+  }
+
   function renderDashboardScreen(view, container) {
     var d = state.dashboard;
     view.innerHTML = '<div class="section" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">' +
@@ -480,7 +533,7 @@
       "<button class=\"btn sm\" id=\"ld-dash-apply\"> <!--ssmpd-i18n:%D8%AA%D8%B7%D8%A8%D9%8A%D9%82-->تطبيق</button>" +
       (d.from || d.to ? "<button class=\"btn ghost sm\" id=\"ld-dash-clear\"> <!--ssmpd-i18n:%D9%85%D8%B3%D8%AD%20%D8%A7%D9%84%D9%81%D9%84%D8%AA%D8%B1-->مسح الفلتر</button>" : '') +
       '<span style="font-size:11px;color:var(--c-muted);">الفلتر بيأثر على: توزيع الحالة، تصنيف عضوي/إعلان، والدخل. أما "مفتوحة/مغلقة/تم الحجز" فبتفضل الحالة اللحظية دايماً.</span>' +
-      "</div><div id=\"ld-dash-body\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div>";
+      "</div><div id=\"ld-dash-body\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div>" + (isManager() ? '<div id="ld-activity" class="section"></div>' : "");
 
     document.getElementById("ld-dash-apply").onclick = function () {
       d.from = document.getElementById("ld-dash-from").value;
@@ -490,6 +543,7 @@
     var clearBtn = document.getElementById("ld-dash-clear");
     if (clearBtn) clearBtn.onclick = function () { d.from = ""; d.to = ""; renderDashboardScreen(view, container); };
 
+    if (isManager()) renderActivityReport(document.getElementById("ld-activity"), d);
     var body = document.getElementById("ld-dash-body");
     Promise.all([
       window.SSMPDDb.getLeadsStats({ from: d.from, to: d.to }),
@@ -578,6 +632,7 @@
 
   // ---------- تصدير داشبورد الليدز: إكسيل (SheetJS) أو PDF (نافذة طباعة) ----------
   function exportDashboardExcel(res, d) {
+    logExport("dashboard_xlsx", 0, { from: (d && d.from) || "", to: (d && d.to) || "" }).catch(function () {});
     if (typeof XLSX === "undefined") { T.show("مكتبة الإكسيل لسه مش متحمّلة — جرب ريفريش للصفحة", "error"); return; }
     var wb = XLSX.utils.book_new();
     var acq = res.by_acquisition_type || {};
@@ -610,6 +665,7 @@
   }
 
   function exportDashboardPdf(res, d) {
+    logExport("dashboard_pdf", 0, { from: (d && d.from) || "", to: (d && d.to) || "" }).catch(function () {});
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
     var acq = res.by_acquisition_type || {};
@@ -874,6 +930,14 @@
     }).catch(function (e) { if (state.archiveRequest !== request || !view.isConnected) return; view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
   }
 
+  // owner 2026-11-25: every leads export is logged with who + when (public.log_leads_export, 20261125150000) BEFORE the file is written
+  function logExport(kind, rows, filters) {
+    var c = window.SSMPDDb && window.SSMPDDb.client;
+    if (!c || typeof c.rpc !== "function") return Promise.reject(new Error("تعذر تسجيل التصدير"));
+    return Promise.resolve(c.rpc("log_leads_export", { p_kind: kind, p_rows: rows || 0, p_filters: filters || {} })).then(function (r) {
+      if (r && r.error) throw new Error("تعذر تسجيل التصدير: " + (r.error.message || ""));
+    });
+  }
   // ---------- تصدير كل الليدز المطابقة لفلتر أرشيف الليدز (بيدور على كل الصفحات، ٥٠ في المرة) ----------
   function exportLeadsArchiveExcel(filters, total) {
     if (typeof XLSX === "undefined") { T.show("مكتبة الإكسيل لسه مش متحمّلة — جرب ريفريش للصفحة", "error"); return Promise.reject(new Error("XLSX غير متاحة")); }
@@ -893,9 +957,11 @@
           (STATUS_LABELS[l.current_status] || l.current_status), registrarName(l.received_by, l.source), fmtDate(l.created_at), l.booking_reference || ""
         ]);
       });
-      var wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "أرشيف الليدز");
-      XLSX.writeFile(wb, "أرشيف_الليدز_" + new Date().toISOString().slice(0, 10) + ".xlsx");
+      return logExport("archive", allLeads.length, filters).then(function () {
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "أرشيف الليدز");
+        XLSX.writeFile(wb, "أرشيف_الليدز_" + new Date().toISOString().slice(0, 10) + ".xlsx");
+      });
     });
   }
 
@@ -1383,7 +1449,7 @@
     state.archive.search = term;
   }
 
-  window.SSMPDRenderLeads = { render: render, openSearch: openSearch, openLeadById: function (id) { openLeadModal(null, null, id, function () {}); } };
+  window.SSMPDRenderLeads = { nativeArchiveGrant: true, render: render, openSearch: openSearch, openLeadById: function (id) { openLeadModal(null, null, id, function () {}); } };
 })();
 
 
