@@ -1,0 +1,21 @@
+/* Drop / paste zone under every file picker (owner 2026-11-25, help 267). */
+.fdp-zone{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;margin:6px 0 2px;padding:8px 10px;border:1.5px dashed #C9D6F2;border-radius:12px;background:#F7FAFF;color:#475467;font-size:13px;max-width:100%;box-sizing:border-box}
+.fdp-zone.is-over{border-color:#0F369D;background:#EAF0FF}
+.fdp-zone.has-file{border-style:solid;border-color:#CFE6D8;background:#F3FBF6}
+.fdp-hint{display:flex;align-items:center;gap:8px;cursor:pointer;min-height:32px;min-width:0}
+.fdp-ic{font-size:16px;color:#0F369D}
+.fdp-kbd{color:#98A2B3;font-size:12px}
+.fdp-paste{min-height:32px;min-width:72px;padding:4px 10px;border:1px solid #D5DEEE;border-radius:10px;background:#fff;color:#0F369D;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:text;outline:none;overflow:hidden;white-space:nowrap}
+.fdp-paste:focus{border-color:#0F369D;box-shadow:0 0 0 3px #EAF0FF}
+.fdp-file{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-width:0}
+.fdp-file[hidden]{display:none}
+.fdp-file img{width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #E6EBF3;flex:none}
+.fdp-ext{width:44px;height:44px;border-radius:8px;background:#EAF0FF;color:#0F369D;font-size:11px;font-weight:800;display:grid;place-items:center;flex:none}
+.fdp-name{display:grid;min-width:0;overflow-wrap:anywhere;color:#16212E;font-weight:600}
+.fdp-name small{color:#667085;font-weight:400}
+.fdp-msg{grid-column:1/-1;margin:0;font-size:12px;color:#667085}
+.fdp-msg.is-bad{color:#D0402A}
+.fdp-msg[hidden]{display:none}
+@media (hover:none){.fdp-kbd{display:none}}
+.fdp-zone{grid-column:1/-1}
+.fdp-target.is-over{outline:2px dashed #0F369D;outline-offset:3px;background:#EAF0FF}
