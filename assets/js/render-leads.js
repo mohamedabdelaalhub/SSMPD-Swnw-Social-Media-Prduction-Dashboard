@@ -485,7 +485,9 @@
   var ACTIVITY_COLS = ["status", "booking", "attempt", "field_edit", "assignment", "invoice", "complete_missing_data", "delete", "export"];
   function fmtDateTime(iso) { try { return new Date(iso).toLocaleString("en-GB", { timeZone: "Africa/Cairo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) { return iso || ""; } }
   function activityRpc(name, args) {
-    return Promise.resolve(window.SSMPDDb.client.rpc(name, args)).then(function (r) { if (r && r.error) throw new Error(r.error.message || "خطأ"); return r ? r.data : null; });
+    var c = window.SSMPDDb && window.SSMPDDb.client;
+    if (!c || typeof c.rpc !== "function") return Promise.reject(new Error("تعذر الاتصال"));
+    return Promise.resolve().then(function () { return c.rpc(name, args); }).then(function (r) { if (r && r.error) throw new Error(r.error.message || "خطأ"); return r ? r.data : null; });
   }
   function renderActivityReport(box, d) {
     if (!box) return;
