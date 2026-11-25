@@ -11,7 +11,7 @@ assert(aw.includes("[h.esc(tStamp(t.created_at)),")&&aw.includes("h.esc(t.status
 const m=aw.match(/function tStamp\(v\)\{[\s\S]*?\n/);w.eval(m[0]);
 assert.equal(w.tStamp('2026-11-23T20:57:00Z'),'23-11-2026 10:57 م');assert.equal(w.tStamp('2026-11-24T06:05:00Z'),'24-11-2026 08:05 ص');assert.equal(w.tStamp(null),'—');
 // (2) PDF
-const rows=[{at:'2026-11-02T15:18:00Z',title:'منار موسى',detail:'كشف أطفال · ملف P-2026-001200',cashier_name:'منار',method:'cash',kind:'self',direction:'in',reference:'RC-2026-004100',amount:500},
+const rows=[{at:'2026-11-02T15:18:00Z',title:'منار موسى',detail:'كشف أطفال · ملف P-2026-001200',cashier_name:'منار',method:'cash',kind:'self',direction:'in',reference:'778899',receipt_no:'RC-2026-000125',amount:500},
  {at:'2026-11-03T05:54:00Z',title:'أحمد محمد',detail:'جلسة علاج طبيعي',cashier_name:'منار',method:'pos',kind:'insurance',direction:'in',reference:'V-77',amount:650},
  {at:'2026-11-03T09:00:00Z',title:'صرف نثرية',detail:'أدوات مكتبية',cashier_name:'منار',method:'cash',kind:'out',direction:'out',reference:'',amount:-150}];
 const html=w.SSMPDShiftMovements.pdfHtml(rows,{heading:'كشف حركات الخزائن',from:'2026-11-02',to:'2026-11-23',who:'منار موسى عريقي'});
@@ -23,5 +23,6 @@ assert.match(html,/الإجمالي العام للفترة — المقبوضا
 assert.match(html,/المقبوضات حسب طريقة الدفع/);assert.match(html,/<td>نقدي<\/td><td class="amt"><bdi class="ltr">500.00/);assert.match(html,/<td>بطاقة<\/td>/);
 assert.match(html,/<col style="width:11%">/);assert.match(html,/table-layout:fixed/);
 assert.match(html,/<td class="n">كشف أطفال<\/td><td><bdi class="ltr">P-2026-001200<\/bdi><\/td>/,'service and file split');
+assert.match(html,/<b>RC-2026-000125<\/b><\/bdi><br><span class="tm"><bdi class="ltr">778899<\/bdi>/,'receipt number + reference under it');assert.match(html,/رقم الإيصال \/ رقم العملية/);
 assert(!/[٠-٩]/.test(html),'Latin digits only');
 console.log('PASS treasury dates + print: transfer request/decision date+time (Latin), movements PDF one fixed table on the letterhead, per-day headers + subtotals, grand total, by-method summary, period, no centre name.');

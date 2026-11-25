@@ -38,6 +38,11 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   assert.equal(form().elements.withheld.value, '0.09');   // 123.45*0.07% = 0.0864 -> 0.09
   set('gross', '500'); set('tax_pct', '5'); set('withholding_pct', '3');
   form().elements.method.value = 'bank'; form().elements.reference.value = 'PAY-1'; form().elements.from.value = '2026-11-01'; form().elements.to.value = '2026-11-08';
+  { const v = Object.fromEntries(new w.FormData(form())); v.reference = '1'; await assert.rejects(async () => saver(v, 'tok-r'), /مرجع السداد لازم يكون حرفين/); assert.equal(calls.length, 0, 'no request with a 1-char reference'); }
+  form().elements.method.value = 'cash'; form().elements.method.dispatchEvent(new w.Event('change')); form().elements.reference.value = '';
+  form().elements.method.value = 'bank'; form().elements.method.dispatchEvent(new w.Event('change')); form().elements.method.value = 'cash'; form().elements.method.dispatchEvent(new w.Event('change'));
+  assert.match(form().elements.reference.value, /^نقدي-\d{2}-\d{2}-\d{4}$/, 'cash prefills the reference');
+  form().elements.method.value = 'bank'; form().elements.method.dispatchEvent(new w.Event('change')); form().elements.reference.value = 'PAY-1';
   await saver(Object.fromEntries(new w.FormData(form())), 'tok');
   assert.equal(calls[0][0], 'payout'); assert.equal(calls[0][1].withheld, 40); assert.equal(Number(calls[0][1].tax_pct), 5); assert.equal(Number(calls[0][1].withholding_pct), 3);
   d.querySelector('.fc-modal').remove();

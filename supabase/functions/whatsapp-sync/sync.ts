@@ -4,6 +4,14 @@ const clip = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(
 
 export async function handle(db: any, b: any): Promise<{ status: number; body: unknown }> {
   const action = b.action || "event";
+  // Template requests created from the dashboard (owner only): lease → submit to Meta → ack; sync = Meta's review statuses.
+  if (action === "template_lease" || action === "template_ack" || action === "template_sync") {
+    const payload = action === "template_lease" ? { limit: b.limit }
+      : action === "template_ack" ? { id: b.id, status: b.status, meta_id: b.meta_id ?? null, error: b.error ?? null } : { statuses: b.statuses };
+    const { data, error } = await db.rpc("whatsapp_template_api", { p_action: action.slice(9), p_payload: payload });
+    if (error) return { status: 500, body: { ok: false, error: "templates" } };
+    return { status: 200, body: data };
+  }
   if (action === "lease" || action === "ack" || action === "templates") {
     const payload = action === "lease" ? { limit: b.limit } : action === "ack" ? { id: b.id, status: b.status, error: b.error ?? null } : { templates: b.templates };
     const { data, error } = await db.rpc("whatsapp_outbox_api", { p_action: action, p_payload: payload });

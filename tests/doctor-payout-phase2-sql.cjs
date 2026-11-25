@@ -130,6 +130,14 @@ const boot = require('./helpers/clinic-finance.cjs'), assert = require('node:ass
   await db.exec('reset role'); await db.exec(fs.readFileSync(path.resolve(__dirname, '../supabase/rollbacks/20261108260000_doctor_payout_phase2.rollback.sql'), 'utf8'));
   assert.equal((await owner("select to_regprocedure('public.clinic_finance_doctor_payable(text)') is null n"))[0].n, true);
   await as(3); const old = await cmd('payout', { doctor_key: 'DOC-C', gross: 10, withheld: 0, method: 'bank', reference: 'OLD-1', from: range[0], to: range[1] }); assert.ok(old);
+  // 20261125070000: a one-character reference gets its own clear message (not «راجع مبالغ التسوية»); re-apply refused; rollback
+  { const M = mig('20261125070000_payout_reference_message.sql'); await db.exec('reset role');
+    const before = (await db.query("select count(*)::int n from pg_proc where position('راجع مبالغ التسوية ومرجع السداد' in prosrc) > 0")).rows[0].n;
+    await db.exec(M); await assert.rejects(() => db.exec(M), /تم تطبيق هذا الملف من قبل/); await db.exec('rollback');
+    await as(3); await assert.rejects(() => cmd('payout', { doctor_key: 'DOC-C', gross: 1, withheld: 0, method: 'bank', reference: '1', from: range[0], to: range[1] }), /مرجع السداد لازم يكون حرفين على الأقل/);
+    await assert.rejects(() => cmd('payout', { doctor_key: 'DOC-C', gross: 1, withheld: 2, method: 'bank', reference: 'REF-OK', from: range[0], to: range[1] }), e => !/مرجع السداد/.test(e.message), 'amount errors no longer mention the reference');
+    await db.exec('reset role'); await db.exec(fs.readFileSync(path.resolve(__dirname, '../supabase/rollbacks/20261125070000_payout_reference_message.rollback.sql'), 'utf8'));
+    assert.equal((await db.query("select count(*)::int n from pg_proc where position('راجع مبالغ التسوية ومرجع السداد' in prosrc) > 0")).rows[0].n, before, 'rollback restores the old body'); }
   await db.close();
-  console.log('PASS doctor payout phase 2: payable-now cap (full payment incl. approved insurance, contractual discount, per-invoice hold), tax/withholding %, FM-only review with audited fallback, maker-checker, cap recheck on approval, rollback.');
+  console.log('PASS doctor payout phase 2: clear reference message (20261125070000 + rollback); payable-now cap (full payment incl. approved insurance, contractual discount, per-invoice hold), tax/withholding %, FM-only review with audited fallback, maker-checker, cap recheck on approval, rollback.');
 })().catch(e => { console.error(e.message, e.where || ''); process.exitCode = 1; });

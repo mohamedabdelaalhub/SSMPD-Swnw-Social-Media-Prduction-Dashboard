@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { decideReply, clinicInfo, withContact } from "./ai.ts";
 import { syncMessages, sendManualMessage, suggestMessage } from "./messages.ts";
 import { readFbThreads } from "./fb-comments.ts";
-import { isWhatsApp, queueText, queueTemplate, queueReturn, listTemplates, outboxStatus } from "./whatsapp.ts";
+import { isWhatsApp, queueText, queueTemplate, queueReturn, listTemplates, outboxStatus, submitTemplate, listTemplateRequests } from "./whatsapp.ts";
 
 // Meta Comments & Messages — inbox + autopilot replies.
 //
@@ -410,6 +410,12 @@ Deno.serve(async (req) => {
     if (body.action === "send_template") {
       if (!isWhatsApp(body.conversation_id) || typeof body.name !== "string" || typeof body.language !== "string") return reply({ ok: false, error: "conversation_id + name + language required" }, 400);
       return reply(await queueTemplate(db, { conversationId: body.conversation_id, name: body.name, language: body.language, adminId: admin!.id }));
+    }
+    // Template requests: owner (super_admin) only — each use is the owner's own submission to Meta; the agent does the POST.
+    if (body.action === "wa_template_submit" || body.action === "wa_template_requests") {
+      if (!roles.includes("super_admin")) return reply({ ok: false, error: "FORBIDDEN" }, 403);
+      if (body.action === "wa_template_requests") return reply(await listTemplateRequests(db));
+      return reply(await submitTemplate(db, { adminId: admin!.id, category: String(body.category || ""), text: String(body.text || "") }));
     }
     if (body.action === "return_to_bot") {
       if (!isWhatsApp(body.conversation_id)) return reply({ ok: false, error: "conversation_id required" }, 400);
