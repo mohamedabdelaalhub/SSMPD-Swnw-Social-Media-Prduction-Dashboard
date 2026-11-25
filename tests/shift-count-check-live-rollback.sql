@@ -1,5 +1,5 @@
 -- Live rollback dry-run for 20261125110000_shift_count_check.sql (rule 9). ONE transaction ending with ROLLBACK.
--- As the cashier of a REAL open collection shift: a count equal to the recorded collection → match; +200 → no match; the answers
+-- As the cashier of a REAL open collection shift (or, at night, one opened inside the rolled-back transaction): a count equal to the recorded collection → match; +200 → no match; the answers
 -- carry no amount. As the FM: settings can_change, turn off → the cashier gets {enabled:false}, attempts visible. As the cashier:
 -- cannot change the setting, cannot read attempts. Nothing kept.
 begin;
@@ -74,7 +74,20 @@ begin
   select a.user_id into sa from public.admins a where a.active and a.user_id is not null and a.role = 'super_admin' order by a.id limit 1;
   select s.id, a.user_id into sid, cu from clinic_finance.shifts s join public.admins a on a.id = s.cashier_id
    where s.status = 'open' and s.ended_at is null and not s.is_main and a.active and a.user_id is not null order by s.opened_at desc limit 1;
-  if fm is null or sid is null then raise exception 'need an FM and an open collection shift with a login'; end if;
+  if sid is null then
+    -- no collection shift open right now (night): open one INSIDE this rolled-back transaction, as postgres, for a real reception
+    -- cashier with a login on a collection register — both free of any unreviewed shift, so the one-shift rules still hold
+    insert into clinic_finance.shifts(register_id, cashier_id, token, opening_book)
+    select r.id, a.id, gen_random_uuid(), 0
+      from clinic_finance.registers r cross join public.admins a
+     where coalesce(r.treasury_kind, 'collection') <> 'main' and a.active and a.user_id is not null and a.role = 'reception'
+       and not exists (select 1 from clinic_finance.shifts x where x.register_id = r.id and x.status <> 'reviewed')
+       and not exists (select 1 from clinic_finance.shifts x where x.cashier_id = a.id and x.status <> 'reviewed')
+     order by r.created_at, a.id limit 1
+    returning id into sid;
+    select a.user_id into cu from clinic_finance.shifts s join public.admins a on a.id = s.cashier_id where s.id = sid;
+  end if;
+  if fm is null or sid is null then raise exception 'need an FM and an open (or openable) collection shift with a login'; end if;
   ex := clinic_finance.shift_cash(sid);
   perform set_config('request.jwt.claim.sub', cu::text, true); execute 'set local role authenticated';
   if ex >= 0 and ex * 4 = floor(ex * 4) then
