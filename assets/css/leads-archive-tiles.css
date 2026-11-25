@@ -1,0 +1,30 @@
+/* «أرشيف الليدز» summary tiles + popups (owner 2026-11-24 «طبقه», mockup docs/ui-references/mockups/leads-archive-tiles.html) */
+.la-head{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:14px}
+.la-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.la-tile{border:1px solid #E6EBF3;background:#fff;border-radius:18px;padding:14px 16px;text-align:start;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;min-height:88px;font:inherit;color:#16212E;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.la-tile:hover{border-color:#C9D5F2;box-shadow:0 6px 18px rgba(15,54,157,.10);transform:translateY(-1px)}
+.la-tile:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+.la-tile i{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#EAF0FF;color:#0F369D}
+.la-tile svg,.la-x svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.la-txt b{display:block;font-size:26px;line-height:1.1;font-weight:800}
+.la-txt span{display:block;font-size:13px;color:#475467;font-weight:600;margin-top:2px}
+.la-tile em{font-style:normal;color:#667085;font-size:20px}
+.la-today i{background:#E6F4EC;color:#2F7D5C}
+.la-open i{background:#FFF1E8;color:#F15A22}
+.la-urgent{border-color:#F4C7BF;background:#FFF8F6}.la-urgent i{background:#FDECEA;color:#D0402A}.la-urgent .la-txt b{color:#D0402A}
+/* popup: same .modal shell as the lead modal; ✕ on the top row next to «شرح النموذج» */
+.la-pop{position:relative;max-width:720px;width:calc(100% - 24px)}
+.la-pop>.la-x{position:absolute;inset-inline-end:16px;top:16px}
+.la-x{width:44px;height:44px;border:1px solid #E6EBF3;border-radius:12px;background:#fff;color:#16212E;display:grid;place-items:center;cursor:pointer;padding:0}
+.la-x:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+.la-ph{margin:0 0 12px;padding-inline-end:56px;min-height:44px}.la-ph h3{margin:0;font-size:18px}.la-ph small{display:block;color:#667085;margin-top:4px;font-size:12px}
+.la-pop>.dh-form-help+.la-x+.la-ph{margin-top:0}
+.la-list{display:grid}
+.la-row{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #E6EBF3}.la-row:last-child{border-bottom:0}
+.la-nm{flex:1;min-width:0}.la-nm b{display:block;overflow-wrap:anywhere}.la-nm small{color:#667085;font-size:12px}
+.la-row .status-pill{white-space:nowrap}
+.la-row .btn{min-height:40px}
+.la-empty{color:#667085;font-size:13px;margin:10px 4px 0}
+.la-hint{background:#FFF8F6;border:1px solid #F4C7BF;color:#8A2A1B;border-radius:14px;padding:10px 12px;font-size:12.5px;margin:0 0 10px}
+@media (max-width:900px){.la-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.la-tiles{grid-template-columns:minmax(0,1fr)}.la-tile{min-height:72px}.la-row{flex-wrap:wrap}.la-row .la-nm{flex-basis:100%}}
