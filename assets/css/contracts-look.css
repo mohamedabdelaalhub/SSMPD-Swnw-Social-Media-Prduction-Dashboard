@@ -1,0 +1,29 @@
+/* «جهات التعاقد» look (owner 2026-11-25 «طبق الكل», mockup docs/ui-references/mockups/entities-look.html). Visual only. */
+/* entity file: readable back pill on the blue header */
+.wn-file-dialog .wn-file-back{background:#fff!important;color:#0F369D!important;border:0!important;border-radius:999px;font-weight:700;font-size:14px!important;padding:6px 16px;min-height:40px;white-space:nowrap!important}
+.wn-file-dialog .wn-file-back::before{content:"‹";margin-inline-end:6px;font-size:18px;line-height:1}
+/* indicators in a grid instead of full-width stacked cards */
+.wn-file-dialog .kpis,.wn-contract-root .kpis{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px;margin:12px 0}
+.wn-file-dialog .kpis .kpi-card,.wn-contract-root .kpis .kpi-card{margin:0;min-width:0}
+/* dangerous actions in their own dashed zone */
+.wn-danger-zone{border:1px dashed #F4C7BF!important;border-radius:16px;background:#FFFBFA;margin-top:12px}
+.wn-danger-zone>summary{color:#D0402A;font-weight:700}
+.wn-danger-note{color:#667085;font-size:12.5px;margin:6px 0 10px}
+.btn.wn-danger-btn{color:#D0402A!important;border-color:#F4C7BF!important}
+.btn.wn-danger-btn:hover{background:#D0402A!important;color:#fff!important;border-color:#D0402A!important}
+/* follow-up dates */
+.wn-late{color:#D0402A;font-weight:700}
+.wn-today{color:#B54708;font-weight:700}
+/* add / edit entity form */
+.ce-req{color:#D0402A}
+.ce-opt{color:#98A2B3;font-weight:400;font-size:11px}
+.ce-bad input,.ce-bad select,.ce-bad textarea{border-color:#D0402A!important;background:#FFF8F6!important}
+.ce-err{display:block;color:#D0402A;font-size:12px;margin-top:4px}
+/* phones: the section tabs become one select */
+.wn-mobile-sections{display:none}
+@media (max-width:600px){
+ .wn-contract-root>.wn-tabs{display:none}
+ .wn-mobile-sections{display:grid;margin:0 0 12px}
+ .wn-file-dialog .kpis,.wn-contract-root .kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px}
+ .wn-file-dialog .kpis .kpi-card .value{font-size:18px}
+}
