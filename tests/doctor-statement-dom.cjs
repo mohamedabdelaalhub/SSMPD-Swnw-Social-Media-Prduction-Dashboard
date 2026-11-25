@@ -59,10 +59,9 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   d.body.append(box);
   const fd = Object.assign({}, data, { doctor_contracts: [mk('f1', 'active'), mk('f2', 'pending'), Object.assign(mk('f3', 'rejected'), { doctor_key: 'EMP-2', doctor_name: 'د. ب' })] });
   box.innerHTML = w.SSMPDFinanceControls.panel('doctors', fd, h); await tick();
-  const chips = [...box.querySelectorAll('[data-fc-filter]')].map(x => x.dataset.fcFilter); assert.deepEqual(chips, ['all', 'pending', 'active', 'rejected'], 'chips only for statuses that exist');
+  const chips = [...box.querySelectorAll('[data-fc-filter]')].map(x => x.dataset.fcFilter); assert.deepEqual(chips, ['live', 'pending', 'all'], 'owner 2026-11-25: «سارية + قيد الاعتماد» first; «بتنتهي قريب» only when it has contracts');
   const groups = () => [...box.querySelectorAll('.fc-doctor-group')].filter(g => !g.hidden).length;
-  assert.equal(groups(), 2);
-  box.querySelector('[data-fc-filter="rejected"]').click(); assert.equal(groups(), 1, 'only the doctor with a rejected contract'); assert(box.querySelector('.fc-chip.active').dataset.fcFilter === 'rejected');
+  assert.equal(groups(), 1, 'default view hides a doctor whose only contract is rejected (old history)'); assert(box.querySelector('.fc-chip.active').dataset.fcFilter === 'live');
   box.querySelector('[data-fc-filter="pending"]').click(); assert.equal(groups(), 1); assert.equal([...box.querySelectorAll('.fc-doctor-group tbody tr')].filter(r => !r.hidden).length, 1, 'only the pending row shows');
   box.querySelector('[data-fc-filter="all"]').click(); assert.equal(groups(), 2);
   const inp = box.querySelector('[data-fc-name]'); inp.value = 'EMP-2'; inp.dispatchEvent(new w.Event('input', { bubbles: true })); assert.equal(groups(), 1, 'name search'); inp.value = ''; inp.dispatchEvent(new w.Event('input', { bubbles: true }));
