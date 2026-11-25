@@ -1,0 +1,79 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: خزينة الاستقبال والحجوزات</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.head h2{margin:0;font-size:20px;color:var(--brand)}
+.per{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.per .seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}.per .seg button{border:0;background:#fff;min-height:38px;padding:0 12px;font-weight:600;color:#475467}.per .seg button.on{background:var(--brand);color:#fff}
+.kp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0 0}
+.kp div{background:var(--tint);border-radius:16px;padding:12px;display:grid;gap:2px}.kp b{font-size:22px;color:var(--brand)}.kp small{font-size:12px;color:#475467}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.btn.or{background:var(--accent);border-color:var(--accent);color:#fff}
+.need{border:1px solid #F6C9B6;background:#FFF8F4}
+.need h3{color:#B23B12}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+.row+.row{margin-top:8px}.row b{display:block;font-size:14px}.row small{display:block;color:#475467;font-size:12.5px;line-height:1.7}
+.row.bad{border-inline-start:4px solid var(--neg)}.row.wait{border-inline-start:4px solid var(--accent)}
+.list{display:grid;gap:0}
+.it{display:grid;grid-template-columns:150px minmax(0,1fr) 120px 150px;gap:12px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line)}
+.it:last-child{border-bottom:0}.it .d{font-size:13px;color:#344054}.it .d small{display:block;color:var(--muted);font-size:12px}
+.it .m{font-weight:700;font-size:15px}.it .w small{display:block;color:#475467;font-size:12.5px}
+.it .why{display:block;color:var(--neg);font-size:12.5px}
+.lh{display:grid;grid-template-columns:150px minmax(0,1fr) 120px 150px;gap:12px;padding:0 4px 6px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
+.empty{display:flex;gap:10px;align-items:center;color:#475467;font-size:13px;background:var(--soft);border-radius:14px;padding:12px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cmp div{border-radius:14px;padding:12px;font-size:12.5px;line-height:1.8}.cmp .b{background:#FFF6F4;border:1px dashed #F3C6BB}.cmp .a{background:#F2FAF5;border:1px solid #CFE6D8}
+.cmp code{font-size:11px;background:#fff;border-radius:6px;padding:0 4px}
+@media(max-width:760px){.kp{grid-template-columns:repeat(2,minmax(0,1fr))}.two,.cmp{grid-template-columns:minmax(0,1fr)}.lh{display:none}.it{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"w m" "d s";row-gap:4px}.it .w{grid-area:w}.it .m{grid-area:m}.it .d{grid-area:d}.it .s{grid-area:s;justify-self:end}.row{grid-template-columns:minmax(0,1fr)}.row .btn{justify-self:start}}
+</style></head><body><p class="note"><b>تصور — خزينة الاستقبال والحجوزات</b> (بيانات تجريبية · مفيش حاجة بتتحفظ). نفس الشاشة ونفس الإجراءات الموجودة، بس مترتبة: اللي محتاج منك فوق، الزرار المهم واضح، وأسماء مفهومة بدل الأكواد.</p>
+<div class="wrap">
+<div class="card"><div class="head"><div><h2>خزينة الاستقبال والحجوزات</h2><p class="sub">خزينة منار · الوردية مفتوحة من 8:00 ص</p></div>
+<div class="per"><div class="seg"><button class="on">النهارده</button><button>الأسبوع ده</button><button>الشهر ده</button></div><button class="btn">فترة تانية…</button></div></div>
+<div class="kp"><div><b>1,850 ج</b><small>كاش في خزنتي دلوقتي</small></div><div><b>3,200 ج</b><small>اتحصّل النهارده</small></div><div><b>2</b><small>مقدمات حجز النهارده</small></div><div><b>امبارح 7:46 م</b><small>آخر تسليم للرئيسية ✓</small></div></div>
+<div class="acts"><button class="btn or">سلّم الكاش للرئيسية</button><button class="btn">اقفل ورديتي وسلّم</button><button class="btn">مقدم حجز جديد</button></div></div>
+
+<div class="card need"><h3>محتاج منك (2)</h3>
+<div class="row bad"><div><b>تسليم 23 نوفمبر اترفض</b><small>1,500 ج من خزينة منار للرئيسية · السبب: «التسليم ناقص تحصيل 1,200 ج»</small></div><button class="btn or">شوف التفاصيل وسلّم تاني</button></div>
+<div class="row wait"><div><b>حجز أحمد سامي — 28 نوفمبر 9:40 م لسه ماتبعتلوش تأكيد</b><small>حجز من الموقع · مؤكَّد</small></div><button class="btn">جهّز رسالة التأكيد</button></div>
+</div>
+
+<div class="card"><h3>آخر التسليمات للرئيسية</h3>
+<div class="lh"><span>اتطلب امتى</span><span>الوردية</span><span>المبلغ</span><span>الحالة</span></div>
+<div class="list">
+<div class="it"><div class="d">24 نوفمبر · 11:15 ص<small>اتستلم 7:46 م</small></div><div class="w"><b>وردية منار — 24 نوفمبر</b><small>استلمها: مدير الحسابات</small></div><div class="m">1,500.00 ج</div><span class="s"><span class="chip ok">✓ اتسلّم</span></span></div>
+<div class="it"><div class="d">23 نوفمبر · 4:56 م<small>اترفض 5:17 م</small></div><div class="w"><b>وردية منار — 23 نوفمبر</b><span class="why">السبب: التسليم ناقص تحصيل 1,200 ج</span></div><div class="m">1,500.00 ج</div><span class="s"><span class="chip bad">✗ مرفوض</span></span></div>
+<div class="it"><div class="d">22 نوفمبر · 12:18 ص<small>اتستلم 12:19 ص</small></div><div class="w"><b>وردية منار — 22 نوفمبر</b><small>استلمتها: خزينة منار الفرعية</small></div><div class="m">2,400.00 ج</div><span class="s"><span class="chip ok">✓ اتسلّم</span></span></div>
+</div></div>
+
+<div class="two">
+<div class="card"><h3>مقدمات الحجز</h3>
+<div class="it" style="grid-template-columns:minmax(0,1fr) auto"><div class="w"><b>أحمد سامي · حجز من الموقع</b><small>28 نوفمبر · 9:40 م · <span class="chip ok">مؤكَّد</span></small></div><button class="btn">جهّز تأكيد أو تذكير</button></div>
+</div>
+<div class="card"><h3>الرسائل وإثبات الفيزا والتحويلات</h3><div class="empty">✓ مفيش رسائل ولا إثبات فيزا أو تحويلات في الفترة دي.</div></div>
+</div>
+
+<div class="card"><h3>إيه اللي اتغير؟</h3><div class="cmp">
+<div class="b"><b>دلوقتي</b><br>• أكواد زي <code>b8a64f15-96ac…</code> و«تسليم نهاية وردية <code>8e230b43…</code>»<br>• عمود «الإجراء» فيه ملاحظات مش زراير<br>• «مرفوض» نفس لون «تم التسليم»<br>• «طلب تسليم للرئيسية» سطر صغير<br>• 3 مرات «لا توجد حركات» واحدة منهم من غير عنوان<br>• عمود «فرق الجرد» كله «—»<br>• تواريخ بأكتر من شكل وخط باهت</div>
+<div class="a"><b>بعد</b><br>• اسم المريض واسم الوردية بدل الكود<br>• السبب تحت الحالة، والزرار زرار فعلاً<br>• المرفوض أحمر وطالع فوق في «محتاج منك»<br>• «سلّم الكاش للرئيسية» زرار برتقالي فوق<br>• الأقسام الفاضية في سطر واحد<br>• فرق الجرد يظهر بس لو فيه فرق<br>• «24 نوفمبر · 11:15 ص» في كل حتة، وخط أوضح</div>
+</div><p class="sub" style="margin-top:10px">نفس الصلاحيات ونفس الإجراءات الموجودة. لو اسم الوردية أو اسم المريض مش راجع من السيرفر دلوقتي، الشات الرئيسي وشات الحسابات هيضيفوه قبل التنفيذ.</p></div>
+</div></body></html>
