@@ -8,11 +8,11 @@
 --   c_prefix    : name of the 15 area packages.        c_until : last sale day, '' = no end.
 --   c_min_first : minimum first payment % of the 15 (owner: today's 25 % minimum, the patient may pay all; '' = sheet values
 --                 100 / 50 for the two full-body rows).
---   include_d   : 'true' once the owner answers the cosmetic (D) questions; d_days = their validity.
+--   include_d   : cosmetic (D) packages — owner answered 2026-11-25: normal cleaning 0001245, dermapen 0001246, fractional 0001289, 1 month.
 select set_config('pk.c_prefix','عروض المناطق لليزر — كانديلا 3 جلسات — ',true),
        set_config('pk.c_until','',true),
        set_config('pk.c_min_first','25',true),
-       set_config('pk.include_d','false',true),
+       set_config('pk.include_d','true',true),
        set_config('pk.d_days','30',true),
        set_config('request.jwt.claims','{"sub":"21a0b295-f4ca-472d-b48b-7be456cf0c64","role":"authenticated"}',true);
 create temp table pk_plan(grp text, old_name text, name text, lines jsonb, visits int, days int, min_first numeric, fixed numeric,
