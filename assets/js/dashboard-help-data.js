@@ -1,6 +1,6 @@
 /* Reviewed operational help; no patient records, network calls or generated AI answers. */
 window.SSMPDHelpData={
-  "version": "20261125-284",
+  "version": "20261125-285",
   "articles": [
     {
       "id": "file-drop-paste",

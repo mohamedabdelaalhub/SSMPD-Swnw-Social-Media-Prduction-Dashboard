@@ -60,8 +60,9 @@ begin
     execute 'reset role';
     select a.user_id into other from public.admins a where a.active and a.user_id is not null and a.role = 'reception' and a.id <> x.cashier_id order by a.id limit 1;
     if other is not null then
-      perform set_config('request.jwt.claim.sub', other::text, true); execute 'set local role authenticated';
-      ok := clinic_finance.allowed('review');   -- a reception user holding the finance review grant may legitimately check
+      perform set_config('request.jwt.claim.sub', other::text, true);
+      ok := clinic_finance.allowed('review');   -- (as the owner, before the role switch) a reception user holding the review grant may legitimately check
+      execute 'set local role authenticated';
       if not ok then begin perform public.clinic_finance_count_repeat(x.sid, '{"200":"1"}'::jsonb); exception when others then ok := sqlerrm like '%لصاحب الوردية%'; end;
         if not ok then raise exception 'another reception user could check % shift', x.name; end if; end if;
       execute 'reset role';
