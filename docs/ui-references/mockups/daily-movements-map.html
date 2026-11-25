@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — خريطة كل حركات الخزنة اليومية</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}.sub{color:#5B6676;margin:0}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
+.card h2{margin:0;font-size:17px}.card h2 small{display:block;color:#5B6676;font-weight:400;font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.kpi{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:16px;display:grid;gap:4px}
+.kpi b{font-size:22px;direction:ltr;unicode-bidi:isolate;text-align:right}.kpi span{color:#5B6676;font-size:13px}
+.kpi.ok b{color:#2F7D5C}.kpi.small b{color:#0F369D}.kpi.new b{color:#F15A22}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:9px 8px;border-bottom:1px solid #EEF1F6;vertical-align:middle}th{color:#5B6676;font-weight:400;white-space:nowrap}
+.num{direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.st.ok{background:#E6F4EC;color:#2F7D5C}.st.small{background:#EEF2FD;color:#0F369D}.st.new{background:#FFF1E8;color:#F15A22}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pick{display:flex;gap:8px;flex-wrap:wrap}.pick b{border:1px solid #C5CDDB;border-radius:999px;padding:6px 14px;font-size:13px;background:#fff;font-weight:400}.pick b.on{background:#0F369D;color:#fff;border-color:#0F369D}.pick b.add{border-style:dashed;border-color:#F15A22;color:#F15A22}
+.fld{display:grid;gap:4px}.fld label{font-size:12px;color:#5B6676}.fld div{border:1px solid #C5CDDB;border-radius:10px;padding:8px 12px;background:#fff}
+.btn{border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;background:#0F369D;color:#fff;justify-self:start}
+.flow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px}.flow span{background:#F7F9FC;border:1px solid #E3E8F2;border-radius:10px;padding:6px 10px}.flow i{font-style:normal;color:#5B6676}
+.note{font-size:12px;color:#5B6676;margin:0}
+.q{background:#fff;border:1px dashed #F15A22;border-radius:16px;padding:16px 18px;font-size:13px;display:grid;gap:4px}
+@media (max-width:760px){.wrap{padding:14px}.grid,.kpis{grid-template-columns:1fr}table{display:block;overflow-x:auto}th,td{white-space:nowrap}}
+</style></head><body><div class="wrap">
+<div><span class="tag">تصور — مش متنفذ</span><h1>خريطة كل حركات الخزنة اليومية</h1>
+<p class="sub">من تقارير ماسا (أغسطس → أكتوبر 2026) وقايمة شغل الاستقبال: كل حركة بتتعمل فين على الداشبورد، مين يعملها ومين يوافق. الهدف إن مفيش جنيه يطلع أو يدخل من غير مكان يتسجل فيه.</p></div>
+
+<div class="kpis">
+ <div class="kpi ok"><b>5</b><span>حركات ليها مكان النهارده — محتاجة بس الموظف يعرف يوصلها</span></div>
+ <div class="kpi small"><b>3</b><span>بنود صغيرة تتضاف لـ«مصروفات الوردية»</span></div>
+ <div class="kpi new"><b>2</b><span>حاجات جديدة: «طلب صرف من الدرج» + «حساب الشريك»</span></div>
+</div>
+
+<section class="card">
+ <h2>1) كل حركة ومكانها<small>المبالغ = إجمالي التلات شهور في ماسا</small></h2>
+ <table><thead><tr><th>الحركة</th><th>3 شهور</th><th>مين يعملها</th><th>من فين</th><th>مين يوافق</th><th>الحالة</th></tr></thead><tbody>
+  <tr><td>تحصيل من المريض (كاش / فيزا / إنستا / محفظة)</td><td class="num">≈ 2,440,000</td><td>الاستقبال</td><td>التحصيل ← «أنهي محفظة؟»</td><td>—</td><td><span class="st ok">موجود</span></td></tr>
+  <tr><td>أتعاب الدكاترة + أطباء الطوارئ</td><td class="num">118,725</td><td>الاستقبال</td><td>مكتب صرف الأتعاب — كل دكتور باسمه</td><td>المحاسب</td><td><span class="st ok">موجود</span></td></tr>
+  <tr><td>رد فلوس لمريض (مردودات)</td><td class="num">3,710</td><td>الاستقبال</td><td>طلبات الاستقبال ← «استرداد»</td><td>المحاسب</td><td><span class="st ok">موجود</span></td></tr>
+  <tr><td>كهرباء / مية / إنترنت</td><td class="num">26,195</td><td>الاستقبال</td><td>مصروفات الوردية</td><td>المحاسب يراجع الإيصال</td><td><span class="st ok">موجود</span></td></tr>
+  <tr><td>نظافة / ضيافة / أدوات مكتبية / انتقالات</td><td class="num">11,850</td><td>الاستقبال</td><td>مصروفات الوردية</td><td>المحاسب يراجع الإيصال</td><td><span class="st ok">موجود</span></td></tr>
+  <tr><td>صيانة</td><td class="num">5,885</td><td>الاستقبال</td><td>مصروفات الوردية ← بند جديد «صيانة»</td><td>المحاسب يراجع الإيصال</td><td><span class="st small">بند يتضاف</span></td></tr>
+  <tr><td>تليفونات وباقات موبايل</td><td class="num">1,040</td><td>الاستقبال</td><td>مصروفات الوردية ← بند «تليفونات وباقات»</td><td>المحاسب يراجع الإيصال</td><td><span class="st small">بند يتضاف</span></td></tr>
+  <tr><td>إكراميات</td><td class="num">1,900</td><td>الاستقبال</td><td>مصروفات الوردية ← بند «إكراميات» (من غير إيصال، بسبب مكتوب)</td><td>المحاسب يراجع</td><td><span class="st small">بند يتضاف</span></td></tr>
+  <tr><td>سلفة موظف</td><td class="num">11,915</td><td>الاستقبال</td><td>«طلب صرف من الدرج» ← سلفة</td><td>أ/محمود في السيستم قبل الصرف</td><td><span class="st new">جديد</span></td></tr>
+  <tr><td>حافز / باقي نسبة للطاقم</td><td class="num">4,325</td><td>الاستقبال</td><td>«طلب صرف من الدرج» ← حافز</td><td>أ/محمود قبل الصرف</td><td><span class="st new">جديد</span></td></tr>
+  <tr><td>سداد فيزيتا / كلينيدو / اكشف</td><td class="num">17,375</td><td>الاستقبال</td><td>«طلب صرف من الدرج» ← سداد منصة</td><td>المحاسب قبل الصرف</td><td><span class="st new">جديد</span></td></tr>
+  <tr><td>حساب المعمل / الأشعة الخارجية</td><td class="num">1,000</td><td>الاستقبال</td><td>«طلب صرف من الدرج» ← معمل / أشعة</td><td>المحاسب قبل الصرف</td><td><span class="st new">جديد</span></td></tr>
+  <tr><td>فواتير مستلزمات / صيدلية / أدوية</td><td class="num">1,500</td><td>الاستقبال</td><td>«طلب صرف من الدرج» ← فاتورة مورد</td><td>المحاسب قبل الصرف</td><td><span class="st new">جديد</span></td></tr>
+  <tr><td>توريد من د. دينا / دفع الإيجار</td><td class="num">27,500+</td><td>المدير المالي</td><td>الخزينة الرئيسية ← «حساب الشريك»</td><td>شخص تاني</td><td><span class="st new">جديد</span></td></tr>
+ </tbody></table>
+ <p class="note">الحركات اللي «موجود» هنعملها دليل مصوّر للموظف: «عايز تعمل كذا؟ ادوس هنا».</p>
+</section>
+
+<div class="grid">
+<section class="card">
+ <h2>2) «طلب صرف من الدرج» — شاشة الاستقبال<small>زرار جنب «مصروفات الوردية»: للحاجات اللي محتاجة موافقة قبل ما الفلوس تطلع</small></h2>
+ <div class="fld"><label>نوع الصرف</label><div class="pick"><b class="on">سلفة موظف</b><b>حافز / نسبة</b><b>سداد منصة</b><b>معمل / أشعة</b><b>فاتورة مورد</b></div></div>
+ <div class="fld"><label>الموظف</label><div>منار موسى عريقي</div></div>
+ <div class="fld"><label>المبلغ</label><div class="num">400.00</div></div>
+ <div class="fld"><label>السبب / مين طلب</label><div>بتعليمات أ/محمود</div></div>
+ <button class="btn">ابعت للموافقة</button>
+ <p class="note">الفلوس مابتطلعش من الدرج غير بعد الموافقة في السيستم. بعدها زرار «اتصرف» يخصمها من الوردية ويسجلها في حسابها الصح (سلفة الموظف / الحوافز / حساب المنصة …).</p>
+</section>
+<section class="card">
+ <h2>3) مين بيعمل إيه<small>نفس الدورة لكل الأنواع</small></h2>
+ <div class="flow"><span>الاستقبال يكتب الطلب</span><i>←</i><span>أ/محمود أو المحاسب يوافق</span><i>←</i><span>الاستقبال يدوس «اتصرف»</span><i>←</i><span>بيتخصم من الوردية والجرد يطلع مظبوط</span></div>
+ <table><thead><tr><th>النوع</th><th>بيتسجل على</th></tr></thead><tbody>
+  <tr><td>سلفة موظف</td><td>سلف الموظفين — بتتخصم من المرتب بقرار، مش أوتوماتيك</td></tr>
+  <tr><td>حافز / نسبة</td><td>حوافز وعمولات الطاقم</td></tr>
+  <tr><td>سداد منصة</td><td>حساب المنصة (فيزيتا / كلينيدو / اكشف)</td></tr>
+  <tr><td>معمل / أشعة</td><td>حساب المعمل أو مركز الأشعة</td></tr>
+  <tr><td>فاتورة مورد</td><td>حساب المورد + صورة الفاتورة</td></tr>
+ </tbody></table>
+</section>
+</div>
+
+<section class="card">
+ <h2>4) «حساب الشريك» — الخزينة الرئيسية بس<small>المدير المالي — توريد فلوس من الشريك أو صرف له، وشخص تاني يعتمد</small></h2>
+ <table><thead><tr><th>التاريخ</th><th>الحركة</th><th>المبلغ</th><th>رصيد الشريك</th></tr></thead><tbody>
+  <tr><td class="num">01-08-2026</td><td>توريد من د. دينا لدفع إيجار المركز</td><td class="num">27,000.00</td><td class="num">27,000.00</td></tr>
+  <tr><td class="num">05-08-2026</td><td>دفع إيجار المركز (مصروف إيجار)</td><td class="num">27,500.00</td><td class="num">27,000.00</td></tr>
+  <tr><td class="num">08-08-2026</td><td>توريد للشريك</td><td class="num">4,525.00</td><td class="num">22,475.00</td></tr>
+ </tbody></table>
+ <p class="note">الإيجار مصروف على المركز، والتوريد بيتسجل دين للشريك على المركز (أو العكس) — مش إيراد.</p>
+</section>
+
+<div class="q"><b>مستني ردك على الأسئلة الخمسة قبل التنفيذ:</b><span>فيزيتا/كلينيدو/اكشف بالظبط إيه · المعمل بيتسدد إزاي · مركز الزهراء · السلف والحوافز من الدرج ولا من الرئيسية · توريد د. دينا والإيجار بيعدوا على أنهي خزنة.</span></div>
+</div></body></html>
