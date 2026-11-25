@@ -1,0 +1,70 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: تحسينات عقود الأطباء</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.mk{font-size:11px;font-weight:800;background:#F15A22;color:#fff;border-radius:999px;min-width:20px;height:20px;display:inline-grid;place-items:center;padding:0 6px;margin-inline-start:6px;vertical-align:middle}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}.chips button{min-height:36px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 12px;font-size:13px;font-weight:600;color:var(--brand)}.chips button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.v{background:#E6F4EC;color:#2F7D5C}.o{background:#FFF1E8;color:#B54708}.r{background:#FDECEA;color:#D0402A}.b{background:#EAF0FF;color:#0F369D}.g{background:#F2F4F7;color:#667085}
+.doc{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#fff}
+.dh{padding:14px 16px;display:grid;gap:8px;background:#FAFCFF;border-bottom:1px solid var(--line)}
+.dh h3{margin:0;font-size:16px;color:var(--brand)}.dh .pills{display:flex;gap:6px;flex-wrap:wrap}
+.terms{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:#344054;background:#fff;border:1px dashed #CFDCF8;border-radius:12px;padding:8px 12px}
+.terms b{color:var(--muted);font-weight:600;font-size:12px;margin-inline-end:4px}
+.t{width:100%;border-collapse:collapse;font-size:13px}.t th{background:#F4F7FD;color:#536177;font-weight:600;text-align:start;padding:10px}.t td{padding:10px;border-top:1px solid #EEF2F8;vertical-align:middle}
+.t td small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.rate{font-weight:800;color:var(--brand);font-size:15px}
+.diff{display:inline-block;margin-top:4px;font-size:11px;background:#FFF1E0;color:#9A4E00;border-radius:8px;padding:2px 8px}
+.acts{display:flex;gap:6px;justify-content:flex-end}.btn.sm{min-height:34px;font-size:12px;padding:0 10px}.btn.red{color:#D0402A;border-color:#F4C7BF}
+.oldb{display:block;margin:10px auto;}
+.stm{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.stm summary{cursor:pointer;color:var(--brand);font-weight:600}
+.lbl{display:block;font-size:11px;color:var(--muted)}
+.cards{display:none}
+.card2{border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:8px;background:#fff}
+.card2 .top{display:flex;justify-content:space-between;gap:8px;align-items:start}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13px}.kv span{color:var(--muted);font-size:12px}
+.phone{width:390px;max-width:100%;margin:0 auto;border:8px solid #16212E;border-radius:32px;padding:12px;background:#F4F7FD;display:grid;gap:10px}
+.cmp td,.cmp th{padding:8px;border-bottom:1px solid var(--line);text-align:start;font-size:13px;vertical-align:top}.cmp s{color:var(--neg)}.cmp b{color:var(--pos)}
+@media(max-width:760px){.desk{display:none}.cards{display:grid;gap:10px;padding:10px}}
+</style></head><body><p class="note"><b>تصور — تحسينات «عقود الأطباء» الخمسة</b> (بيانات تجريبية · مفيش حاجة بتتحفظ). الأرقام البرتقالي على الشاشة بتوريك مكان كل تعديل. صغّر الشاشة (أو افتحها من الموبايل) تشوف شكل الكروت.</p>
+<div class="wrap"><div class="card"><h2>عقود الأطباء</h2><p class="sub">نسبة كل دكتور على كل خدمة أو قسم، ومدة سريانها.</p>
+<div class="chips"><button class="on">سارية + قيد الاعتماد (3)</button><button>قيد الاعتماد (1)</button><button>بينتهي قريب (1)</button><button>الكل (6)</button><span class="mk">4</span></div>
+<div class="doc"><div class="dh"><h3>د. كريم حسان — EMP-12</h3>
+<div class="pills"><span class="pill v">ساري 1</span><span class="pill o">بينتهي قريب 1</span><span class="pill b">قيد الاعتماد 1</span><span class="pill r">منتهي 1</span><span class="pill g">مرفوض 1</span><span class="pill g">اتعدّل (نسخة أقدم) 1</span><span class="mk">4</span></div>
+<div class="terms"><span><b>النسبة بتتحسب على:</b>الخدمة من غير المستلزمات</span><span><b>خصم المستلزمات:</b>لا</span><span><b>الاستحقاق:</b>عند تنفيذ الخدمة</span><span class="mk">2</span></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm">حساب الدكتور</button><button class="btn sm">الصورة والنشر</button></div></div>
+<div class="desk"><table class="t"><thead><tr><th>الخدمة والفترة</th><th>النسبة</th><th>الحالة</th><th></th></tr></thead><tbody><tr><td><b>كشف باطنة استشاري</b><small>0001374</small><small>1 يناير 2026 — 31 ديسمبر 2026</small></td><td class="rate">40.00%</td><td><span class="pill v">ساري</span></td><td><div class="acts"><button class="btn sm">تعديل العقد</button><button class="btn sm red">إنهاء العقد</button></div></td></tr><tr><td><b>قسم D-2</b><span class="mk">5</span><small>كود القسم من غير اسم محفوظ</small><small>1 يناير 2026 — 5 ديسمبر 2026</small></td><td class="rate">30.00%</td><td><span class="pill o">بينتهي خلال 10 يوم</span></td><td><div class="acts"><button class="btn sm">تعديل العقد</button><button class="btn sm red">إنهاء العقد</button></div></td></tr><tr><td><b>كشف باطنة استشاري</b><small>0001374</small><small>1 يناير 2027 — 31 ديسمبر 2027</small></td><td class="rate">50.00%</td><td><span class="pill b">قيد الاعتماد</span><br><span class="diff">مختلف: بيتحسب على الإجمالي قبل المستلزمات</span><span class="mk">2</span></td><td><div class="acts"><button class="btn sm">مراجعة العقد</button></div></td></tr></tbody></table></div>
+<div class="cards"><div class="card2"><div class="top"><div><b>كشف باطنة استشاري</b><small class="lbl">0001374 · 1 يناير 2026 — 31 ديسمبر 2026</small></div><span class="rate">40.00%</span></div><div class="kv"><span>الحالة</span><div><span class="pill v">ساري</span></div></div><div class="acts"><button class="btn sm">تعديل العقد</button><button class="btn sm red">إنهاء العقد</button></div></div><div class="card2"><div class="top"><div><b>قسم D-2</b><small class="lbl">كود القسم من غير اسم محفوظ · 1 يناير 2026 — 5 ديسمبر 2026</small></div><span class="rate">30.00%</span></div><div class="kv"><span>الحالة</span><div><span class="pill o">بينتهي خلال 10 يوم</span></div></div><div class="acts"><button class="btn sm">تعديل العقد</button><button class="btn sm red">إنهاء العقد</button></div></div><div class="card2"><div class="top"><div><b>كشف باطنة استشاري</b><small class="lbl">0001374 · 1 يناير 2027 — 31 ديسمبر 2027</small></div><span class="rate">50.00%</span></div><div class="kv"><span>الحالة</span><div><span class="pill b">قيد الاعتماد</span></div><span>مختلف</span><div class="diff">مختلف: بيتحسب على الإجمالي قبل المستلزمات</div></div><div class="acts"><button class="btn sm">مراجعة العقد</button></div></div></div><button class="btn sm oldb">السجل القديم (3)</button></div>
+<div style="margin-top:12px"><details class="stm"><summary>رصيد الدكتور والفواتير والتسويات — مفيش حركات في الفترة دي</summary></details><span class="mk">3</span></div></div>
+<div class="card"><h3>نفس الدكتور على الموبايل</h3><div class="phone"><div class="doc"><div class="dh"><h3>د. كريم حسان — EMP-12</h3><div class="pills"><span class="pill v">ساري 1</span><span class="pill o">بينتهي قريب 1</span><span class="pill b">قيد الاعتماد 1</span></div>
+<div class="terms"><span><b>النسبة بتتحسب على:</b>الخدمة من غير المستلزمات</span><span><b>خصم المستلزمات:</b>لا</span><span><b>الاستحقاق:</b>عند تنفيذ الخدمة</span></div></div><div style="display:grid;gap:10px;padding:10px"><div class="card2"><div class="top"><div><b>كشف باطنة استشاري</b><small class="lbl">0001374 · 1 يناير 2026 — 31 ديسمبر 2026</small></div><span class="rate">40.00%</span></div><div class="kv"><span>الحالة</span><div><span class="pill v">ساري</span></div></div><div class="acts"><button class="btn sm">تعديل العقد</button><button class="btn sm red">إنهاء العقد</button></div></div><div class="card2"><div class="top"><div><b>قسم D-2</b><small class="lbl">كود القسم من غير اسم محفوظ · 1 يناير 2026 — 5 ديسمبر 2026</small></div><span class="rate">30.00%</span></div><div class="kv"><span>الحالة</span><div><span class="pill o">بينتهي خلال 10 يوم</span></div></div><div class="acts"><button class="btn sm">تعديل العقد</button><button class="btn sm red">إنهاء العقد</button></div></div><div class="card2"><div class="top"><div><b>كشف باطنة استشاري</b><small class="lbl">0001374 · 1 يناير 2027 — 31 ديسمبر 2027</small></div><span class="rate">50.00%</span></div><div class="kv"><span>الحالة</span><div><span class="pill b">قيد الاعتماد</span></div><span>مختلف</span><div class="diff">مختلف: بيتحسب على الإجمالي قبل المستلزمات</div></div><div class="acts"><button class="btn sm">مراجعة العقد</button></div></div></div></div>
+<div class="stm">رصيد الدكتور والفواتير والتسويات — مفيش حركات في الفترة دي</div></div></div>
+<div class="card"><h3>إيه اللي اتغير؟</h3><table class="cmp" style="width:100%;border-collapse:collapse"><tr><th>#</th><th>دلوقتي</th><th>التصور</th></tr>
+<tr><td><span class="mk">1</span></td><td>على الموبايل 3 سطور من غير عنوان: «الخدمة دون بنود المستلزمات / بدون خصم مستلزمات / عند تنفيذ الخدمة».</td><td>كل قيمة في الكارت جنبها اسمها، والقيم المشتركة اتنقلت لكارت الدكتور (رقم 2).</td></tr>
+<tr><td><span class="mk">2</span></td><td>نفس الـ3 قيم متكررة في كل سطر عقد.</td><td>بتتكتب <b>مرة واحدة</b> تحت اسم الدكتور. لو عقد مختلف عن الباقي، بيظهر جنبه «مختلف: …» بالبرتقالي.</td></tr>
+<tr><td><span class="mk">3</span></td><td>3 عناوين تحت الجدول وتحت كل واحد «لا توجد حركات في هذا العرض».</td><td><b>سطر واحد</b>: «رصيد الدكتور والفواتير والتسويات — مفيش حركات في الفترة دي». لو فيه حركات بتظهر الأجزاء زي ما هي.</td></tr>
+<tr><td><span class="mk">4</span></td><td><s>بتنتهي قريب</s> · <s>بينتهي قريب</s> · <s>ينتهي خلال 10 يوم</s></td><td>كلمة واحدة: <b>بينتهي قريب</b> في الزرار والملخص، و<b>بينتهي خلال 10 يوم</b> جنب العقد.</td></tr>
+<tr><td><span class="mk">5</span></td><td>عقد مكتوب عليه <s>D-2</s> بس.</td><td><b>«قسم D-2»</b> ولو للقسم اسم محفوظ بيتكتب الاسم. لو مفيش اسم خالص بيتكتب تحته «كود القسم من غير اسم محفوظ».</td></tr></table>
+<p class="sub">نفس البيانات ونفس الأزرار ونفس الصلاحيات — تغيير شكل بس، مفيش أي تغيير في طريقة حساب الأتعاب.</p></div></div></body></html>
