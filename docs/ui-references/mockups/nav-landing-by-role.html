@@ -1,0 +1,47 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: أول شاشة حسب شغلك</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.hero{background:linear-gradient(120deg,#0F369D,#1E4FC8);color:#fff}.hero .sub{color:rgba(255,255,255,.85)}
+.hero h2{font-size:20px}.kp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.kp div{background:rgba(255,255,255,.14);border-radius:16px;padding:12px;display:grid;gap:4px}.kp b{font-size:22px}.kp small{font-size:12px;color:rgba(255,255,255,.85)}
+.hero .acts{display:flex;gap:8px;flex-wrap:wrap}.hero .btn{background:#fff;border:0}.hero .btn.main{background:#F15A22;color:#fff}.hero .btn.ghost{background:rgba(255,255,255,.16);color:#fff}
+.rows{display:grid;gap:8px}.row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;border:1px solid var(--line);border-inline-start:4px solid var(--accent);border-radius:14px;padding:10px 12px}
+.row small{display:block;color:var(--muted);font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.tiles button{border:0;background:var(--soft);border-radius:14px;min-height:64px;font-weight:600;text-align:start;padding:10px 12px}
+.tiles button small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+@media(max-width:760px){.kp{grid-template-columns:repeat(2,minmax(0,1fr))}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr) auto}.row .btn{grid-column:2}}
+</style></head><body><p class="note"><b>تصور — أول شاشة بعد الدخول حسب شغلك</b> (بيانات تجريبية · مفيش حاجة بتتحفظ). دلوقتي كل الناس بتدخل على «الرئيسية الشخصية» العامة، وموظف الاستقبال لازم يفتح «الاستقبال» ثم يدوّر على كارت «تشغيل اليوم» وسط 12 كارت، والمحاسب ما بيشوفش «شغلي النهارده» غير لما يفتح «الحسابات». الفكرة: أول جزء في الرئيسية يبقى لوحة شغلك إنت، وتحتها الباقي زي ما هو.</p>
+<div class="wrap"><div class="card"><span class="sub">جرّب كأنك:</span><div class="seg" id="roles"></div></div>
+<div class="card hero" id="hero"></div>
+<div class="card"><h3>محتاج منك</h3><div class="rows" id="rows"></div></div>
+<div class="card"><h3>الأقسام اللي بتستخدمها أكتر</h3><p class="sub">بتترتب لوحدها حسب استخدامك، وتقدر تثبّت أي قسم.</p><div class="tiles" id="tiles"></div></div>
+<div class="card"><h3>إيه اللي اتغير؟</h3><p class="sub">• الاستقبال وخدمة العملاء والتمريض: «تشغيل اليوم» بقت أول حاجة بعد الدخول، مش كارت جوه قسم.<br>• المحاسب والمدير المالي: «شغلي النهارده» بتظهر في الرئيسية على طول.<br>• المحتوى: الرئيسية زي ما هي (هي أصلًا مناسبة لشغلهم).<br>• المدير العام والسوبر أدمن: ملخص الأقسام اللي فيها حاجة متأخرة بس، بدل 29 مربع.<br>• نفس الصلاحيات — مفيش حد هيشوف حاجة مش من حقه.</p></div></div><script>var R={rec:{t:'الاستقبال',h:'تشغيل اليوم — الأربعاء 25 نوفمبر 2026',s:'وردية الصبح · خزينة الاستقبال مفتوحة',k:[['42','حجز النهارده'],['9','مستنيين دلوقتي'],['3','متأخرين عن ميعادهم'],['6,450 ج','اتحصّل النهارده']],a:[['main','افتح تشغيل اليوم'],['','حجز جديد'],['ghost','بحث عن مريض']],r:[['3 مرضى متأخرين عن ميعادهم','أطول انتظار 25 دقيقة','افتح'],['زيارتين من غير تحصيل','INV-2026-00131 · INV-2026-00133','حصّل'],['ليد جديد مستني رد','من ساعة','رد']],tl:[['الاستقبال والخدمات','ملفات · زيارات · باكجز'],['خزينة الاستقبال','التحصيل والوردية'],['الليدز','3 جديد'],['المهام','2 النهارده']]},
+acc:{t:'المحاسب',h:'شغلي النهارده — الحسابات',s:'آخر تحديث 9:40 ص',k:[['4','ورديات مستنية مراجعة'],['2','طلبات صرف'],['1','فرق خزينة مفتوح'],['متوازن ✓','الميزان']],a:[['main','افتح شغلي النهارده'],['','القيود وميزان المراجعة'],['ghost','القوائم المالية']],r:[['4 ورديات مستنية مراجعتك','أقدمها من امبارح','راجع'],['طلبين صرف','مياه وأدوات نظافة · صيانة','راجع'],['فرق خزينة الأسنان 20 ج','مفتوح من 3 أيام','افتح']],tl:[['الحسابات','34 قسم — بالبحث'],['جهات التعاقد','متابعة 2'],['الاستقبال','للمراجعة بس'],['المهام','1 النهارده']]},
+gm:{t:'المدير العام',h:'المركز النهارده',s:'الأقسام اللي فيها حاجة متأخرة بس',k:[['142','زيارة'],['48,250 ج','إيراد'],['5','موافقات مستنياك'],['2','أقسام فيها تأخير']],a:[['main','الموافقات'],['','تقارير المؤشرات'],['ghost','كل الأقسام']],r:[['5 موافقات مستنياك','مرتبات · تعاقد · صرف','افتح'],['الليدز: 7 من غير رد أكتر من ساعة','خدمة العملاء','افتح'],['المحتوى: 2 بوست متأخرين عن النشر','إدارة المحتوى','افتح']],tl:[['الحسابات','شغلي النهارده'],['الموارد البشرية','محتاج منك 8'],['الاستقبال','تشغيل اليوم'],['التقارير','37 تقرير']]},
+pm:{t:'المحتوى',h:'المحتوى النهارده',s:'زي الرئيسية الحالية',k:[['3','أفكار مستنية اعتماد'],['2','في التصميم'],['1','جاهز للنشر'],['4','كومنتات جديدة']],a:[['main','إنتاج المحتوى'],['','النشر'],['ghost','أداء البوستات']],r:[['كومنتين تعديل جديدين','بوست الأسنان · بوست العظام','افتح'],['بوست جاهز للنشر','معاد مقترح 7 م','انشر']],tl:[['إنتاج المحتوى',''],['النشر',''],['Meta Ads',''],['المهام','']]}};
+var cur='rec';function draw(){var r=R[cur];document.getElementById('roles').innerHTML=Object.keys(R).map(function(k){return '<button class="'+(k===cur?'on':'')+'" onclick="cur=\''+k+'\';draw()">'+R[k].t+'</button>';}).join('');
+document.getElementById('hero').innerHTML='<h2>'+r.h+'</h2><p class="sub">'+r.s+'</p><div class="kp">'+r.k.map(function(x){return '<div><b>'+x[0]+'</b><small>'+x[1]+'</small></div>';}).join('')+'</div><div class="acts">'+r.a.map(function(x){return '<button class="btn '+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>';
+document.getElementById('rows').innerHTML=r.r.map(function(x){return '<div class="row"><div><b>'+x[0]+'</b><small>'+x[1]+'</small></div><span class="chip warn">جديد</span><button class="btn">'+x[2]+'</button></div>';}).join('');
+document.getElementById('tiles').innerHTML=r.tl.map(function(x){return '<button>'+x[0]+'<small>'+x[1]+'</small></button>';}).join('');}draw();</script></body></html>

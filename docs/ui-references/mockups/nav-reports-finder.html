@@ -1,0 +1,44 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: لاقي التقرير اللي عايزه</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sbox{flex:1 1 260px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:0 12px;min-height:44px;background:#fff}.sbox input{border:0;outline:0;flex:1;min-width:0;font-size:15px}
+.seg button{min-height:36px;font-size:13px}
+.rep{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.rp{border:1px solid var(--line);border-radius:16px;padding:12px;display:grid;gap:6px;background:#fff}
+.rp b{font-size:14px}.rp .sub{min-height:36px}.rp .btn{justify-self:start;min-height:36px}
+.star{color:var(--accent)}
+.locked{margin-top:14px;border:1px dashed var(--line);border-radius:14px;padding:10px 12px;background:var(--soft)}
+.locked summary{cursor:pointer;color:var(--brand);font-weight:600;min-height:30px}
+.locked li{margin:6px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cnt{font-size:12px;color:var(--muted);margin-top:8px}
+@media(max-width:760px){.rep{grid-template-columns:minmax(0,1fr)}}
+</style></head><body><p class="note"><b>تصور — لاقي التقرير اللي عايزه</b> (بيانات تجريبية). دلوقتي «التقارير» فيها حوالي 37 كارت متقسمين بالمجال، من غير بحث، والتقارير المقفولة عليك ظاهرة ككروت «مقفول عليك» وسط الباقي. الفكرة: بحث فوق، فلتر بالمجال، نجمة للتقارير اللي بتفتحها كتير تطلع أول حاجة، والمقفول يتلم تحت في سطر واحد فيه «اطلب الصلاحية».</p>
+<div class="wrap"><div class="card"><h2>التقارير</h2><div class="tools"><div class="sbox">🔍<input id="q" placeholder="دوّر على تقرير… (مثلًا: ليدز، غياب، دكتور)" oninput="draw()"></div><div class="seg" id="areas"></div></div>
+<div class="cnt" id="cnt"></div><div class="rep" id="rep"></div>
+<details class="locked"><summary>تقارير محتاجة صلاحية (4)</summary><ul><li>الأرباح والخسائر — الحسابات <button class="btn">اطلب الصلاحية</button></li><li>مرتبات الموظفين — الموارد البشرية <button class="btn">اطلب الصلاحية</button></li><li>تكلفة المخزون <button class="btn">اطلب الصلاحية</button></li><li>أداء الإعلانات المدفوعة <button class="btn">اطلب الصلاحية</button></li></ul><p class="sub">«اطلب الصلاحية» بتبعت تنبيه للسوبر أدمن باسم التقرير — مفيش حاجة بتتفتح لوحدها.</p></details></div></div><script>var R=[["people", "الحضور والانصراف والجزاءات", "لكل موظف أيام الشيفت والغياب والتأخير", 1], ["people", "إنتاجية الاستقبال والكول سنتر", "عدد الحجوزات والمكالمات لكل موظف", 0], ["marketing", "سرعة الرد على الليدز", "وقت أول رد وتحويل الليد لحجز", 1], ["marketing", "مصادر المرضى", "المرضى جايين منين", 0], ["marketing", "مسار الحملة الإعلانية", "من الإعلان للحجز", 0], ["money", "إيراد كل خدمة", "الإيراد والعدد لكل خدمة في الفترة", 0], ["money", "مستحقات الأطباء", "اللي اتحسب واتصرف لكل دكتور", 0], ["ops", "زيارات كل عيادة", "عدد الزيارات في اليوم لكل عيادة", 0], ["ops", "وقت الانتظار", "من الوصول لحد الدخول", 0]];var A=[['all','الكل'],['fav','★ المفضلة'],['people','الفريق'],['marketing','التسويق'],['money','الفلوس'],['ops','التشغيل']],cur='all';
+function draw(){var q=document.getElementById('q').value.trim();document.getElementById('areas').innerHTML=A.map(function(a){return '<button class="'+(a[0]===cur?'on':'')+'" onclick="cur=\''+a[0]+'\';draw()">'+a[1]+'</button>';}).join('');
+var l=R.filter(function(r){return (cur==='all'||(cur==='fav'?r[3]:r[0]===cur))&&(!q||(r[1]+' '+r[2]).indexOf(q)>=0);}).sort(function(a,b){return b[3]-a[3];});
+document.getElementById('cnt').textContent=l.length+' تقرير';document.getElementById('rep').innerHTML=l.map(function(r){return '<div class="rp"><b>'+(r[3]?'<span class="star">★</span> ':'☆ ')+r[1]+'</b><span class="sub">'+r[2]+'</span><button class="btn main">افتح التقرير</button></div>';}).join('')||'<p class="sub">مفيش تقرير بالاسم ده.</p>';}draw();</script></body></html>

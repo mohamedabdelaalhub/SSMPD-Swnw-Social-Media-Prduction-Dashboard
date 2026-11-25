@@ -1,0 +1,64 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: بحث يلاقي أي شاشة</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.sbox{display:flex;align-items:center;gap:10px;border:2px solid var(--brand);border-radius:16px;padding:0 14px;min-height:52px;background:#fff}
+.sbox input{border:0;outline:0;flex:1;font-size:16px;min-width:0;background:none}
+.try{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.try button{border:1px solid var(--line);background:var(--soft);border-radius:999px;min-height:34px;padding:0 12px;font-size:13px}
+.res{display:grid;gap:8px;margin-top:12px}.r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.r b{font-size:15px}.path{display:block;font-size:12px;color:var(--muted);margin-top:2px}.why{display:block;font-size:12px;color:#475569;margin-top:4px}
+.grp{font-size:12px;font-weight:700;color:var(--muted);margin:10px 0 2px}
+.also{margin-top:12px;background:var(--soft);border-radius:12px;padding:10px 12px;font-size:13px}
+.t{width:100%;border-collapse:collapse;font-size:13px}.t td,.t th{padding:8px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top}.t th{color:var(--muted);font-weight:600}
+.t s{color:var(--neg)}.t b{color:var(--pos)}
+@media(max-width:760px){.r{grid-template-columns:minmax(0,1fr)}.r .btn{justify-self:start}.t{font-size:12px}}
+</style></head><body><p class="note"><b>تصور — بحث واحد يلاقي أي شاشة</b> (بيانات تجريبية). دلوقتي البحث بيلاقي التابات وأقسام الحسابات والاستقبال بس، وأسماء النتايج مش زي أسماء القايمة (مثلًا البحث بيقول «الأطباء والأتعاب» والقايمة «عقود الأطباء»)، ومسارات قديمة اتشالت. ومش بيلاقي أقسام الموارد البشرية والمخزن والتعاقدات والتقارير. الفكرة: كل شاشة ليها اسم واحد، والبحث يلاقيها من أي كلمة الناس بتقولها، ويوريك هي فين بالظبط ويفتحها.</p>
+<div class="wrap"><div class="card"><div class="sbox"><span>🔍</span><input id="q" placeholder="دوّر على شاشة أو مريض أو تقرير…  (Ctrl + K)" oninput="go(this.value)"></div>
+<div class="try">جرّب: <button onclick="setq('خزنة')">خزنة</button><button onclick="setq('مرتبات')">مرتبات</button><button onclick="setq('باكج')">باكج</button><button onclick="setq('بصمة')">بصمة</button><button onclick="setq('تقرير ليدز')">تقرير ليدز</button></div>
+<div id="out"></div></div>
+<div class="card"><h3>اسم واحد لكل شاشة (في القايمة والبحث والعناوين)</h3><p class="sub">الأسماء القديمة بتفضل كلمات بحث، فاللي متعود عليها هيلاقي الشاشة برضه.</p><table class="t"><tr><th>الشاشة</th><th>الأسماء دلوقتي</th><th>الاسم الموحّد</th></tr>
+<tr><td>خزن الاستقبال</td><td><s>خزينة الاستقبال والحجوزات</s> · <s>الخزن والورديات</s></td><td><b>خزينة الاستقبال</b></td></tr>
+<tr><td>خزن الحسابات</td><td>الخزائن والورديات</td><td><b>الخزائن والورديات</b> (للمحاسب)</td></tr>
+<tr><td>المخزن</td><td><s>المخزن والجرد</s> (مرتين في القايمة) · <s>المخازن</s> · <s>المستلزمات والمخزون</s></td><td><b>المخزن والجرد</b> — مرة واحدة</td></tr>
+<tr><td>الباكجز</td><td><s>الباكجز</s> · <s>الباكدجات</s></td><td><b>الباكجز</b></td></tr>
+<tr><td>عقود الدكاترة</td><td><s>الأطباء والأتعاب</s> · عقود الأطباء</td><td><b>عقود الأطباء</b></td></tr>
+<tr><td>الموردين</td><td><s>الموردون والمرتجعات</s> · الموردين</td><td><b>الموردين</b></td></tr>
+<tr><td>تبويب في الليدز وأرشيف المرضى</td><td><s>الاستقبال</s> (نفس اسم تاب الاستقبال)</td><td><b>الليدز الجديدة</b> · <b>استلام الملفات</b></td></tr>
+</table></div></div><script>var D=[
+['خزينة الاستقبال','الاستقبال › خزينة الاستقبال','فتح الوردية والتحصيل وجرد آخر اليوم','خزنة خزينة وردية تحصيل كاش','شاشة'],
+['الخزائن والورديات','الحسابات › الخزينة اليومية › الخزائن والورديات','مراجعة ورديات كل الخزن (للمحاسب)','خزنة خزينة وردية جرد','شاشة'],
+['فروق الخزينة','الحسابات › الخزينة اليومية › فروق الخزينة','العجز والزيادة وقرار كل فرق','خزنة عجز زيادة فرق','شاشة'],
+['المرتبات والسلف','الحسابات › الصرف والمستحقات › المرتبات والسلف','تجهيز مرتبات الشهر وصرفها','مرتبات مرتب سلفة','شاشة'],
+['الرواتب والاستحقاقات','الموارد البشرية › الفلوس › الرواتب والاستحقاقات','تجهيز بنود المرتب من الحضور قبل ما تروح للحسابات','مرتبات مرتب استحقاق رواتب','شاشة'],
+['الباكجز','الاستقبال › الباكجز','بيع باكج لمريض ومتابعة جلساته','باكج باكدج باقة','شاشة'],
+['التسعير — الباكجز','الحسابات › التسعير','أسعار الباكجز وبنودها','باكج باكدج سعر','شاشة'],
+['تسجيل حضور يدوي ومراجعة البصمات','الموارد البشرية › الوقت والإجازات','تحويل بصمات الشهر للمراجعة','بصمة حضور جهاز','شاشة'],
+['الحضور اللحظي','الموارد البشرية › النهارده','مين موجود دلوقتي وربط أرقام الجهاز','بصمة حضور جهاز الآن','شاشة'],
+['سرعة الرد على الليدز','التقارير › التسويق','وقت أول رد وتحويل الليد لحجز','تقرير ليدز رد','تقرير'],
+['مصادر المرضى','التقارير › التسويق','المرضى جايين منين','تقرير ليدز مصدر','تقرير']];
+function setq(v){document.getElementById('q').value=v;go(v);}
+function go(v){v=v.trim();var o=document.getElementById('out');if(!v){o.innerHTML='';return;}var ws=v.split(/\s+/),hit=D.filter(function(d){return ws.every(function(w){return (d[0]+' '+d[3]).indexOf(w.replace('خزنة','خزن'))>=0||d[3].indexOf(w)>=0;});});
+var g={};hit.forEach(function(d){(g[d[4]]=g[d[4]]||[]).push(d);});
+o.innerHTML=hit.length?Object.keys(g).map(function(k){return '<div class="grp">'+(k==='شاشة'?'شاشات':'تقارير')+'</div><div class="res">'+g[k].map(function(d){return '<div class="r"><div><b>'+d[0]+'</b><span class="path">'+d[1]+'</span><span class="why">'+d[2]+'</span></div><button class="btn">افتح ←</button></div>';}).join('')+'</div>';}).join('')+(hit.length>1?'<div class="also">لقينا أكتر من مكان — كل واحد مكتوب تحته بيعمل إيه، علشان تختار الصح.</div>':''):'<div class="also">مفيش نتيجة. جرّب كلمة تانية.</div>';}
+setq('خزنة');</script></body></html>
