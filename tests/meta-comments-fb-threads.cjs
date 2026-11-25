@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { execFileSync } = require("node:child_process");
 const fs = require("node:fs"), path = require("node:path"), os = require("node:os");
 const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "fbt-")), "fb.cjs");
-execFileSync("npx", ["-y", "esbuild", "supabase/functions/meta-comments/fb-comments.ts", "--format=cjs", "--log-level=error", `--outfile=${out}`], { stdio: "inherit" });
+execFileSync("npx", ["-y", "esbuild", "supabase/functions/meta-comments/fb-comments.ts", "--bundle", "--format=cjs", "--log-level=error", `--outfile=${out}`], { stdio: "inherit" });
 const { readFbThreads, TOP_FIELDS, REPLY_FIELDS } = require(out);
 (async () => {
   assert(!/comments[.{]/.test(TOP_FIELDS), "top-level fields must not use the removed nested comments expansion");
