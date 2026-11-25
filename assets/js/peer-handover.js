@@ -69,6 +69,10 @@
         e.preventDefault(); if (state.busy) return; var end = f.elements.mode.value === "end", p = { from_shift: o.shift.id, to_shift: f.elements.to.value, note: f.elements.note.value };
         if (end) { var counts = {}; DEN.forEach(function (k) { counts[k] = Math.max(0, Math.floor(+f.elements["c" + k].value || 0)); }); p.end_shift = true; p.counts = counts; if (!(total() > 0)) { status(box, "اكتب الكاش اللي معاك"); return; } }
         else p.amount = Number(f.elements.amount.value);
+        /* 20261125110000 «جرد الوردية»: review the count + blind «عدّ تاني» before ending the shift */
+        if (end && w.SSMPDCountCheck && !p.__cc) { state.busy = true; w.SSMPDCountCheck.gate(o.shift.id, p.counts, p.note).then(function (n) { p.note = n; p.__cc = true; state.busy = false; proceed(); }, function (e2) { state.busy = false; status(box, e2.message); }); return; }
+        proceed();
+        function proceed() { delete p.__cc;
         state.busy = true; status(box, "جاري التسليم…");
         if (f.elements.to.value === "main") {
           var cmd = end ? ["end_shift", { shift_id: o.shift.id, counts: p.counts, note: p.note }]
@@ -81,6 +85,7 @@
         }
         rpc("request", p, token).then(function (h) { close(box); toast("اتبعت لـ " + h.to_name + " — مستني يأكد الاستلام (" + money(h.amount) + ")"); if (w.SSMPDShiftReminder) w.SSMPDShiftReminder.refresh(); },
           function (err) { status(box, err.message); }).then(function () { state.busy = false; });
+        }
       };
     }).catch(function (e) { toast(e.message || "تعذر فتح التسليم"); });
   }
