@@ -125,12 +125,14 @@ function server() {
   assert.equal($('[data-ins-profiles]'), null); assert.equal($('[data-ins-audit]'), null);
   await click($('[data-ins-ask]'));
   const chat = () => view.querySelector('[data-ins-chat]');
-  assert.equal(chat().hidden, false); const form = chat().querySelector('.ins-chat-form');
+  assert.equal(chat().hidden, false); assert.ok(chat().classList.contains('ins-anim'), 'slides up when it opens');
+  const form = chat().querySelector('.ins-chat-form');
   assert.equal(form.firstElementChild.textContent, 'ممنوع كتابة اسم أو رقم أو بيانات مريض', 'warning sits above the question box');
   chat().querySelector('[data-ins-input]').value = 'المريض رقمه 010 1234 5678'; await click(chat().querySelector('[data-ins-send]'));
   assert.match(chat().querySelector('[data-ins-chat-error]').textContent, /رقم موبايل/); assert.equal(calls('instinct_ask').length, 0);
   chat().querySelector('[data-ins-input]').value = 'إزاي أعمل حجز جديد؟'; await click(chat().querySelector('[data-ins-send]')); await tick();
   assert.equal(calls('instinct_ask').length, 1); assert.equal(calls('instinct_ask')[0].args.p_thread, null);
+  assert.equal(chat().hidden, false); assert.ok(!chat().classList.contains('ins-anim'), 'no slide-up replay after sending (owner 2026-11-25: «بيختفي وتظهر تاني»)');
   assert.deepEqual(Array.from(chat().querySelectorAll('.ins-msg.me')).map(m => m.firstChild.textContent), ['إزاي أعمل حجز جديد؟']);
   chat().querySelector('[data-ins-input]').value = 'وإزاي ألغيه؟'; await click(chat().querySelector('[data-ins-send]')); await tick();
   assert.equal(calls('instinct_ask')[1].args.p_thread, S.threads[0].id, 'follow-up in the same thread');
