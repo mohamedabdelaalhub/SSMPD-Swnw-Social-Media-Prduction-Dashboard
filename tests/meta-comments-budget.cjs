@@ -30,7 +30,7 @@ const pool = b("supabase/functions/meta-comments/pool.ts", "pool"), fb = b("supa
   const flaky = await fb.readFbThreads(async () => ({ ok: false, data: {}, error: "Graph timeout after 20s" }), "slow", "T", [], "sono"); assert.equal(flaky.ok, false); assert.equal(flaky.permanent, false);
   // wiring in index.ts
   const idx = fs.readFileSync("supabase/functions/meta-comments/index.ts", "utf8"), run = idx.slice(idx.indexOf("async function runSync"));
-  assert(/RUN_BUDGET_MS = Number\(Deno\.env\.get\("META_COMMENTS_BUDGET_MS"\)\) \|\| 40000/.test(idx), "soft budget 40 s, configurable");
+  assert(/RUN_BUDGET_MS = Number\(Deno\.env\.get\("META_COMMENTS_BUDGET_MS"\)\) \|\| 90000/.test(idx), "soft ceiling 90 s, configurable");
   assert(run.includes("Math.floor(Date.now() / 300000) % all.length") && run.includes("all.slice(rot).concat(all.slice(0, rot))"), "brands rotate every 5 minutes");
   assert(run.indexOf('stage(report, "sendApproved"') < run.indexOf("budgeted(`${brand} syncBrand`"), "approved replies go first (not budgeted)");
   assert(run.includes("skipped ${name}: run time budget used") && (run.match(/await budgeted\(/g) || []).length >= 5, "later stages are budgeted");

@@ -41,7 +41,7 @@ const keepAlive = setInterval(() => {}, 1000); // AbortSignal.timeout timers are
   // order inside runSync
   const idx = fs.readFileSync("supabase/functions/meta-comments/index.ts", "utf8"), run = idx.slice(idx.indexOf("async function runSync"));
   const p = (s) => run.indexOf(s);
-  assert(p('"sendApproved"') > 0 && p('"sendApproved"') < p("syncBrand(db, brand, cfg, list, report)") && p("syncBrand(db, brand, cfg, list, report)") < p("syncMessages(db, brand") && p("syncMessages(db, brand") < p('"autopilotComments"') && p('"autopilotComments"') < p('"sendApproved (autopilot)"'), "approved replies -> comments of all brands -> messages -> AI -> autopilot sends");
+  assert(p('"sendApproved"') > 0 && p('"sendApproved"') < p("syncBrand(db, brand, cfg, list, report)") && p("syncBrand(db, brand, cfg, list, report)") < p('"autoReply"') && p('"autoReply"') < p('"autopilotComments"') && p('"autopilotComments"') < p('"sendApproved (autopilot)"') && p('"sendApproved (autopilot)"') < p("syncMessages(db, brand"), "approved replies -> comments of all brands -> comment replies (autoReply/autopilot + send) -> heavy message sync last");
   const msg = fs.readFileSync("supabase/functions/meta-comments/messages.ts", "utf8");
   assert(msg.includes('from "./graph.ts"') && !/await fetch\(/.test(msg), "messages.ts uses the timeout helpers");
   assert(!/await fetch\(u\.toString\(\)\)/.test(idx) && idx.includes('from "./graph.ts"'), "index.ts uses the timeout helpers");

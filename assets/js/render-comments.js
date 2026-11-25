@@ -121,6 +121,23 @@
   function commenterName(c) {
     return c.author_name || (c.platform === 'instagram' ? 'زائر انستجرام' : 'زائر فيسبوك');
   }
+  // supabase-js returns data = null and r.error for ANY non-2xx answer or network failure, so the server's own reason (expired session, no
+  // permission) used to be replaced by the generic fallback. Read the response body and say what really happened.
+  function failText(r, fallback) {
+    var e = r && r.error, d = (r && r.data) || {};
+    if (!e) return Promise.resolve(d.message || d.error || fallback);
+    var ctx = e.context, status = ctx && ctx.status;
+    var body = ctx && typeof ctx.json === "function" ? ctx.json().catch(function () { return {}; }) : Promise.resolve({});
+    return body.then(function (b) {
+      b = b || {};
+      if (status === 401 || b.error === "AUTH_REQUIRED") return "الجلسة انتهت — حدّث الصفحة (F5) وسجّل دخول تاني وجرّب";
+      if (status === 403 || b.error === "FORBIDDEN") return "حسابك مالوش صلاحية الرد من هنا — كلّم المدير";
+      if (b.message) return b.message;
+      if (b.error) return b.error;
+      if (!ctx) return "مفيش اتصال بالسيرفر دلوقتي أو الطلب اتأخر — جرّب تاني بعد شوية";
+      return fallback + " (كود " + (status || "؟") + ")";
+    });
+  }
   function alertList(data) {
     var out = [];
     data.comments.forEach(function (c) { if (c.alert && !c.alert_resolved_at) out.push({ kind: "comment", id: c.id, platform: c.platform, brand: c.brand, who: commenterName(c), text: c.message, reply: c.final_reply, at: c.commented_at, url: c.comment_url, category: c.category }); });
@@ -593,7 +610,7 @@
         b.disabled = true; b.textContent = "بيتبعت…";
         db().functions.invoke("meta-comments", { body: { action: "send_message", conversation_id: b.dataset.msend, text: text } }).then(function (r) {
           var d = r.data || {};
-          if (r.error || !d.ok) throw new Error(d.message || d.error || "تعذر إرسال الرسالة");
+          if (r.error || !d.ok) return failText(r, "تعذر إرسال الرسالة").then(function (m) { throw new Error(m); });
           state.drafts["m:" + b.dataset.msend] = "";
           if (d.queued) return waOutcome(d.id, b);
           if (window.SSMPDToast && window.SSMPDToast.show) window.SSMPDToast.show("اتبعتت الرسالة");
@@ -616,7 +633,7 @@
       b.disabled = true; var old = b.textContent; b.textContent = label;
       db().functions.invoke("meta-comments", { body: body }).then(function (r) {
         var d = r.data || {};
-        if (r.error || !d.ok) throw new Error(d.message || d.error || "تعذر التنفيذ");
+        if (r.error || !d.ok) return failText(r, "تعذر التنفيذ").then(function (m) { throw new Error(m); });
         return waOutcome(d.id, b);
       }).catch(function (e) { b.disabled = false; b.textContent = old; fail(e); });
     };
