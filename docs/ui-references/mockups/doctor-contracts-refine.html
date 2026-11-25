@@ -47,9 +47,29 @@ button,input{font:inherit;color:inherit}button{cursor:pointer}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13px}.kv span{color:var(--muted);font-size:12px}
 .phone{width:390px;max-width:100%;margin:0 auto;border:8px solid #16212E;border-radius:32px;padding:12px;background:#F4F7FD;display:grid;gap:10px}
 .cmp td,.cmp th{padding:8px;border-bottom:1px solid var(--line);text-align:start;font-size:13px;vertical-align:top}.cmp s{color:var(--neg)}.cmp b{color:var(--pos)}
+
+.lst{display:grid;gap:8px}
+.drow{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+.drow>button{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:grid;grid-template-columns:minmax(0,1.4fr) auto minmax(0,1.6fr) auto;gap:10px;align-items:center;padding:12px 14px;min-height:56px}
+.drow>button:focus-visible{outline:3px solid #F15A22;outline-offset:-3px}
+.drow .nm b{display:block;font-size:14px;color:var(--ink)}.drow .nm small{color:var(--muted);font-size:12px}
+.drow .rt{font-weight:700;color:var(--brand);font-size:13px;white-space:nowrap}
+.drow .ps{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.drow .chev{color:var(--muted);transition:transform .15s}.drow.open .chev{transform:rotate(180deg)}
+.drow.attn{border-inline-start:4px solid #F15A22}
+.drow .body{border-top:1px solid var(--line);padding:0}
+.ltools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.ltools input{flex:1 1 220px;min-height:40px;border:1px solid var(--line);border-radius:12px;padding:0 12px;font-size:14px}
+.ltools .cnt{font-size:12px;color:var(--muted)}
+.grp{font-size:12px;font-weight:700;color:var(--muted);margin:10px 4px 2px}
+@media(max-width:760px){.drow>button{grid-template-columns:minmax(0,1fr) auto;}.drow .ps{grid-column:1/-1;justify-content:flex-start}.drow .rt{grid-row:1;grid-column:2}.drow .chev{display:none}}
+
 @media(max-width:760px){.desk{display:none}.cards{display:grid;gap:10px;padding:10px}}
 </style></head><body><p class="note"><b>تصور — تحسينات «عقود الأطباء» الخمسة</b> (بيانات تجريبية · مفيش حاجة بتتحفظ). الأرقام البرتقالي على الشاشة بتوريك مكان كل تعديل. صغّر الشاشة (أو افتحها من الموبايل) تشوف شكل الكروت.</p>
-<div class="wrap"><div class="card"><h2>عقود الأطباء</h2><p class="sub">نسبة كل دكتور على كل خدمة أو قسم، ومدة سريانها.</p>
+<div class="wrap"><div class="card"><h2>القايمة لما تدخل «عقود الأطباء» <span class="mk">6</span></h2><p class="sub">كل دكتور سطر واحد مقفول. فوق الدكاترة اللي محتاجين حاجة (عقد قيد الاعتماد أو بينتهي قريب)، وبعدهم الباقي بالأبجدية. دوس على أي دكتور يفتح عقوده، ولو فتحت دكتور تاني الأول بيتقفل لوحده.</p>
+<div class="chips"><button class="on">سارية + قيد الاعتماد (14)</button><button>قيد الاعتماد (2)</button><button>بينتهي قريب (2)</button><button>الكل (21)</button></div>
+<div class="ltools"><input id="q" placeholder="بحث باسم الدكتور أو كوده" oninput="draw()"><span class="cnt" id="cnt"></span><button class="btn sm" onclick="openAll=!openAll;cur=null;draw()" id="all">فتح الكل</button></div>
+<div class="lst" id="lst"></div></div><div class="card"><h2>دكتور مفتوح (التعديلات 1-5)</h2><p class="sub">نسبة كل دكتور على كل خدمة أو قسم، ومدة سريانها.</p>
 <div class="chips"><button class="on">سارية + قيد الاعتماد (3)</button><button>قيد الاعتماد (1)</button><button>بينتهي قريب (1)</button><button>الكل (6)</button><span class="mk">4</span></div>
 <div class="doc"><div class="dh"><h3>د. كريم حسان — EMP-12</h3>
 <div class="pills"><span class="pill v">ساري 1</span><span class="pill o">بينتهي قريب 1</span><span class="pill b">قيد الاعتماد 1</span><span class="pill r">منتهي 1</span><span class="pill g">مرفوض 1</span><span class="pill g">اتعدّل (نسخة أقدم) 1</span><span class="mk">4</span></div>
@@ -66,5 +86,18 @@ button,input{font:inherit;color:inherit}button{cursor:pointer}
 <tr><td><span class="mk">2</span></td><td>نفس الـ3 قيم متكررة في كل سطر عقد.</td><td>بتتكتب <b>مرة واحدة</b> تحت اسم الدكتور. لو عقد مختلف عن الباقي، بيظهر جنبه «مختلف: …» بالبرتقالي.</td></tr>
 <tr><td><span class="mk">3</span></td><td>3 عناوين تحت الجدول وتحت كل واحد «لا توجد حركات في هذا العرض».</td><td><b>سطر واحد</b>: «رصيد الدكتور والفواتير والتسويات — مفيش حركات في الفترة دي». لو فيه حركات بتظهر الأجزاء زي ما هي.</td></tr>
 <tr><td><span class="mk">4</span></td><td><s>بتنتهي قريب</s> · <s>بينتهي قريب</s> · <s>ينتهي خلال 10 يوم</s></td><td>كلمة واحدة: <b>بينتهي قريب</b> في الزرار والملخص، و<b>بينتهي خلال 10 يوم</b> جنب العقد.</td></tr>
-<tr><td><span class="mk">5</span></td><td>عقد مكتوب عليه <s>D-2</s> بس.</td><td><b>«قسم D-2»</b> ولو للقسم اسم محفوظ بيتكتب الاسم. لو مفيش اسم خالص بيتكتب تحته «كود القسم من غير اسم محفوظ».</td></tr></table>
-<p class="sub">نفس البيانات ونفس الأزرار ونفس الصلاحيات — تغيير شكل بس، مفيش أي تغيير في طريقة حساب الأتعاب.</p></div></div></body></html>
+<tr><td><span class="mk">5</span></td><td>عقد مكتوب عليه <s>D-2</s> بس.</td><td><b>«قسم D-2»</b> ولو للقسم اسم محفوظ بيتكتب الاسم. لو مفيش اسم خالص بيتكتب تحته «كود القسم من غير اسم محفوظ».</td></tr><tr><td><span class="mk">6</span></td><td>كل الدكاترة <s>مفتوحين</s> أول ما تدخل، ولازم سكرول طويل للدكتور اللي بعده.</td><td>كل دكتور <b>سطر واحد مقفول</b> فيه عدد عقوده ونسبه وحالتها. اللي محتاجين حاجة فوق. واحد بس مفتوح في المرة، وفيه «فتح الكل» لو عايز.</td></tr></table>
+<p class="sub">نفس البيانات ونفس الأزرار ونفس الصلاحيات — تغيير شكل بس، مفيش أي تغيير في طريقة حساب الأتعاب.</p></div></div><script>var D=[["د. كريم حسان","EMP-12",3,"25% – 50%",[["o","بينتهي قريب 1"],["b","قيد الاعتماد 1"],["v","ساري 1"]],1],
+["د. منى السيد","EMP-07",2,"30% – 35%",[["b","قيد الاعتماد 1"],["v","ساري 1"]],1],
+["د. أحمد فؤاد","EMP-03",1,"40%",[["o","بينتهي خلال 6 يوم"]],1],
+["د. إيمان عادل","EMP-21",2,"20% – 25%",[["v","ساري 2"]],0],
+["د. حسام نبيل","EMP-15",1,"35%",[["v","ساري 1"]],0],
+["د. سارة مراد","EMP-09",3,"30%",[["v","ساري 3"]],0],
+["د. طارق عزت","EMP-18",1,"50%",[["v","ساري 1"]],0],
+["د. ياسمين خالد","EMP-25",1,"45%",[["v","ساري 1"]],0]],cur=null,openAll=false;
+function pills(p){return p.map(function(x){return '<span class="pill '+x[0]+'">'+x[1]+'</span>';}).join('');}
+function body(d){return '<div class="body"><div class="dh"><div class="terms"><span><b>النسبة بتتحسب على:</b>الخدمة من غير المستلزمات</span><span><b>خصم المستلزمات:</b>لا</span><span><b>الاستحقاق:</b>عند تنفيذ الخدمة</span></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm">حساب الدكتور</button><button class="btn sm">الصورة والنشر</button></div></div><p class="sub" style="padding:10px 16px;margin:0">'+d[2]+' عقود — شكلها زي الدكتور المفتوح تحت ↓</p></div>';}
+function draw(){var q=document.getElementById('q').value.trim(),l=D.filter(function(d){return !q||(d[0]+d[1]).indexOf(q)>=0;}),a=l.filter(function(d){return d[5];}),r=l.filter(function(d){return !d[5];});
+ function row(d){var op=openAll||cur===d[1];return '<div class="drow'+(d[5]?' attn':'')+(op?' open':'')+'"><button onclick="cur=cur===\''+d[1]+'\'?null:\''+d[1]+'\';openAll=false;draw()" aria-expanded="'+op+'"><span class="nm"><b>'+d[0]+' — '+d[1]+'</b><small>'+d[2]+' عقود</small></span><span class="rt">'+d[3]+'</span><span class="ps">'+pills(d[4])+'</span><span class="chev">▾</span></button>'+(op?body(d):'')+'</div>';}
+ document.getElementById('lst').innerHTML=(a.length?'<div class="grp">محتاجين حاجة منك ('+a.length+')</div>'+a.map(row).join(''):'')+(r.length?'<div class="grp">باقي الدكاترة ('+r.length+')</div>'+r.map(row).join(''):'')||'<p class="sub">مفيش دكتور بالاسم ده.</p>';
+ document.getElementById('cnt').textContent=l.length+' دكتور';document.getElementById('all').textContent=openAll?'قفل الكل':'فتح الكل';}draw();</script></body></html>
