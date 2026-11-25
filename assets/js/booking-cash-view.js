@@ -88,7 +88,7 @@ function draw(body,data,h,opts){
  body.querySelectorAll('[data-bcv-range]').forEach(function(b){if(opts.range===b.dataset.bcvRange)b.classList.add('is-on');b.onclick=function(){if(opts.onRange)opts.onRange(b.dataset.bcvRange);};});
  /* «اتحصّل في ورديتك» (#863): read-only, only my open shift; hidden when there is no shift or the function is not live */
  var slot=body.querySelector('[data-bcv-collections-slot]'),c=w.SSMPDDb&&w.SSMPDDb.client;
- if(slot&&c&&own)Promise.resolve(c.rpc('clinic_finance_my_collections',{})).then(function(r){if(r&&!r.error&&slot.isConnected)slot.innerHTML=collectionsHtml(r.data);}).catch(function(){});
+ /* not gated on own: the RPC itself answers shift=null when there is no open shift */if(slot&&c)Promise.resolve(c.rpc('clinic_finance_my_collections',{})).then(function(r){if(r&&!r.error&&slot.isConnected)slot.innerHTML=collectionsHtml(r.data);}).catch(function(){});
 }
 w.SSMPDBookingCashView={draw:draw,when:when,ownShift:ownShift};
 })(window);
