@@ -11828,6 +11828,45 @@
       "reviewed": true
     },
     {
+      "title": "يتحاسب على المريض؟",
+      "labels": [
+        "يتحاسب على المريض؟"
+      ],
+      "text": "أيوه = لما الصنف يتصرف مع خدمة بيتضاف على فاتورة المريض بسعر البيع. لأ = في سعر الخدمة وبيتخصم من المخزن بس. بيتحفظ أول ما تختار.",
+      "article": "supplies-billable-at-service",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دوّر باسم الخدمة",
+      "labels": [
+        "دوّر باسم الخدمة"
+      ],
+      "text": "اكتب جزء من اسم الخدمة والقايمة بتتفلتر وانت بتكتب.",
+      "article": "supplies-billable-at-service",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "للخدمة دي",
+      "labels": [
+        "للخدمة دي"
+      ],
+      "text": "حكم المكوّن ده في الخدمة دي بس: «حسب الصنف» = زي «تسعير الأصناف»، «بيتحاسب على المريض» أو «في سعر الخدمة» = استثناء للخدمة دي. بيتحفظ أول ما تختار.",
+      "article": "supplies-billable-at-service",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "المورد",
       "labels": [
         "المورد"
@@ -15361,6 +15400,21 @@
         "reception_services"
       ],
       "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "السبب (اختياري)",
+      "labels": [
+        "السبب (اختياري)"
+      ],
+      "text": "اكتب الحدث الذي يستدعي الطلب وسببه والمستند الذي يثبته، مثل رد دفعة عن موعد ملغي. لا تكتب سببًا عامًا لا يسمح للمراجع بفهم العملية.",
+      "article": "requests",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "تعديل قبل التحصيل"
+      ],
       "reviewed": true
     },
     {
@@ -23262,9 +23316,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2007,
-    "labels": 1461,
-    "files": 158,
-    "groups": 1577
+    "definitions": 2016,
+    "labels": 1465,
+    "files": 159,
+    "groups": 1581
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
