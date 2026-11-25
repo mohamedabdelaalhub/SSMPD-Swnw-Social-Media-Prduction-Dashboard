@@ -1,0 +1,25 @@
+/* «أول شاشة حسب شغلك» (help 271) — the person's work board at the top of the personal home */
+[data-role-landing]{display:grid;gap:16px;min-width:0}
+[data-role-landing][hidden]{display:none!important}
+.rl-card{background:#fff;border:1px solid var(--ph-line,#E4E9F2);border-radius:18px;padding:18px;min-width:0;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.rl-hero{border-inline-start:5px solid #0F369D}
+.rl-card h2{margin:0 0 4px;font-size:19px;color:#0F369D}
+.rl-card h3{margin:0 0 4px;font-size:15px;color:#16212E}
+.rl-sub{margin:0;font-size:13px;color:#667085;line-height:1.7}
+.rl-kp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0 4px}
+.rl-k{background:#EAF0FF;border-radius:14px;padding:12px;display:grid;gap:2px;min-width:0}
+.rl-k b{font-size:24px;color:#0F369D;line-height:1.2}
+.rl-k small{font-size:12px;color:#475467}
+.rl-k.is-hot{background:#FFF1E8}.rl-k.is-hot b{color:#C2410C}
+.rl-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.rl-acts .btn{min-height:42px;border-radius:12px;font-weight:600}
+.rl-acts .rl-main{background:#F15A22;border-color:#F15A22;color:#fff}
+.rl-acts .rl-ghost{background:#F3F6FB;border-color:#F3F6FB}
+.rl-rows{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.rl-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;border:1px solid #E6EBF3;border-inline-start:4px solid #F15A22;border-radius:14px;padding:10px 12px}
+.rl-row b{display:block;font-size:14px}.rl-row small{display:block;color:#667085;font-size:12px;line-height:1.6}
+.rl-n{min-width:32px;height:32px;border-radius:999px;background:#FFF1E8;color:#C2410C;font-weight:700;display:inline-grid;place-items:center;padding:0 8px}
+.rl-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
+.rl-tiles button{border:0;background:#F3F6FB;border-radius:14px;min-height:56px;font:inherit;font-weight:600;color:#16212E;text-align:start;padding:10px 12px;cursor:pointer;min-width:0;overflow-wrap:anywhere}
+.rl-tiles button:hover{background:#EAF0FF;color:#0F369D}
+@media(max-width:760px){.rl-card{padding:14px}.rl-kp,.rl-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.rl-row{grid-template-columns:minmax(0,1fr) auto}.rl-row .btn{grid-column:1/-1}}
