@@ -37,7 +37,7 @@ try{for(const width of [1280,390]){const page=await browser.newPage({viewport:{w
  await page.click('[data-rl-kind="finance"] .rl-main');await page.waitForSelector('#acc-page[data-sub="overview"]');
  // financial manager: reviewer tasks with counts
  await as(page,{id:'fm1',name:'مدير مالي',role:'financial_manager',module_permissions:[{module_key:'accounting',can_view:true}]});await page.waitForSelector('[data-rl-kind="finance"] .rl-row');
- assert.deepEqual(await page.$$eval('[data-rl-kind="finance"] .rl-row',x=>x.map(e=>e.querySelector('b').textContent+':'+e.querySelector('.rl-n').textContent)),['استلم كاش من الخزن:2','اعتمادات مستنياك:3','مراجعة الورديات:1']);
+ assert.deepEqual(await page.$$eval('[data-rl-kind="finance"] .rl-row',x=>x.map(e=>e.querySelector('b').textContent+':'+e.querySelector('.rl-n').textContent)),['استلم كاش:2','اعتمادات مستنياك:3','ورديات للمراجعة:1']);
  assert.match(await page.textContent('[data-rl-kind="finance"] .rl-sub'),/6 حاجات مستنياك/);
  if(shots){await page.screenshot({path:path.join(shots,'rl-finance-'+width+'.png'),fullPage:false});fs.writeFileSync(path.join(shots,'rl-finance.html'),(await page.content()).replace(/<script[\s\S]*?<\/script>/g,'').replace(/href="\/?assets/g,'href="'+root+'/assets'));}
  await page.click('[data-rl-kind="finance"] .rl-row .btn');await page.waitForSelector('#acc-page[data-sub="overview"]');
