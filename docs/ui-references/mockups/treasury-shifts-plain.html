@@ -1,0 +1,96 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: الخزن والورديات والتسليم</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.head h2{margin:0;font-size:20px;color:var(--brand)}
+.per{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}.per button{border:0;background:#fff;min-height:38px;padding:0 12px;font-weight:600;color:#475467}.per button.on{background:var(--brand);color:#fff}
+.need{border:1px solid #F6C9B6;background:#FFF8F4}.need h3{color:#B23B12}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+.row+.row{margin-top:8px}.row b{display:block;font-size:14px}.row small{display:block;color:#475467;font-size:12.5px;line-height:1.7}
+.row.bad{border-inline-start:4px solid var(--neg)}.row.wait{border-inline-start:4px solid var(--accent)}.row .amt{font-weight:700;font-size:16px;white-space:nowrap}
+.btn.or{background:var(--accent);border-color:var(--accent);color:#fff}.btn.bl{background:var(--brand);border-color:var(--brand);color:#fff}
+.main{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:stretch}
+.bal{background:linear-gradient(120deg,#0F369D,#1E4FC8);color:#fff;border-radius:18px;padding:16px;display:grid;gap:6px}.bal small{opacity:.88;font-size:12.5px}.bal b{font-size:30px}
+.kp3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.kp3 div{background:var(--soft);border-radius:14px;padding:12px;display:grid;gap:2px}.kp3 b{font-size:18px}.kp3 small{font-size:12px;color:#475467}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+.acts{display:flex;gap:8px;flex-wrap:wrap}.acts.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.acts.g2 .btn{justify-content:center}
+.drw{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.d{border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;grid-template-rows:auto auto 1fr auto;gap:6px;background:#fff;min-width:0}.d b{font-size:15px}.d small{color:#475467;font-size:12.5px}.d .btn{justify-content:center}
+.lh,.it{display:grid;grid-template-columns:150px minmax(0,1.3fr) 120px 110px 150px;gap:12px;align-items:center}
+.lh{padding:0 4px 6px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
+.it{padding:12px 4px;border-bottom:1px solid var(--line)}.it:last-child{border-bottom:0}
+.it small{display:block;color:var(--muted);font-size:12px}.it .m{font-weight:700}.why{display:block;color:var(--neg);font-size:12px}
+.diff{font-size:12px;border-radius:999px;padding:2px 8px;display:inline-block}.diff.n{background:#FCEDEB;color:var(--neg)}.diff.z{background:#E7F3EC;color:var(--pos)}
+details.all{border:1px dashed #C9D6F2}details.all summary{cursor:pointer;font-weight:700;color:var(--brand)}
+.mv{display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.mv:last-child{border-bottom:0}.mv small{display:block;color:var(--muted);font-size:12px}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cmp div{border-radius:14px;padding:12px;font-size:12.5px;line-height:1.8}.cmp .b{background:#FFF6F4;border:1px dashed #F3C6BB}.cmp .a{background:#F2FAF5;border:1px solid #CFE6D8}.cmp code{font-size:11px;background:#fff;border-radius:6px;padding:0 4px}
+@media(max-width:900px){.drw{grid-template-columns:repeat(2,minmax(0,1fr))}.main{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){.drw,.cmp{grid-template-columns:minmax(0,1fr)}.kp3{grid-template-columns:repeat(3,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr) auto}.row .btn{grid-column:1/-1;justify-content:center}.lh{display:none}.it{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.it .d1{order:3}.it .s{order:4;justify-self:end}.it .x{order:5;grid-column:1/-1}}
+</style></head><body><p class="note"><b>تصور — الخزن والورديات والتسليم</b> (شكل المدير المالي · بيانات تجريبية · مفيش حاجة بتتحفظ). نفس الإجراءات الموجودة، بس مترتبة: اللي مستنيك فوق، الخزينة الرئيسية في كارت واحد، الخزن المفتوحة كروت، والتسليمات والورديات بأسماء مفهومة.</p>
+<div class="wrap">
+<div class="card"><div class="head"><div><h2>الخزن والورديات</h2><p class="sub">آخر إقفال: 31 أكتوبر 2026</p></div><div class="acts"><div class="per"><button class="on">النهارده</button><button>الأسبوع ده</button><button>الشهر ده</button></div><button class="btn">فترة تانية…</button></div></div></div>
+
+<div class="card need"><h3>محتاج منك (3)</h3>
+<div class="row wait"><div><b>خزينة الاستقبال 1 طلبت تسلّم الكاش</b><small>منى سعيد · خلّصت الجرد 25 نوفمبر · 8:56 م · <span class="diff n">ناقص 30 ج</span></small></div><span class="amt">4,350.00 ج</span><button class="btn or">عدّ واستلم</button></div>
+<div class="row bad"><div><b>وردية خزينة الاستقبال 1 — 24 نوفمبر مستنية مراجعة</b><small>منى سعيد · اتقفلت بفرق: <span class="diff n">ناقص 20 ج</span> «نقص 20 جنيه فكة»</small></div><span class="amt">3,980.00 ج</span><button class="btn">راجع الوردية</button></div>
+<div class="row"><div><b>جرد الخزينة الرئيسية مستني مراجعة</b><small>آخر جرد 24 نوفمبر · 7:56 م · أ. هالة · <span class="diff n">ناقص 20 ج</span></small></div><span></span><button class="btn">راجع الجرد</button></div>
+</div>
+
+<div class="card"><h3>الخزينة الرئيسية</h3><div class="main">
+<div class="bal"><small>الرصيد دلوقتي</small><b>18,450.00 ج</b><small>الوردية مفتوحة من 25 نوفمبر · 12:56 م · المسؤول: أ. هالة (مدير مالي)</small><small>آخر حركة: استلام من خزينة الاستقبال 1 — 25 نوفمبر · 7:56 م</small></div>
+<div style="display:grid;gap:10px;align-content:start"><div class="kp3"><div><small>بداية الوردية</small><b>12,000.00</b></div><div><small>دخل</small><b class="pos">+ 9,800.00</b></div><div><small>خرج</small><b class="neg">− 3,350.00</b></div></div>
+<div class="acts g2"><button class="btn bl">جرد الخزينة الرئيسية</button><button class="btn">سند قبض / سند صرف</button><button class="btn">سجل السندات</button><button class="btn">كشف الخزينة</button></div></div>
+</div></div>
+
+<div class="card"><h3>خزن التحصيل المفتوحة</h3><p class="sub">كل خزينة في كارت: مين ماسكها، من امتى، وحالتها دلوقتي.</p><div class="drw" style="margin-top:10px">
+<div class="d"><b>خزينة الاستقبال 1</b><small>منى سعيد · من 25 نوفمبر · 1:56 م</small><span><span class="chip warn">خلّصت الجرد — مستنية استلامك</span></span><button class="btn or">عدّ واستلم</button></div>
+<div class="d"><b>خزينة الاستقبال 2</b><small>أحمد فتحي · من 25 نوفمبر · 3:56 م</small><span><span class="chip">شغالة — لسه ماجردتش</span></span><button class="btn">اطلب منه يسلّم</button></div>
+<div class="d"><b>خزينة الأسنان</b><small>مفيش وردية مفتوحة</small><span><span class="chip" style="background:var(--soft);color:#475467">مقفولة</span></span><span></span></div>
+</div></div>
+
+<div class="card"><h3>التسليمات للرئيسية</h3>
+<div class="lh"><span>اتطلب امتى</span><span>التسليم</span><span>المبلغ</span><span>الفرق</span><span>الحالة</span></div>
+<div class="it"><span class="d1">25 نوفمبر · 8:56 م</span><div><b>آخر وردية — خزينة الاستقبال 1</b><small>منى سعيد</small></div><span class="m">4,350.00 ج</span><span><span class="diff n">ناقص 30 ج</span></span><span class="s"><span class="chip warn">مستني استلامك</span></span></div>
+<div class="it"><span class="d1">24 نوفمبر · 6:56 م<small>اتستلم 8:56 م</small></span><div><b>آخر وردية — خزينة الاستقبال 1</b><small>منى سعيد · استلمها أ. هالة</small></div><span class="m">3,980.00 ج</span><span><span class="diff n">ناقص 20 ج</span></span><span class="s"><span class="chip ok">✓ اتسلّم</span></span></div>
+<div class="it"><span class="d1">23 نوفمبر · 7:56 م<small>اترفض 8:56 م</small></span><div><b>نص اليوم — خزينة الاستقبال 2</b><small>أحمد فتحي</small><span class="why">السبب: المبلغ ناقص 50 — أعد الجرد</span></div><span class="m">1,200.00 ج</span><span></span><span class="s"><span class="chip bad">✗ اترفض</span></span></div>
+</div>
+
+<div class="card"><h3>الورديات</h3>
+<div class="lh"><span>فتحت امتى</span><span>الخزينة · المسؤول</span><span>الجرد</span><span>الفرق</span><span>الحالة</span></div>
+<div class="it"><span class="d1">25 نوفمبر · 1:56 م</span><div><b>خزينة الاستقبال 1</b><small>منى سعيد</small></div><span class="m">4,350.00</span><span></span><span class="s"><span class="chip warn">مستنية الاستلام</span></span></div>
+<div class="it"><span class="d1">24 نوفمبر · 1:56 م</span><div><b>خزينة الاستقبال 1</b><small>منى سعيد · «نقص 20 جنيه فكة»</small></div><span class="m">3,980.00</span><span><span class="diff n">ناقص 20 ج</span></span><span class="s"><button class="btn">راجع الوردية</button></span></div>
+<div class="it"><span class="d1">23 نوفمبر · 1:56 م</span><div><b>خزينة الاستقبال 2</b><small>أحمد فتحي</small></div><span class="m">5,200.00</span><span><span class="diff z">مطابق ✓</span></span><span class="s"><span class="chip ok">✓ اتراجعت</span></span></div>
+<p class="sub" style="margin:10px 0 0">كل وردية بتفتح حركاتها لما تدوس عليها.</p></div>
+
+<details class="card all"><summary>كل الحركات في الخزن (3) — افتح التفاصيل</summary><div style="margin-top:8px">
+<div class="mv"><b>6:56 م</b><div><b>محمود علي — كشف باطنة</b><small>نقدي · إيصال 512 · منى سعيد</small></div><b class="pos">+400.00</b></div>
+<div class="mv"><b>7:26 م</b><div><b>سلمى حسن — أشعة</b><small>فيزا · نصيب المريض 150 من 500 · الباقي على التأمين</small></div><b class="pos">+150.00</b></div>
+<div class="mv"><b>8:26 م</b><div><b>استرداد — إلغاء خدمة</b><small>نقدي · منى سعيد</small></div><b class="neg">−300.00</b></div>
+</div></details>
+
+<div class="card"><h3>إيه اللي اتغير؟</h3><div class="cmp">
+<div class="b"><b>دلوقتي</b><br>• «آخر حركة» فيها <code>SHIFT-2b4d6f8b-0d2f-…</code> طويل<br>• «تسليم نهاية وردية <code>1a3c5e7a…</code>» في جدول التسليم<br>• عمود «الإجراء» فيه ملاحظات («استلمت 3980»)، و«فرق الجرد» في عمود لوحده<br>• جدول فاضي «مفيش حاجة هنا» أول الصفحة<br>• الكلمات: «دفتري»، «المتوقع / الجرد الفعلي»<br>• 4 أشكال للتاريخ في نفس الصفحة، والحالات من غير لون<br>• صفحة طولها حوالي 3,000 بكسل، والمهم مش فوق</div>
+<div class="a"><b>بعد</b><br>• «آخر حركة: استلام من خزينة الاستقبال 1 — 25 نوفمبر»<br>• «آخر وردية — خزينة الاستقبال 1» بدل الكود<br>• الفرق شارة ملوّنة (ناقص بالأحمر، مطابق بالأخضر)، والسبب تحت الحالة<br>• الجدول الفاضي اتشال<br>• «الرصيد دلوقتي» بدل «دفتري»<br>• «25 نوفمبر · 8:56 م» في كل حتة، والحالات ملوّنة<br>• «محتاج منك» فوق، و«كل الحركات» مقفولة لحد ما تفتحها</div>
+</div><p class="sub" style="margin-top:10px">نفس الصلاحيات ونفس الإجراءات. المحاسب اللي مش مراجِع مش هيشوف «محتاج منك» ولا «عدّ واستلم» ولا «كشف الخزينة». و«سند قبض / سند صرف» بيظهر بس للمسؤول عن الخزينة الرئيسية وهو فاتح ورديتها.</p></div>
+</div></body></html>
