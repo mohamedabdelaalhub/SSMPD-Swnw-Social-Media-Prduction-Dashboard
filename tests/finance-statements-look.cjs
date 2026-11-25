@@ -25,6 +25,7 @@ const data={financial_reports:{from:'2026-11-01',to:'2026-11-25',opening_approve
  const txt=s=>page.locator(s).first().innerText();
  // answer cards = the old formulas (revenue = Σ income, expenses = −Σ expense, net = revenue − expenses)
  const cards=await page.locator('[data-fr-pane="pl"] .fr-kpi b').allInnerTexts();assert.deepEqual(cards,['48,250.00','18,400.00','29,850.00']);
+ assert.equal(await txt('[data-fr-pane="pl"] .fr-foot'),'صافي الإيراد 48,250.00 — المصروفات 18,400.00 — صافي النتيجة 29,850.00','old summary line unchanged');
  assert((await txt('.fr-alert')).includes('الأرصدة الافتتاحية لم تُعتمد؛ القوائم تشمل الحركات المسجلة فقط ولا تمثل أرصدة تاريخية مكتملة.'),'opening warning text kept');
  // tree by parent_code: system 4110 is nested under 040101, its branch total rolls up; archived account absent
  assert.equal(await page.locator('.fr-node[data-fr-code="040101"] .fr-node[data-fr-code="4110"]').count(),1,'4110 sits under 040101 (parent link, not prefix)');
