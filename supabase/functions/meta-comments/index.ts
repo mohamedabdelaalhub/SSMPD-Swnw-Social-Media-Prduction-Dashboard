@@ -4,6 +4,8 @@ import { decideReply, clinicInfo, withContact } from "./ai.ts";
 import { syncMessages, sendManualMessage, suggestMessage } from "./messages.ts";
 import { cleanText, saveCommentRows, releaseStuckSending } from "./comment-store.ts";
 import { readFbThreads } from "./fb-comments.ts";
+import { gget, gpost } from "./graph.ts";
+import { createRunLog } from "./run-log.ts";
 import { isWhatsApp, queueText, queueTemplate, queueReturn, listTemplates, outboxStatus, submitTemplate, listTemplateRequests } from "./whatsapp.ts";
 
 // Meta Comments & Messages — inbox + autopilot replies.
@@ -19,7 +21,6 @@ import { isWhatsApp, queueText, queueTemplate, queueReturn, listTemplates, outbo
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const CRON_SECRET = Deno.env.get("META_PUBLISH_CRON_SECRET");
-const GRAPH = "https://graph.facebook.com/v26.0/";
 const MAX_POST_AGE_DAYS = 30;
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -40,19 +41,6 @@ function pageToken(brand: string): string | null {
 function reply(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 }
-async function gget(path: string, params: Record<string, string>) {
-  const u = new URL(GRAPH + path);
-  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
-  const r = await fetch(u.toString());
-  const d = await r.json().catch(() => ({}));
-  return { ok: r.ok && !d.error, data: d, error: d.error?.message as string | undefined };
-}
-async function gpost(path: string, params: Record<string, string>) {
-  const r = await fetch(GRAPH + path, { method: "POST", body: new URLSearchParams(params) });
-  const d = await r.json().catch(() => ({}));
-  return { ok: r.ok && !d.error, data: d, error: d.error?.message as string | undefined };
-}
-
 type Row = Record<string, unknown>;
 
 async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: any) {
@@ -319,7 +307,9 @@ async function autoSuggest(db: any, report: any) {
 }
 
 // One stage throwing must not skip the stages after it (a thrown error used to abort the whole run silently).
+let RUN_LOG: ReturnType<typeof createRunLog> | null = null; // set per run in runSync (trace of the last run in social_settings)
 async function stage(report: any, name: string, fn: () => Promise<unknown>) {
+  if (RUN_LOG) return RUN_LOG.run(name, report, fn);
   try { await fn(); } catch (e) { report.errors.push(`${name} threw: ${String((e as any)?.message || e).slice(0, 200)}`); }
 }
 // decideReply wrapped so a thrown error (network, bad JSON) is a normal failure we can record.
@@ -337,15 +327,25 @@ async function runSync(db: any, report: any) {
   for (const c of cfgs || []) byBrand[c.brand] ||= [];
   for (const j of jobs || []) (byBrand[j.brand] ||= []).push(j);
   const auto = await autopilotSettings(db);
-  for (const [brand, list] of Object.entries(byBrand)) {
+  RUN_LOG = createRunLog(db);
+  // Order matters when a run is cut short: comments of EVERY brand first (cheap, and a brand must not starve behind another brand's
+  // message sync), then approved replies, then the heavy private-message sync and the AI stages.
+  const brands = Object.entries(byBrand);
+  for (const [brand, list] of brands) {
     const cfg = (cfgs || []).find((c: any) => c.brand === brand);
     await stage(report, `${brand} syncBrand`, () => syncBrand(db, brand, cfg, list, report));
+  }
+  await stage(report, "sendApproved", () => sendApproved(db, report));
+  for (const [brand] of brands) {
+    const cfg = (cfgs || []).find((c: any) => c.brand === brand);
     const token = pageToken(brand);
     if (token) await stage(report, `${brand} syncMessages`, () => syncMessages(db, brand, cfg, token, report, auto.messages));
   }
   await stage(report, "autoReply", () => autoReply(db, report));
-  if (auto.comments) await stage(report, "autopilotComments", () => autopilotComments(db, report));
-  await stage(report, "sendApproved", () => sendApproved(db, report));
+  if (auto.comments) {
+    await stage(report, "autopilotComments", () => autopilotComments(db, report));
+    await stage(report, "sendApproved (autopilot)", () => sendApproved(db, report)); // replies the autopilot just approved go out in this run
+  }
 }
 
 async function sendApproved(db: any, report: any, onlyId?: string) {
