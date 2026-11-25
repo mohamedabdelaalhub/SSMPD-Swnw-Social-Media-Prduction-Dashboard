@@ -1,0 +1,73 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: مقدمات الحجز</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.head h2{margin:0;font-size:20px;color:var(--brand)}
+.btn.bl{background:var(--brand);border-color:var(--brand);color:#fff}.btn.or{background:var(--accent);border-color:var(--accent);color:#fff}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.need{border:1px solid #F6C9B6;background:#FFF8F4}.need h3{color:#B23B12}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}.row+.row{margin-top:8px}
+.row b{display:block;font-size:14px}.row small{display:block;color:#475467;font-size:12.5px;line-height:1.7}.row.wait{border-inline-start:4px solid var(--accent)}.amt{font-weight:700;font-size:16px;white-space:nowrap}
+.lh,.it{display:grid;grid-template-columns:130px minmax(0,1fr) 110px 120px 300px;gap:12px;align-items:center}
+.lh{padding:0 4px 6px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}.it{padding:12px 4px;border-bottom:1px solid var(--line)}.it:last-child{border-bottom:0}
+.it small{display:block;color:var(--muted);font-size:12px}.it .m{font-weight:700}
+.ref{display:inline-flex;gap:6px;align-items:center;font-size:11.5px;background:var(--soft);border-radius:8px;padding:2px 8px;color:#475467}.ref button{border:0;background:none;color:var(--brand);font-size:11.5px;padding:0}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.mini{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.mini:last-child{border-bottom:0}.mini small{display:block;color:var(--muted);font-size:12px}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cmp div{border-radius:14px;padding:12px;font-size:12.5px;line-height:1.8}.cmp .b{background:#FFF6F4;border:1px dashed #F3C6BB}.cmp .a{background:#F2FAF5;border:1px solid #CFE6D8}.cmp code{font-size:11px;background:#fff;border-radius:6px;padding:0 4px}
+@media(max-width:760px){.two,.cmp{grid-template-columns:minmax(0,1fr)}.row{grid-template-columns:minmax(0,1fr) auto}.row .acts{grid-column:1/-1}.lh{display:none}.it{grid-template-columns:minmax(0,1fr) auto;row-gap:6px}.it .d1{order:3}.it .s{order:4;justify-self:end}.it .x{order:5;grid-column:1/-1}}
+</style></head><body><p class="note"><b>تصور — مقدمات الحجز والاستردادات</b> (شكل المدير المالي · بيانات تجريبية · مفيش حاجة بتتحفظ). اسم المريض بدل الأكواد، اللي مستنيك فوق، وكل مقدم في سطر فيه حالته وزراره.</p>
+<div class="wrap">
+<div class="card"><div class="head"><div><h2>مقدمات الحجز</h2><p class="sub">المقدم فلوس المريض دفعها قبل الخدمة: بتتخصم من فاتورته، أو بترجعله.</p></div><div class="acts"><button class="btn bl">سجّل مقدم</button></div></div></div>
+
+<div class="card need"><h3>محتاج منك (3)</h3>
+<div class="row wait"><div><b>ياسمين خالد دفعت مقدم بإنستا باي — اتأكد إن الفلوس وصلت</b><small>25 نوفمبر · 2:10 م · رقم التحويل IP-77812 · سجّلته منى سعيد</small></div><span class="amt">500.00 ج</span><div class="acts"><button class="btn">بيانات الإيصال</button><button class="btn or">اتأكدت إنها وصلت</button></div></div>
+<div class="row wait"><div><b>طلب استرداد مقدم — مستني مراجعتك</b><small>مريض P-2026-000390 · نقدي · طلبه أحمد فتحي 24 نوفمبر</small></div><span class="amt">200.00 ج</span><div class="acts"><button class="btn or">راجع</button></div></div>
+<div class="row wait"><div><b>رسالة تأكيد حجز ياسمين خالد — مش متأكدين إنها اتبعتت</b><small>اتجهزت 25 نوفمبر · 3:00 م · افتح الواتساب واتأكد</small></div><span></span><div class="acts"><button class="btn">راجع الرسالة</button></div></div>
+</div>
+
+<div class="card"><h3>المقدمات</h3>
+<div class="lh"><span>اتدفع امتى</span><span>المريض</span><span>المبلغ</span><span>الحالة</span><span></span></div>
+<div class="it"><span class="d1">25 نوفمبر · 2:10 م</span><div><b>ياسمين خالد</b><small>إنستا باي · حجز 27 نوفمبر</small></div><span class="m">500.00 ج</span><span class="s"><span class="chip warn">مستني التأكد</span></span><div class="acts x"></div></div>
+<div class="it"><span class="d1">24 نوفمبر · 6:02 م</span><div><b>مريض P-2026-000412</b><small>نقدي · إيصال 733</small></div><span class="m">300.00 ج<small>فاضل منه 300</small></span><span class="s"><span class="chip ok">✓ اتقبض</span></span><div class="acts x"><button class="btn">استخدمه على فاتورة</button><button class="btn">استرداد</button></div></div>
+</div>
+
+<div class="two">
+<div class="card"><h3>الحجوزات اللي جاية</h3>
+<div class="mini"><div><b>ياسمين خالد — 27 نوفمبر · 6:30 م</b><small><span class="chip ok">مؤكَّد</span> <span class="ref">مرجع 9f2c7a1e <button>نسخ</button></span></small></div><button class="btn">جهّز رسالة تأكيد</button></div>
+<p class="sub" style="margin:8px 0 0">لما تسجّل خدمة لمريض جاي من حجز، انسخ «المرجع» وحطه في الفاتورة علشان المقدم يتخصم.</p></div>
+<div class="card"><h3>الاستخدامات والاستردادات</h3>
+<div class="mini"><div><b>استرداد مقدم — مريض P-2026-000390</b><small>24 نوفمبر · نقدي · <span class="chip warn">مستني المراجعة</span></small></div><b>200.00 ج</b></div>
+<div class="mini"><div><b>اتخصم على فاتورة — محمود علي</b><small>23 نوفمبر · كشف باطنة · <span class="chip ok">✓ اتخصم</span></small></div><b>150.00 ج</b></div>
+</div></div>
+
+<div class="card"><h3>الرسائل</h3>
+<div class="mini"><div><b>تأكيد حجز ياسمين خالد — 27 نوفمبر · 6:30 م</b><small>اتجهزت 25 نوفمبر · 3:00 م · <span class="chip warn">مش متأكدين إنها اتبعتت</span></small></div><button class="btn">راجع الرسالة</button></div>
+</div>
+
+<div class="card"><h3>إيه اللي اتغير؟</h3><div class="cmp">
+<div class="b"><b>دلوقتي</b><br>• عمود «المريض / مرجع الربط بالفاتورة» فيه <code>9f2c7a1e-44b0-4c1d-…</code><br>• فقرة طويلة: «المقدم التزام…»، «مسار الوكيل جاهز للربط»، «إقرار القناة»<br>• كلمات: «حالة المصدر»، «القناة»، «المتاح بعد الحجوزات»، «تحقق من الوصول»<br>• جدول وردية فاضي «مفيش حاجة هنا» أول الصفحة<br>• «إثبات الفيزا والتحويلات» جدول لوحده بعيد عن المقدم بتاعه<br>• مفيش تاريخ للمقدم، والموعد <code>2026-11-27 18:30</code><br>• الحالات من غير لون</div>
+<div class="a"><b>بعد</b><br>• اسم المريض (من الحجز)، والمرجع رقم قصير بزرار «نسخ»<br>• سطر واحد: «المقدم فلوس المريض دفعها قبل الخدمة…»<br>• «طريقة الدفع»، «فاضل منه»، «اتأكدت إنها وصلت»<br>• الجدول الفاضي اتشال<br>• التأكد من التحويل في «محتاج منك» ومعاه «بيانات الإيصال»<br>• «25 نوفمبر · 2:10 م» و«27 نوفمبر · 6:30 م»<br>• الحالات ملوّنة</div>
+</div><p class="sub" style="margin-top:10px">نفس الصلاحيات ونفس الإجراءات. اسم المريض للمقدم اللي مش من حجز (والاستردادات) محتاج يرجع من السيرفر؛ لو مش موجود هيفضل «مريض» برقمه لحد ما شات الحسابات يضيفه.</p></div>
+</div></body></html>
