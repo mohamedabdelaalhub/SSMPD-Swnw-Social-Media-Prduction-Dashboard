@@ -2,11 +2,12 @@
 const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsdom');
 (async()=>{const dom=new JSDOM('<!doctype html><body><div id="host"><div class="rx-actions"></div></div><main id="fin"></main></body>',{runScripts:'outside-only'});
  const w=dom.window,d=w.document,calls=[],ups=[],tick=()=>new Promise(r=>setTimeout(r,5));
- const status={open:true,shift_id:'sh1',register:'خزينة الاستقبال',allowance:500,max:300,spent:220,cash:900,items:[{key:'cleaning',label:'مناديل ومستلزمات نظافة'},{key:'electricity',label:'شحن كارت الكهرباء'}],
+ const status={open:true,shift_id:'sh1',register:'خزينة الاستقبال',allowance:500,max:300,spent:220,cash:900,items:[{key:'cleaning',label:'مناديل ومستلزمات نظافة'},{key:'electricity',label:'شحن كارت الكهرباء'},{key:'tips',label:'إكراميات',no_receipt:true}],
   expenses:[{at:'2030-01-01T08:15:00Z',item:'شحن كارت الكهرباء',amount:100,post_review:'ok'},{at:'2030-01-01T11:40:00Z',item:'<b>x</b>',amount:120,post_review:'pending'}]};
  const list={from:'2030-01-01',to:'2030-01-31',can_review:true,registers:[{id:'r0',name:'الرئيسية',kind:'main',allowance:0,max:0},{id:'r1',name:'خزينة الاستقبال',kind:'collection',allowance:500,max:300}],
   expenses:[{id:'e1',at:'2030-01-01T11:40:00Z',amount:120,item:'مناديل',reason:'مناديل — كرتونتين',vendor:'سوبر ماركت',receipt:'u/1.jpg',by:'دينا',register:'خزينة الاستقبال',post_review:'pending',own:false},
-   {id:'e2',at:'2030-01-01T08:15:00Z',amount:100,item:'كهرباء',reason:'كهرباء',receipt:'u/2.jpg',by:'محاسب',register:'خزينة الاستقبال',post_review:'pending',own:true}]};
+   {id:'e2',at:'2030-01-01T08:15:00Z',amount:100,item:'كهرباء',reason:'كهرباء',receipt:'u/2.jpg',by:'محاسب',register:'خزينة الاستقبال',post_review:'pending',own:true},
+   {id:'e3',at:'2030-01-01T07:00:00Z',amount:20,item:'إكراميات',reason:'إكراميات — عامل المياه',receipt:'no-receipt',by:'دينا',register:'خزينة الاستقبال',post_review:'pending',own:false}]};
  w.SSMPDToast={show:()=>{}};w.prompt=()=>'مفيش فاتورة واضحة';
  w.SSMPDDb={client:{rpc:async(n,a)=>{calls.push([n,JSON.parse(JSON.stringify(a))]);return {data:a.p_action==='status'?status:a.p_action==='list'?list:{id:'q1',amount:a.p.amount,left:200}};},
   auth:{getUser:async()=>({data:{user:{id:'uid-1'}}})},storage:{from:b=>({upload:async(p,f)=>{ups.push([b,p,f.name]);return {data:{path:p}};},createSignedUrl:async(p)=>({data:{signedUrl:'https://x/'+p}})})}}};
@@ -20,16 +21,23 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  S.decorate(ctx,'operations');await tick();const card=d.querySelector('[data-rse]');assert.ok(card);assert.match(card.textContent,/هامش الوردية/);assert.match(card.textContent,/280/);assert.ok(!card.querySelector('.rse-list b b'),'escaped');
  S.decorate(ctx,'operations');await tick();assert.equal(d.querySelectorAll('[data-rse]').length,1,'one card');
  S.decorate({...ctx,data:{workspace:{mode:'trial'}}},'operations');
- card.querySelector('[data-rse-spend]').click();const m=d.querySelector('.rx-modal');assert.equal(m.querySelectorAll('[name=item]').length,2);assert.equal(m.querySelector('[name=amount]').getAttribute('max'),'280');
+ card.querySelector('[data-rse-spend]').click();const m=d.querySelector('.rx-modal');assert.equal(m.querySelectorAll('[name=item]').length,3);assert.equal(m.querySelector('[name=amount]').getAttribute('max'),'280');
  assert.ok(m.querySelector('[name=receipt]').required);
  await assert.rejects(()=>saveFn({item:'cleaning',amount:'281',reason:'مناديل',receipt:{name:'r.jpg',size:10}},'k1'),/أكبر من المسموح \(280/);
  await assert.rejects(()=>saveFn({item:'cleaning',amount:'50',reason:'مناديل',receipt:{name:'r.jpg',size:0}},'k1'),/صوّر الإيصال/);
  const r=await saveFn({item:'cleaning',amount:'120',vendor:'سوبر',reason:'مناديل',receipt:{name:'r.JPG',size:100,type:'image/jpeg'}},'k1');
  assert.equal(ups[0][0],'shift-expense-receipts');assert.match(ups[0][1],/^uid-1\/\d+-[a-z0-9]+\.jpg$/);
  const sp=calls.find(c=>c[1].p_action==='spend')[1].p;assert.equal(sp.shift_id,'sh1');assert.equal(sp.item,'cleaning');assert.equal(sp.amount,120);assert.equal(sp.token,'k1');assert.equal(sp.receipt_path,ups[0][1]);
+ // «إكراميات» (no_receipt): picking it hides + un-requires the photo, shows the note; a short reason is refused; spend goes with no upload
+ const up=m.querySelector('[data-rse-up]'),tipR=m.querySelector('[name=item][value=tips]');tipR.checked=true;m.querySelector('form').dispatchEvent(new w.Event('change',{bubbles:true}));
+ assert.equal(up.hidden,true);assert.equal(m.querySelector('[name=receipt]').required,false);assert.equal(m.querySelector('[data-rse-noreceipt]').hidden,false);
+ m.querySelector('[name=item][value=cleaning]').checked=true;m.querySelector('form').dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal(up.hidden,false);assert.ok(m.querySelector('[name=receipt]').required);
+ await assert.rejects(()=>saveFn({item:'tips',amount:'20',reason:'عامل'},'k2'),/سبب الإكرامية/);
+ const nUp=ups.length;await saveFn({item:'tips',amount:'20',reason:'عامل توصيل المياه'},'k3');assert.equal(ups.length,nUp,'no upload for tips');
+ const tp=calls.filter(c=>c[1].p_action==='spend').pop()[1].p;assert.equal(tp.item,'tips');assert.equal(tp.receipt_path,'');
  // finance tab
  d.getElementById('fin').innerHTML=w.SSMPDFinanceControls.panel('shift-expenses',{},{});await tick();await tick();const box=d.querySelector('[data-shift-expenses]');
- assert.match(box.textContent,/مصروفات صغيرة صرفها الاستقبال/);assert.equal(box.querySelectorAll('[data-rse-ok]').length,1,'own expense cannot be reviewed');
+ assert.match(box.textContent,/مصروفات صغيرة صرفها الاستقبال/);assert.equal(box.querySelectorAll('[data-rse-ok]').length,2,'own expense cannot be reviewed');assert.match(box.textContent,/من غير إيصال/);assert.equal(box.querySelectorAll('[data-rse-file]').length,2,'no «عرض» for a tip');
  assert.equal(box.querySelectorAll('[data-rse-lim]').length,1,'main treasury not listed for limits');
  box.querySelector('[data-rse-no]').click();await tick();assert.deepEqual(calls.find(c=>c[1].p_action==='review')[1].p,{id:'e1',ok:false,note:'مفيش فاتورة واضحة'});
  // wiring

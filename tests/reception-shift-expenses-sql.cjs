@@ -83,5 +83,21 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   await db.exec(fs.readFileSync(R,'utf8'));
   assert.ok(!(await one("select pg_get_functiondef('clinic_finance.cash_line_guard()'::regprocedure) d")).d.includes('shift_expense'));
   await db.exec(fs.readFileSync(M,'utf8'));
+  // 20261126010000: صيانة / تليفونات (receipt required) + إكراميات (no receipt, reason ≥ 5) — as the cashier
+  const M2='supabase/migrations/20261126010000_shift_expense_more_items.sql',R2='supabase/rollbacks/20261126010000_shift_expense_more_items.rollback.sql';
+  await q("update clinic_finance.registers set shift_expense_allowance=2000,shift_expense_max=300 where id=$1",[RR]);
+  await db.exec(fs.readFileSync(M2,'utf8'));await assert.rejects(()=>db.exec(fs.readFileSync(M2,'utf8')),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+  await as(U1);st=await call('status',{});assert.equal(st.items.length,12);
+  assert.deepEqual(st.items.filter(x=>['maintenance','phones','tips'].includes(x.key)).map(x=>[x.key,x.account,!!x.no_receipt]),[['maintenance','5224',false],['phones','5224',false],['tips','5216',true]]);
+  await assert.rejects(()=>spend({item:'maintenance',receipt_path:''}),/صوّر الإيصال/);
+  r=await spend({item:'maintenance',amount:'60',reason:'تصليح حنفية الحمام'});
+  assert.equal((await one("select l.account from clinic_finance.lines l join clinic_finance.entries e on e.id=l.entry_id where e.source_id=$1 and l.debit>0",[r.id])).account,'5224');
+  await assert.rejects(()=>spend({item:'tips',amount:'20',reason:'عامل',receipt_path:''}),/سبب الإكرامية/);
+  await assert.rejects(()=>spend({item:'tips',amount:'20',reason:'عامل النظافة — توصيل مياه'}),/من غير إيصال/,'a receipt is refused for tips');
+  r=await spend({item:'tips',amount:'20',reason:'عامل توصيل المياه',receipt_path:''});
+  const tip=await one("select * from clinic_finance.requests where id=$1",[r.id]);assert.equal(tip.evidence,'no-receipt');assert.equal(tip.payload.item,'tips');assert.equal(tip.post_review,'pending');
+  assert.equal((await one("select l.account from clinic_finance.lines l join clinic_finance.entries e on e.id=l.entry_id where e.source_id=$1 and l.debit>0",[r.id])).account,'5216');
+  await db.exec(fs.readFileSync(R2,'utf8'));st=await call('status',{});assert.equal(st.items.length,9,'rollback restores the item list');
+  await assert.rejects(()=>spend({item:'tips',amount:'20',reason:'عامل توصيل المياه',receipt_path:''}),/البند/);
   console.log('PASS reception shift expenses');
  }catch(e){console.error('FAIL',e);process.exit(1);}})();
