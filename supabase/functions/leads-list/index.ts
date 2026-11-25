@@ -33,7 +33,7 @@ async function getCallerAdmin(req: Request) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: row } = await admin
     .from("admins")
-    .select("id, role, active, admin_extra_roles!admin_id(role)")
+    .select("id, role, active, has_leads_archive_access, admin_extra_roles!admin_id(role)")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
@@ -47,13 +47,18 @@ function roleIn(caller: { role: string; extra_roles?: string[] }, roles: string[
   return roles.includes(caller.role) || (caller.extra_roles ?? []).some((r) => roles.includes(r));
 }
 
+// owner 2026-11-25 «الليدز تشوف كلها»: an active admin with has_leads_archive_access sees and works ALL leads (like reception)
+function hasLeadsGrant(caller: { has_leads_archive_access?: boolean | null }): boolean {
+  return caller.has_leads_archive_access === true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "GET") return json({ error: "Method not allowed" }, 405);
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const allowed = roleIn(caller, ["reception", "customer_service", "general_manager", "super_admin"]);
+  const allowed = roleIn(caller, ["reception", "customer_service", "general_manager", "super_admin"]) || hasLeadsGrant(caller);
   if (!allowed) return json({ error: "مفيش صلاحية موديول الليدز" }, 403);
 
   const url = new URL(req.url);
@@ -196,7 +201,7 @@ Deno.serve(async (req) => {
 
   // خدمة العملاء تشوف بس الليدز المُسندة لها (RLS بتفرضها أصلاً، بس بنفلتر هنا كمان للوضوح)
   // — إلا لو عنده رول تاني بيديه صلاحية أوسع (استقبال/مدير عام/سوبر أدمن)
-  const hasWiderAccess = roleIn(caller, ["reception", "general_manager", "super_admin"]);
+  const hasWiderAccess = roleIn(caller, ["reception", "general_manager", "super_admin"]) || hasLeadsGrant(caller);
   if (!hasWiderAccess && roleIn(caller, ["customer_service"])) {
     query = query.eq("assigned_to", caller.id);
   }

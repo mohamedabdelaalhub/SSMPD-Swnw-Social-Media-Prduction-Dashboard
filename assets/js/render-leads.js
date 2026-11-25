@@ -63,6 +63,9 @@
   function isCS() { return !!(me && (window.SSMPDRoles.hasRole(me, "customer_service") || isManager())); }
   // صلاحية حذف الليد: سوبر أدمن دايماً، أو أي مستخدم مفعّلة له can_delete_leads
   // صراحة من لوحة "المستخدمون والصلاحيات" (نفس نمط has_archive_access)
+  // owner 2026-11-25 «الليدز تشوف كلها»: an active admin with «أرشيف الليدز» (has_leads_archive_access) sees and works ALL
+  // leads (server: leads-* edge functions + RLS 20261125150000) — so «أرشيف الليدز», «الحجوزات الفعلية» and «تحويلات الأطباء» show too
+  function hasLeadsGrant() { return !!(me && me.active !== false && me.has_leads_archive_access === true); }
   function canDeleteLead() { return !!(me && (window.SSMPDRoles.isSuperAdmin(me) || me.can_delete_leads)); }
 
   var SUB_SCREENS = [
@@ -97,6 +100,7 @@
       if (s.key === "bulk") return isReception();
       if (s.key === "dashboard") return isManager() || isCS();
       if (s.key === "missing_data") return isReception() || isCS() || isManager();
+      if (s.key === "archive" || s.key === "booked" || s.key === "referrals") return isManager() || hasLeadsGrant();
       return isManager();
     });
   }
@@ -121,6 +125,7 @@
     if (!state.subTab || !subs.some(function (s) { return s.key === state.subTab; })) {
       if (isReception() && !isManager()) state.subTab = "reception";
       else if (isCS() && !isManager()) state.subTab = "cs";
+      else if (hasLeadsGrant() && !isManager()) state.subTab = "archive";
       else state.subTab = subs[0] ? subs[0].key : "dashboard";
     }
 
@@ -1383,7 +1388,7 @@
     state.archive.search = term;
   }
 
-  window.SSMPDRenderLeads = { render: render, openSearch: openSearch, openLeadById: function (id) { openLeadModal(null, null, id, function () {}); } };
+  window.SSMPDRenderLeads = { nativeArchiveGrant: true, render: render, openSearch: openSearch, openLeadById: function (id) { openLeadModal(null, null, id, function () {}); } };
 })();
 
 

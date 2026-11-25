@@ -40,7 +40,7 @@ async function getCallerAdmin(req: Request) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: row } = await admin
     .from("admins")
-    .select("id, role, active, admin_extra_roles!admin_id(role)")
+    .select("id, role, active, has_leads_archive_access, admin_extra_roles!admin_id(role)")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
@@ -53,6 +53,11 @@ function roleIn(caller: { role: string; extra_roles?: string[] }, roles: string[
   return roles.includes(caller.role) || (caller.extra_roles ?? []).some((r) => roles.includes(r));
 }
 
+// owner 2026-11-25 «الليدز تشوف كلها»: an active admin with has_leads_archive_access sees and works ALL leads (like reception)
+function hasLeadsGrant(caller: { has_leads_archive_access?: boolean | null }): boolean {
+  return caller.has_leads_archive_access === true;
+}
+
 // استكمال بيانات عميل "ناقص بيانات" (اتضاف من رفع إكسيل ناقص اسم/تليفون) —
 // بعد ما الموظف يكلمه ويجيب الناقص، الدالة دي بتحدّث الاسم/التليفون وتحوّل
 // current_status من missing_data لـ new (يدخل دورة العمل العادية من هنا).
@@ -62,7 +67,7 @@ Deno.serve(async (req) => {
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const allowed = roleIn(caller, ["reception", "customer_service", "general_manager", "super_admin"]);
+  const allowed = roleIn(caller, ["reception", "customer_service", "general_manager", "super_admin"]) || hasLeadsGrant(caller);
   if (!allowed) return json({ error: "مفيش صلاحية موديول الليدز" }, 403);
 
   let body: any;
@@ -91,7 +96,7 @@ Deno.serve(async (req) => {
 
   const isManager = roleIn(caller, ["general_manager", "super_admin"]);
   const isOwnerCs = roleIn(caller, ["customer_service"]) && lead.assigned_to === caller.id;
-  if (!isManager && !isOwnerCs && !roleIn(caller, ["reception"])) {
+  if (!isManager && !isOwnerCs && !roleIn(caller, ["reception"]) && !hasLeadsGrant(caller)) {
     return json({ error: "مش مسموح تعدّل الليد ده" }, 403);
   }
 
