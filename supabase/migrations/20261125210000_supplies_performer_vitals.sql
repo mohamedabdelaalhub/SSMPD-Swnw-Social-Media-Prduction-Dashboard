@@ -146,7 +146,7 @@ begin
   sc := clinic_reception.performer_scope(p_workspace);
 
   if p_action = 'today' then
-    return jsonb_build_object('date', clinic_reception.today(), 'me', clinic_reception.admin_name(me), 'scope', sc,
+    res := jsonb_build_object('date', clinic_reception.today(), 'me', clinic_reception.admin_name(me), 'scope', sc,
       'locations', clinic_reception.performer_locations(p_workspace, sc),
       'items', coalesce((select jsonb_agg(jsonb_build_object('id', i.id, 'name', i.name, 'unit', i.unit, 'sale_price', i.sale_price,
                  'billable', i.patient_billable) order by i.name) from clinic_reception.items i where i.workspace_id = p_workspace), '[]'),
@@ -167,7 +167,17 @@ begin
          where o2.workspace_id = p_workspace and o2.status in ('ordered', 'completed')
            and (v2.opened_at at time zone 'Africa/Cairo')::date = clinic_reception.today()
            and clinic_reception.performer_dept_ok(sc, o2.snapshot->>'department')) x), '[]'));
-
+    -- «بصرف من» lists only the stores the gate accepts for at least one of the services shown (a nurse covering two sections
+    -- with only dental orders today sees the dental stores only); every order also carries its own allowed stores
+    if jsonb_array_length(res->'orders') > 0 then
+      res := jsonb_set(res, '{orders}', (select jsonb_agg(xo.j || jsonb_build_object('location_ids',
+               (select coalesce(jsonb_agg(xl.j->>'id'), '[]') from jsonb_array_elements(res->'locations') xl(j)
+                 where clinic_reception.consume_location_ok(p_workspace, xo.j->>'department', (xl.j->>'id')::uuid))))
+             from jsonb_array_elements(res->'orders') xo(j)));
+      res := jsonb_set(res, '{locations}', coalesce((select jsonb_agg(xl.j) from jsonb_array_elements(res->'locations') xl(j)
+               where exists (select 1 from jsonb_array_elements(res->'orders') xo(j) where xo.j->'location_ids' ? (xl.j->>'id'))), '[]'));
+    end if;
+    return res;
   elsif p_action = 'execute' then
     begin select * into o from clinic_reception.orders where workspace_id = p_workspace and id = nullif(p->>'order_id', '')::uuid for update;
     exception when invalid_text_representation then o := null; end;
