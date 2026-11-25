@@ -91,7 +91,8 @@
           (m.hidden ? '<em class="ins-hidden-label">مخفي عن الموظف</em>' : '') + '<div class="ins-text">' + esc(m.body) + '</div><small>' + esc(fmt(m.created_at)) + '</small>' + tools + '</div>';
       }).join('')
       : '<div class="ins-msg them"><div>اكتب سؤالك عن أي خطوة في الداشبورد، وإنستنكت هترد عليك هنا.</div></div>';
-    return '<aside class="ins-chat" data-ins-chat' + (st.chatOpen ? '' : ' hidden') + ' aria-label="محادثة مساعد إنستنكت"><div class="ins-chat-head"><b>' + (t ? (c.sees_all_threads ? esc(t.staff_name) : 'سؤالك') : 'سؤال جديد') + '</b>' +
+    var anim = st.animate; st.animate = false;   // the slide-up plays only when the chat opens, not on every redraw
+    return '<aside class="ins-chat' + (anim ? ' ins-anim' : '') + '" data-ins-chat' + (st.chatOpen ? '' : ' hidden') + ' aria-label="محادثة مساعد إنستنكت"><div class="ins-chat-head"><b>' + (t ? (c.sees_all_threads ? esc(t.staff_name) : 'سؤالك') : 'سؤال جديد') + '</b>' +
       '<button type="button" class="ins-x" data-ins-close aria-label="إغلاق">×</button></div><div class="ins-chat-msgs" data-ins-msgs>' + msgs + '</div>' +
       (canWrite ? '<div class="ins-chat-form"><div class="ins-warning" role="note" data-ins-warning>' + WARNING + '</div><textarea data-ins-input maxlength="' + (c.can_reply ? 4000 : 2000) + '" placeholder="' + (c.can_reply ? 'اكتب الرد…' : 'اكتب سؤالك…') + '"></textarea>' +
         '<div class="ins-chat-error" data-ins-chat-error role="alert" hidden></div><button type="button" class="btn primary sm" data-ins-send>' + (c.can_reply ? 'إرسال الرد' : 'إرسال') + '</button></div>' : '<div class="ins-chat-ro">عرض فقط</div>') + '</aside>';
@@ -100,7 +101,7 @@
 
   function wire() {
     var el = st.el;
-    el.querySelectorAll('[data-ins-ask]').forEach(function (b) { b.onclick = function () { st.thread = null; st.chatOpen = true; draw(); focusInput(); }; });
+    el.querySelectorAll('[data-ins-ask]').forEach(function (b) { b.onclick = function () { st.animate = !st.chatOpen; st.thread = null; st.chatOpen = true; draw(); focusInput(); }; });
     el.querySelectorAll('[data-ins-new-note]').forEach(function (b) { b.onclick = function () { st.editing = { target_role: 'all' }; draw(); }; });
     el.querySelectorAll('[data-ins-refresh]').forEach(function (b) { b.onclick = function () { load(); }; });
     el.querySelectorAll('[data-ins-edit]').forEach(function (b) { b.onclick = function () { st.editing = st.notes.find(function (n) { return n.id === b.getAttribute('data-ins-edit'); }) || null; draw(); }; });
@@ -160,6 +161,7 @@
     return rpc('instinct_thread', { p_thread: id }).then(function (t) {
       var row = st.threads.find(function (x) { return x.id === id; });
       t.staff_id = row ? row.staff_id : null; t.mine = !st.ctx.sees_all_threads || (row && row.staff_id === st.ctx.id);
+      if (!st.chatOpen) st.animate = true;
       st.thread = t; st.chatOpen = true; draw(); focusInput();
     }).catch(function (e) { showError(e.message); });
   }
@@ -168,17 +170,19 @@
     var why = patientReason(body); if (why) { chatError(why); return; }
     btn.disabled = true; chatError('');
     var c = st.ctx, call = c.can_reply ? rpc('instinct_reply', { p_thread: st.thread && st.thread.id, p_body: body }) : rpc('instinct_ask', { p_thread: st.thread ? st.thread.id : null, p_body: body });
-    call.then(function (r) { return load().then(function () { return openThread(r.thread_id); }); })
+    // refresh the lists without drawing, then draw once with the thread open (no flash of the page/chat in between)
+    call.then(function (r) { return fetchAll(true).then(function () { return openThread(r.thread_id); }); })
       .catch(function (e) { btn.disabled = false; chatError(e.message); });
   }
 
-  function load() {
+  function load() { return fetchAll(false); }
+  function fetchAll(quiet) {
     showError('');
     return rpc('instinct_context').then(function (c) {
       st.ctx = c; if (document.body) document.body.classList.toggle('ins-ai-only', c.kind === 'instinct');
       return Promise.all([rpc('instinct_notes_list'), rpc('instinct_threads_list'), rpc('instinct_notifications_list')]);
     }).then(function (r) {
-      st.notes = r[0] || []; st.threads = r[1] || []; st.notifs = r[2] || []; setBadge(st.ctx.unread); draw();
+      st.notes = r[0] || []; st.threads = r[1] || []; st.notifs = r[2] || []; setBadge(st.ctx.unread); if (!quiet) draw();
     }).catch(function (e) {
       if (st.el) st.el.innerHTML = '<section class="ins-page"><h2>مساعد إنستنكت</h2><div class="ins-error" role="alert">' + esc(e.message || 'تعذر التحميل') + '</div></section>';
     });
