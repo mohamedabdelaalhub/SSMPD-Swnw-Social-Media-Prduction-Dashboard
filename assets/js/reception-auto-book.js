@@ -56,6 +56,7 @@
     }else if(r.review_kind==='patient'||r.review_kind==='age'){
       a='<label class="rx-ab-age">السن <input type="number" min="0" max="130" inputmode="numeric" data-ab-age></label><button type="button" class="btn btn-primary" data-ab="new" data-id="'+esc(r.id)+'">افتح الملف وسجّل الموعد</button>';
     }else if(r.review_kind==='service'){
+      body='<p class="rx-ab-why" data-ab-svc-note>القايمة فيها خدمات الكشف والاستشارة والمتابعة بس. لو الحجز لإجراء أو زيارة منزلية، سجّله من «حجز موعد» واضغط «تجاهل الحجز ده».</p>';
       a=services(d)+'<button type="button" class="btn btn-primary" data-ab="service" data-id="'+esc(r.id)+'">احفظها للدكتور ده وسجّل</button>';
     }else if(r.review_kind==='slot'||r.review_kind==='full_day'){
       body=pickBox(r);a=r.review_kind==='slot'?'<button type="button" class="btn" data-ab="retry" data-id="'+esc(r.id)+'">جرّب تاني</button>':'';
