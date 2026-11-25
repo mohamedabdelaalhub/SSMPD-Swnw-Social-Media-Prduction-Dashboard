@@ -68,7 +68,7 @@ grant execute on function public.clinic_finance_count_check(text, jsonb) to auth
 
 -- ===== test =====
 do $$
-declare fm uuid; sa uuid; cu uuid; sid uuid; ex numeric; r jsonb; ok boolean; i int;
+declare fm uuid; sa uuid; cu uuid; sid uuid; rg uuid; ex numeric; r jsonb; ok boolean; i int;
 begin
   select a.user_id into fm from public.admins a where a.active and a.user_id is not null and a.role = 'financial_manager' order by a.id limit 1;
   select a.user_id into sa from public.admins a where a.active and a.user_id is not null and a.role = 'super_admin' order by a.id limit 1;
@@ -76,14 +76,16 @@ begin
    where s.status = 'open' and s.ended_at is null and not s.is_main and a.active and a.user_id is not null order by s.opened_at desc limit 1;
   if sid is null then
     -- no collection shift open right now (night): open one INSIDE this rolled-back transaction, as postgres, for a real reception
-    -- cashier with a login on a collection register — both free of any unreviewed shift, so the one-shift rules still hold
+    -- cashier with a login who has no unreviewed shift (the one-shift rules still hold)
+    -- every collection register is busy at night, so use a THROWAWAY register created inside this rolled-back transaction
+    insert into clinic_finance.registers(name, petty_limit, created_by, treasury_kind)
+    values ('تجربة جرد — تتلغي ' || left(gen_random_uuid()::text, 8), 0, (select id from public.admins where user_id = fm), 'unconfigured')
+    returning id into rg;
     insert into clinic_finance.shifts(register_id, cashier_id, token, opening_book)
-    select r.id, a.id, gen_random_uuid(), 0
-      from clinic_finance.registers r cross join public.admins a
-     where coalesce(r.treasury_kind, 'collection') <> 'main' and a.active and a.user_id is not null and a.role = 'reception'
-       and not exists (select 1 from clinic_finance.shifts x where x.register_id = r.id and x.status <> 'reviewed')
+    select rg, a.id, gen_random_uuid(), 0 from public.admins a
+     where a.active and a.user_id is not null and a.role = 'reception'
        and not exists (select 1 from clinic_finance.shifts x where x.cashier_id = a.id and x.status <> 'reviewed')
-     order by r.created_at, a.id limit 1
+     order by a.id limit 1
     returning id into sid;
     select a.user_id into cu from clinic_finance.shifts s join public.admins a on a.id = s.cashier_id where s.id = sid;
   end if;
