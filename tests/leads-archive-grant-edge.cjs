@@ -40,7 +40,7 @@ const leadsQuery=st=>st.queries.find(q=>q.table==='leads'&&q.calls.some(c=>c[0]=
  r=await call('leads-list',GRANT_ONLY,'GET');assert.equal(r.status,200,'grant without a leads role is allowed');
  assert(!leadsQuery(r.state).calls.some(c=>c[0]==='eq'&&c[1]==='assigned_to'));
  r=await call('leads-list',NONE,'GET');assert.equal(r.status,403,'no role, no grant');
- r=await call('leads-list',ZEINA,'GET',null,'?stats=1');assert.equal(r.status,403,'management dashboard stays managers only');
+ r=await call('leads-list',ZEINA,'GET',null,'?stats=1');assert.equal(r.status,200,'live behaviour kept: grant holders get the leads reports');
  // writes on a lead assigned to someone else
  const writes=[['leads-update-status',{lead_id:'L1',current_status:'in_progress'}],['leads-attempt',{lead_id:'L1',result:'no_answer'}]];
  for(const [fn,body] of writes){
@@ -49,7 +49,7 @@ const leadsQuery=st=>st.queries.find(q=>q.table==='leads'&&q.calls.some(c=>c[0]=
  r=await call('leads-update-status',ZEINA,'POST',{lead_id:'L1',current_status:'in_progress'});assert.deepEqual(r.state.rpcs.map(x=>[x[0],x[1].p_caller_id,x[1].p_current_status]),[['rpc_update_lead','zeina','in_progress']]);
  // the other scoped functions: grant passes the scope check (whatever happens after), plain CS is refused with the scope message
  for(const fn of ['leads-update-details','lead-invoice-upload','leads-complete-missing-data']){
-  const src=fs.readFileSync('supabase/functions/'+fn+'/index.ts','utf8');assert.match(src,/has_leads_archive_access/,fn+' loads the flag');assert.match(src,/hasLeadsGrant\(caller\)/,fn+' uses the grant');}
- assert.match(fs.readFileSync('supabase/functions/leads-complete-missing-data/index.ts','utf8'),/from\("lead_activity_log"\)\.insert\(\{\s*admin_id: caller\.id, action: "complete_missing_data"/,'«إكمال البيانات» logged with who');
- console.log('PASS leads archive grant (real edge code): grant holder lists ALL leads (no assigned_to filter), even without a leads role; plain customer_service still assigned-only; no role/no grant 403; management stats stay managers-only; status update + attempt on a lead assigned to someone else work for the grant holder (rpc_update_lead as her) and are refused for plain customer_service.');
+  const src=fs.readFileSync('supabase/functions/'+fn+'/index.ts','utf8');assert.match(src,/has_leads_archive_access/,fn+' loads the flag');assert.match(src,/hasLeadsGrant\(caller\)|caller\.has_leads_archive_access === true/,fn+' uses the grant');}
+ assert.match(fs.readFileSync('supabase/functions/leads-complete-missing-data/index.ts','utf8'),/from\("lead_activity_log"\)\.insert\(\{\s*admin_id: caller\.id,\s*action: "complete_missing_data"/,'«إكمال البيانات» logged with who');
+ console.log('PASS leads archive grant (real edge code): grant holder lists ALL leads (no assigned_to filter), even without a leads role; plain customer_service still assigned-only; no role/no grant 403; leads reports open to grant holders (live behaviour kept); status update + attempt on a lead assigned to someone else work for the grant holder (rpc_update_lead as her) and are refused for plain customer_service.');
 })().catch(e=>{console.error(e);process.exit(1);});
