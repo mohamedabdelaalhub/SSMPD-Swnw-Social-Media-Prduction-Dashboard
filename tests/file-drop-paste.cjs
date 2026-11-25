@@ -18,25 +18,28 @@ const html=`<!doctype html><html dir="rtl" lang="ar"><meta charset="utf-8"><meta
  await page.addScriptTag({content:fs.readFileSync('assets/js/file-drop-paste.js','utf8')});await page.waitForTimeout(50);
  const zoneOf=async id=>page.evaluate(id=>{const n=document.getElementById(id).__fdpZone;return !!(n&&n.isConnected);},id);
  assert.equal(await zoneOf('card'),true,'visible input gets a zone');assert(await page.evaluate(()=>!document.querySelector('label .fdp-zone')),'zone placed outside the label');assert.equal(await zoneOf('own'),false,'inputs with their own drop/paste are skipped');assert.equal(await zoneOf('hid'),false,'hidden input: no zone');
- assert((await page.locator('#f1 label + .fdp-zone').innerText()).includes('اسحب الملف هنا أو الصقه'));
+ assert((await page.locator('#f1 label + .fdp-zone').innerText()).includes('اختار ملف أو اسحبه هنا، أو الصقه'));
+ // card look: header + big zone + «ارفع ملف» + limits; the native picker is visually hidden but still focusable
+ assert((await page.locator('#f1 label + .fdp-zone .fdp-head').innerText()).includes('ارفع ملف'));
+ assert(await page.evaluate(()=>{const i=document.getElementById('card');return i.classList.contains('fdp-native')&&getComputedStyle(i).display!=='none';}));
  // drop
  await page.evaluate(()=>dropOn('card',[mkFile('card.png','image/png',2000)]));
  assert.equal(await page.evaluate(()=>document.getElementById('card').files[0].name),'card.png');assert.equal(await page.evaluate(()=>__ch.card),1,'change fired once');
- assert(await page.locator('#f1 label + .fdp-zone .fdp-file img').isVisible(),'thumbnail');assert((await page.locator('#f1 label + .fdp-zone .fdp-name').innerText()).includes('card.png'));
+ assert(await page.locator('#f1 label + .fdp-zone .fdp-row img').isVisible(),'thumbnail');assert((await page.locator('#f1 label + .fdp-zone .fdp-nm').innerText()).includes('card.png'));
  await page.evaluate(()=>dropOn('card',[mkFile('notes.txt','text/plain')]));
  assert.equal(await page.evaluate(()=>document.getElementById('card').files[0].name),'card.png','wrong type rejected');assert.equal((await page.locator('#f1 label + .fdp-zone .fdp-msg').innerText()).trim(),'نوع الملف ده مش مقبول هنا');
  // paste into a text field: left alone
  await page.focus('#txt');await page.evaluate(()=>pasteFiles([mkFile('x.png','image/png')]));assert.equal(await page.evaluate(()=>__ch.card),1,'paste in a text field is not hijacked');
  // modal open: paste routes to the one input in the modal that accepts the file
  await page.evaluate(()=>{document.getElementById('m').hidden=false;document.activeElement.blur();});await page.waitForTimeout(60);
- assert.equal(await zoneOf('pdf'),true,'zones added when the modal opens');
+ assert.equal(await zoneOf('pdf'),true,'zones added when the modal opens');assert((await page.locator('#img + .fdp-zone .fdp-head small').innerText()).includes('أقصى حجم 1 ميجا'));
  await page.evaluate(()=>pasteFiles([mkFile('','image/png',500)]));
  const img=await page.evaluate(()=>{const f=document.getElementById('img').files[0];return f&&f.name;});assert(img&&/^صورة-ملصقة-\d+\.png$/.test(img),'pasted screenshot named and routed to the image input: '+img);
  assert.equal(await page.evaluate(()=>__ch.pdf||0),0);assert.equal(await page.evaluate(()=>__ch.card),1,'never two inputs at once');
  // size limit
  await page.evaluate(()=>dropOn('img',[mkFile('big.png','image/png',2*1048576)]));assert.equal((await page.locator('#img + .fdp-zone .fdp-msg').innerText()).trim(),'الملف أكبر من 1 ميجا');
  // «الصق هنا» picks the target
- await page.focus('#pdf + .fdp-zone .fdp-paste');await page.evaluate(()=>pasteFiles([mkFile('r.pdf','application/pdf')]));assert.equal(await page.evaluate(()=>document.getElementById('pdf').files[0].name),'r.pdf');
+ await page.evaluate(()=>{document.getElementById('pdf').__fdpZone.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));pasteFiles([mkFile('r.pdf','application/pdf')],document.body);});assert.equal(await page.evaluate(()=>document.getElementById('pdf').files[0].name),'r.pdf');
  // multiple / single
  await page.evaluate(()=>dropOn('many',[mkFile('a.png','image/png'),mkFile('b.png','image/png')]));assert.equal(await page.evaluate(()=>document.getElementById('many').files.length),2);
  await page.evaluate(()=>{document.getElementById('m').hidden=true;});await page.evaluate(()=>dropOn('card',[mkFile('1.png','image/png'),mkFile('2.png','image/png')]));assert.equal(await page.evaluate(()=>document.getElementById('card').files.length),1,'single input keeps one');
