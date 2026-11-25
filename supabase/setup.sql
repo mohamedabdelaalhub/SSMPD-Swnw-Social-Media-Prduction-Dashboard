@@ -1135,8 +1135,8 @@ begin
   return v_row;
 end;
 $$;
-revoke all on function public.rpc_update_lead from public;
-grant execute on function public.rpc_update_lead to authenticated, service_role;
+revoke all on function public.rpc_update_lead from public, anon, authenticated;
+grant execute on function public.rpc_update_lead to service_role;  -- edge functions only (20261125160000)
 
 -- ============================================================
 --  10) تعدد الأدوار لكل مستخدم (Multi-Role Support) — ٢٠٢٦-٠٨-١٨
