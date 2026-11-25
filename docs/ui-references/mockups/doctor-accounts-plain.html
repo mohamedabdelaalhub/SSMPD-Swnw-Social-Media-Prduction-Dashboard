@@ -1,0 +1,78 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: حسابات الدكاترة</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.head h2{margin:0;font-size:20px;color:var(--brand)}
+.btn.bl{background:var(--brand);border-color:var(--brand);color:#fff}.btn.or{background:var(--accent);border-color:var(--accent);color:#fff}
+.kp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}.kp div{border-radius:16px;padding:12px;display:grid;gap:2px;background:var(--soft)}.kp b{font-size:22px}.kp small{font-size:12px;color:#475467}
+.g{color:var(--pos)}.o{color:#C2410C}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:4px 0 10px}.fl{display:flex;gap:8px;flex-wrap:wrap}.fl button{min-height:34px;border-radius:999px;border:1px solid var(--line);background:#fff;padding:0 12px;font-size:12.5px}.fl button.on{background:var(--tint);border-color:#C9D6F2;color:var(--brand);font-weight:700}
+.srch{min-height:38px;border:1px solid var(--line);border-radius:12px;padding:0 12px;min-width:220px;color:var(--muted);display:flex;align-items:center}
+.doc{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,.8fr)) auto;gap:12px;align-items:center;padding:14px 4px;border-bottom:1px solid var(--line)}.doc:last-child{border-bottom:0}
+.doc .nm b{display:block;font-size:15px;color:var(--brand)}.doc .nm small{display:block;color:var(--muted);font-size:12px}
+.doc .v b{display:block;font-size:16px}.doc .v small{display:block;font-size:11.5px;color:var(--muted)}
+.lh{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,.8fr)) auto;gap:12px;padding:0 4px 6px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.warnbar{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;background:#FFF6E8;border:1px solid #F5D9A8;border-radius:14px;padding:10px 14px;font-size:13px;color:#7A4A00}
+.modal{max-width:760px;margin:0 auto;width:100%;border-radius:22px;background:#fff;box-shadow:0 20px 60px rgba(15,54,157,.18);overflow:hidden}
+.mh{background:linear-gradient(120deg,#0F369D,#1E4FC8);color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center}.mh b{font-size:18px}
+.mb{padding:16px 18px;display:grid;gap:14px}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.sum div{border-radius:16px;padding:12px;display:grid;gap:2px}.sum .a{background:#E7F3EC}.sum .b{background:#FFF1E8}.sum .c{background:var(--soft)}.sum b{font-size:22px}.sum small{font-size:12px;color:#344054}
+.eq{font-size:12.5px;color:#475467;background:var(--soft);border-radius:12px;padding:8px 12px}
+.sec h4{margin:0 0 6px;font-size:14px}
+.inv{display:grid;grid-template-columns:120px minmax(0,1fr) 110px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.inv:last-child{border-bottom:0}.inv small{display:block;color:var(--muted);font-size:12px}.inv .m{font-weight:700;text-align:end}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cmp div{border-radius:14px;padding:12px;font-size:12.5px;line-height:1.8}.cmp .b{background:#FFF6F4;border:1px dashed #F3C6BB}.cmp .a{background:#F2FAF5;border:1px solid #CFE6D8}.cmp code{font-size:11px;background:#fff;border-radius:6px;padding:0 4px}
+@media(max-width:760px){.kp,.sum,.cmp{grid-template-columns:minmax(0,1fr)}.lh{display:none}.doc{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:8px}.doc .nm,.doc .acts{grid-column:1/-1}.inv{grid-template-columns:minmax(0,1fr) auto}.inv .dt{grid-column:1/-1}.srch{min-width:0;flex:1}}
+</style></head><body><p class="note"><b>تصور — حسابات الدكاترة</b> (بيانات تجريبية · مفيش حاجة بتتحفظ). كل دكتور في سطر: «له دلوقتي» و«مستني فلوس» و«اتصرف له»، وزرار صرف واحد. وكشف الدكتور بقى 3 أرقام بس بدل 6.</p>
+<div class="wrap">
+<div class="card"><div class="head"><div><h2>حسابات الدكاترة</h2><p class="sub">مين له فلوس يتصرف دلوقتي، ومين مستني فلوس المريض أو التأمين.</p></div></div>
+<div class="kp"><div><small>يتصرف دلوقتي</small><b class="g">5,550.00 ج</b><small>لـ 2 دكاترة</small></div><div><small>مستني فلوس المريض أو التأمين</small><b class="o">3,675.00 ج</b><small>8 فواتير لسه ماتسددتش</small></div><div><small>دكاترة ليهم حساب</small><b>3</b><small>غير اللي رصيدهم صفر</small></div></div></div>
+
+<div class="card"><div class="tools"><div class="fl"><button class="on">الكل 3</button><button>ليهم فلوس دلوقتي 2</button><button>مستنيين تحصيل 2</button></div><span class="srch">🔍 ابحث باسم الدكتور</span></div>
+<div class="lh"><span>الدكتور</span><span>يتصرف له دلوقتي</span><span>مستني فلوس</span><span>اتصرف له</span><span></span></div>
+<div class="doc"><div class="nm"><b>د. أحمد سامي</b><small>طلب صرف 6,200 ج مستني الاعتماد</small></div><div class="v"><b class="g">4,800.00</b></div><div class="v"><b class="o">1,400.00</b><small>3 فواتير</small></div><div class="v"><b>3,100.00</b></div><div class="acts"><button class="btn">كشف الحساب</button><button class="btn or">اصرف</button></div></div>
+<div class="doc"><div class="nm"><b>د. منى عادل</b><small>مفيش حاجة تتصرف دلوقتي</small></div><div class="v"><b>0.00</b></div><div class="v"><b class="o">2,275.00</b><small>5 فواتير</small></div><div class="v"><b>0.00</b></div><div class="acts"><button class="btn">كشف الحساب</button></div></div>
+<div class="doc"><div class="nm"><b>حساب دكتور قديم</b><small>مفيش اسم محفوظ — رقمه القديم OLD-DR-17 · مفيش عقد معتمد</small></div><div class="v"><b class="g">750.00</b></div><div class="v"><b>0.00</b></div><div class="v"><b>0.00</b></div><div class="acts"><button class="btn">كشف الحساب</button><button class="btn or">اصرف</button></div></div>
+</div>
+<div class="warnbar"><span>دكتور واحد متسجّل في الموارد البشرية ومالوش عقد.</span><button class="btn">افتح عقود الدكاترة</button></div>
+
+<div class="modal"><div class="mh"><b>كشف حساب — د. أحمد سامي</b><span>✕</span></div><div class="mb">
+<p class="sub" style="margin:0">آخر 3 شهور: من 27 أغسطس لـ 25 نوفمبر 2026</p>
+<div class="sum"><div class="a"><small>يتصرف له دلوقتي</small><b class="g">4,800.00 ج</b></div><div class="b"><small>مستني فلوس المريض أو التأمين</small><b class="o">1,400.00 ج</b></div><div class="c"><small>اتصرف له</small><b>3,100.00 ج</b></div></div>
+<div class="eq">إجمالي اللي ليه 6,200 = يتصرف دلوقتي 4,800 + مستني 1,400. الأتعاب بتتصرف بعد ما الفاتورة تتسدد كلها.</div>
+<div class="sec"><h4>يتصرف دلوقتي (1)</h4>
+<div class="inv"><span class="dt">25 نوفمبر</span><div><b>كشف باطنة — محمود علي</b><small>فاتورة 400 ج · نسبة الدكتور 40%</small></div><span class="m g">160.00 ج</span></div></div>
+<div class="sec"><h4>مستني فلوس (1)</h4>
+<div class="inv"><span class="dt">25 نوفمبر</span><div><b>إيكو — سلمى حسن</b><small>فاتورة 500 ج · اتحصّل 150 · <span class="chip warn">مستني التأمين 350 ج</span></small></div><span class="m o">200.00 ج</span></div></div>
+<div class="sec"><h4>اللي اتصرف (2)</h4>
+<div class="inv"><span class="dt">20 نوفمبر</span><div><b>صرف أتعاب — نقدي</b><small>اعتمده أ. هالة</small></div><span class="m">2,000.00 ج</span></div>
+<div class="inv"><span class="dt">5 نوفمبر</span><div><b>صرف أتعاب — تحويل بنكي</b><small>اعتمده أ. هالة</small></div><span class="m">1,100.00 ج</span></div></div>
+<div class="acts"><button class="btn or">اصرف 4,800 ج</button><button class="btn">اطبع الكشف</button></div>
+</div></div>
+
+<div class="card"><h3>إيه اللي اتغير؟</h3><div class="cmp">
+<div class="b"><b>دلوقتي</b><br>• عمود «الكود» فيه <code>EMP-000038</code> مكسور على سطرين، والدكتور القديم اسمه <code>OLD-DR-17</code><br>• 6 أعمدة فلوس: الرصيد، مستحق للصرف، بانتظار التحصيل، طلبات صرف معلّقة، المصروف…<br>• زرارين بيعملوا نفس الحاجة (الاسم و«فتح الحساب»)، وطريقتين للصرف<br>• الكشف فيه 6 مربعات، منهم اتنين نفس الرقم (مستحق الصرف الآن = المتاح للصرف)<br>• 3 فقرات شرح، وتواريخ زي <code>2026-11-25</code>، وأكواد زي <code>P-2026-000318</code> و<code>IM-ECHO</code></div>
+<div class="a"><b>بعد</b><br>• الاسم بس، والدكتور القديم «حساب دكتور قديم» ورقمه القديم سطر صغير<br>• 3 أرقام: يتصرف له دلوقتي / مستني فلوس / اتصرف له، وطلب الصرف المعلّق سطر صغير تحت الاسم<br>• زرار «كشف الحساب» وزرار «اصرف» بس، وطريقة صرف واحدة من سطر الدكتور<br>• الكشف 3 مربعات، وسطر واحد بيشرح الحسبة<br>• «25 نوفمبر»، واسم الخدمة واسم المريض بدل الأكواد</div>
+</div><p class="sub" style="margin-top:10px">نفس الصلاحيات ونفس الحسبة. اسم المريض في الكشف واسم الدكاترة القدام محتاجين يرجعوا من السيرفر؛ لو مش موجودين هيظهر «مريض» من غير كود لحد ما شات الحسابات يضيفهم.</p></div>
+</div></body></html>
