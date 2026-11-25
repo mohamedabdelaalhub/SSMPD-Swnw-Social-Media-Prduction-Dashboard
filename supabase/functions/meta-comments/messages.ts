@@ -5,6 +5,7 @@ import { decideReply, clinicInfo } from "./ai.ts";
 import { advance, serviceLabel, MESSAGES } from "./flow.mjs";
 import { reviewHandoffs } from "./review.ts";
 import { gget, gpostJson } from "./graph.ts";
+import { isCoolingDown, startCooldown } from "./cooldown.ts";
 
 const LEAD_NAME_PLACEHOLDER = "عميل ماسنجر";
 const WINDOW_MS = 23.5 * 3600e3; // stay inside Meta's 24h standard messaging window
@@ -17,11 +18,17 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
     // Instagram rejects nested messages on the conversations list ("reduce the amount of data"/timeout),
     // so there the messages of each conversation are read one by one.
     const ig = platform === "instagram";
+    // Instagram conversations kept timing out (20 s lost every run): 10 s limit, and after a timeout it is skipped for 30 minutes.
+    if (ig && await isCoolingDown(db, `${brand}:instagram-messages`)) continue;
     const r = await gget(`${pageId}/conversations`, {
       platform, fields: ig ? "id,updated_time" : "id,link,updated_time,messages.limit(6){id,message,from,created_time}",
       limit: ig ? "10" : "20", access_token: token
-    });
-    if (!r.ok) { report.errors.push(`${brand} ${platform} messages: ${r.error}`); continue; }
+    }, ig ? 10000 : 20000);
+    if (!r.ok) {
+      report.errors.push(`${brand} ${platform} messages: ${r.error}`);
+      if (ig && /timeout/i.test(String(r.error))) await startCooldown(db, `${brand}:instagram-messages`, 30, String(r.error));
+      continue;
+    }
     if (ig) for (const conv of r.data.data || []) {
       if (conv.updated_time && Date.now() - Date.parse(conv.updated_time) > 3 * 864e5) { conv.messages = { data: [] }; continue; }
       const mr = await gget(`${conv.id}/messages`, { fields: "id,message,from,created_time", limit: "6", access_token: token });

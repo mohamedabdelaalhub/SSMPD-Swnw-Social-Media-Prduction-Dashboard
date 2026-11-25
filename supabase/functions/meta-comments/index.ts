@@ -23,7 +23,7 @@ import { isWhatsApp, queueText, queueTemplate, queueReturn, listTemplates, outbo
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const CRON_SECRET = Deno.env.get("META_PUBLISH_CRON_SECRET");
 const MAX_POST_AGE_DAYS = 30;
-const RUN_BUDGET_MS = Number(Deno.env.get("META_COMMENTS_BUDGET_MS")) || 40000; // soft budget; the runtime stops a run after about a minute
+const RUN_BUDGET_MS = Number(Deno.env.get("META_COMMENTS_BUDGET_MS")) || 90000; // soft ceiling; a 70 s run finishes fine, this only stops a run that keeps growing
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
@@ -367,15 +367,16 @@ async function runSync(db: any, report: any) {
     const cfg = (cfgs || []).find((c: any) => c.brand === brand);
     await budgeted(`${brand} syncBrand`, () => syncBrand(db, brand, cfg, list, report));
   }
-  for (const [brand] of brands) {
-    const cfg = (cfgs || []).find((c: any) => c.brand === brand);
-    const token = pageToken(brand);
-    if (token) await budgeted(`${brand} syncMessages`, () => syncMessages(db, brand, cfg, token, report, auto.messages));
-  }
+  // Replies to comments come BEFORE the heavy private-message sync: with the message sync first (~40 s) autoReply/autopilot were skipped every run.
   await budgeted("autoReply", () => autoReply(db, report));
   if (auto.comments) {
     await budgeted("autopilotComments", () => autopilotComments(db, report));
     await budgeted("sendApproved (autopilot)", () => sendApproved(db, report)); // replies the autopilot just approved go out in this run
+  }
+  for (const [brand] of brands) {
+    const cfg = (cfgs || []).find((c: any) => c.brand === brand);
+    const token = pageToken(brand);
+    if (token) await budgeted(`${brand} syncMessages`, () => syncMessages(db, brand, cfg, token, report, auto.messages));
   }
 }
 
@@ -399,9 +400,12 @@ Deno.serve(async (req) => {
     const user = await db.auth.getUser(jwt);
     if (user.error || !user.data.user) return reply({ ok: false, error: "AUTH_REQUIRED" }, 401);
     // admin_extra_roles has two FKs to admins (admin_id, added_by), so it is read separately.
-    const { data: admin } = await db.from("admins").select("id,role").eq("user_id", user.data.user.id).eq("active", true).maybeSingle();
-    const { data: extra } = admin ? await db.from("admin_extra_roles").select("role").eq("admin_id", admin.id) : { data: [] };
-    const roles = admin ? [admin.role, ...(extra || []).map((r: any) => r.role)] : [];
+    // An account can have more than one active admins row (maybeSingle() then fails and the person was refused with 403): take all
+    // active rows, the first is the acting admin, and union their roles and extra roles.
+    const { data: adminRows } = await db.from("admins").select("id,role").eq("user_id", user.data.user.id).eq("active", true).order("created_at", { ascending: true }).limit(5);
+    const admin = (adminRows || [])[0] || null;
+    const { data: extra } = admin ? await db.from("admin_extra_roles").select("role").in("admin_id", (adminRows || []).map((a: any) => a.id)) : { data: [] };
+    const roles = admin ? [...(adminRows || []).map((a: any) => a.role), ...(extra || []).map((r: any) => r.role)] : [];
     if (!roles.some((r: string) => ["page_manager", "approver", "general_manager", "super_admin"].includes(r))) return reply({ ok: false, error: "FORBIDDEN" }, 403);
     if (body.action === "suggest") {
       if (typeof body.id !== "string") return reply({ ok: false, error: "id required" }, 400);
