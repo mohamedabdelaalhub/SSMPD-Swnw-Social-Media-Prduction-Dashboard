@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: الموارد البشرية — القوايم على الكمبيوتر والموبايل</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A;--gap:16px}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.7}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:var(--gap)}
+.card{background:#fff;border-radius:24px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:20px}
+.sub{font-size:12px;color:var(--muted);line-height:1.6}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:#fff;border-radius:18px;padding:6px;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.seg button{min-height:44px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:600;white-space:nowrap}
+.seg button.on{background:var(--brand);color:#fff}
+.view{display:none;gap:var(--gap)}.view.on{display:grid}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.head h2{margin:0;font-size:18px}
+.btn{min-height:44px;border-radius:14px;border:1px solid var(--line);background:#fff;padding:0 16px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-weight:600;color:var(--brand);justify-content:center}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.btn.main:hover{background:var(--accent);border-color:var(--accent)}
+.btn.sm{min-height:38px;padding:0 12px;font-size:13px}
+.btn.icon{width:40px;min-height:40px;padding:0}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.tile{background:var(--soft);border-radius:18px;padding:14px;display:grid;gap:4px}
+.tile small{font-size:12px;color:var(--muted)}.tile b{font-size:20px;color:var(--brand)}
+.tile.bad b{color:var(--neg)}
+@media(max-width:700px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.chips button{min-height:36px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 12px;font-size:13px;white-space:nowrap;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.chips button.on{background:var(--tint);border-color:#CFDCF8;color:var(--brand);font-weight:600}
+.chips i{font-style:normal;font-size:11px}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-blue{background:var(--tint);color:var(--brand)}.p-green{background:#E6F4EC;color:var(--pos)}.p-red{background:#FDECEA;color:var(--neg)}.p-orange{background:#FFF1E0;color:#9A4E00}.p-grey{background:#F1F2F5;color:#525B6F}
+/* table (desktop) */
+table{width:100%;border-collapse:collapse;margin-top:14px}
+th{font-size:12px;color:var(--muted);font-weight:600;text-align:start;padding:10px 12px;background:var(--soft)}
+th:first-child{border-start-start-radius:12px;border-end-start-radius:12px}th:last-child{border-start-end-radius:12px;border-end-end-radius:12px}
+td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+td.name{white-space:normal}td b{display:block}
+td .sub{display:block}
+.acts{display:flex;gap:6px;justify-content:flex-end;align-items:center}
+/* menu */
+.mwrap{position:relative;display:inline-block}
+.menu{position:absolute;inset-inline-end:0;top:calc(100% + 6px);z-index:10;background:#fff;border-radius:16px;box-shadow:0 16px 40px rgba(22,33,46,.18);padding:6px;min-width:190px;display:none}
+.menu.open{display:grid}
+.menu button{min-height:40px;border:0;background:none;border-radius:10px;text-align:start;padding:0 12px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.menu button:hover{background:var(--soft)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.menu .danger{color:var(--neg);font-weight:600}
+.menu .danger:hover{background:#FDECEA}
+/* cards (mobile) */
+.mlist{display:none;gap:10px;margin-top:14px}
+.mc{border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;gap:10px}
+.mc .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.mc .top b{font-size:15px}
+.mc dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:0;font-size:13px}
+.mc dt{color:var(--muted)}.mc dd{margin:0}
+.mc .bar{display:flex;gap:8px}.mc .bar .btn.main{flex:1}
+@media(max-width:700px){table.resp{display:none}.mlist{display:grid}}
+/* people grid */
+.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
+@media(max-width:900px){.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.pgrid{grid-template-columns:minmax(0,1fr)}}
+.pc{border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;gap:6px;background:#fff;text-align:start}
+.pc .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.pc b{font-size:15px}
+.pc.ended{background:#FAFAFB}
+details.ended-box{margin-top:14px;border:1px dashed var(--line);border-radius:18px;padding:12px 14px}
+details.ended-box summary{cursor:pointer;font-weight:600;color:var(--muted);min-height:28px}
+/* banner */
+.banner{border-radius:18px;background:#FFF4EC;border:1px solid #F8CDB5;padding:14px;display:grid;gap:10px;margin-top:14px}
+.banner h3{margin:0;font-size:15px;color:#9A3412;display:flex;align-items:center;gap:8px}
+.brow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border-radius:14px;padding:10px 12px}
+.left{color:var(--neg);font-weight:700}
+</style>
+</head>
+<body>
+<div class="note"><b>تصور — الموارد البشرية: القوايم على الكمبيوتر والموبايل</b> (بيانات تجريبية) · مفيش حاجة بتتحفظ. صغّر الشاشة تشوف شكل الموبايل، ودوس «⋯» جنب أي عهدة.</div>
+<div class="wrap">
+ <nav class="seg"><button class="on" data-v="custody">العهد</button><button data-v="people">الموظفون</button><button data-v="ins">التأمينات</button></nav>
+
+ <!-- CUSTODY -->
+ <section class="view on" id="v-custody"><div class="card">
+  <div class="head"><div><h2>العهد</h2><div class="sub">مين مستلم إيه ومن إمتى. اللي مرجعش بيظهر لوحده في مخالصة إنهاء الخدمة.</div></div><button class="btn main">+ عهدة جديدة</button></div>
+  <div class="tiles">
+   <div class="tile"><small>كل البنود</small><b>4</b></div>
+   <div class="tile"><small>مع موظفين</small><b>2</b><span class="sub">31,500 ج.م</span></div>
+   <div class="tile"><small>في المخزن</small><b>1</b></div>
+   <div class="tile bad"><small>مفقودة أو تالفة</small><b>1</b><span class="sub">4,000 ج.م</span></div>
+  </div>
+  <div class="chips" id="cchips"><button class="on" data-f="all">الكل <i>4</i></button><button data-f="holder">مع موظف <i>2</i></button><button data-f="store">في المخزن <i>1</i></button><button data-f="lost">مفقودة أو تالفة <i>1</i></button></div>
+  <table class="resp"><thead><tr><th>البند</th><th>القيمة</th><th>مع مين دلوقتي</th><th>من إمتى</th><th>الحالة</th><th></th></tr></thead><tbody id="ctable"></tbody></table>
+  <div class="mlist" id="ccards"></div>
+ </div></section>
+
+ <!-- PEOPLE -->
+ <section class="view" id="v-people"><div class="card">
+  <div class="head"><div><h2>الموظفون والأطباء</h2><div class="sub">الافتراضي: اللي شغالين واللي في إجازة. اللي انتهت علاقتهم تحت ومقفولين.</div></div><button class="btn main">+ موظف أو طبيب</button></div>
+  <div class="chips" id="pchips"></div>
+  <div class="pgrid" id="pgrid"></div>
+  <details class="ended-box"><summary id="endsum"></summary><div class="pgrid" id="pended"></div></details>
+ </div></section>
+
+ <!-- INSURANCE -->
+ <section class="view" id="v-ins"><div class="card">
+  <div class="head"><div><h2>التأمينات</h2><div class="sub">نوع التأمين ورقمه والاستقطاع وحصة المركز. الأرقام دي بتتقري لوحدها في حساب المرتب.</div></div><button class="btn main">+ اشتراك</button></div>
+  <div class="banner">
+   <h3><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>إخطارات تأمين قرب ميعادها (1)</h3>
+   <div class="brow"><div><b>كريم محمود عبدالرحمن</b><div class="sub">الاشتراك وقف 31 أكتوبر 2026 · لازم الإخطار قبل 30 نوفمبر 2026</div></div><div style="display:flex;gap:10px;align-items:center"><span class="left">فاضل 5 أيام</span><button class="btn sm main">كمّل الإخطار</button></div></div>
+  </div>
+  <div class="tiles">
+   <div class="tile"><small>اشتراكات شغالة</small><b>2</b></div>
+   <div class="tile"><small>استقطاع الموظفين في الشهر</small><b>250 ج.م</b></div>
+   <div class="tile"><small>حصة المركز في الشهر</small><b>300 ج.م</b></div>
+   <div class="tile"><small>المطلوب للتأمينات في الشهر</small><b>550 ج.م</b></div>
+  </div>
+  <div class="chips"><button class="on">الكل <i>3</i></button><button>شغال <i>2</i></button><button>واقف <i>1</i></button></div>
+  <table class="resp"><thead><tr><th>الموظف</th><th>النوع والرقم</th><th>استقطاع الموظف</th><th>حصة المركز</th><th>من إمتى</th><th>الحالة</th><th></th></tr></thead><tbody id="itable"></tbody></table>
+  <div class="mlist" id="icards"></div>
+ </div></section>
+</div>
+<script>
+var DOTS='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg>';
+var C=[
+ {n:'لاب توب Dell',c:'CUS-000001 · جهاز',v:'25,000 ج.م',h:'منى أحمد السيد',d:'1 أكتوبر 2026',st:'holder',main:'إرجاع للمخزن'},
+ {n:'موبايل الاستقبال',c:'CUS-000004 · جهاز',v:'6,500 ج.م',h:'سلمى رشاد',d:'15 نوفمبر 2026',st:'holder',main:'إرجاع للمخزن'},
+ {n:'مفتاح العيادة 3',c:'CUS-000002 · مفاتيح',v:'—',h:'المخزن',d:'5 أكتوبر 2026',st:'store',main:'تسليم لموظف'},
+ {n:'شاشة سامسونج',c:'CUS-000003 · جهاز',v:'4,000 ج.م',h:'كريم محمود (آخر واحد معاه)',d:'1 أكتوبر 2026',st:'lost',main:'لقيناها — رجّعها'}];
+var CST={holder:['مع موظف','p-blue'],store:['في المخزن','p-green'],lost:['مفقودة','p-red']};
+function menu(id,danger){return '<span class="mwrap"><button class="btn icon" data-m="'+id+'" aria-label="إجراءات تانية">'+DOTS+'</button><span class="menu" id="m'+id+'"><button>تحويل لموظف تاني</button><button>تعديل البيانات</button><button>السجل</button>'+(danger?'<hr>'+danger:'')+'</span></span>';}
+function cMenu(x,i){return menu('c'+i,x.st==='lost'?'':'<button class="danger">اتسجلت فقد</button><button class="danger">اتسجلت تلف</button>');}
+function drawC(f){var L=C.map((x,i)=>[x,i]).filter(([x])=>f==='all'||x.st===f);
+ document.getElementById('ctable').innerHTML=L.map(([x,i])=>'<tr><td class="name"><b>'+x.n+'</b><span class="sub">'+x.c+'</span></td><td>'+x.v+'</td><td>'+x.h+'</td><td>'+x.d+'</td><td><span class="pill '+CST[x.st][1]+'">'+CST[x.st][0]+'</span></td><td><div class="acts"><button class="btn sm main">'+x.main+'</button>'+cMenu(x,i)+'</div></td></tr>').join('');
+ document.getElementById('ccards').innerHTML=L.map(([x,i])=>'<div class="mc"><div class="top"><div><b>'+x.n+'</b><div class="sub">'+x.c+'</div></div><span class="pill '+CST[x.st][1]+'">'+CST[x.st][0]+'</span></div><div class="bar"><button class="btn sm main">'+x.main+'</button>'+cMenu(x,'m'+i)+'</div><dl><dt>مع مين</dt><dd>'+x.h+'</dd><dt>القيمة</dt><dd>'+x.v+'</dd><dt>من إمتى</dt><dd>'+x.d+'</dd></dl></div>').join('');}
+var P=[
+ {n:'منى أحمد السيد',c:'EMP-0001 · موظفة',j:'الاستقبال · موظفة استقبال',sh:'وردية صباحي · من 09:00 لـ 17:00',st:'active'},
+ {n:'كريم محمود عبدالرحمن',c:'EMP-0002 · موظف',j:'التمريض · ممرض',sh:'وردية ليلي · من 21:00 لـ 05:00',st:'active'},
+ {n:'د. سارة يوسف',c:'DOC-0003 · طبيبة متعاونة',j:'الأسنان · طبيبة أسنان',sh:'حسب مواعيد العيادة',st:'active'},
+ {n:'هالة مصطفى',c:'EMP-0005 · موظفة',j:'الحسابات · محاسبة',sh:'إجازة لحد 1 ديسمبر 2026',st:'leave'},
+ {n:'أحمد علي حسن',c:'EMP-0004 · موظف',j:'التمريض · ممرض',sh:'ناقصه: حساب الدخول والوردية',st:'setup'},
+ {n:'سلمى رشاد',c:'EMP-0009 · موظفة',j:'الاستقبال · موظفة استقبال',sh:'وردية مسائي · من 14:00 لـ 22:00',st:'active'},
+ {n:'ياسمين خالد',c:'EMP-0008 · موظفة',j:'التسويق · موظفة صفحات',sh:'آخر يوم 30 نوفمبر 2026',st:'ended'}];
+var PST={active:['يعمل','p-green'],leave:['إجازة','p-blue'],setup:['ملف مبدئي','p-orange'],ended:['انتهت العلاقة','p-grey']};
+var PF=[['work','شغالين وإجازة',x=>x.st==='active'||x.st==='leave'],['active','يعمل',x=>x.st==='active'],['leave','إجازة',x=>x.st==='leave'],['setup','ملف مبدئي',x=>x.st==='setup'],['all','كل الحاليين',x=>x.st!=='ended']],pf='work';
+function pcard(x){return '<button class="pc'+(x.st==='ended'?' ended':'')+'"><span class="top"><b>'+x.n+'</b><span class="pill '+PST[x.st][1]+'">'+PST[x.st][0]+'</span></span><span class="sub">'+x.c+'</span><span class="sub">'+x.j+'</span><span class="sub">'+x.sh+'</span></button>';}
+function drawP(){document.getElementById('pchips').innerHTML=PF.map(f=>'<button data-pf="'+f[0]+'" class="'+(f[0]===pf?'on':'')+'">'+f[1]+' <i>'+P.filter(f[2]).length+'</i></button>').join('');
+ var f=PF.find(x=>x[0]===pf)[2];document.getElementById('pgrid').innerHTML=P.filter(f).map(pcard).join('');
+ var E=P.filter(x=>x.st==='ended');document.getElementById('endsum').textContent='انتهت علاقتهم ('+E.length+')';document.getElementById('pended').innerHTML=E.map(pcard).join('');}
+var I=[
+ {n:'منى أحمد السيد',c:'EMP-0001',t:'تأمينات اجتماعية · 123456',e:'200 ج.م',s:'300 ج.م',d:'1 يناير 2026',st:'on'},
+ {n:'منى أحمد السيد',c:'EMP-0001',t:'تأمين طبي · MED-9',e:'50 ج.م',s:'—',d:'1 يناير 2026',st:'on'},
+ {n:'كريم محمود عبدالرحمن',c:'EMP-0002',t:'تأمينات اجتماعية · 778812',e:'100 ج.م',s:'150 ج.م',d:'وقف 31 أكتوبر 2026',st:'off'}];
+var IST={on:['شغال','p-green'],off:['واقف — الإخطار قبل 30 نوفمبر','p-orange']};
+function iMenu(x,i){return menu('i'+i,x.st==='on'?'<button class="danger">إيقاف الاشتراك</button>':'');}
+function iMain(x){return x.st==='on'?'تعديل':'كمّل الإخطار';}
+function drawI(){document.getElementById('itable').innerHTML=I.map((x,i)=>'<tr><td class="name"><b>'+x.n+'</b><span class="sub">'+x.c+'</span></td><td>'+x.t+'</td><td>'+x.e+'</td><td>'+x.s+'</td><td>'+x.d+'</td><td><span class="pill '+IST[x.st][1]+'">'+IST[x.st][0]+'</span></td><td><div class="acts"><button class="btn sm '+(x.st==='on'?'':'main')+'">'+iMain(x)+'</button>'+iMenu(x,i)+'</div></td></tr>').join('');
+ document.getElementById('icards').innerHTML=I.map((x,i)=>'<div class="mc"><div class="top"><div><b>'+x.n+'</b><div class="sub">'+x.t+'</div></div><span class="pill '+IST[x.st][1]+'">'+IST[x.st][0].split(' — ')[0]+'</span></div><div class="bar"><button class="btn sm main">'+iMain(x)+'</button>'+iMenu(x,'m'+i)+'</div><dl><dt>استقطاع الموظف</dt><dd>'+x.e+'</dd><dt>حصة المركز</dt><dd>'+x.s+'</dd><dt>من إمتى</dt><dd>'+x.d+'</dd></dl></div>').join('');}
+document.addEventListener('click',function(e){var m=e.target.closest('[data-m]');document.querySelectorAll('.menu.open').forEach(x=>{if(!m||x.id!=='m'+m.dataset.m)x.classList.remove('open');});
+ if(m){document.getElementById('m'+m.dataset.m).classList.toggle('open');return;}
+ var v=e.target.closest('[data-v]');if(v){document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b===v));document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v.dataset.v));return;}
+ var f=e.target.closest('[data-f]');if(f){document.querySelectorAll('#cchips button').forEach(b=>b.classList.toggle('on',b===f));drawC(f.dataset.f);return;}
+ var p=e.target.closest('[data-pf]');if(p){pf=p.dataset.pf;drawP();}});
+drawC('all');drawP();drawI();
+</script>
+</body>
+</html>

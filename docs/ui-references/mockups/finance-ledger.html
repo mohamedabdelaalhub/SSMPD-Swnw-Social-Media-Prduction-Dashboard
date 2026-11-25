@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: القيود وميزان المراجعة</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--faint:#98A2B3;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.7}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.wrap>*{min-width:0}
+.demo{display:flex;gap:6px;background:#E3E8F2;border-radius:16px;padding:6px;overflow-x:auto;align-items:center}
+.demo>span{color:var(--muted);font-size:12px;padding:0 8px;white-space:nowrap}
+.dtab{border:0;background:none;border-radius:12px;min-height:40px;padding:0 16px;font-weight:700;color:#475467;white-space:nowrap}.dtab.on{background:#fff;color:var(--brand);box-shadow:0 2px 8px rgba(15,54,157,.08)}
+.card{background:#fff;border-radius:24px;padding:20px;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.crumb{color:var(--muted);font-size:12px;display:flex;gap:6px;align-items:center}.crumb b{color:var(--brand)}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.head h1{margin:6px 0 0;font-size:26px;text-align:start}.head p{margin:6px 0 0;color:#475467;font-size:14px;line-height:1.7}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;background:var(--brand);color:#fff;border-radius:12px;min-height:44px;padding:0 18px;font-weight:700;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.ghost{border:1px solid var(--line);background:#fff;border-radius:12px;min-height:44px;padding:0 16px;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.sm{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.month{position:relative}
+.mchip{border:1px solid var(--line);background:var(--tint);color:var(--brand);border-radius:999px;min-height:40px;padding:0 14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.mlist{position:absolute;top:46px;inset-inline-start:0;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(15,54,157,.12);padding:6px;z-index:5;min-width:180px}
+.mlist button{display:block;width:100%;text-align:start;border:0;background:none;border-radius:10px;padding:9px 12px}.mlist button:hover,.mlist button.on{background:var(--soft);color:var(--brand);font-weight:700}
+.how{border:1px dashed #C9D3E6;border-radius:14px;padding:0 14px;background:#FAFBFE}
+.how summary{list-style:none;cursor:pointer;min-height:40px;display:flex;align-items:center;gap:8px;color:var(--brand);font-weight:700;font-size:13px}
+.how summary::-webkit-details-marker{display:none}.how summary i{font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--tint);display:grid;place-items:center;font-size:12px}
+.how ul{margin:0 0 12px;padding-inline-start:20px;color:#475467;line-height:1.9;font-size:13px}
+.sub{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap}
+.sub h2{margin:0;font-size:17px;display:flex;align-items:center;gap:8px}.sub small{color:var(--muted);font-size:12px;font-weight:400}
+.cnt{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 8px;border-radius:999px;background:#FFE7D1;color:#B54708;font-size:12px;font-weight:800}
+.todo{border:1.5px solid #FBD9B4;background:#FFFBF6}
+.muted-line{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:14px 18px;border-radius:18px;background:#F7F9FC;border:1px solid var(--line)}
+.muted-line svg{color:var(--faint)}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size12px;font-size:12px;font-weight:700;white-space:nowrap}
+.c-ok{background:#E6F4EC;color:var(--pos)}.c-wait{background:#FFF1E8;color:#B54708}.c-auto{background:var(--soft);color:#475467}.c-man{background:#EFE5FF;color:#5B21B6}.c-bad{background:#FDECEA;color:var(--neg)}
+.sums{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.sums span{background:var(--soft);border-radius:999px;padding:6px 12px;font-size:12px;color:#475467}.sums b{color:var(--ink)}
+table.t{width:100%;border-collapse:collapse}
+.t th{font-size:12px;color:var(--muted);font-weight:600;text-align:start;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.t td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.t td.n,.t th.n{text-align:end;white-space:nowrap}
+.t .ref{color:var(--muted);font-size:12px;direction:ltr;unicode-bidi:isolate}
+.amt b{font-weight:700}.amt small,.cur{color:var(--muted);font-size:11px;margin-inline-start:3px}
+.z{color:#C0C7D4}
+.t tfoot td{border-bottom:0;background:var(--soft);font-weight:800}
+.t tfoot tr td:first-child{border-radius:0 12px 12px 0}.t tfoot tr td:last-child{border-radius:12px 0 0 12px}
+.foot{color:var(--muted);font-size:12px;margin-top:10px}
+.empty{text-align:center;padding:40px 20px}
+.empty .ic{width:64px;height:64px;border-radius:20px;background:var(--tint);color:var(--brand);display:grid;place-items:center;margin:0 auto 14px}.empty .ic svg{width:30px;height:30px}
+.empty h2{margin:0 0 6px;font-size:18px}.empty p{margin:0 auto 18px;color:#475467;max-width:420px;line-height:1.8}
+.pane{display:none}.pane.on{display:grid;gap:16px}
+.mbar{display:none}
+@media (max-width:720px){
+ .card{padding:16px;border-radius:20px}.head h1{font-size:22px}.acts{width:100%}.acts .btn{flex:1;justify-content:center}
+ .mbar{display:flex;align-items:center;gap:10px;background:#fff;border-radius:16px;padding:10px 14px;box-shadow:0 4px 14px rgba(15,54,157,.06);font-weight:700}
+ .mbar span{color:var(--brand)}.mbar b{margin-inline-start:auto;font-size:13px}
+ .crumb{display:none}
+ table.t thead{display:none}
+ table.t,table.t tbody,table.t tfoot{display:block}
+ table.t tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;align-items:center}
+ table.t td{padding:0;border:0}
+ table.t td.x{display:none}
+ table.t td.k1{grid-column:1;font-weight:700}
+ table.t td.k2{grid-column:2;grid-row:1;text-align:end}
+ table.t td.k3,table.t td.k4{grid-column:1/-1;color:#475467;font-size:13px}
+ table.t td.act{grid-column:1/-1;margin-top:6px}table.t td.act .ghost,table.t td.act .btn{width:100%;justify-content:center}
+ table.t tfoot tr{background:var(--soft);border:0}table.t tfoot td{background:none}
+ table.t tfoot td.lbl{grid-column:1}table.t tfoot td.tot{grid-column:2;grid-row:1;text-align:end}
+}
+.mo{display:none}@media (max-width:720px){.mo{display:inline}}
+.sw{display:flex;align-items:center;gap:8px;font-size:13px;color:#475467;cursor:pointer}.sw input{width:20px;height:20px;accent-color:var(--brand)}
+#tb tr.zr{display:none}#tb.showzero tr.zr{display:table-row}#tb.showzero tr.zr td{color:var(--faint)}
+.je tr.jr{cursor:pointer}.je tr.jr:hover td{background:#FAFBFE}.je tr.jr.open td{background:var(--tint);border-bottom-color:transparent}
+.chev svg{color:var(--muted);transition:transform .15s}.je tr.open .chev svg{transform:rotate(180deg)}
+.je tr.jl td{background:#F7F9FD;padding:6px 12px 14px}
+.lines{display:grid;gap:6px;max-width:560px}.ln{display:flex;justify-content:space-between;gap:12px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px}.ln span:last-child{font-weight:700;white-space:nowrap}
+.lines .ghost{justify-self:start;margin-top:4px}
+@media (max-width:720px){
+ #tb.showzero tr.zr{display:grid}
+ .je tr.jl{display:block;border:0;padding:0 4px 8px;margin-top:-6px}.je tr.jl[hidden]{display:none}.je tr.jl td{display:block;background:none;padding:0}
+ .lines .ghost{width:100%;justify-content:center}
+ .t tfoot td.lbl{grid-column:1/-1}
+}
+@media (max-width:720px){
+ table.t td.k1{grid-row:1}
+ table.t td.k3{grid-row:2;grid-column:1}table.t td.k4{grid-row:3;grid-column:1}
+ table.t tr.c2 td.act{grid-column:2;grid-row:2/4;margin:0;align-self:end}table.t tr.c2 td.act .ghost{width:auto}
+ table.t tr{margin-bottom:8px}
+}
+.t .ref{white-space:nowrap}
+@media (max-width:720px){
+ table.t td.k1 .ref{display:block;font-weight:400;margin-top:2px}
+ table.t td.k3,table.t td.k4{text-align:start}
+}
+@media (max-width:720px){
+ table.t td.zm{display:none}
+ table.t td.k1 .ref{direction:rtl;text-align:start}
+ #tb tr.zr td.zm{display:none}
+}
+.mt{font-size:13px;font-weight:600;color:#475467;margin-top:6px}
+@media (max-width:720px){
+ .mo.mt{display:block}
+ .je tr.jr.open{background:var(--tint)}.je tr.jr.open td{background:none}
+ table.t.je td.k4{grid-column:2;grid-row:2;text-align:end}
+ .je tr.jr{grid-template-columns:minmax(0,1fr) auto}
+}
+</style>
+</head>
+<body>
+<p class="note">تصور — <b>«القيود وميزان المراجعة»</b>: صف إجمالي بيقول متوازن ولا لأ، الحسابات الصفرية مستخبية، والقيود جدول واحد مختصر بيتفتح على سطوره (أرقام تجريبية)</p>
+<div class="wrap">
+ <div class="demo"><span>للتجربة:</span><button class="dtab on" data-bal="ok">الميزان متوازن</button><button class="dtab" data-bal="bad">شكل الميزان لو فيه فرق</button></div>
+ <div class="mbar"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h16"/></svg><span>أقسام الحسابات</span><b>القيود وميزان المراجعة</b></div>
+ <section class="card">
+  <div class="crumb">الحسابات › المحاسبة › <b>القيود وميزان المراجعة</b></div>
+  <div class="head">
+   <div><h1>القيود وميزان المراجعة</h1><p>الميزان بيوريك رصيد كل حساب في الشهر، وتحت منه كل قيد اتسجل.</p></div>
+   <div class="acts"><button class="btn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>إضافة قيد يدوي</button><button class="ghost"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>تصدير Excel</button></div>
+  </div>
+  <div class="tools">
+   <div class="month"><button class="mchip" data-m><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>نوفمبر 2026</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div>
+   <details class="how"><summary><i>؟</i>إزاي بيشتغل؟</summary><ul><li>كل عملية في الخزينة أو الفواتير بتعمل قيد لوحدها (مكتوب جنبه «تلقائي»).</li><li>القيد اليدوي بيستنى اعتماد شخص تاني قبل ما يدخل الميزان.</li><li>الميزان لازم إجمالي المدين فيه يساوي إجمالي الدائن — لو مش متساويين هيظهر الفرق بالأحمر.</li></ul></details>
+  </div>
+ </section>
+
+ <section class="card">
+  <div class="sub"><h2>ميزان المراجعة <small>نوفمبر 2026</small></h2><label class="sw"><input type="checkbox" id="zt"> إظهار الحسابات الصفرية (2)</label></div>
+  <table class="t" id="tb"><thead><tr><th>الحساب</th><th class="n">أول الشهر</th><th class="n">مدين</th><th class="n">دائن</th><th class="n">آخر الشهر</th></tr></thead><tbody>
+   <tr><td class="k1">الخزينة <span class="ref">1111</span></td><td class="n x">5,000 <small class="cur">مدين</small></td><td class="n k3"><span class="mo">مدين </span>12,400</td><td class="n k4"><span class="mo">دائن </span>6,550</td><td class="n k2"><b>10,850</b> <small class="cur">مدين</small></td></tr>
+   <tr><td class="k1">البنك الأهلي <span class="ref">1121</span></td><td class="n x">20,000 <small class="cur">مدين</small></td><td class="n k3"><span class="mo">مدين </span>3,000</td><td class="n k4 zm"><span class="z">—</span></td><td class="n k2"><b>23,000</b> <small class="cur">مدين</small></td></tr>
+   <tr><td class="k1">العملاء <span class="ref">1131</span></td><td class="n x"><span class="z">—</span></td><td class="n k3"><span class="mo">مدين </span>3,180</td><td class="n k4"><span class="mo">دائن </span>2,550</td><td class="n k2"><b>630</b> <small class="cur">مدين</small></td></tr>
+   <tr><td class="k1">مستحقات الأطباء <span class="ref">2110</span></td><td class="n x"><span class="z">—</span></td><td class="n k3 zm"><span class="z">—</span></td><td class="n k4"><span class="mo">دائن </span>2,400</td><td class="n k2"><b>2,400</b> <small class="cur">دائن</small></td></tr>
+   <tr><td class="k1">رأس المال <span class="ref">3100</span></td><td class="n x">25,000 <small class="cur">دائن</small></td><td class="n k3 zm"><span class="z">—</span></td><td class="n k4 zm"><span class="z">—</span></td><td class="n k2"><b>25,000</b> <small class="cur">دائن</small></td></tr>
+   <tr><td class="k1">إيراد الكشوفات <span class="ref">4110</span></td><td class="n x"><span class="z">—</span></td><td class="n k3 zm"><span class="z">—</span></td><td class="n k4"><span class="mo">دائن </span><span data-rev>10,830</span></td><td class="n k2"><b data-rev>10,830</b> <small class="cur">دائن</small></td></tr>
+   <tr><td class="k1">مصروفات تشغيل <span class="ref">5110</span></td><td class="n x"><span class="z">—</span></td><td class="n k3"><span class="mo">مدين </span>1,350</td><td class="n k4 zm"><span class="z">—</span></td><td class="n k2"><b>1,350</b> <small class="cur">مدين</small></td></tr>
+   <tr><td class="k1">أتعاب الأطباء <span class="ref">5210</span></td><td class="n x"><span class="z">—</span></td><td class="n k3"><span class="mo">مدين </span>2,400</td><td class="n k4 zm"><span class="z">—</span></td><td class="n k2"><b>2,400</b> <small class="cur">مدين</small></td></tr>
+   <tr class="zr"><td class="k1">إيجار <span class="ref">5120</span></td><td class="n x"><span class="z">—</span></td><td class="n k3 zm"><span class="z">—</span></td><td class="n k4 zm"><span class="z">—</span></td><td class="n k2"><span class="z">—</span></td></tr>
+   <tr class="zr"><td class="k1">كهرباء <span class="ref">5130</span></td><td class="n x"><span class="z">—</span></td><td class="n k3 zm"><span class="z">—</span></td><td class="n k4 zm"><span class="z">—</span></td><td class="n k2"><span class="z">—</span></td></tr>
+  </tbody><tfoot><tr><td class="lbl">الإجمالي <span id="balchip" class="chip c-ok">متوازن ✓</span><div class="mo mt">مدين 22,330 · دائن <span data-cr>22,330</span></div></td><td class="n x">25,000</td><td class="n x">22,330</td><td class="n x" id="crtot">22,330</td><td class="x"></td></tr></tfoot></table>
+ </section>
+
+ <section class="card">
+  <div class="sub"><h2>القيود <small>نوفمبر 2026 · 6 قيود · دوس على أي قيد تشوف سطوره</small></h2></div>
+  <table class="t je"><thead><tr><th>التاريخ</th><th>رقم القيد</th><th>البيان</th><th class="n">المبلغ</th><th>المصدر</th><th></th></tr></thead><tbody>
+   <tr class="jr"><td class="k3">25 نوفمبر</td><td class="x"><span class="ref">JE-2026-0805</span></td><td class="k1">تحصيل كشف باطنة</td><td class="n amt k2"><b>300</b><small>ج</small></td><td class="k4"><span class="chip c-auto">تلقائي</span></td><td class="x chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></td></tr>
+   <tr class="jl" hidden><td colspan="6"><div class="lines"><div class="ln"><span>الخزينة</span><span>مدين 300</span></div><div class="ln"><span>إيراد الكشوفات</span><span>دائن 300</span></div><button class="ghost sm">فتح العملية الأصلية (INV-2026-00120)</button></div></td></tr>
+   <tr class="jr"><td class="k3">24 نوفمبر</td><td class="x"><span class="ref">JE-2026-0804</span></td><td class="k1">شراء مياه وأدوات نظافة</td><td class="n amt k2"><b>150</b><small>ج</small></td><td class="k4"><span class="chip c-auto">تلقائي</span></td><td class="x chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></td></tr>
+   <tr class="jl" hidden><td colspan="6"><div class="lines"><div class="ln"><span>مصروفات تشغيل</span><span>مدين 150</span></div><div class="ln"><span>الخزينة</span><span>دائن 150</span></div><button class="ghost sm">فتح طلب الصرف</button></div></td></tr>
+   <tr class="jr"><td class="k3">24 نوفمبر</td><td class="x"><span class="ref">JE-2026-0803</span></td><td class="k1">أتعاب د. خالد سمير — كشف باطنة</td><td class="n amt k2"><b>150</b><small>ج</small></td><td class="k4"><span class="chip c-auto">تلقائي</span></td><td class="x chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></td></tr>
+   <tr class="jl" hidden><td colspan="6"><div class="lines"><div class="ln"><span>أتعاب الأطباء</span><span>مدين 150</span></div><div class="ln"><span>مستحقات الأطباء · د. خالد سمير</span><span>دائن 150</span></div><button class="ghost sm">فتح حساب الدكتور</button></div></td></tr>
+   <tr class="jr"><td class="k3">23 نوفمبر</td><td class="x"><span class="ref">JE-2026-0802</span></td><td class="k1">إيداع نقدية في البنك الأهلي</td><td class="n amt k2"><b>3,000</b><small>ج</small></td><td class="k4"><span class="chip c-auto">تلقائي</span></td><td class="x chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></td></tr>
+   <tr class="jl" hidden><td colspan="6"><div class="lines"><div class="ln"><span>البنك الأهلي</span><span>مدين 3,000</span></div><div class="ln"><span>الخزينة</span><span>دائن 3,000</span></div><button class="ghost sm">فتح التحويل</button></div></td></tr>
+   <tr class="jr"><td class="k3">22 نوفمبر</td><td class="x"><span class="ref">JE-2026-0801</span></td><td class="k1">تحصيل تأمين — مصر للتأمين</td><td class="n amt k2"><b>700</b><small>ج</small></td><td class="k4"><span class="chip c-auto">تلقائي</span></td><td class="x chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></td></tr>
+   <tr class="jl" hidden><td colspan="6"><div class="lines"><div class="ln"><span>البنك الأهلي</span><span>مدين 700</span></div><div class="ln"><span>العملاء · مصر للتأمين</span><span>دائن 700</span></div><button class="ghost sm">فتح المطالبة CL-2026-031</button></div></td></tr>
+   <tr class="jr"><td class="k3">20 نوفمبر</td><td class="x"><span class="ref">JE-2026-0800</span></td><td class="k1">تسوية عجز خزينة الأسنان</td><td class="n amt k2"><b>20</b><small>ج</small></td><td class="k4"><span class="chip c-man">يدوي · اتعتمد</span></td><td class="x chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></td></tr>
+   <tr class="jl" hidden><td colspan="6"><div class="lines"><div class="ln"><span>مصروفات تشغيل · فروق خزينة</span><span>مدين 20</span></div><div class="ln"><span>الخزينة</span><span>دائن 20</span></div><button class="ghost sm">فتح فرق الخزينة</button></div></td></tr>
+  </tbody></table>
+  <p class="foot">ده كل قيود نوفمبر — مفيش صفحات تانية.</p>
+ </section>
+</div>
+<script>
+document.getElementById('zt').onchange=function(e){document.getElementById('tb').classList.toggle('showzero',e.target.checked)};
+document.querySelectorAll('.jr').forEach(function(r){r.onclick=function(){var l=r.nextElementSibling;l.hidden=!l.hidden;r.classList.toggle('open',!l.hidden)};});
+document.querySelectorAll('[data-bal]').forEach(function(t){t.onclick=function(){document.querySelectorAll('[data-bal]').forEach(function(x){x.classList.toggle('on',x===t)});var bad=t.dataset.bal==='bad',c=document.getElementById('balchip');c.className='chip '+(bad?'c-bad':'c-ok');c.textContent=bad?'فرق 150 ج — الدائن أقل، راجع القيود':'متوازن ✓';document.getElementById('crtot').textContent=bad?'22,180':'22,330';document.querySelector('[data-cr]').textContent=bad?'22,180':'22,330';document.querySelectorAll('[data-rev]').forEach(function(s){s.textContent=bad?'10,680':'10,830'});};});
+var MONTHS=['نوفمبر 2026','أكتوبر 2026','سبتمبر 2026','أغسطس 2026'];
+document.querySelectorAll('[data-m]').forEach(function(b){b.onclick=function(e){e.stopPropagation();var host=b.parentNode,old=host.querySelector('.mlist');document.querySelectorAll('.mlist').forEach(function(m){m.remove()});if(old)return;var l=document.createElement('div');l.className='mlist';l.innerHTML=MONTHS.map(function(m){return '<button class="'+(m===b.querySelector('span').textContent?'on':'')+'">'+m+'</button>'}).join('');l.onclick=function(ev){var x=ev.target.closest('button');if(!x)return;b.querySelector('span').textContent=x.textContent;l.remove();};host.appendChild(l);};});
+document.addEventListener('click',function(){document.querySelectorAll('.mlist').forEach(function(m){m.remove()})});
+</script>
+</body>
+</html>

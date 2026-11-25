@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: «جهات التعاقد»</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.wrap>*{min-width:0}
+.card{background:#fff;border-radius:24px;padding:20px;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.cap{margin:8px 4px -6px;font-size:13px;font-weight:800;color:var(--muted)}
+.hero{background:linear-gradient(120deg,#0F369D,#1E4FC9);color:#fff;border-radius:24px;padding:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.hero h2{margin:0;font-size:24px}.hero p{margin:4px 0 0;opacity:.85;font-size:13px}
+.wbtn{border:0;background:#fff;color:var(--brand);border-radius:12px;min-height:44px;padding:0 16px;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+.primary{border:0;background:var(--brand);color:#fff;border-radius:12px;min-height:44px;padding:0 18px;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+.ghost{border:1px solid var(--line);background:#fff;border-radius:12px;min-height:44px;padding:0 16px;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:8px}
+.danger{border:1px solid #F4C7BF;background:#fff;border-radius:12px;min-height:44px;padding:0 16px;font-weight:700;color:var(--neg);display:inline-flex;align-items:center;gap:6px}
+.tabs{display:flex;gap:6px;background:var(--soft);border-radius:16px;padding:6px;flex-wrap:wrap}
+.tab{border:0;background:none;border-radius:12px;min-height:44px;padding:0 18px;font-weight:700;color:#475467;white-space:nowrap}.tab.on{background:#fff;color:var(--brand);box-shadow:0 2px 8px rgba(15,54,157,.08)}
+.msel{display:none;width:100%;min-height:48px;border:1px solid var(--line);border-radius:14px;padding:0 12px;background:#fff;font-weight:700;color:var(--brand)}
+.mlab{display:none;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.qk{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+.q{border:1px solid var(--line);border-radius:18px;padding:14px 16px;background:#fff;text-align:start}
+.q span{display:block;color:var(--muted);font-size:13px;font-weight:600}.q b{display:block;font-size:26px;margin-top:4px}
+.q.warn b{color:#B54708}.q.bad b{color:var(--neg)}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-ok{background:#E6F4EC;color:var(--pos)}.p-soon{background:#FFF1E8;color:#B54708}.p-end{background:#FDECEA;color:var(--neg)}.p-wait{background:var(--tint);color:var(--brand)}.p-old{background:#F2F4F7;color:#667085}
+.tbl{border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-top:14px}
+.th,.tr{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) 200px minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,1.1fr);gap:12px;align-items:center;padding:12px 16px}
+.th{background:var(--soft);font-size:12px;color:var(--muted);font-weight:700}
+.tr{border-top:1px solid var(--line)}
+.tr .nm{font-weight:700;color:var(--brand)}.tr .nm small{display:block;color:var(--muted);font-weight:400;font-size:12px;direction:ltr;text-align:right}
+.lbl{display:none;font-size:11px;color:var(--muted);font-weight:600}
+.late{color:var(--neg);font-weight:700}.today{color:#B54708;font-weight:700}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;min-height:40px;padding:0 14px;font-weight:600;color:#475467}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.pane{display:none}.pane.on{display:block}
+/* entity file */
+.fh{background:linear-gradient(120deg,#0F369D,#1E4FC9);border-radius:20px;padding:12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.back{border:0;background:#fff;color:var(--brand);border-radius:999px;min-height:44px;padding:0 16px;font-weight:700;display:inline-flex;align-items:center;gap:8px;max-width:calc(100% - 60px)}
+.back span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center}
+.idn{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-top:16px}
+.idn h3{margin:0;font-size:22px}.idn p{margin:6px 0 0;color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.kpi{border:1px solid var(--line);border-radius:18px;padding:14px 16px}.kpi span{color:var(--muted);font-size:13px;font-weight:600}.kpi b{display:block;font-size:24px;margin-top:4px}.kpi small{color:var(--muted);font-size:12px}
+.ftabs{margin-top:4px}
+.box{border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:14px}
+.box h4{margin:0 0 12px;font-size:16px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.fact{background:var(--soft);border-radius:14px;padding:12px}.fact span{display:block;font-size:12px;color:var(--muted);font-weight:600}.fact b{display:block;margin-top:4px;font-size:15px}
+.fact b.big{font-size:22px;color:var(--brand)}
+.cov{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.cov span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600}
+.cov .x2{background:#FFF6F4;border-color:#F4C7BF;color:var(--neg)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.warnline{display:flex;gap:8px;align-items:center;background:#FFF6EC;border:1px solid #FBD9B4;border-radius:12px;padding:10px 12px;color:#9A4E00;font-size:13px;margin-top:12px}
+.dz{border:1px dashed #F4C7BF;border-radius:18px;padding:14px 16px;margin-top:14px;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.dz b{color:var(--neg)}.dz p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.fpane{display:none}.fpane.on{display:block}
+/* form */
+.grp{border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-top:14px}
+.grp legend{padding:0 8px;font-weight:800;color:var(--brand)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.f{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:13px}
+.f i{color:var(--neg);font-style:normal}
+.f input,.f select,.f textarea{min-height:44px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:#fff;font-weight:400}
+.f textarea{padding:10px 12px;min-height:72px}
+.f.err input,.f.err select{border-color:var(--neg);background:#FFF8F7}
+.f .msg{display:none;color:var(--neg);font-size:12px;font-weight:600}.f.err .msg{display:block}
+.f small{color:var(--muted);font-weight:400}
+.opt{color:var(--muted);font-weight:400;font-size:12px}
+.foot{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.errbox{margin-top:14px;background:#FFF6F4;border:1px solid #F4C7BF;color:#912018;border-radius:14px;padding:10px 14px;font-size:13px;font-weight:600}
+.hint{font-size:12px;color:var(--muted)}
+@media (max-width:760px){
+ .wrap{padding:0 10px}.card{padding:16px}.hero h2{font-size:20px}
+ .tabs.sw{display:none}.msel,.mlab{display:block}
+ .qk{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .th{display:none}
+ .tr{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"nm st" "a a" "b b" "c c";gap:6px;margin:10px;border:1px solid var(--line);border-radius:16px}
+ .tr>:nth-child(1){grid-area:nm}.tr>:nth-child(3){grid-area:st}.tr>:nth-child(2){display:none}.tr>:nth-child(4){grid-area:a}.tr>:nth-child(5){grid-area:b}.tr>:nth-child(6){grid-area:c}
+ .tr .lbl{display:inline;margin-inline-end:6px}
+ .kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.kpi{padding:10px}.kpi b{font-size:18px}.kpi span{font-size:11px}
+ .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .grid{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+<p class="note"><b>تصور</b> — «جهات التعاقد»: حالة العقد واضحة من أول نظرة، ملف الجهة أخف، والفورم من غير تكرار. نفس البيانات، الشكل والكلام بس اللي اتغيّروا. (بيانات تجريبية)</p>
+<div class="wrap">
+ <div class="cap">1 · الشاشة الرئيسية</div>
+ <div class="hero"><div><h2>جهات التعاقد</h2><p>الجهات والعقود وقوائم الأسعار</p></div><button class="wbtn" data-go="form"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>إضافة جهة</button></div>
+ <section class="card">
+  <div class="mlab">القسم</div>
+  <select class="msel" id="msel"><option value="ents">الجهات</option><option value="follow" selected>المتابعة</option><option value="prices">قوائم الأسعار</option><option value="map">ربط الخدمات</option><option value="rep">التقارير</option></select>
+  <div class="tabs sw" id="secs"><button class="tab" data-s="ents">الجهات</button><button class="tab on" data-s="follow">المتابعة</button><button class="tab" data-s="prices">قوائم الأسعار</button><button class="tab" data-s="map">ربط الخدمات</button><button class="tab" data-s="rep">التقارير</button></div>
+  <div class="qk">
+   <button class="q" data-s="ents"><span>عقود سارية</span><b>2</b></button>
+   <button class="q warn" data-s="ents"><span>تنتهي خلال 30 يوم</span><b>1</b></button>
+   <button class="q bad" data-s="follow"><span>متابعات متأخرة</span><b>2</b></button>
+   <button class="q" data-s="prices"><span>قوائم مستنية اعتماد</span><b>2</b></button>
+  </div>
+  <div class="pane" id="p-ents"><div class="tbl" id="ents"></div></div>
+  <div class="pane on" id="p-follow">
+   <div class="bar"><button class="chip on" data-fu="due">متأخر + النهارده</button><button class="chip" data-fu="next">الأسبوع الجاي</button><button class="chip" data-fu="all">كل المتابعات</button><span class="hint">مترتبة من الأقدم للأحدث</span></div>
+   <div class="tbl" id="follow"></div>
+  </div>
+  <div class="pane" id="p-prices"><p class="hint" style="margin-top:14px">قوائم الأسعار — زي ما هي (خارج التصور ده).</p></div>
+  <div class="pane" id="p-map"><p class="hint" style="margin-top:14px">ربط الخدمات — زي ما هو (خارج التصور ده).</p></div>
+  <div class="pane" id="p-rep"><p class="hint" style="margin-top:14px">التقارير — زي ما هي (خارج التصور ده).</p></div>
+ </section>
+
+ <div class="cap">2 · ملف الجهة</div>
+ <section class="card">
+  <div class="fh"><button class="back"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg><span>رجوع للجهات</span></button><button class="x" aria-label="إغلاق"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="idn"><div><h3>نقابة المهندسين بالجيزة</h3><p>النقابات · مركز · حدائق الأهرام، البوابة الثالثة</p></div><span class="pill p-soon">ينتهي خلال 15 يوم</span></div>
+  <div class="kpis"><div class="kpi"><span>مرضى مرتبطين</span><b>42</b></div><div class="kpi"><span>إيراد موثّق</span><b>18,500</b><small>ج.م</small></div><div class="kpi"><span>كاش باك مستحق</span><b>925</b><small>ج.م</small></div></div>
+  <div class="mlab">قسم من ملف الجهة</div>
+  <select class="msel" id="fsel"><option value="sum">ملخص الجهة</option><option value="con">العقود والمستندات</option><option value="pat">المرضى والإحالات</option><option value="acc">الحسابات والتسويات</option><option value="log">سجل المتابعة</option><option value="par">الشراكة والبوابة</option></select>
+  <div class="tabs sw ftabs" id="ftabs"><button class="tab on" data-t="sum">ملخص الجهة</button><button class="tab" data-t="con">العقود والمستندات</button><button class="tab" data-t="pat">المرضى والإحالات</button><button class="tab" data-t="acc">الحسابات والتسويات</button><button class="tab" data-t="log">سجل المتابعة</button><button class="tab" data-t="par">الشراكة والبوابة</button></div>
+  <div class="fpane on" id="t-sum">
+   <div class="box"><h4>العقد والأسعار <span class="pill p-soon">ينتهي خلال 15 يوم</span></h4>
+    <div class="facts">
+     <div class="fact"><span>المدة</span><b>1 يناير 2026 — 10 ديسمبر 2026</b></div>
+     <div class="fact"><span>الخصم</span><b class="big">15%</b></div>
+     <div class="fact"><span>كاش باك</span><b class="big">5%</b></div>
+     <div class="fact"><span>رقم العقد</span><b>CT-2026-01</b></div>
+    </div>
+    <div class="cov"><span>الكشوفات</span><span>التحاليل</span><span>الأشعة</span><span>العلاج الطبيعي</span><span class="x2">مش شامل: الأسنان</span></div>
+    <div class="warnline"><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/></svg>قايمة الأسعار «لائحة المركز 2026» مربوطة، بس الربط لسه مستني اعتماد.</div>
+    <div class="row"><button class="primary">تعديل العقد</button><button class="ghost">فتح قايمة الأسعار</button><button class="ghost">جرّب سعر خدمة</button></div>
+   </div>
+   <div class="box"><h4>المسؤول</h4><b>م. هشام فاروق</b> — مسؤول التعاقد · <bdi>01001234567</bdi></div>
+   <div class="dz"><div><b>إجراءات خطيرة</b><p>تعليق التعاقد بيوقف الخصم على المرضى الجداد. الحذف نهائي.</p></div><div class="row" style="margin:0"><button class="danger">تعليق التعاقد</button><button class="danger">حذف الجهة</button></div></div>
+  </div>
+  <div class="fpane" id="t-con"><div class="box"><h4>العقود والمستندات</h4><p class="hint">نفس الجدول الحالي، بنفس شكل الحالة والتاريخ.</p></div></div>
+  <div class="fpane" id="t-pat"><div class="box"><h4>المرضى والإحالات</h4><p class="hint">زي ما هو.</p></div></div>
+  <div class="fpane" id="t-acc"><div class="box"><h4>الحسابات والتسويات</h4><p class="hint">زي ما هو.</p></div></div>
+  <div class="fpane" id="t-log"><div class="box"><h4>سجل المتابعة</h4><p class="hint">زي ما هو.</p></div></div>
+  <div class="fpane" id="t-par"><div class="box"><h4>أدوات الشراكة ومؤشراتها <span class="hint">كود الشريك: <bdi>SWNW-ENG-01</bdi></span></h4>
+   <div class="kpis" style="margin-top:0"><div class="kpi"><span>الإحالات</span><b>12</b></div><div class="kpi"><span>خدمات خلصت</span><b>9</b></div><div class="kpi"><span>حافز مستحق</span><b>460</b><small>ج.م</small></div></div>
+   <p class="hint">المكان الوحيد اللي بيظهر فيه بلوك الشراكة — مش متكرر تحت كل تاب.</p></div></div>
+ </section>
+
+ <div class="cap">3 · إضافة جهة</div>
+ <section class="card" id="form">
+  <h3 style="margin:0">إضافة جهة تعاقد</h3>
+  <p class="hint">الخانات اللي عليها <b style="color:var(--neg)">*</b> لازم تتملي. الباقي تقدر تكمّله بعدين من ملف الجهة.</p>
+  <fieldset class="grp"><legend>بيانات الجهة</legend><div class="grid">
+   <label class="f err"><span>اسم الجهة <i>*</i></span><input placeholder="مثال: نقابة المعلمين بالجيزة"><span class="msg">اكتب اسم الجهة</span></label>
+   <label class="f"><span>التصنيف <i>*</i></span><select><option>النقابات</option><option>شركات التأمين</option><option>تعاقدات كاش</option></select></label>
+   <label class="f"><span>نوع الجهة <i>*</i></span><select><option>مركز</option><option>مدرسة</option><option>عيادة</option></select></label>
+   <label class="f"><span>العنوان <em class="opt">(اختياري)</em></span><input></label>
+  </div></fieldset>
+  <fieldset class="grp"><legend>المسؤول عندهم</legend><div class="grid">
+   <label class="f"><span>الاسم <i>*</i></span><input value="أ. رانيا عادل"></label>
+   <label class="f err"><span>رقم التليفون <i>*</i></span><input value="0100123" dir="ltr"><span class="msg">الرقم لازم يكون 11 رقم ويبدأ بـ 01</span></label>
+   <label class="f"><span>المسمى الوظيفي <em class="opt">(اختياري)</em></span><input></label>
+   <label class="f"><span>رقم واتساب <em class="opt">(اختياري)</em></span><input dir="ltr"></label>
+  </div></fieldset>
+  <fieldset class="grp"><legend>أول عقد</legend><div class="grid">
+   <label class="f"><span>يبدأ من <i>*</i></span><input type="date" value="2026-12-01"></label>
+   <label class="f"><span>ينتهي في <i>*</i></span><input type="date" value="2027-11-30"></label>
+   <label class="f"><span>حالة العقد <i>*</i></span><select><option>قيد التفاوض</option><option>تم التعاقد</option></select></label>
+   <label class="f"><span>نسبة الخصم % <em class="opt">(اختياري)</em></span><input value="15"></label>
+   <label class="f" style="grid-column:1/-1"><span>الخدمات المشمولة <em class="opt">(اختياري)</em></span><textarea>الكشوفات، التحاليل، الأشعة</textarea></label>
+  </div></fieldset>
+  <details class="grp"><summary style="font-weight:800;color:var(--brand);cursor:pointer">الكاش باك والتوقيع والمتابعة <span class="opt">(اختياري — تقدر تكمّله بعدين)</span></summary></details>
+  <div class="errbox">فيه خانتين محتاجين تتظبطوا قبل الحفظ — متعلّمين بالأحمر فوق.</div>
+  <div class="foot"><button class="primary">حفظ الجهة</button><button class="ghost">إلغاء</button></div>
+ </section>
+</div>
+<script>
+var TODAY='2026-11-25',M=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+function d(s){if(!s)return '<span class="hint">مش محدد</span>';var p=s.split('-');return '<bdi>'+(+p[2])+' '+M[+p[1]-1]+' '+p[0]+'</bdi>';}
+function days(a,b){return Math.round((Date.parse(b)-Date.parse(a))/864e5);}
+var R=[
+ {n:'نقابة المهندسين بالجيزة',code:'SWNW-ENG-01',cat:'النقابات',st:'active',end:'2026-12-10',fu:'2026-11-20',who:'م. هشام فاروق'},
+ {n:'شركة النيل للتأمين الطبي',cat:'شركات التأمين',st:'negotiating',end:'2027-06-30',fu:'2026-11-25',who:'أ. منى فؤاد'},
+ {n:'مدرسة الياسمين الدولية',cat:'جهات حكومية',st:'active',end:'2026-09-30',fu:'2026-11-12',who:'أ. وليد صبري'},
+ {n:'صيدلية الهدى',code:'SWNW-PH-2',cat:'تعاقدات كاش',st:'active',end:'2027-03-01',fu:'2026-12-01',who:'د. ياسمين علي'},
+ {n:'شركة الواحة للبترول',cat:'شركات بترول',st:'suspended',end:'2027-01-15',fu:'2026-12-15',who:'م. طارق نبيل'},
+ {n:'جمعية رعاية الأيتام',cat:'تحويلات الأطباء',st:'',end:'',fu:'',who:''}
+];
+function pill(r){if(!r.st)return '<span class="pill p-old">بدون عقد</span>';if(r.st==='negotiating')return '<span class="pill p-wait">قيد التفاوض</span>';if(r.st==='suspended')return '<span class="pill p-old">معلّق</span>';
+ if(r.end&&r.end<TODAY)return '<span class="pill p-end">منتهي</span>';var l=r.end?days(TODAY,r.end):999;if(l<=30)return '<span class="pill p-soon">ينتهي خلال '+l+' يوم</span>';return '<span class="pill p-ok">ساري</span>';}
+function fu(r){if(!r.fu)return '<span class="hint">مش محدد</span>';if(r.fu<TODAY)return '<span class="late">'+d(r.fu)+' · متأخر '+days(r.fu,TODAY)+' يوم</span>';if(r.fu===TODAY)return '<span class="today">النهارده</span>';return d(r.fu);}
+var head='<div class="th"><span>الجهة</span><span>التصنيف</span><span>حالة العقد</span><span>نهاية العقد</span><span>المتابعة الجاية</span><span>المسؤول</span></div>';
+function tr(r){return '<div class="tr"><div class="nm">'+r.n+(r.code?'<small>'+r.code+'</small>':'')+'</div><div>'+r.cat+'</div><div>'+pill(r)+'</div><div><span class="lbl">نهاية العقد</span>'+d(r.end)+'</div><div><span class="lbl">المتابعة</span>'+fu(r)+'</div><div><span class="lbl">المسؤول</span>'+(r.who||'<span class="hint">مش محدد</span>')+'</div></div>';}
+document.getElementById('ents').innerHTML=head+R.map(tr).join('');
+var fmode='due';
+function drawF(){var lim=new Date(Date.parse(TODAY)+7*864e5).toISOString().slice(0,10);var rows=R.filter(function(r){if(!r.fu)return false;if(fmode==='due')return r.fu<=TODAY;if(fmode==='next')return r.fu>TODAY&&r.fu<=lim;return true;}).sort(function(a,b){return a.fu<b.fu?-1:1;});
+ document.getElementById('follow').innerHTML=head+(rows.length?rows.map(tr).join(''):'<p class="hint" style="padding:16px">مفيش متابعات هنا.</p>');}
+drawF();
+document.querySelectorAll('[data-fu]').forEach(function(b){b.onclick=function(){document.querySelectorAll('[data-fu]').forEach(function(x){x.classList.toggle('on',x===b);});fmode=b.dataset.fu;drawF();};});
+function sec(s){document.querySelectorAll('#secs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.s===s);});document.querySelectorAll('.pane').forEach(function(x){x.classList.toggle('on',x.id==='p-'+s);});document.getElementById('msel').value=s;}
+document.querySelectorAll('[data-s]').forEach(function(b){b.onclick=function(){sec(b.dataset.s);};});
+document.getElementById('msel').onchange=function(){sec(this.value);};
+function ft(t){document.querySelectorAll('#ftabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.t===t);});document.querySelectorAll('.fpane').forEach(function(x){x.classList.toggle('on',x.id==='t-'+t);});document.getElementById('fsel').value=t;}
+document.querySelectorAll('[data-t]').forEach(function(b){b.onclick=function(){ft(b.dataset.t);};});
+document.getElementById('fsel').onchange=function(){ft(this.value);};
+document.querySelector('[data-go]').onclick=function(){document.getElementById('form').scrollIntoView({behavior:'smooth'});};
+</script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: الموارد البشرية — التنقل الجديد و«محتاج منك النهارده»</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A;--gap:16px}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.7}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:var(--gap)}
+.card{background:#fff;border-radius:24px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:20px}
+.sub{font-size:12px;color:var(--muted);line-height:1.6}
+/* header */
+.hdr{background:linear-gradient(120deg,#0F369D,#1E4FC8);color:#fff;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.hdr h1{margin:0;font-size:20px}.hdr .sub{color:rgba(255,255,255,.8)}
+.month{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border-radius:14px;padding:6px 6px 6px 10px}
+.month span{font-size:12px;color:rgba(255,255,255,.85);white-space:nowrap}
+.month select{min-height:36px;border:0;border-radius:10px;padding:0 10px;background:#fff;color:var(--ink);font-weight:600}
+.month[hidden]{display:none}
+/* navigation */
+.nav{display:grid;gap:10px;padding:12px}
+.groups,.subs{display:flex;gap:8px;flex-wrap:wrap}
+.groups button{min-height:44px;border:0;border-radius:14px;background:var(--soft);padding:0 14px;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.groups button.on{background:var(--brand);color:#fff}
+.groups i{font-style:normal;min-width:22px;height:22px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;display:inline-grid;place-items:center;padding:0 6px}
+.subs{border-top:1px solid var(--line);padding-top:10px}
+.subs button{min-height:36px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:0 12px;font-size:13px;color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.subs button.on{background:var(--tint);border-color:#CFDCF8;color:var(--brand);font-weight:600}
+.subs i{font-style:normal;font-size:11px;color:var(--accent);font-weight:700}
+@media(max-width:700px){
+ .groups,.subs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -12px;padding-inline:12px}
+ .groups::-webkit-scrollbar,.subs::-webkit-scrollbar{display:none}
+ .nav{position:sticky;top:0;z-index:5}
+}
+/* today strip */
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.st{border:0;background:var(--soft);border-radius:18px;padding:14px;text-align:start;display:grid;gap:4px}
+.st small{font-size:12px;color:var(--muted)}.st b{font-size:22px;color:var(--brand)}
+.st.bad b{color:var(--neg)}.st.warn b{color:#B4540A}
+@media(max-width:700px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* inbox */
+.ttl{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.ttl h2{margin:0;font-size:17px;display:flex;align-items:center;gap:8px}
+.rows{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:18px;padding:12px 14px;border-inline-start:4px solid var(--accent)}
+.row.calm{border-inline-start-color:#CFDCF8}
+.ic{width:40px;height:40px;border-radius:12px;background:var(--tint);color:var(--brand);display:grid;place-items:center}
+.row b{font-size:14px}.row .sub{display:block}
+.cnt{min-width:34px;height:30px;border-radius:999px;background:#FFF1E0;color:#9A4E00;font-weight:700;display:grid;place-items:center;padding:0 10px}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.btn.main:hover{background:var(--accent);border-color:var(--accent)}
+@media(max-width:700px){
+ .row{grid-template-columns:minmax(0,1fr) auto;padding:12px}
+ .row .ic{display:none}
+ .row>div{grid-column:1;grid-row:1 / span 2;align-self:center}
+ .row .cnt{grid-row:1;grid-column:2;align-self:start}
+ .row .btn{grid-column:2;min-height:36px;padding:0 12px}
+}
+.done{display:flex;gap:8px;align-items:center;color:var(--pos);font-size:13px;margin-top:12px}
+/* section placeholders */
+.view{display:none;gap:var(--gap)}.view.on{display:grid}
+.crumb{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.crumb button{border:0;background:none;color:var(--brand);font-weight:600;padding:0;min-height:32px}
+.ph h2{margin:0 0 6px;font-size:18px}
+.ph .box{margin-top:12px;border:2px dashed var(--line);border-radius:18px;padding:18px;color:var(--muted);text-align:center;font-size:13px}
+.hub-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.hub-h h2{margin:0}
+.live{display:inline-flex;align-items:center;gap:6px;background:#E6F4EC;color:var(--pos);border-radius:999px;padding:0 12px;min-height:30px;font-size:12px;font-weight:600;white-space:nowrap}
+.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pos)}
+.itabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.itabs span{min-height:36px;border-radius:12px;padding:0 12px;display:inline-flex;align-items:center;background:var(--soft);font-size:13px;color:var(--muted);white-space:nowrap}
+.itabs span.on{background:var(--brand);color:#fff;font-weight:600}
+.tag{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.tag.old{background:#F4F4F6;color:var(--muted);text-decoration:line-through}
+details.chg summary{cursor:pointer;font-weight:600;color:var(--brand);min-height:32px}
+details.chg ul{margin:8px 0 0;padding-inline-start:18px;line-height:1.9;font-size:13px}
+</style>
+</head>
+<body>
+<div class="note"><b>تصور — الموارد البشرية: تنقل أبسط و«محتاج منك النهارده»</b> (بيانات تجريبية) · مفيش حاجة بتتحفظ. دوس على المجموعات فوق، أو «افتح» جنب أي سطر.</div>
+<div class="wrap">
+ <section class="card hdr">
+  <div><h1>الموارد البشرية</h1><div class="sub">الأربعاء 25 نوفمبر 2026</div></div>
+  <label class="month" id="month" hidden><span>شهر المتابعة</span><select><option>نوفمبر 2026</option><option>أكتوبر 2026</option><option>سبتمبر 2026</option></select></label>
+ </section>
+
+ <nav class="card nav" aria-label="أقسام الموارد البشرية">
+  <div class="groups" id="groups"></div>
+  <div class="subs" id="subs"></div>
+ </nav>
+
+ <!-- HOME -->
+ <section class="view on" id="v-inbox">
+  <div class="card">
+   <div class="ttl"><h2>النهارده في المركز</h2><button class="btn" data-go="live">افتح الحضور اللحظي</button></div>
+   <div class="strip">
+    <button class="st" data-go="live"><small>موجودين دلوقتي</small><b>5</b><span class="sub">من 7 مجدولين</span></button>
+    <button class="st warn" data-go="live"><small>متأخرين</small><b>1</b><span class="sub">بعد السماح</span></button>
+    <button class="st bad" data-go="live"><small>غايبين</small><b>1</b><span class="sub">لسه ماوصلوش</span></button>
+    <button class="st" data-go="live"><small>إجازة أو إذن</small><b>1</b><span class="sub">معتمدة</span></button>
+   </div>
+  </div>
+  <div class="card">
+   <div class="ttl"><h2>محتاج منك النهارده</h2><span class="sub" id="left">8 حاجات مستنياك</span></div>
+   <div class="rows" id="rows"></div>
+   <div class="done" id="alldone" hidden><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg> خلصت كل اللي مستنيك النهارده.</div>
+  </div>
+  <div class="card">
+   <details class="chg"><summary>إيه اللي اتغير عن الشكل الحالي؟</summary>
+    <ul>
+     <li>الـ14 زرار بقوا 5 مجموعات، وتحت كل مجموعة أقسامها بس. على الموبايل سطر واحد بيتسحب بالصباع، فالمحتوى بيبان من أول شاشة.</li>
+     <li>«ملخص الموارد البشرية» و«المراجعات والاعتمادات» بقوا شاشة واحدة «محتاج منك النهارده» فيها كل الطوابير: الإجازات، الحضور اليدوي، الساعات الإضافية، المخالصات، تبديل الورديات، أرقام البصمة، الملفات الناقصة، وإخطارات التأمين.</li>
+     <li>«شهر المتابعة» بيظهر بس في الأقسام اللي بتستخدمه (الموظفون، الرواتب، ضريبة الدخل).</li>
+     <li>«الحضور والورديات» القديم اسمه بقى «تسجيل حضور يدوي ومراجعة البصمات»، وعنوان الحضور اللحظي بقى زي اسم الزرار بالظبط.</li>
+    </ul>
+   </details>
+  </div>
+ </section>
+
+ <!-- LIVE -->
+ <section class="view" id="v-live">
+  <div class="card ph">
+   <div class="crumb"><button data-go="inbox">النهارده</button><span>‹</span><span>الحضور اللحظي</span></div>
+   <div class="hub-h"><h2>الحضور اللحظي</h2><span class="live">البصمة متصلة · آخر بصمة 04:39 م</span></div>
+   <div class="sub">نفس اسم الزرار — والعنوان ده بقى سطر عادي مش مربع أزرق جوه مربع أزرق.</div>
+   <div class="itabs"><span class="on">الآن (مباشر)</span><span>الورديات</span><span>التقارير</span><span>أجازات المركز</span></div>
+   <div class="box">لوحة الحضور اللحظي زي ما هي دلوقتي</div>
+  </div>
+ </section>
+
+ <!-- GENERIC SECTION -->
+ <section class="view" id="v-sec">
+  <div class="card ph">
+   <div class="crumb"><button data-go="inbox">النهارده</button><span>‹</span><span id="sec-crumb"></span></div>
+   <h2 id="sec-title"></h2>
+   <div class="sub" id="sec-desc"></div>
+   <div class="box" id="sec-box">محتوى القسم زي ما هو دلوقتي</div>
+  </div>
+ </section>
+</div>
+<script>
+var G=[
+ {k:'today',t:'النهارده',s:[['inbox','محتاج منك'],['live','الحضور اللحظي']]},
+ {k:'people',t:'الناس',s:[['people','الموظفون والأطباء'],['jobs','دليل الوظائف']]},
+ {k:'time',t:'الوقت والإجازات',s:[['requests','الإجازات والطلبات'],['overtime','الساعات الإضافية'],['manual','تسجيل حضور يدوي ومراجعة البصمات']]},
+ {k:'money',t:'الفلوس',s:[['payroll','الرواتب والاستحقاقات'],['insurance','التأمينات'],['tax','ضريبة الدخل'],['custody','العهد']]},
+ {k:'end',t:'إنهاء الخدمة والإعدادات',s:[['offboarding','إنهاء الخدمة'],['settings','الإعدادات والتكاملات']]}];
+var MONTH={people:1,payroll:1,tax:1};
+var DESC={people:'كل الموظفين والأطباء. «تصدير متابعة الشهر» بيستخدم الشهر اللي فوق.',jobs:'كل وظيفة بمهامها ومؤهلاتها.',requests:'طلبات الإجازات والأذونات ورصيد كل موظف.',overtime:'طلبات الساعات الإضافية وتقرير الشهر.',
+ manual:'تسجيل وردية وحضور بإيدك لما البصمة متكونش موجودة، وتحويل بصمات الشهر للمراجعة. (كان اسمه «الحضور والورديات» — وشلنا منه كروت «لا يوجد سجل اليوم» لأنها مكررة مع الحضور اللحظي.)',
+ payroll:'تجهيز بنود المرتب للشهر اللي فوق، وبعدين بتتبعت للحسابات.',insurance:'اشتراكات التأمين لكل موظف.',tax:'ضريبة كسب العمل للشهر اللي فوق — من غير اختيار شهر تاني جوه القسم.',custody:'العهد: مين مستلم إيه ومن إمتى.',offboarding:'خطوات إنهاء الخدمة والمخالصة وشهادة الخبرة.',settings:'قواعد الأجر والبصمة والربط.'};
+var Q=[
+ {id:'leave',sec:'requests',ic:'<path d="M4 7h16M4 12h10M4 17h7"/>',t:'طلبات إجازة وإذن',s:'كريم محمود (إجازة 3 أيام) · سلمى رشاد (إذن ساعتين)',n:2},
+ {id:'manual',sec:'manual',ic:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',t:'حضور يدوي مستني مراجعة',s:'وردية كريم محمود يوم 24 نوفمبر 2026 — من غير انصراف',n:1},
+ {id:'ot',sec:'overtime',ic:'<path d="M12 5v14M5 12h14"/>',t:'ساعات إضافية مستنية موافقتك',s:'كريم محمود · ساعة ونص يوم 23 نوفمبر 2026',n:1},
+ {id:'off',sec:'offboarding',ic:'<path d="M12 4v8"/><path d="M7 7a7 7 0 1 0 10 0"/>',t:'مخالصة إنهاء خدمة مستنية اعتماد',s:'ياسمين خالد · آخر يوم 30 نوفمبر 2026',n:1},
+ {id:'swap',sec:'live',ic:'<path d="M7 7h11l-3-3M17 17H6l3 3"/>',t:'طلبات تبديل ورديات',s:'منى السيد ↔ هالة مصطفى · الخميس 26 نوفمبر 2026',n:1},
+ {id:'fp',sec:'live',ic:'<path d="M9 12a3 3 0 0 1 6 0v2M6 11a6 6 0 0 1 12 0v3M12 12v5"/>',t:'أرقام بصمة مش مربوطة بموظف',s:'رقم الجهاز 24 — بيبصم من غير ما نعرف هو مين',n:1},
+ {id:'ins',sec:'insurance',ic:'<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/>',t:'إخطارات تأمين قرب ميعادها',s:'كريم محمود · لازم الإخطار قبل 30 نوفمبر 2026',n:1},
+ {id:'files',sec:'people',ic:'<circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/>',t:'ملفات ناقصة أو مش متصنفة',s:'أحمد علي (ملف مبدئي) · محمد عادل (طبيب ولا موظف؟)',n:2,calm:1}];
+var cur='inbox';
+function grpOf(s){return G.find(g=>g.s.some(x=>x[0]===s));}
+function pend(sec){return Q.filter(q=>q.sec===sec).reduce((a,q)=>a+q.n,0);}
+function drawNav(){var g=grpOf(cur);
+ document.getElementById('groups').innerHTML=G.map(x=>{var n=x.k==='today'?Q.reduce((a,q)=>a+q.n,0):x.s.reduce((a,s)=>a+pend(s[0]),0);return '<button data-g="'+x.k+'" class="'+(x===g?'on':'')+'">'+x.t+(n?'<i>'+n+'</i>':'')+'</button>';}).join('');
+ document.getElementById('subs').innerHTML=g.s.map(s=>{var n=pend(s[0]);return '<button data-go="'+s[0]+'" class="'+(s[0]===cur?'on':'')+'">'+s[1]+(n&&s[0]!=='inbox'?' <i>'+n+'</i>':'')+'</button>';}).join('');
+ document.getElementById('month').hidden=!MONTH[cur];
+ document.querySelectorAll('.groups .on,.subs .on').forEach(function(b){var p=b.parentElement;p.scrollLeft+=b.getBoundingClientRect().right-p.getBoundingClientRect().right+12;});}
+function drawRows(){var el=document.getElementById('rows');el.innerHTML=Q.map(q=>'<div class="row'+(q.calm?' calm':'')+'" data-q="'+q.id+'"><span class="ic"><svg viewBox="0 0 24 24">'+q.ic+'</svg></span><div><b>'+q.t+'</b><span class="sub">'+q.s+'</span></div><span class="cnt">'+q.n+'</span><button class="btn main" data-go="'+q.sec+'">افتح</button></div>').join('');
+ var t=Q.reduce((a,q)=>a+q.n,0);document.getElementById('left').textContent=t?t+' حاجات مستنياك':'';document.getElementById('alldone').hidden=!!Q.length;}
+function go(s){cur=s;document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+ if(s==='inbox')document.getElementById('v-inbox').classList.add('on');
+ else if(s==='live')document.getElementById('v-live').classList.add('on');
+ else{var g=grpOf(s),lab=g.s.find(x=>x[0]===s)[1];document.getElementById('sec-title').textContent=lab;document.getElementById('sec-crumb').textContent=lab;document.getElementById('sec-desc').textContent=DESC[s]||'';
+  var n=pend(s);document.getElementById('sec-box').textContent=n?'محتوى القسم زي ما هو — وفوقه الـ'+n+' اللي مستنيين منك':'محتوى القسم زي ما هو دلوقتي';document.getElementById('v-sec').classList.add('on');}
+ drawNav();}
+document.addEventListener('click',function(e){var b=e.target.closest('[data-go],[data-g]');if(!b)return;
+ if(b.dataset.g){go(G.find(x=>x.k===b.dataset.g).s[0][0]);return;}go(b.dataset.go);});
+drawRows();drawNav();
+</script>
+</body>
+</html>
