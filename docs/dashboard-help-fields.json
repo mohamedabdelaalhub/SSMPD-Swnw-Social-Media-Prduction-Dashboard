@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2017,
-    "labels": 1464,
-    "files": 159,
-    "groups": 1584
+    "definitions": 2018,
+    "labels": 1466,
+    "files": 160,
+    "groups": 1585
   },
   "fields": [
     {
@@ -10464,13 +10464,13 @@
     },
     {
       "file": "nursing-day-ops.js",
-      "label": "ضغط الدم",
+      "label": "المخزن اللي هيتخصم منه",
       "name": "",
-      "kind": "label",
+      "kind": "aria",
       "forms": [],
       "tab": "production",
-      "article": "patient-records",
-      "text_sha256": "0fbb82c4d121167a30c556660ad80ab4ad5e0f27a66f4d6ee6ceba496e8290a5"
+      "article": "supplies-performer-vitals",
+      "text_sha256": "68cf509538b3307e52530af28139be2acdd078638e3a3b460eb490b6571ea263"
     },
     {
       "file": "nursing-day-ops.js",
@@ -10641,6 +10641,16 @@
       "tab": "production",
       "article": "peer-cash-handover",
       "text_sha256": "aac7964e93fd281716155474d3227097a2907f6e682098d346df401a0fcdbddc"
+    },
+    {
+      "file": "performer-supplies.js",
+      "label": "المخزن اللي بتصرف منه",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "supplies-performer-vitals",
+      "text_sha256": "c237d77c6c4d30ca34bcfb9928b0fad1413fefac00216fc8bfd28f5fb8c829c7"
     },
     {
       "file": "price-list-governance.js",

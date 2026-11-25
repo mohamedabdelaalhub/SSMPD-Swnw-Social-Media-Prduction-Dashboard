@@ -11997,12 +11997,12 @@
       "reviewed": true
     },
     {
-      "title": "ضغط الدم",
+      "title": "المخزن اللي هيتخصم منه",
       "labels": [
-        "ضغط الدم"
+        "المخزن اللي هيتخصم منه"
       ],
-      "text": "سجل قراءة ضغط الدم التي قاسها المختص كما هي بوحدة النموذج، مع الانقباضي والانبساطي عند طلبهما. لا تدخل قراءة تقديرية أو قيمة لتجاوز الحقل.",
-      "article": "patient-records",
+      "text": "المخزن اللي طقم الفيتلة هيتخصم منه مع «حفظ وإبلاغ الدكتور». بيظهر بس مخازن قسم الحجز، والخصم تكلفة بس ومش على فاتورة المريض.",
+      "article": "supplies-performer-vitals",
       "tabs": [
         "production"
       ],
@@ -12188,6 +12188,19 @@
       ],
       "text": "ملاحظة اختيارية مع الاستلام. لو هترفض لازم تكتب السبب (مثلاً: المبلغ ناقص 50).",
       "article": "peer-cash-handover",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المخزن اللي بتصرف منه",
+      "labels": [
+        "المخزن اللي بتصرف منه"
+      ],
+      "text": "المخزن اللي المستلزمات هتتخصم منه. بيظهر بس مخازن قسمك: الأسنان من رئيسي أسنان، والجلدية والعلاج الطبيعي والكشف من فرعي مستلزمات تمريض. اختيارك بيفضل محفوظ على الجهاز.",
+      "article": "supplies-performer-vitals",
       "tabs": [
         "production"
       ],
@@ -23353,9 +23366,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2017,
-    "labels": 1464,
-    "files": 159,
-    "groups": 1584
+    "definitions": 2018,
+    "labels": 1466,
+    "files": 160,
+    "groups": 1585
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
