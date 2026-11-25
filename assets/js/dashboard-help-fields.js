@@ -16303,6 +16303,20 @@
       "reviewed": true
     },
     {
+      "title": "سعر الباكج الثابت (ج.م)",
+      "labels": [
+        "سعر الباكج الثابت (ج.م)"
+      ],
+      "text": "السعر اللي هيظهر في «تعاقد على باكج» في الاستقبال بالظبط، ومش بيتغير لما سعر أي خدمة جوه الباكج يتغير. لازم أكبر من صفر.",
+      "article": "package-fixed-price",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "نسبة الربح % (على إجمالي الباكج)",
       "labels": [
         "نسبة الربح % (على إجمالي الباكج)"
@@ -23248,9 +23262,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2006,
-    "labels": 1460,
+    "definitions": 2007,
+    "labels": 1461,
     "files": 158,
-    "groups": 1576
+    "groups": 1577
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
