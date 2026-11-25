@@ -1,0 +1,100 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>المستلزمات وقت الخدمة — تصور (بيانات تجريبية)</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css"><link rel="stylesheet" href="../../../assets/css/reception-workspace.css">
+<style>
+body{background:#e9edf5;margin:0;padding:24px 12px;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.grid{max-width:760px;margin:0 auto;display:grid;gap:16px}
+.col{display:grid;gap:16px}
+.eyebrow{margin:0;font-size:12px!important;color:#8a93a3!important;border-bottom:1px solid #EEF1F6;padding-bottom:8px}
+.card{background:#fff;border-radius:16px;border:1px solid #D5DEEE;padding:18px;display:grid;gap:12px;box-shadow:0 12px 30px rgba(15,54,157,.08)}
+.card h3{margin:0;font-size:17px;color:#0F369D;display:flex;gap:8px;align-items:center}
+.card p{margin:0;font-size:13px;color:#3B4658;line-height:1.8}
+.warn h3{color:#B45309}.stop h3{color:#D0402A}
+/* phone */
+.phone{width:100%;max-width:376px;box-sizing:border-box;border-radius:34px;background:#16212E;padding:12px;justify-self:center}
+.screen{background:#F5F7FB;border-radius:24px;overflow:hidden;display:grid}
+.bar{background:#0F369D;color:#fff;padding:14px 16px;display:grid;gap:2px}.bar b{font-size:16px}.bar small{opacity:.8;font-size:12px}
+.store{display:flex;justify-content:space-between;align-items:center;background:#fff;margin:12px;border-radius:12px;padding:10px 12px;border:1px solid #D5DEEE;font-size:13px}
+.store b{color:#0F369D}
+.pt{background:#fff;margin:0 12px 12px;border-radius:14px;border:1px solid #D5DEEE;padding:12px;display:grid;gap:10px}
+.pt .h{display:flex;justify-content:space-between;gap:8px}.pt .h b{font-size:15px}.pt .h span{font-size:12px;color:#5b6577}
+.ln{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;font-size:13px;padding:8px 10px;border-radius:10px;background:#F5F7FB}
+.ln .q{display:flex;align-items:center;gap:6px}.ln .q button{width:28px;height:28px;border-radius:8px;border:1px solid #D5DEEE;background:#fff;font-size:16px}
+.ln .q b{min-width:18px;text-align:center}
+.chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;white-space:nowrap}
+.inc{background:#E6F2EC;color:#2F7D5C}.bil{background:#FFF1E9;color:#C2410C}
+.add{border:1px dashed #9DB0D9;background:#fff;color:#0F369D;border-radius:10px;padding:9px;font-size:13px;text-align:center}
+.tot{display:flex;justify-content:space-between;font-size:13px;border-top:1px dashed #D5DEEE;padding-top:8px}.tot b{color:#C2410C}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.b{border-radius:12px;padding:12px;font-size:14px;font-weight:700;text-align:center;border:1px solid #D5DEEE;background:#fff;color:#16212E}
+.b.pri{background:#0F369D;color:#fff;border-color:#0F369D}.b.or{background:#F15A22;color:#fff;border-color:#F15A22}.b.red{background:#D0402A;color:#fff;border-color:#D0402A}
+.done{opacity:.6}.done .h b::after{content:" ✓";color:#2F7D5C}
+/* reception */
+.alert{border-radius:12px;padding:12px;font-size:13px;line-height:1.8;display:grid;gap:6px}
+.a-warn{background:#FFF8EC;border:1px solid #F5D9A8}.a-stop{background:#FDEEEB;border:1px solid #F3C2B8}.a-ok{background:#E6F2EC;border:1px solid #BFE0CE}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:6px 10px;font-size:13px}.kv b{color:#5b6577;font-weight:400}
+.act{display:flex;gap:8px;flex-wrap:wrap}.act .b{flex:1 1 180px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;font-size:12px}.steps span{padding:4px 10px;border-radius:99px;background:#EEF1F6;color:#5b6577}.steps .on{background:#0F369D;color:#fff}.steps .dn{background:#E6F2EC;color:#2F7D5C}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid #EEF1F6;text-align:right}th{color:#5b6577;font-weight:400;font-size:12px}
+td.n,th.n{text-align:left;direction:ltr;font-variant-numeric:tabular-nums}
+.var{color:#D0402A;font-weight:700}.ok{color:#2F7D5C;font-weight:700}
+.note{font-size:12px;color:#5b6577}
+@media (max-width:480px){body{padding:16px 8px}.card{padding:14px}.kv{grid-template-columns:90px 1fr}table{font-size:12px}th,td{padding:6px 4px}}
+</style></head><body>
+<div class="grid">
+  <section class="card" data-shot="performer"><p class="eyebrow">١) شاشة اللي بيعمل الخدمة (ممرضة / فني / مساعد دكتور) — موبايل أو تابلت، وقت الخدمة</p>
+   <div class="phone"><div class="screen">
+    <div class="bar"><b>تنفيذ وتسجيل المستلزمات</b><small>شروق — تمريض · النهارده الأربعاء 25/11</small></div>
+    <div class="store"><span>بصرف من</span><b>فرعي مستلزمات تمريض ▾</b></div>
+    <div class="pt done"><div class="h"><b>علاج طبيعي — جلسة</b><span>F-0981 · 10:30</span></div></div>
+    <div class="pt"><div class="h"><b>ليزر نص اليدين</b><span>F-1102 · 11:00 · د. ...</span></div>
+     <div class="ln"><span>جل تبريد</span><span class="chip inc">في سعر الخدمة</span><span class="q"><button>−</button><b>1</b><button>+</button></span></div>
+     <div class="ln"><span>جوانتي (زوج)</span><span class="chip inc">في سعر الخدمة</span><span class="q"><button>−</button><b>2</b><button>+</button></span></div>
+     <div class="ln"><span>كريم مهدئ بعد الليزر</span><span class="chip bil">بيتحاسب 85 ج.م</span><span class="q"><button>−</button><b>1</b><button>+</button></span></div>
+     <div class="add">+ مستلزم تاني (بحث)</div>
+     <div class="tot"><span>هيتضاف على فاتورة المريض</span><b>85 ج.م</b></div>
+     <div class="btns"><div class="b pri">نفّذت ✓</div><div class="b">بدون مستلزمات (سبب)</div></div>
+    </div>
+    <div class="pt"><div class="h"><b>أسنان — حشو عصب</b><span>F-1023 · 11:30</span></div><div class="note">مستني الدكتور</div></div>
+   </div></div>
+   <p>الأصناف اللي «في سعر الخدمة» بتتخصم من المخزن تكلفة بس. اللي «بيتحاسب» بيظهر على فاتورة المريض فوراً قبل التحصيل. الموظف بيصرف من مخزنه بس.</p>
+  </section>
+  <section class="card warn" data-shot="reception-warn"><p class="eyebrow">٢) الاستقبال (احتياطي) بيضيف مستلزم — تنبيهين قبل الحفظ</p>
+   <h3>⚠️ المستلزم ده متسجّل قبل كده على نفس الخدمة</h3>
+   <div class="alert a-warn"><div class="kv"><b>الصنف</b><span>جوانتي (زوج) × 2</span><b>سجّله</b><span>شروق — تمريض</span><b>إمتى</b><span>11:04 الصبح</span></div></div>
+   <h3>ℹ️ الصنف ده داخل في سعر الخدمة</h3>
+   <div class="alert a-ok">«جل تبريد» محسوب في سعر «ليزر نص اليدين» ومش بيتحاسب عليه المريض. لو ضفته هيتخصم من المخزن تكلفة بس.</div>
+   <div class="act"><div class="b or">متأكد، ضيفه</div><div class="b">رجوع</div></div>
+  </section>
+  <section class="card stop" data-shot="finish-confirm"><p class="eyebrow">٣) «إنهاء الزيارة» ومستلزم بيتحاسب ناقص — تأكيدين (مش منع)</p>
+   <h3>⚠️ فيه مستلزم ناقص على الزيارة</h3>
+   <div class="alert a-stop"><div class="kv"><b>الخدمة</b><span>ليزر نص اليدين</span><b>الناقص</b><span>كريم مهدئ بعد الليزر — <b style="color:#D0402A">85 ج.م</b> (المعتاد يتسجّل ومتسجّلش)</span></div></div>
+   <div class="act"><div class="b pri">رجوع وسجّل المستلزم</div><div class="b">كمّل الإنهاء</div></div>
+   <h3>متأكد عايز تنهي؟</h3>
+   <p>هيتكتب على الزيارة: «تم التنبيه على <b>منى — استقبال</b> إن فيه مستلزم ناقص <b>كريم مهدئ بعد الليزر</b> قيمته <b>85 ج.م</b> واختار الإنهاء رغم ذلك».</p>
+   <div class="act"><div class="b red">أيوه، إنهي الزيارة</div><div class="b">لأ، رجوع</div></div>
+  </section>
+  <section class="card" data-shot="after-finish"><p class="eyebrow">٤) بعد «إنهاء الزيارة» وقبل «تحصيل» — لسه ينفع يتعدّل</p>
+   <div class="steps"><span class="dn">وصل ✓</span><span class="dn">نفّذ ✓</span><span class="dn">إنهاء ✓</span><span class="on">مستني التحصيل</span><span>اتحصّل</span></div>
+   <div class="alert a-ok">الزيارة انتهت بس لسه ماتحصلتش. أي تعديل هنا بيتسجّل باسمك ووقته، والفاتورة بتتحدّث قبل ما تحصّل.</div>
+   <table><thead><tr><th>البند</th><th>النوع</th><th class="n">المبلغ</th></tr></thead><tbody>
+    <tr><td>ليزر نص اليدين</td><td>خدمة</td><td class="n">400</td></tr>
+    <tr><td>كريم مهدئ بعد الليزر</td><td><span class="chip bil">مستلزم بيتحاسب</span></td><td class="n">85</td></tr></tbody></table>
+   <div class="act"><div class="b">+ خدمة</div><div class="b">+ مستلزم</div><div class="b or">تحصيل 485 ج.م</div></div>
+   <p class="note">بعد التحصيل: التعديل بيبقى بطلب مرتجع / إضافة للحسابات زي النهارده.</p>
+  </section>
+  <section class="card" data-shot="correction"><p class="eyebrow">٥) «استهلاك أمس» = تصحيح بس، خلال ٤٨ ساعة، باعتماد مدير (اللي طلب ≠ اللي اعتمد)</p>
+   <div class="kv"><b>الزيارة</b><span>F-0981 · علاج طبيعي · الثلاثاء 24/11</span><b>التصحيح</b><span>+ جل ألتراساوند × 1 (في سعر الخدمة) من فرعي مستلزمات تمريض</span><b>السبب</b><span>اتنسى يتسجّل وقت الجلسة</span><b>طلبه</b><span>شروق — تمريض · 09:12</span></div>
+   <div class="act"><div class="b pri">اعتمد</div><div class="b">ارفض (بسبب)</div></div>
+   <p class="note">التنظيف والتعقيم والهالك بيتسجّلوا من «صرف للاستخدام» بسبب، مش على مريض.</p>
+  </section>
+  <section class="card" data-shot="reconcile"><p class="eyebrow">٦) المطابقة اليومية — لكل مخزن فرعي (لرئيسة التمريض والمدير المالي)</p>
+   <h3>فرعي مستلزمات تمريض — الثلاثاء 24/11</h3>
+   <table><thead><tr><th>الصنف</th><th class="n">اتصرف للمخزن</th><th class="n">على الزيارات</th><th class="n">استخدام داخلي</th><th class="n">المتوقع من الخدمات</th><th class="n">الفرق</th></tr></thead><tbody>
+    <tr><td>جوانتي (زوج)</td><td class="n">100</td><td class="n">86</td><td class="n">10</td><td class="n">84</td><td class="n var">+2</td></tr>
+    <tr><td>جل تبريد</td><td class="n">20</td><td class="n">12</td><td class="n">0</td><td class="n">12</td><td class="n ok">0</td></tr>
+    <tr><td>كريم مهدئ (بيتحاسب)</td><td class="n">10</td><td class="n">6</td><td class="n">0</td><td class="n">7</td><td class="n var">−1 مش متحاسب</td></tr></tbody></table>
+   <p class="note">الجرد الشهري بيقفل الفروق. الجرد اليومي السريع ممكن يتضاف بعدين.</p>
+  </section>
+</div>
+</body></html>
