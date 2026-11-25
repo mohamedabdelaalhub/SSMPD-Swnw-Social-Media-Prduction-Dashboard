@@ -65,6 +65,7 @@
     // Owner 2026-11-25 («طبق الكل», mockup hr-lists-mobile.html): stopped subscriptions whose MANUAL notification deadline is within 14 days (or past)
     // and still without a notification reference are pinned on top, so they are not hidden behind a filter.
     function insBanner() {
+      if (!data.can_manage) return ''; // «كمّل الإخطار» is an HR action (hr_insurance_command refuses others)
       var today = data.today || new Date().toISOString().slice(0, 10), lim = new Date(Date.parse(today + 'T12:00:00Z') + 14 * 864e5).toISOString().slice(0, 10);
       var due = (data.items || []).filter(function (i) { return i.status === 'stopped' && i.notification_deadline && !i.stop_reference && i.notification_deadline <= lim; });
       if (!due.length) return '';
