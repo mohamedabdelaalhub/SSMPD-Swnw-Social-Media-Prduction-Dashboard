@@ -68,7 +68,7 @@ grant execute on function public.clinic_finance_count_check(text, jsonb) to auth
 
 -- ===== test =====
 do $$
-declare fm uuid; sa uuid; cu uuid; sid uuid; rg uuid; ex numeric; r jsonb; ok boolean; i int;
+declare fm uuid; sa uuid; cu uuid; sid uuid; rg uuid; ca uuid; acct text; ex numeric; r jsonb; ok boolean; i int;
 begin
   select a.user_id into fm from public.admins a where a.active and a.user_id is not null and a.role = 'financial_manager' order by a.id limit 1;
   select a.user_id into sa from public.admins a where a.active and a.user_id is not null and a.role = 'super_admin' order by a.id limit 1;
@@ -77,15 +77,21 @@ begin
   if sid is null then
     -- no collection shift open right now (night): open one INSIDE this rolled-back transaction, as postgres, for a real reception
     -- cashier with a login who has no unreviewed shift (the one-shift rules still hold)
-    -- every collection register is busy at night, so use a THROWAWAY register created inside this rolled-back transaction
-    insert into clinic_finance.registers(name, petty_limit, created_by, treasury_kind)
-    values ('تجربة جرد — تتلغي ' || left(gen_random_uuid()::text, 8), 0, (select id from public.admins where user_id = fm), 'unconfigured')
-    returning id into rg;
-    insert into clinic_finance.shifts(register_id, cashier_id, token, opening_book)
-    select rg, a.id, gen_random_uuid(), 0 from public.admins a
+    -- every collection register is busy at night, so use a THROWAWAY collection register (with its own throwaway asset account)
+    -- created inside this rolled-back transaction, assigned to a reception cashier with a login and no unreviewed shift
+    select a.id into ca from public.admins a
      where a.active and a.user_id is not null and a.role = 'reception'
        and not exists (select 1 from clinic_finance.shifts x where x.cashier_id = a.id and x.status <> 'reviewed')
-     order by a.id limit 1
+     order by a.id limit 1;
+    if ca is null then raise exception 'no reception cashier with a login and no unreviewed shift'; end if;
+    acct := '9' || lpad((floor(random() * 1000000000))::bigint::text, 9, '0');
+    insert into clinic_finance.accounts(code, name, kind) values (acct, 'حساب تجربة جرد — يتلغي', 'asset');
+    insert into clinic_finance.account_config(code, is_system, is_postable) values (acct, false, true);
+    insert into clinic_finance.registers(name, petty_limit, created_by, treasury_kind, account_code, assigned_to, parent_register_id)
+    values ('تجربة جرد — تتلغي ' || left(gen_random_uuid()::text, 8), 0, (select id from public.admins where user_id = fm limit 1), 'collection', acct, ca,
+            (select id from clinic_finance.registers where treasury_kind = 'main' limit 1))
+    returning id into rg;
+    insert into clinic_finance.shifts(register_id, cashier_id, token, opening_book) values (rg, ca, gen_random_uuid(), 0)
     returning id into sid;
     select a.user_id into cu from clinic_finance.shifts s join public.admins a on a.id = s.cashier_id where s.id = sid;
   end if;
