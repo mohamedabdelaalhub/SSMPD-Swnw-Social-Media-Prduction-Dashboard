@@ -68,9 +68,10 @@ grant execute on function public.clinic_finance_count_check(text, jsonb) to auth
 
 -- ===== test =====
 do $$
-declare fm uuid; cu uuid; sid uuid; ex numeric; r jsonb; ok boolean; q text;
+declare fm uuid; sa uuid; cu uuid; sid uuid; ex numeric; r jsonb; ok boolean; i int;
 begin
   select a.user_id into fm from public.admins a where a.active and a.user_id is not null and a.role = 'financial_manager' order by a.id limit 1;
+  select a.user_id into sa from public.admins a where a.active and a.user_id is not null and a.role = 'super_admin' order by a.id limit 1;
   select s.id, a.user_id into sid, cu from clinic_finance.shifts s join public.admins a on a.id = s.cashier_id
    where s.status = 'open' and s.ended_at is null and not s.is_main and a.active and a.user_id is not null order by s.opened_at desc limit 1;
   if fm is null or sid is null then raise exception 'need an FM and an open collection shift with a login'; end if;
@@ -83,6 +84,9 @@ begin
   r := public.clinic_finance_count_check('check', jsonb_build_object('shift_id', sid, 'counts', jsonb_build_object('200', '1', '0.25', (greatest(ex, 0) * 4)::bigint::text)));
   if (r->>'match')::boolean then raise exception '+200 matched: %', r; end if;
   if exists (select 1 from jsonb_object_keys(r) k where k not in ('enabled', 'match', 'left', 'limit')) then raise exception 'unexpected keys (amount leak?): %', r; end if;
+  -- keep checking until the 3-per-shift limit: the next check is refused with {limit:true} and nothing more is logged
+  for i in 1..3 loop r := public.clinic_finance_count_check('check', jsonb_build_object('shift_id', sid, 'counts', '{"50":"1"}'::jsonb)); exit when (r->>'limit')::boolean; end loop;
+  if not coalesce((r->>'limit')::boolean, false) then raise exception '4th check not refused: %', r; end if;
   ok := false; begin perform public.clinic_finance_count_check('set', '{"enabled":false}'::jsonb); exception when others then ok := sqlerrm like '%للسوبر أدمن أو المدير المالي%'; end;
   if not ok then raise exception 'cashier changed the setting'; end if;
   perform set_config('request.jwt.claim.sub', fm::text, true);
@@ -92,7 +96,13 @@ begin
   perform set_config('request.jwt.claim.sub', cu::text, true);
   r := public.clinic_finance_count_check('check', jsonb_build_object('shift_id', sid, 'counts', '{"50":"1"}'::jsonb));
   if (r->>'enabled')::boolean then raise exception 'alert off but still checking: %', r; end if;
+  if sa is not null then
+    perform set_config('request.jwt.claim.sub', sa::text, true);
+    perform public.clinic_finance_count_check('set', '{"enabled":true}'::jsonb);
+    r := public.clinic_finance_count_check('settings', '{}'::jsonb);
+    if not (r->>'enabled')::boolean then raise exception 'super admin could not turn it back on'; end if;
+  end if;
   execute 'reset role';
-  raise notice 'count check dry-run OK on shift % (cashier + FM), alert on/off works, no amount leaked', sid;
+  raise notice 'count check dry-run OK on shift % (cashier: match/no-match, 4th refused, cannot set; FM off; super admin on), no amount leaked', sid;
 end $$;
 rollback;
