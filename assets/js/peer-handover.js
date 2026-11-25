@@ -46,7 +46,7 @@
           '<label class="peer-mode"><input type="radio" name="mode" value="end"> إنهاء ورديتي وتسليم كل الكاش</label>' +
           '<label data-peer-amount>المبلغ<input name="amount" type="number" min="0.01" step="0.01" max="' + esc(o.shift.available) + '"></label>' +
           '<div data-peer-counts hidden><p>عدّ الكاش اللي معاك فئة فئة:</p><div class="fc-counts">' + DEN.map(function (n) { return '<label>فئة ' + n + '<input name="c' + n + '" type="number" min="0" step="1" value="0"></label>'; }).join("") + '</div><p data-peer-total></p><p class="fc-note" data-peer-zero hidden>الدرج فاضي؟ ينفع تقفل بصفر للخزينة الرئيسية بس — اكتب السبب في الملاحظة، والفرق بيروح للمراجعة من غير خصم.</p></div>' +
-          '<label>ملاحظة (اختياري)<input name="note" maxlength="500"></label>' +
+          '<label><span data-peer-note-label>ملاحظة (اختياري)</span><input name="note" maxlength="500"></label>' +
           '<div class="shift-reminder-actions"><button type="submit" class="btn btn-primary">سلّم</button><button type="button" class="btn" data-peer-close>إلغاء</button></div></form>'
           : '<p>مفيش زميل فاتح وردية دلوقتي. زميلك لازم يفتح ورديته الأول.</p><div class="shift-reminder-actions"><button type="button" class="btn" data-peer-close>تمام</button></div>');
       var box = shell(opts.only === "main" ? "تسليم للخزينة الرئيسية" : opts.only === "peer" ? "تسليم التحصيل لزميل" : "تسليم تحصيل لزميل", body, "data-peer-send");
@@ -60,7 +60,8 @@
         var end = f.elements.mode.value === "end"; f.querySelector("[data-peer-counts]").hidden = !end; f.querySelector("[data-peer-amount]").hidden = end;
         f.elements.amount.required = !end; f.querySelector("[data-peer-total]").textContent = "الإجمالي: " + money(total());
         f.querySelector("[data-peer-main-hint]").hidden = f.elements.to.value !== "main";
-        f.querySelector("[data-peer-zero]").hidden = !(end && f.elements.to.value === "main" && !(total() > 0));
+        var zero = end && f.elements.to.value === "main" && !(total() > 0); f.querySelector("[data-peer-zero]").hidden = !zero;
+        f.querySelector("[data-peer-note-label]").textContent = zero ? "السبب (إجباري لو الدرج فاضي)" : "ملاحظة (اختياري)";
       }
       if ((opts.to === "main" || opts.only === "main") && main) f.elements.to.value = "main";   // opened from a «سلّم الكاش» nudge / «تسليم للخزينة الرئيسية»
       else if (opts.only === "peer" && cols.length === 1) f.elements.to.value = cols[0].shift_id;
