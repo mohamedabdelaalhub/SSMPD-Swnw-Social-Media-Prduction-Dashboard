@@ -12617,6 +12617,61 @@
       "reviewed": true
     },
     {
+      "title": "عدد زيارات كارت العيلة اللي العيلة خدتها على السيستم القديم",
+      "labels": [
+        "عدد زيارات كارت العيلة اللي العيلة خدتها على السيستم القديم"
+      ],
+      "text": "عدد زيارات كارت العيلة اللي العيلة كلها خدتها قبل الداشبورد (رقم صحيح ٠ أو أكتر). بيتحسب في خطوة الخصم بعد اعتماد السوبر أدمن أو المدير المالي بس.",
+      "article": "reception-family-legacy-visits",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: العيلة كانت ماشية بكارت العيلة قبل الداشبورد",
+      "labels": [
+        "مثلاً: العيلة كانت ماشية بكارت العيلة قبل الداشبورد"
+      ],
+      "text": "السبب اللي بيوضح للي هيعتمد ليه العيلة ليها زيارات قديمة.",
+      "article": "reception-family-legacy-visits",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "السبب",
+      "labels": [
+        "السبب",
+        "سبب الطلب",
+        "السبب *",
+        "السبب (مطلوب)"
+      ],
+      "text": "اكتب الحدث الذي يستدعي الطلب وسببه والمستند الذي يثبته، مثل رد دفعة عن موعد ملغي. لا تكتب سببًا عامًا لا يسمح للمراجع بفهم العملية.",
+      "article": "requests",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "…أو ملاحظة (مثلاً: دفتر الاستقبال صفحة كام)",
+      "labels": [
+        "…أو ملاحظة (مثلاً: دفتر الاستقبال صفحة كام)"
+      ],
+      "text": "لو مفيش مستند ترفعه، اكتب فين الإثبات (دفتر، كشف، رقم إيصال). لازم مستند أو ملاحظة.",
+      "article": "reception-family-legacy-visits",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "القريب",
       "labels": [
         "القريب"
@@ -13178,22 +13233,6 @@
       ],
       "text": "حدد أي بند يتم تخفيضه في الإشعار الدائن، مثل الخدمة أو المستلزم بحسب الخيارات، حتى لا ينخفض بند غير المقصود أو يُخفض مرتين.",
       "article": "invoice",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "سبب الطلب",
-      "labels": [
-        "سبب الطلب",
-        "السبب *",
-        "السبب",
-        "السبب (مطلوب)"
-      ],
-      "text": "اكتب الحدث الذي يستدعي الطلب وسببه والمستند الذي يثبته، مثل رد دفعة عن موعد ملغي. لا تكتب سببًا عامًا لا يسمح للمراجع بفهم العملية.",
-      "article": "requests",
       "tabs": [
         "reception_services"
       ],
@@ -23223,9 +23262,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2003,
-    "labels": 1458,
+    "definitions": 2007,
+    "labels": 1461,
     "files": 158,
-    "groups": 1574
+    "groups": 1577
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
