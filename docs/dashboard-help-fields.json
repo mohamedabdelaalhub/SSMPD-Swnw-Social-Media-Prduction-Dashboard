@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2002,
-    "labels": 1457,
+    "definitions": 2003,
+    "labels": 1458,
     "files": 158,
-    "groups": 1573
+    "groups": 1574
   },
   "fields": [
     {
@@ -14583,6 +14583,16 @@
       "tab": "accounting",
       "article": "package",
       "text_sha256": "ea63ff34c528b4841951a58d92fdc5835c9f0948b4d7da4760499cc7f0f4e2fa"
+    },
+    {
+      "file": "render-accounting.js",
+      "label": "سعر الباكج الثابت (ج.م)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "package-fixed-price",
+      "text_sha256": "687944fbf374ce64b6a5bf127f702c8c591496a9ac24d0e5e9b706544bc70524"
     },
     {
       "file": "render-accounting.js",
