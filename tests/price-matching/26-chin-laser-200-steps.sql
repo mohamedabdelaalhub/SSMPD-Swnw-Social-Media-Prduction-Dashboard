@@ -1,7 +1,7 @@
 -- New service at a FIXED 200 EGP — owner decision 2026-11-25 (typed in main chat 5): «جلسة ليزر تحديد الذقن (إزالة شعر
 -- الذقن والشارب) كانديلا». Reception (Mazen) needed it for Dr Shady Hossam Abdelfattah's patient.
---  * Copies the booking setup of 0001239 (face Candela): category, unit, department, minutes, requires_device and
---    every other column, except name/code/price. supplies_used=[] and profit_margin=0, so sync gives exactly 200.
+--  * Copies the booking setup of 0001239 (face Candela): category, unit, department, minutes, requires_device (as-is, like the
+--    other Candela codes) and every other column, except name/code/price. supplies_used=[] and profit_margin=0, so sync gives exactly 200.
 --  * Not added to any price list. The active center list has fallback 'base', so cash = base_price = 200. It is in
 --    no offer list (White Friday or other), so it never gets an offer price.
 --  * New booking code = next free 7-digit code. canonical_code comes from the trigger (SVC-…).
@@ -22,7 +22,11 @@ do $$declare c chin_new%rowtype;begin
  select * into c from chin_new;
  if c.already then raise notice 'service already exists — nothing to do';return;end if;
  if c.src_dept is distinct from 'الجلدية والتجميل' then raise exception '0001239 department is %, owner said الجلدية والتجميل — stop and ask',c.src_dept;end if;
- if not c.src_device then raise exception '0001239 does not require a device — stop and ask';end if;
+ -- Behave like the other Candela laser services: copy 0001239's device flag as-is, but only if the Candela
+ -- codes agree with each other (0001232 moustache, 0001235, 0001230 …).
+ if exists(select 1 from public.pricing_services p where p.active and p.name like '%كانديلا%' and p.booking_code is not null
+           and p.booking_requires_device is distinct from c.src_device) then
+  raise exception 'Candela services disagree on requires_device: %',(select string_agg(booking_code||'='||booking_requires_device,',') from public.pricing_services where active and name like '%كانديلا%' and booking_code is not null);end if;
 end $$;
 grant select on chin_new to authenticated;
 set local role authenticated;
