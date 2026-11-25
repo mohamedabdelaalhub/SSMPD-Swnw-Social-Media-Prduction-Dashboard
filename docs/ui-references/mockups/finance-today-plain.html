@@ -25,11 +25,14 @@ button,input{font:inherit;color:inherit}button{cursor:pointer}
 
 .seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
 .band{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--brand);color:#fff;border-radius:16px;padding:12px 16px}.band b{font-size:18px}.band small{opacity:.9}
-.tasks{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px}
-.t{border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;gap:6px;align-content:start;background:#fff}
+.tasks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}.tasks.c3{grid-template-columns:repeat(3,minmax(0,1fr))}.tasks.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.gt{margin:16px 0 0;font-size:13px;color:var(--muted);font-weight:600}
+.t.calm{background:var(--soft);border-color:var(--soft);grid-template-columns:minmax(0,1fr) auto;align-items:center}.t.calm .btn{margin:0}
+.t{border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;grid-template-rows:auto 1fr auto;gap:6px;background:#fff;min-width:0}
+.t b{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .t.hot{border-color:#F6B79B;background:#FFF9F5}.t b{font-size:15px}.t small{color:#475467;font-size:12.5px;line-height:1.7}
 .t .n{display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:999px;background:var(--accent);color:#fff;font-size:12px;padding:0 6px;margin-inline-start:6px}
-.t .btn{justify-self:start;margin-top:4px}.btn.or{background:var(--accent);border-color:var(--accent);color:#fff}
+.t .btn{justify-self:stretch;margin-top:6px;justify-content:center}.btn.or{background:var(--accent);border-color:var(--accent);color:#fff}
 .t .go{font-size:11.5px;color:var(--brand)}
 .lst{display:grid}.r{display:grid;grid-template-columns:130px minmax(0,1.4fr) minmax(0,1fr) 110px 150px;gap:12px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line)}
 .r:last-child{border-bottom:0}.r small{display:block;color:var(--muted);font-size:12px}.r .m{font-weight:700}.r .why{display:block;color:var(--neg);font-size:12px}
@@ -37,14 +40,15 @@ button,input{font:inherit;color:inherit}button{cursor:pointer}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}.filters button{min-height:34px;border-radius:999px;border:1px solid var(--line);background:#fff;padding:0 12px;font-size:12.5px}.filters button.on{background:var(--tint);border-color:#C9D6F2;color:var(--brand);font-weight:700}
 .q{border:2px dashed #F3C6BB;background:#FFF8F4;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.8}.q b{color:#B23B12}
 .cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cmp div{border-radius:14px;padding:12px;font-size:12.5px;line-height:1.8}.cmp .b{background:#FFF6F4;border:1px dashed #F3C6BB}.cmp .a{background:#F2FAF5;border:1px solid #CFE6D8}
-@media(max-width:760px){.lh{display:none}.r{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.r .d{order:3}.r .s{order:4;justify-self:end}.cmp{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){.tasks,.tasks.c3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.tasks,.tasks.c3,.tasks.c2{grid-template-columns:minmax(0,1fr)}.lh{display:none}.r{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.r .d{order:3}.r .s{order:4;justify-self:end}.cmp{grid-template-columns:minmax(0,1fr)}}
 </style></head><body><p class="note"><b>تصور — «شغلي النهارده» في الحسابات + طلبات الصرف</b> (بيانات تجريبية · مفيش حاجة بتتحفظ). كل كارت بيفتح المكان بالظبط، ومفيش كارت بيوديك على شاشة مفيهاش اللي وعدك بيه.</p>
 <div class="wrap">
 <div class="card"><span class="sub">جرّب كأنك:</span><div class="seg" id="roles"><button class="on" data-r="acc">محاسب</button><button data-r="fm">مدير مالي</button></div></div>
 
 <div class="card" data-v="acc"><div class="band"><b>اللي مستنيك النهارده</b><small>الأربعاء 25 نوفمبر</small></div>
-<div class="tasks">
-<div class="t hot"><b>طلبات الصرف <span class="n">3</span></b><small>2 مستنيين مراجعة · 1 اترفض وشوف السبب</small><button class="btn or">افتح طلباتي</button><span class="go">بيفتح على «طلباتي» والمرفوض فوق</span></div>
+<div class="tasks c3">
+<div class="t hot"><b>طلبات الصرف <span class="n">3</span></b><small>2 مستنيين مراجعة · 1 اترفض وشوف السبب</small><button class="btn or">افتح طلباتي</button></div>
 <div class="t"><b>حساب دكتور</b><small>له كام، اتصرف له كام، والباقي.</small><button class="btn">اختار الدكتور</button></div>
 <div class="t"><b>حساب مورد</b><small>عليه كام، اتدفع كام، والباقي.</small><button class="btn">اختار المورد</button></div>
 </div></div>
@@ -61,18 +65,21 @@ button,input{font:inherit;color:inherit}button{cursor:pointer}
 
 <div class="card" data-v="fm" hidden><div class="band"><b>اللي مستنيك النهارده</b><small>6 حاجات · الأربعاء 25 نوفمبر</small></div>
 <div class="tasks">
-<div class="t hot"><b>اعتمادات مستنياك <span class="n">4</span></b><small>صرف وتصحيح وإلغاء خدمة.</small><button class="btn or">اعتمد</button><span class="go">بيفتح على المستني بس</span></div>
-<div class="t hot"><b>استلم كاش من الخزن <span class="n">1</span></b><small>خزينة الاستقبال 1 طلبت تسلّم 1,500 ج.</small><button class="btn">استلم</button><span class="go">بيفتح جدول التسليم والطلب ده متعلّم</span></div>
-<div class="t hot"><b>ورديات مستنية مراجعة <span class="n">1</span></b><small>اتقفلت ومستنية مراجعة شخص تاني.</small><button class="btn">راجع</button><span class="go">بيفتح على الوردية نفسها</span></div>
+<div class="t hot"><b>اعتمادات مستنياك <span class="n">4</span></b><small>صرف وتصحيح وإلغاء خدمة.</small><button class="btn or">اعتمد</button></div>
+<div class="t hot"><b>استلم كاش <span class="n">1</span></b><small>خزينة الاستقبال 1 طلبت تسلّم 1,500 ج.</small><button class="btn">استلم</button></div>
+<div class="t hot"><b>ورديات للمراجعة <span class="n">1</span></b><small>اتقفلت ومستنية مراجعة شخص تاني.</small><button class="btn">راجع</button></div>
 <div class="t hot"><b>فروق الخزينة <span class="n">1</span></b><small>وردية اتقفلت بفرق في الجرد.</small><button class="btn">راجع الفرق</button></div>
-<div class="t"><b>جرد الخزينة الرئيسية</b><small>آخر جرد: 24 نوفمبر · 7:56 م</small><button class="btn">اعمل الجرد</button></div>
-<div class="t"><b>ملخص اليوم</b><small>التحصيل والصرف والكاش في الخزن والبنك.</small><button class="btn">افتح الملخص</button></div>
+</div>
+<p class="gt">كل يوم</p>
+<div class="tasks c2">
+<div class="t calm"><div><b>جرد الخزينة الرئيسية</b><small>آخر جرد: 24 نوفمبر · 7:56 م</small></div><button class="btn">اعمل الجرد</button></div>
+<div class="t calm"><div><b>ملخص اليوم</b><small>التحصيل والصرف والكاش في الخزن والبنك.</small></div><button class="btn">افتح الملخص</button></div>
 </div></div>
 
 <div class="card q"><b>سؤال ليك قبل التنفيذ:</b> دلوقتي كارت «سند قبض / سند صرف» وكارت «كشف الخزينة» بيظهروا للمحاسب، بس لما يدوس عليهم يلاقي الشاشة من غير الزراير دي، لأنها مسموحة للمراجِع بس. في التصور شيلتهم من عند المحاسب. لو عايز المحاسب يعمل سندات ويشوف كشف الخزينة، دي صلاحية هتتظبط على السيرفر الأول (الشات الرئيسي وشات الحسابات).</div>
 
 <div class="card"><h3>إيه اللي اتغير؟</h3><div class="cmp">
-<div class="b"><b>دلوقتي</b><br>• كارتين عند المحاسب بيفتحوا شاشة مفيهاش اللي مكتوب عليهم<br>• «حساب دكتور أو مورد» بيفتح الدكاترة بس<br>• كذا كارت بيفتح نفس الشاشة من فوق، من غير ما يعلّم على الحاجة<br>• جدول الطلبات من غير تاريخ، والحالة من غير لون، والرفض في عمود لوحده<br>• عمود «الإجراء» كله «—» عند المحاسب<br>• الأرقام زي SAL-2026-11-EMP-000021 بتتكسر على سطرين<br>• 3 أشكال للتاريخ في نفس الصفحة</div>
-<div class="a"><b>بعد</b><br>• كل كارت بيفتح حاجة شغالة فعلًا لدورك<br>• دكتور ومورد كل واحد كارت<br>• الكارت بيفتح على الحاجة نفسها ومتعلّم عليها<br>• تاريخ الطلب، والحالة ملوّنة، وسبب الرفض تحتها مع زرار «اعمل طلب جديد» (الطلب المرفوض نفسه مابيتعدلش)<br>• فلتر سريع: الكل / مستني / اترفض / اتعتمد<br>• الأرقام في سطر واحد، والاسم من غير كود الموظف<br>• «25 نوفمبر · 10:02 ص» في كل حتة</div>
+<div class="b"><b>دلوقتي</b><br>• كارتين عند المحاسب بيفتحوا شاشة مفيهاش اللي مكتوب عليهم<br>• «حساب دكتور أو مورد» بيفتح الدكاترة بس<br>• كذا كارت بيفتح نفس الشاشة من فوق، من غير ما يعلّم على الحاجة<br>• جدول الطلبات من غير تاريخ، والحالة من غير لون، والرفض في عمود لوحده<br>• عمود «الإجراء» كله «—» عند المحاسب<br>• الأرقام زي SAL-2026-11-EMP-000021 بتتكسر على سطرين<br>• 3 أشكال للتاريخ في نفس الصفحة<br>• الكروت مش بنفس الطول، والزراير في أماكن مختلفة، وكارت لوحده في سطر</div>
+<div class="a"><b>بعد</b><br>• كل كارت بيفتح حاجة شغالة فعلًا لدورك<br>• دكتور ومورد كل واحد كارت<br>• الكارت بيفتح على الحاجة نفسها ومتعلّم عليها<br>• تاريخ الطلب، والحالة ملوّنة، وسبب الرفض تحتها مع زرار «اعمل طلب جديد» (الطلب المرفوض نفسه مابيتعدلش)<br>• فلتر سريع: الكل / مستني / اترفض / اتعتمد<br>• الأرقام في سطر واحد، والاسم من غير كود الموظف<br>• «25 نوفمبر · 10:02 ص» في كل حتة<br>• شبكة ثابتة: اللي مستنيك في صف واحد بنفس الطول والزراير على خط واحد، والحاجات اليومية تحت في صف أهدى</div>
 </div><p class="sub" style="margin-top:10px">نفس الصلاحيات ونفس الإجراءات. التاريخ والأسماء موجودين أصلًا في البيانات اللي الشاشة بتجيبها.</p></div>
 </div><script>document.querySelectorAll('#roles button').forEach(function(b){b.onclick=function(){document.querySelectorAll('#roles button').forEach(function(x){x.classList.toggle('on',x===b);});document.querySelectorAll('[data-v]').forEach(function(c){c.hidden=c.dataset.v!==b.dataset.r;});};});</script></body></html>
