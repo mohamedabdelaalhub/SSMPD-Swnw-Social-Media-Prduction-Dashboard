@@ -45,7 +45,7 @@
           '<label class="peer-mode"><input type="radio" name="mode" value="part" checked> جزء من التحصيل (وأكمّل ورديتي)</label>' +
           '<label class="peer-mode"><input type="radio" name="mode" value="end"> إنهاء ورديتي وتسليم كل الكاش</label>' +
           '<label data-peer-amount>المبلغ<input name="amount" type="number" min="0.01" step="0.01" max="' + esc(o.shift.available) + '"></label>' +
-          '<div data-peer-counts hidden><p>عدّ الكاش اللي معاك فئة فئة:</p><div class="fc-counts">' + DEN.map(function (n) { return '<label>فئة ' + n + '<input name="c' + n + '" type="number" min="0" step="1" value="0"></label>'; }).join("") + '</div><p data-peer-total></p></div>' +
+          '<div data-peer-counts hidden><p>عدّ الكاش اللي معاك فئة فئة:</p><div class="fc-counts">' + DEN.map(function (n) { return '<label>فئة ' + n + '<input name="c' + n + '" type="number" min="0" step="1" value="0"></label>'; }).join("") + '</div><p data-peer-total></p><p class="fc-note" data-peer-zero hidden>الدرج فاضي؟ ينفع تقفل بصفر للخزينة الرئيسية بس — اكتب السبب في الملاحظة، والفرق بيروح للمراجعة من غير خصم.</p></div>' +
           '<label>ملاحظة (اختياري)<input name="note" maxlength="500"></label>' +
           '<div class="shift-reminder-actions"><button type="submit" class="btn btn-primary">سلّم</button><button type="button" class="btn" data-peer-close>إلغاء</button></div></form>'
           : '<p>مفيش زميل فاتح وردية دلوقتي. زميلك لازم يفتح ورديته الأول.</p><div class="shift-reminder-actions"><button type="button" class="btn" data-peer-close>تمام</button></div>');
@@ -60,6 +60,7 @@
         var end = f.elements.mode.value === "end"; f.querySelector("[data-peer-counts]").hidden = !end; f.querySelector("[data-peer-amount]").hidden = end;
         f.elements.amount.required = !end; f.querySelector("[data-peer-total]").textContent = "الإجمالي: " + money(total());
         f.querySelector("[data-peer-main-hint]").hidden = f.elements.to.value !== "main";
+        f.querySelector("[data-peer-zero]").hidden = !(end && f.elements.to.value === "main" && !(total() > 0));
       }
       if ((opts.to === "main" || opts.only === "main") && main) f.elements.to.value = "main";   // opened from a «سلّم الكاش» nudge / «تسليم للخزينة الرئيسية»
       else if (opts.only === "peer" && cols.length === 1) f.elements.to.value = cols[0].shift_id;
@@ -67,7 +68,12 @@
       var token = uuid();
       f.onsubmit = function (e) {
         e.preventDefault(); if (state.busy) return; var end = f.elements.mode.value === "end", p = { from_shift: o.shift.id, to_shift: f.elements.to.value, note: f.elements.note.value };
-        if (end) { var counts = {}; DEN.forEach(function (k) { counts[k] = Math.max(0, Math.floor(+f.elements["c" + k].value || 0)); }); p.end_shift = true; p.counts = counts; if (!(total() > 0)) { status(box, "اكتب الكاش اللي معاك"); return; } }
+        if (end) { var counts = {}; DEN.forEach(function (k) { counts[k] = Math.max(0, Math.floor(+f.elements["c" + k].value || 0)); }); p.end_shift = true; p.counts = counts; if (!(total() > 0)) {
+            /* owner «اعمل تعديل التسليم بصفر» 2026-11-25: an EMPTY drawer can end its shift to the main treasury with 0 + a written reason
+               (server end_shift already handles 0: shift → submitted, the difference goes to «فروق الخزينة», no transfer). Never to a colleague. */
+            if (f.elements.to.value !== "main") { status(box, "اكتب الكاش اللي معاك — ولو الدرج فاضي اختار «الخزينة الرئيسية» واكتب السبب"); return; }
+            if ((p.note || "").trim().length < 5) { status(box, "الدرج فاضي؟ اكتب السبب في الملاحظة (مثلاً: الفلوس اتسلمت قبل كده) وبعدين دوس سلّم"); f.elements.note.focus(); return; }
+          } }
         else p.amount = Number(f.elements.amount.value);
         /* 20261125110000 «جرد الوردية»: review the count + blind «عدّ تاني» before ending the shift */
         if (end && w.SSMPDCountCheck && !p.__cc) { state.busy = true; w.SSMPDCountCheck.gate(o.shift.id, p.counts, p.note).then(function (n) { p.note = n; p.__cc = true; state.busy = false; proceed(); }, function (e2) { state.busy = false; status(box, e2.message); }); return; }
@@ -78,7 +84,7 @@
           var cmd = end ? ["end_shift", { shift_id: o.shift.id, counts: p.counts, note: p.note }]
             : ["transfer_request", { from_shift: o.shift.id, to_register: main.register_id, amount: p.amount, reference: "HO-" + new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ""), reason: (p.note || "").trim().length >= 3 ? p.note.trim() : "تسليم تحصيل للخزينة الرئيسية" }];
           Promise.resolve(w.SSMPDDb.financeTreasuryCommand(cmd[0], cmd[1], token)).then(function (r) {
-            close(box); toast("اتبعت للخزينة الرئيسية — مستني " + main.name + " يعدّ ويأكد الاستلام" + (end ? " (" + money(total()) + ")" : " (" + money(p.amount) + ")"));
+            close(box); toast(end && !(total() > 0) ? "ورديتك اتقفلت بصفر — الفرق راح للمراجعة في «فروق الخزينة»، ومحدش بيتخصم منه تلقائي" : "اتبعت للخزينة الرئيسية — مستني " + main.name + " يعدّ ويأكد الاستلام" + (end ? " (" + money(total()) + ")" : " (" + money(p.amount) + ")"));
             if (w.SSMPDShiftReminder) w.SSMPDShiftReminder.refresh();
           }, function (err) { status(box, (err && err.message) || "تعذر التسليم"); }).then(function () { state.busy = false; });
           return;
