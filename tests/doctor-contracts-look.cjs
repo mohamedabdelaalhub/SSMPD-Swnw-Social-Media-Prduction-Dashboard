@@ -17,8 +17,10 @@ const data={today:'2026-11-25',me:'fm',can_create:true,can_review:true,stock_cat
  await page.evaluate(d=>{var h=SSMPDFinanceCash.helpers,host=document.getElementById('host');host.innerHTML=SSMPDFinanceControls.panel('doctors',d,h);host.querySelectorAll('[data-fin-action]').forEach(function(b){b.onclick=function(){SSMPDFinanceControls.act(b.dataset.finAction,b.dataset.id,d,h);};});},data);
  await page.waitForTimeout(150);
  const pill=id=>page.locator('.fc-doctor-group tbody tr',{has:page.locator('[data-dc-state]')}).filter({hasText:id});
+ // owner 2026-11-25 («طبقه» doctor-contracts-refine): every doctor starts CLOSED (no long scroll); open one to see its contracts
+ assert.equal(await page.locator('.fc-doctor-group[open]').count(),0,'doctors start closed');await page.locator('.fc-doctor-group summary strong').first().click();assert.equal(await page.locator('.fc-doctor-group[open]').count(),1);
  const pills=await page.locator('[data-dc-state]').allInnerTexts();
- for(const p of ['ساري','ينتهي خلال 10 يوم','قيد الاعتماد','منتهي','مرفوض','اتعدّل (نسخة أقدم)'])assert(pills.includes(p),'pill '+p+' in '+pills);
+ for(const p of ['ساري','بينتهي خلال 10 يوم','قيد الاعتماد','منتهي','مرفوض','اتعدّل (نسخة أقدم)'])assert(pills.includes(p),'pill '+p+' in '+pills);
  assert.deepEqual(await page.locator('[data-fc-filter]').evaluateAll(n=>n.map(x=>x.dataset.fcFilter)),['live','pending','soon','all']);
  assert((await page.locator('[data-fc-filter="live"]').innerText()).includes('(3)'),'live = ساري + بينتهي + قيد الاعتماد');
  const visibleRows=()=>page.locator('.fc-doctor-group tbody tr:not([hidden])').count();

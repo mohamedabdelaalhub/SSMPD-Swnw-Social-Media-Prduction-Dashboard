@@ -53,14 +53,14 @@
     if (!info || !groups.length) { if (info) { templates(d, root); wire(d, root); } return; }
     var map = info.contracts || {};
     [].forEach.call(groups, function (g, gi) {
-      var key = keys[gi]; if (!key) return;
+      var key = g.getAttribute('data-dc-key') || keys[gi]; if (!key) return; // groups may be re-ordered (attention first)
       var cs = (d.doctor_contracts || []).filter(function (c) { return c.doctor_key === key; });
       var rows = g.querySelectorAll('tbody tr');
       [].forEach.call(rows, function (tr, ri) {
-        var c = cs[ri], s = c && map[c.id]; if (!s || !tr.children[5]) return;
+        var c = cs[ri], s = c && map[c.id], cell = (tr.querySelector('[data-dc-state]') || {}).parentNode || tr.children[5]; if (!s || !cell) return;
         var el = document.createElement('small'); el.className = 'fc-sig-state'; el.setAttribute('data-sig-state', s.state); el.style.display = 'block'; el.textContent = stateText(s);
         if (s.acceptance_id && s.state === 'accepted') { var v = document.createElement('button'); v.type = 'button'; v.className = 'btn ghost sm'; v.setAttribute('data-fin-action', 'contract-signed-view'); v.setAttribute('data-id', s.acceptance_id); v.textContent = 'عرض العقد الموقّع' + (s.signature_kind ? ' (' + sigWord(s.signature_kind) + ')' : ''); el.appendChild(v); }
-        tr.children[5].appendChild(el);
+        cell.appendChild(el);
       });
       var sum = g.querySelector('summary'), ct = compText(key, info.enforcement);
       if (ct && sum) { var cs0 = document.createElement('small'); cs0.className = 'fc-sig-state fc-comp'; cs0.setAttribute('data-sig-comp', key); cs0.textContent = ct; sum.appendChild(cs0);
