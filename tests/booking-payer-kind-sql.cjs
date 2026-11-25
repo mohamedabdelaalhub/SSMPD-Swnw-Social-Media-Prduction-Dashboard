@@ -43,7 +43,9 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  // apply (twice refused)
  const M=fs.readFileSync('supabase/migrations/20261123070000_booking_payer_kind.sql','utf8');await db.exec(M);
  await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');await as(3);
- let slot=4*60;const next=()=>{slot+=20;const h=String(Math.floor(slot/60)).padStart(2,'0'),m=String(slot%60).padStart(2,'0');return date+'T'+h+':'+m+':00Z';};
+ let slot=4*60;const nowMin=(()=>{const d=new Date();return d.getUTCHours()*60+d.getUTCMinutes();})();
+ // booked slots skip ±75 min around NOW: the walk-in below takes the current time (same fix as booking-discount-everywhere-sql, #837)
+ const next=()=>{do slot+=20;while(Math.abs(slot-nowMin)<75);const h=String(Math.floor(slot/60)).padStart(2,'0'),m=String(slot%60).padStart(2,'0');return date+'T'+h+':'+m+':00Z';};
  const ap=async i=>(await snap()).appointments.find(x=>x.id===i);
  const orderOf=async a=>{const s2=await snap();return s2.orders.find(o=>s2.visits.find(v=>v.id===o.visit_id).appointment_id===a);};
  // options: only the ACTIVE insurance contract with an ACTIVE list (not the negotiating one, not the nursery); unions listed
