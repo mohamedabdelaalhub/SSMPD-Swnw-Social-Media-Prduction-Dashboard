@@ -51,7 +51,30 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
  function rpc(a,p){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c)return Promise.reject(new Error('تعذر الاتصال'));return Promise.resolve(c.rpc('clinic_reception_family',{p_workspace:ws,p_action:a,p_payload:p||{}})).then(function(r){if(r&&r.error)throw r.error;return r?r.data:null;});}
  function patientId(){return form.elements.patient_id&&form.elements.patient_id.value||'';}
  function loadFam(force){var pid=patientId();if(!pid){famData=null;famFor='';drawFam();return;}if(!force&&famFor===pid)return;famFor=pid;famData=null;famBox.innerHTML='<p class="rbd-note">جاري حساب خصم العيلة…</p>';
-  rpc('list',{patient_id:pid}).then(function(d){if(famFor!==pid)return;famData=d;drawFam();paint();}).catch(function(e){famBox.innerHTML='<p class="rbd-warn">'+esc((e&&e.message)||'تعذر تحميل العيلة')+'</p>';});}
+  rpc('list',{patient_id:pid}).then(function(d){if(famFor!==pid)return;famData=d;drawFam();paint();loadLegacy(pid);}).catch(function(e){famBox.innerHTML='<p class="rbd-warn">'+esc((e&&e.message)||'تعذر تحميل العيلة')+'</p>';});}
+ /* 20261125140000: family-card visits from the OLD system — counted only after approval (clinic_reception_family_legacy) */
+ function lrpc(a,p){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c)return Promise.reject(new Error('تعذر الاتصال'));return Promise.resolve(c.rpc('clinic_reception_family_legacy',{p_workspace:ws,p_action:a,p_payload:p||{}})).then(function(r){if(r&&r.error)throw r.error;return r?r.data:null;});}
+ function loadLegacy(pid){lrpc('status',{patient_id:pid}).then(function(l){if(famFor!==pid||!famData)return;famData.legacy=l;drawFam();}).catch(function(){});}
+ function legacyHtml(l){if(!l)return '';var es=l.entries||[],ap=es.find(function(e){return e.status==='approved';}),pe=es.find(function(e){return e.status==='pending';}),last=es[0];
+  var who=function(e){var ab=(e.approved_by||[]).filter(Boolean);return [e.created_by?'سجّلها '+esc(e.created_by):'',ab.length?'اعتمدها '+esc(ab.join(' و ')):''].filter(Boolean).join(' · ');};
+  return '<div class="rbd-legacy" data-rbd-legacy><div class="rbd-l">زيارات كارت العيلة السابقة (السيستم القديم)</div>'+
+   (ap?'<p class="rbd-ok" data-rbd-legacy-approved>✓ '+esc(ap.visits)+' زيارة معتمدة'+(ap.patient_id!==famFor?' (على ملف '+esc(ap.patient)+')':'')+' — بتتحسب في خطوة الخصم'+(who(ap)?'. '+who(ap):'')+'</p>':'')+
+   (pe?'<p class="rbd-note" data-rbd-legacy-pending>⏳ '+esc(pe.visits)+' زيارة مستنية الاعتماد (السوبر أدمن أو المدير المالي)'+(l.required>1?' — محتاجة '+esc(l.required)+' اعتمادات':'')+(who(pe)?' — '+who(pe):'')+'. مش بتتحسب لحد ما تتعتمد.</p>':'')+
+   (last&&last.status==='rejected'?'<p class="rbd-warn" data-rbd-legacy-rejected>✗ آخر طلب ('+esc(last.visits)+' زيارة) اترفض: '+esc(last.review_note||'')+'</p>':'')+
+   (!ap&&!pe&&!(last&&last.status==='rejected')?'<p class="rbd-note">مفيش زيارات قديمة متسجّلة للعيلة دي.</p>':'')+
+   (l.can_request?'<button type="button" class="btn" data-rbd-legacy-open>'+(ap?'تعديل الزيارات السابقة':'+ زيارات كارت العيلة السابقة (السيستم القديم)')+'</button><div class="rbd-linkbox" data-rbd-legacy-box hidden></div>':'')+'</div>';}
+ function openLegacy(){var lb=famBox.querySelector('[data-rbd-legacy-box]'),pid=famFor;lb.hidden=false;
+  lb.innerHTML='<label class="rbd-row"><span class="rbd-l">عدد زيارات كارت العيلة اللي العيلة خدتها على السيستم القديم</span><input type="number" min="0" max="500" step="1" inputmode="numeric" data-rbd-lg-n></label>'+
+   '<label class="rbd-row"><span class="rbd-l">السبب</span><input type="text" maxlength="300" data-rbd-lg-why placeholder="مثلاً: العيلة كانت ماشية بكارت العيلة قبل الداشبورد"></label>'+
+   '<div class="rbd-row"><span class="rbd-l">الإثبات: مستند…</span><input type="file" accept="image/*,application/pdf" capture="environment" data-rbd-lg-f><small class="rbd-up" data-rbd-lg-up role="status"></small></div>'+
+   '<label class="rbd-row"><span class="rbd-l">…أو ملاحظة (مثلاً: دفتر الاستقبال صفحة كام)</span><input type="text" maxlength="500" data-rbd-lg-note></label>'+
+   '<button type="button" class="btn btn-primary" data-rbd-lg-go>ابعت للاعتماد</button>';
+  var proof='',f=lb.querySelector('[data-rbd-lg-f]'),upl=lb.querySelector('[data-rbd-lg-up]');
+  f.addEventListener('change',function(e){e.stopPropagation();var x=f.files&&f.files[0];proof='';if(!x)return;if(x.size>8*1024*1024){upl.textContent='الملف أكبر من ٨ ميجا';f.value='';return;}upl.textContent='جاري الرفع…';uploadCard(ws,x).then(function(p){proof=p;upl.textContent='اترفع ✓';}).catch(function(err){upl.textContent='الرفع ما نجحش: '+((err&&err.message)||'حاول تاني');f.value='';});});
+  lb.querySelector('[data-rbd-lg-go]').onclick=function(){var n=lb.querySelector('[data-rbd-lg-n]').value.trim(),why=lb.querySelector('[data-rbd-lg-why]').value.trim(),nt=lb.querySelector('[data-rbd-lg-note]').value.trim();
+   if(!/^[0-9]+$/.test(n)){upl.textContent='اكتب عدد الزيارات (رقم صحيح 0 أو أكتر)';return;}if(why.length<3){upl.textContent='اكتب السبب';return;}if(!proof&&nt.length<5){upl.textContent='ارفع مستند أو اكتب ملاحظة الإثبات';return;}
+   var bt=this;bt.disabled=true;lrpc('request',{patient_id:pid,visits:n,reason:why,proof_path:proof,proof_note:nt}).then(function(l){if(famData){famData.legacy=l;drawFam();}if(w.SSMPDToast)w.SSMPDToast.show('اتبعت للاعتماد ✓ — الزيارات القديمة بتتحسب بعد الاعتماد');})
+    .catch(function(err){bt.disabled=false;upl.textContent=(err&&err.message)||'تعذر الحفظ';});};}
  function relName(k){var r=REL.find(function(x){return x[0]===k;});return r?r[1]:'';}
  function drawFam(){if(!famData){if(!patientId())famBox.innerHTML='<p class="rbd-note">اختار المريض الأول.</p>';return;}var d=famData,step=d.visit_no||1;
   famBox.innerHTML='<div class="rbd-famhead">'+(d.members.length?'العيلة: '+(d.members.length+1)+' ملفات':'المريض لوحده (صاحب الكارت)')+' — الزيارة دي رقم <b>'+step+'</b> بخصم كارت العيلة</div>'+
@@ -59,8 +82,8 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
    (d.members.length?'<ul class="rbd-list">'+d.members.map(function(m){return '<li>'+esc(m.name)+(m.via==='link'?' — '+esc(relName(m.relation))+' — مستند ✓':' — نفس رقم التليفون')+'</li>';}).join('')+'</ul>':'')+
    (d.visits.length?'<ul class="rbd-list rbd-muted">'+d.visits.slice(-4).map(function(v){return '<li>'+esc(v.day)+' — '+esc(v.name)+' — '+esc(+v.percent)+'٪</li>';}).join('')+'</ul>':'')+
    (d.linked?'<p class="rbd-ok">✓ المريض مربوط بالعيلة ومستند القرابة متسجّل.</p>':'<p class="rbd-note">لو المريض قريب لحد عنده كارت العيلة: اربطه الأول.</p>')+
-   '<button type="button" class="btn" data-rbd-link>+ اربطه بقريب</button><div class="rbd-linkbox" data-rbd-linkbox hidden></div>';
-  famBox.querySelector('[data-rbd-link]').onclick=openLink;}
+   legacyHtml(d.legacy)+'<button type="button" class="btn" data-rbd-link>+ اربطه بقريب</button><div class="rbd-linkbox" data-rbd-linkbox hidden></div>';
+  famBox.querySelector('[data-rbd-link]').onclick=openLink;var lo=famBox.querySelector('[data-rbd-legacy-open]');if(lo)lo.onclick=openLegacy;}
  function openLink(){var lb=famBox.querySelector('[data-rbd-linkbox]'),pid=patientId();lb.hidden=false;
   lb.innerHTML='<label class="rbd-row"><span class="rbd-l">القريب</span><select data-rbd-rel-p><option value="">اختار الملف</option>'+(data.patients||[]).filter(function(p){return p.id!==pid;}).map(function(p){return '<option value="'+esc(p.id)+'">'+esc((p.file_no?p.file_no+' — ':'')+p.name+(p.phone?' — '+p.phone:''))+'</option>';}).join('')+'</select></label>'+
    '<div class="rbd-row"><span class="rbd-l">صلة القرابة</span>'+chips('rbd_relation',REL,'spouse')+'</div>'+

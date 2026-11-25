@@ -29,3 +29,4 @@
 /* owner 2026-11-24 «العروض ملهاش اي خصومات تانية» */
 .rbd-offer{margin:4px 0 0;padding:6px 10px;border-radius:10px;background:#FFF6E5;color:#8A5A00;font-size:12.5px;font-weight:700}
 .rbd-sw.is-off,.rpk-opt.is-off{opacity:.55;cursor:not-allowed}
+.rbd-legacy{display:grid;gap:6px;border-top:1px solid #E3E8F2;padding-top:8px}.rbd-legacy .rbd-l{font-weight:600}
