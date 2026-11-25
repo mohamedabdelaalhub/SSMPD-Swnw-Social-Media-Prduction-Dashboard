@@ -36,8 +36,8 @@ const shell=async(browser,width)=>{const page=await browser.newPage({viewport:{w
     if(fn==='hr_offboarding_command'){window.__calls.push(args);return {data:'c1'};}return {data:{rules:[],adjustments:[],devices:[],imports:[],services:[]}};}}};`});
   await page.addScriptTag({content:fs.readFileSync('assets/js/roles.js','utf8')});
   for(const f of ['workforce-prices','hr-offboarding','hr-navigation','hr-actions'])await page.addScriptTag({content:fs.readFileSync('assets/js/'+f+'.js','utf8')});
-  await page.evaluate(()=>SSMPDHumanResources.render(document.getElementById('view-container')));await page.waitForSelector('[data-hr-open=offboarding]');
-  await page.click('[data-hr-open=offboarding]');await page.waitForSelector('[data-offb=new]');await page.click('[data-offb=new]');await page.waitForSelector('.wp-modal select[name=person_id]');
+  await page.evaluate(()=>SSMPDHumanResources.render(document.getElementById('view-container')));await page.waitForSelector('[data-hr-group=end]');
+  await page.click('[data-hr-group=end]');await page.waitForSelector('[data-offb=new]');await page.click('[data-offb=new]');await page.waitForSelector('.wp-modal select[name=person_id]');
   const go=page.locator('.wp-modal [data-offb-confirm]');
   assert.equal(await page.inputValue('.wp-modal select[name=person_id]'),'','nothing preselected');assert.equal((await go.innerText()).trim(),'ابدأ إنهاء الخدمة');
   assert(await go.evaluate(b=>b.classList.contains('danger-btn')),'red confirm');assert(await page.locator('[data-offb-next]').isVisible());
