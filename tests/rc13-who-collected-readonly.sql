@@ -7,7 +7,7 @@ select p.receipt_no, p.method, p.amount, p.reference, p.note, (p.proof_path is n
   from clinic_reception.payments p left join clinic_reception.shifts rs on rs.id = p.shift_id where p.receipt_no = 'RC-2026-000013';
 -- 2) the visit / order timeline for that file today (arrival, service, completion, who did each)
 select o.id order_id, o.status, o.price, o.discount, o.created_at at time zone 'Africa/Cairo' ordered_cairo, o.completed_at at time zone 'Africa/Cairo' completed_cairo,
-       (select name from public.admins where id = o.created_by) ordered_by, v.status visit_status, v.created_at at time zone 'Africa/Cairo' visit_opened_cairo
+       (select name from public.admins where id = o.created_by) ordered_by, v.status visit_status, v.opened_at at time zone 'Africa/Cairo' visit_opened_cairo, (select name from public.admins where id = v.opened_by) visit_opened_by, v.closed_at at time zone 'Africa/Cairo' visit_closed_cairo
   from clinic_reception.orders o join clinic_reception.visits v on v.id = o.visit_id join clinic_reception.patients pt on pt.id = v.patient_id
  where pt.file_no = 'P-2026-001619' and (o.created_at at time zone 'Africa/Cairo')::date = date '2026-11-25';
 -- 3) every receipt on Maryam's 25-11 shift (what her expected 920 is made of)
