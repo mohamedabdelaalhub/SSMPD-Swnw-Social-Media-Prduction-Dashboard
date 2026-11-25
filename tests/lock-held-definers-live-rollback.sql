@@ -29,9 +29,15 @@ begin
   begin execute 'set local role authenticated'; perform public.staff_kpis_admin(now() - interval '1 day', now()); execute 'reset role'; err := 'EXECUTED';
   exception when others then execute 'reset role'; err := sqlerrm; end;
   insert into lh_live(step, expected, actual, ok) values ('Mazen → staff_kpis_admin (all staff)', 'permission denied', err, err ilike '%permission denied%');
+  -- like a real PostgREST call: only request.jwt.claims is set (staff_kpis_admin overrides it inside; a leftover
+  -- request.jwt.claim.sub would keep auth.uid() = Mazen and make staff_kpis refuse — a test artefact, not the live path)
+  perform set_config('request.jwt.claim.sub', '', true);
   begin execute 'set local role authenticated'; perform public.my_staff_kpis(now() - interval '7 days', now()); execute 'reset role'; err := 'ok';
   exception when others then execute 'reset role'; err := sqlerrm; end;
-  insert into lh_live(step, expected, actual, ok) values ('Mazen → my_staff_kpis (own KPIs)', 'not permission denied', err, err not ilike '%permission denied%');
+  insert into lh_live(step, expected, actual, ok) values ('Mazen → my_staff_kpis (own KPIs)', 'ok (his own rows)', err, err = 'ok');
+  -- the Claude mailbox path: a plain postgres session with no JWT at all
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.jwt.claim.sub', '', true);
   begin perform public.staff_kpi_month_data(null); err := 'ok';
   exception when others then err := sqlerrm; end;
   insert into lh_live(step, expected, actual, ok) values ('postgres (Claude mailbox) → staff_kpi_month_data', 'ok', err, err = 'ok');
