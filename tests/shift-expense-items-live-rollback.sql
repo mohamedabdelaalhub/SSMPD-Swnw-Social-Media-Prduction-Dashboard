@@ -1,6 +1,7 @@
 -- Live rollback dry-run for 20261126010000_shift_expense_more_items.sql (rule 9). ONE transaction ending with ROLLBACK; nothing kept.
 -- On a THROWAWAY collection register + shift (opening book 500) created inside the transaction, as a real reception cashier:
--- status lists 12 items; «إكراميات» with no receipt + a reason posts (Dr 5216); «صيانة» without a receipt is refused; a short tip reason is refused.
+-- the register is forced 'receive' like every real reception register (that is what refused the first dry-run);
+-- status lists 12 items; «إكراميات» with no receipt + a reason posts (Dr 5216); «صيانة» without a receipt is refused; a short tip reason is refused; any other payout from the same receive-only register is still refused.
 begin;
 -- «مصروفات الوردية»: 3 more items (owner «طبق المرحلة الأولى» 2026-11-25 — daily-movements map, phase 1; mockup
 -- docs/ui-references/mockups/daily-movements-map.html): «صيانة» and «تليفونات وباقات موبايل» (with a receipt, like the others) and
@@ -8,7 +9,13 @@ begin;
 -- evidence marker 'no-receipt').
 -- Accounts: صيانة / تليفونات → 5224 مصروفات عمومية أخرى, إكراميات → 5216 مصروفات نثرية (the item key/label stays on every request,
 -- so the accountant can still split them). Same limits, same blind cash checks, same mandatory finance post-review.
--- In-place: shift_expense_items() replaced; clinic_finance_shift_expense patched at one anchor (receipt check). Saved defs for rollback.
+-- Fix (live dry-run 2026-11-25): reception collection registers are forced to operation_mode 'receive' (treasury trigger), and
+-- clinic_finance.post() called register_direction(shift,'pay') for every cash credit — so EVERY shift expense (old items too) was
+-- refused on live with «الخزينة للاستلام فقط ولا تسمح بالصرف». post() now skips the direction check for source 'shift_expense' only
+-- (cash_line_guard already allows exactly that source; the spend function keeps its own limits: own open shift, allowance,
+-- per-expense max, proven cash). Every other payout from a collection register stays refused.
+-- In-place: shift_expense_items() replaced; clinic_finance_shift_expense patched at one anchor (receipt check); clinic_finance.post
+-- patched at one anchor (direction line). Saved defs for rollback.
 -- Rollback: supabase/rollbacks/20261126010000_shift_expense_more_items.rollback.sql
 
 do $$ declare d text; begin
@@ -16,13 +23,17 @@ do $$ declare d text; begin
   if to_regclass('clinic_finance.shift_expense_items_saved_defs') is not null then raise exception 'تم تطبيق هذا الملف من قبل'; end if;
   d := pg_get_functiondef('public.clinic_finance_shift_expense(text,jsonb)'::regprocedure);
   if position($a$    if ev = '' or split_part(ev, '/', 1) <> auth.uid()::text$a$ in d) = 0 then raise exception 'نص التحقق من الإيصال اتغيّر — راجع الدالة قبل التطبيق'; end if;
+  d := pg_get_functiondef('clinic_finance.post(text,uuid,text,uuid,text,text,numeric)'::regprocedure);
+  if (length(d) - length(replace(d, $a$p_credit='1111' and p_source<>'deposit' and not$a$, ''))) / length($a$p_credit='1111' and p_source<>'deposit' and not$a$) <> 1
+    then raise exception 'سطر اتجاه الخزينة في post اتغيّر — راجع الدالة قبل التطبيق (md5 %)', md5(d); end if;
 end $$;
 
 create table clinic_finance.shift_expense_items_saved_defs(name text primary key, def text not null);
 revoke all on clinic_finance.shift_expense_items_saved_defs from public, anon, authenticated;
 insert into clinic_finance.shift_expense_items_saved_defs values
   ('shift_expense_items', pg_get_functiondef('clinic_finance.shift_expense_items()'::regprocedure)),
-  ('clinic_finance_shift_expense', pg_get_functiondef('public.clinic_finance_shift_expense(text,jsonb)'::regprocedure));
+  ('clinic_finance_shift_expense', pg_get_functiondef('public.clinic_finance_shift_expense(text,jsonb)'::regprocedure)),
+  ('post', pg_get_functiondef('clinic_finance.post(text,uuid,text,uuid,text,text,numeric)'::regprocedure));
 
 create or replace function clinic_finance.shift_expense_items() returns jsonb language sql immutable as $$
   select '[{"key":"cleaning","label":"مناديل ومستلزمات نظافة","account":"5216"},{"key":"bathroom","label":"مستلزمات حمام","account":"5216"},
@@ -42,6 +53,12 @@ do $$ begin
       if length(why) < 5 then raise exception 'اكتب سبب الإكرامية بالتفصيل (لمين وليه)'; end if;
       ev := 'no-receipt';   -- requests.evidence is required (2..200): a fixed marker, the screen shows «من غير إيصال»
     elsif ev = '' or split_part(ev, '/', 1) <> auth.uid()::text$b$);
+end $$;
+
+do $$ begin
+  execute replace(pg_get_functiondef('clinic_finance.post(text,uuid,text,uuid,text,text,numeric)'::regprocedure),
+    $a$p_credit='1111' and p_source<>'deposit' and not$a$,
+    $b$p_credit='1111' and p_source<>'deposit' and p_source<>'shift_expense' and not$b$);
 end $$;
 
 do $$
@@ -69,8 +86,11 @@ begin
   ok := false; begin perform public.clinic_finance_shift_expense('spend', jsonb_build_object('shift_id', sid, 'item', 'tips', 'amount', '5', 'reason', 'عامل', 'receipt_path', '', 'token', gen_random_uuid()));
   exception when others then ok := sqlerrm like '%سبب الإكرامية%'; end; if not ok then raise exception 'short tip reason accepted'; end if;
   execute 'reset role';
+  if (select operation_mode from clinic_finance.registers where id = rg) <> 'receive' then raise exception 'fixture register is not receive-only'; end if;
+  ok := false; begin perform clinic_finance.post('expense', gen_random_uuid(), 'تجربة صرف عادي', sid, '5216', '1111', 1);
+  exception when others then ok := sqlerrm like '%للاستلام فقط%'; end; if not ok then raise exception 'a normal payout from a receive-only register was accepted'; end if;
   if (select evidence from clinic_finance.requests where id = (r->>'id')::uuid) <> 'no-receipt' then raise exception 'evidence marker missing'; end if;
   if not exists (select 1 from clinic_finance.lines l join clinic_finance.entries e on e.id = l.entry_id where e.source = 'shift_expense' and e.source_id = (r->>'id')::uuid and l.account = '5216' and l.debit = 20) then raise exception 'tip not posted to 5216'; end if;
-  raise notice 'shift expense items dry-run OK: 12 items, tip without receipt posted 20 to 5216, maintenance without receipt refused, short tip reason refused';
+  raise notice 'shift expense items dry-run OK: 12 items, tip without receipt posted 20 to 5216, maintenance without receipt refused, short tip reason refused, normal payout from the receive-only register still refused';
 end $$;
 rollback;
