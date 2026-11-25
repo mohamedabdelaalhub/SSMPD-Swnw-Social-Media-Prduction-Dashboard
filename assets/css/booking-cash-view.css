@@ -1,0 +1,47 @@
+/* «خزينة الاستقبال والحجوزات» plain-language layout (help 276) */
+.bcv{display:grid;gap:16px;min-width:0;color:#16212E}
+.bcv *{box-sizing:border-box}
+.bcv-card{background:#fff;border:1px solid #E6EBF3;border-radius:18px;padding:16px;min-width:0;box-shadow:0 6px 24px rgba(15,54,157,.05);margin:0}
+.bcv h2{margin:0;font-size:20px;color:#0F369D}
+.bcv h3{margin:0 0 10px;font-size:15px}
+.bcv h4{margin:12px 0 4px;font-size:13px;color:#475467}
+.bcv-sub{margin:4px 0 0;font-size:13px;color:#475467}
+.bcv-title{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.bcv-period{display:flex;flex-wrap:wrap;border:1px solid #E6EBF3;border-radius:12px;overflow:hidden}
+.bcv-period button{border:0;background:#fff;min-height:38px;padding:0 12px;font:inherit;font-weight:600;color:#475467;cursor:pointer}
+.bcv-period button.is-on{background:#0F369D;color:#fff}
+.bcv-kp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.bcv-kp div{background:#EAF0FF;border-radius:14px;padding:12px;display:grid;gap:2px;min-width:0}
+.bcv-kp b{font-size:22px;color:#0F369D}.bcv-kp b.bcv-sm{font-size:15px}
+.bcv-kp small{font-size:12px;color:#475467}
+.bcv-coll{margin-top:12px;background:#F2FAF5;border-color:#CFE6D8;box-shadow:none}
+.bcv-coll-top div{display:grid;gap:2px}.bcv-coll-top b{font-size:24px;color:#2F7D5C}.bcv-coll small{font-size:12px;color:#475467}
+.bcv-methods{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.bcv-methods span{background:#fff;border:1px solid #CFE6D8;border-radius:999px;padding:4px 12px;font-size:12.5px}
+.bcv-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.bcv .btn{min-height:40px;border-radius:12px;font-weight:600}
+.bcv .bcv-main,.bcv-acts .btn:first-child{background:#F15A22;border-color:#F15A22;color:#fff}
+.bcv-need{border-color:#F6C9B6;background:#FFF8F4}.bcv-need h3{color:#B23B12}
+.bcv-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid #E6EBF3;border-inline-start:4px solid #F15A22;border-radius:14px;padding:12px;background:#fff}
+.bcv-row+.bcv-row{margin-top:8px}.bcv-row.is-bad{border-inline-start-color:#D0402A}
+.bcv-row b{display:block;font-size:14px}.bcv-row small{display:block;color:#475467;font-size:12.5px;line-height:1.7;overflow-wrap:anywhere}
+.bcv-row-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.bcv-list{display:grid}
+.bcv-it{display:grid;grid-template-columns:190px minmax(0,1.3fr) 120px 120px minmax(150px,auto);gap:12px;align-items:center;padding:12px 2px;border-bottom:1px solid #E6EBF3}
+.bcv-it:last-child{border-bottom:0}
+.bcv-it3{grid-template-columns:minmax(0,1fr) 130px 110px 360px}
+.bcv-it2{grid-template-columns:minmax(0,1fr) auto}
+.bcv-it b{display:block;font-size:14px;overflow-wrap:anywhere}.bcv-it small{display:block;color:#667085;font-size:12px;line-height:1.7}
+.bcv-d{font-size:13px;color:#344054}.bcv-m{font-weight:700;white-space:nowrap}
+.bcv-why{display:block;color:#D0402A;font-size:12px}
+.bcv-chip{display:inline-flex;align-items:center;min-height:24px;padding:0 10px;border-radius:999px;font-size:12px;background:#EAF0FF;color:#0F369D;white-space:nowrap;margin-inline-end:6px}
+.bcv-chip.is-ok{background:#E7F3EC;color:#2F7D5C}.bcv-chip.is-bad{background:#FCEDEB;color:#D0402A}.bcv-chip.is-warn{background:#FFF1E0;color:#9A4E00}
+.bcv-diff{font-size:12px;border-radius:999px;padding:2px 8px;display:inline-block;white-space:nowrap}
+.bcv-diff.is-bad{background:#FCEDEB;color:#D0402A}.bcv-diff.is-ok{background:#E7F3EC;color:#2F7D5C}
+.bcv-ref{display:inline-flex;gap:6px;align-items:center;font-size:11.5px;background:#F3F6FB;border-radius:8px;padding:2px 8px;color:#475467}
+.bcv-ref button{border:0;background:none;color:#0F369D;font:inherit;font-size:11.5px;padding:0;cursor:pointer}
+.bcv-hint{margin:8px 0 0;font-size:12px;color:#667085}
+.bcv-two{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.bcv-empty{color:#475467;font-size:13px;background:#F3F6FB;border-color:#F3F6FB;box-shadow:none}
+@media(max-width:760px){.bcv-card{padding:14px}.bcv-kp{grid-template-columns:repeat(2,minmax(0,1fr))}.bcv-row{grid-template-columns:minmax(0,1fr)}.bcv-row-acts{justify-content:flex-start}
+ .bcv-it,.bcv-it3{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.bcv-it>:nth-child(n+3){grid-column:auto}.bcv-it .bcv-row-acts{grid-column:1/-1;justify-content:flex-start}}
