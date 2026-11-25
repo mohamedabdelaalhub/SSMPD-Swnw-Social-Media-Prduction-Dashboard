@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: «القوائم المالية»</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.wrap>*{min-width:0}
+.card{background:#fff;border-radius:24px;padding:20px;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.top h2{margin:0;font-size:24px}.top p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;white-space:nowrap}
+.b-warn{background:#FFF1E8;color:#B54708}.b-ok{background:#E6F4EC;color:var(--pos)}
+.ghost{border:1px solid var(--line);background:#fff;border-radius:12px;min-height:44px;padding:0 16px;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:8px}
+.period{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;min-height:40px;padding:0 14px;font-weight:600;color:#475467}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.dates{display:none;gap:8px;align-items:center}.dates.on{display:flex}.dates input{min-height:40px;border:1px solid var(--line);border-radius:10px;padding:0 10px}
+.range{color:var(--muted);font-size:13px;margin-inline-start:auto;direction:ltr}
+.alert{display:flex;gap:12px;align-items:flex-start;background:#FFF6EC;border:1px solid #FBD9B4;border-radius:18px;padding:14px 16px}
+.alert i{width:36px;height:36px;border-radius:12px;background:#FFE7D1;color:#B54708;display:grid;place-items:center;flex:none}
+.alert b{display:block;color:#9A4E00}.alert span{display:block;color:#475467;font-size:13px;margin-top:2px;line-height:1.7}
+.alert .ghost{margin-inline-start:auto;flex:none;align-self:center}
+.tabs{display:flex;gap:6px;background:var(--soft);border-radius:16px;padding:6px;overflow-x:auto}
+.tab{border:0;background:none;border-radius:12px;min-height:44px;padding:0 18px;font-weight:700;color:#475467;white-space:nowrap}.tab.on{background:#fff;color:var(--brand);box-shadow:0 2px 8px rgba(15,54,157,.08)}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.kpi{border:1px solid var(--line);border-radius:18px;padding:14px 16px}.kpi span{color:var(--muted);font-size:13px;font-weight:600}.kpi b{display:block;font-size:26px;margin-top:4px;direction:ltr;text-align:end}.kpi small{color:var(--muted);font-size:12px}
+.kpi.net{background:#F2FAF5;border-color:#CDE9D8}.kpi.net b{color:var(--pos)}.kpi.loss{background:#FFF6F4;border-color:#F4C7BF}.kpi.loss b{color:var(--neg)}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 0 10px;flex-wrap:wrap}
+.sw{display:flex;align-items:center;gap:8px;font-size:13px;color:#475467;cursor:pointer}.sw input{width:20px;height:20px;accent-color:var(--brand)}
+.sec{border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:12px}
+.sec h4{margin:0;padding:12px 16px;background:var(--soft);display:flex;justify-content:space-between;font-size:15px}.sec h4 b{direction:ltr}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--line)}
+.row .nm{display:flex;align-items:center;gap:8px;min-width:0}.row .nm span{overflow-wrap:anywhere}
+.row code{font-family:inherit;font-size:11px;color:var(--muted);background:var(--soft);border-radius:6px;padding:2px 6px;direction:ltr}
+.row .v{font-weight:700;direction:ltr;min-width:110px;text-align:start}
+.row.l1{font-weight:700}.row.l2{padding-inline-start:40px}.row.l3{padding-inline-start:64px;color:#475467}
+.row.zero{display:none}.showzero .row.zero{display:grid}.row.zero .v{color:#98A2B3;font-weight:400}
+.tg{width:28px;height:28px;border:0;background:none;border-radius:8px;display:grid;place-items:center;color:var(--muted);padding:0}.tg svg{transition:transform .15s}.closed .tg svg{transform:rotate(90deg)}
+.total{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-radius:16px;font-weight:800;font-size:16px}.total b{direction:ltr}
+.t-pos{background:#E6F4EC;color:var(--pos)}.t-zero{background:var(--soft)}
+.pane{display:none}.pane.on{display:block}
+.eq{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;color:#475467;font-size:13px;margin-top:10px}
+@media (max-width:720px){.kpis{grid-template-columns:minmax(0,1fr)}.alert{flex-wrap:wrap}.alert .ghost{margin-inline-start:0}.range{margin-inline-start:0;width:100%;text-align:end}.row.l2{padding-inline-start:28px}.row.l3{padding-inline-start:44px}.row .v{min-width:0}.card{padding:16px}}
+</style>
+</head>
+<body>
+<p class="note"><b>تصور</b> — «القوائم المالية»: الإجابة فوق، والتفاصيل تحت. نفس الأرقام ونفس طريقة الحساب، الشكل بس اللي اتغيّر. (أرقام تجريبية)</p>
+<div class="wrap">
+ <section class="card">
+  <div class="top">
+   <div><h2>القوائم المالية</h2><p>الأرباح والخسائر، المركز المالي، وحركة النقد للفترة اللي تختارها</p></div>
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge b-warn">● لم يُقفل بعد</span><button class="ghost"><svg viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3"/><path d="M7 14h10v7H7z"/></svg>طباعة القوائم</button><button class="ghost"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>تحديث</button></div>
+  </div>
+  <div class="period">
+   <button class="chip on" data-p="m">الشهر ده</button><button class="chip" data-p="pm">الشهر اللي فات</button><button class="chip" data-p="y">من أول السنة</button><button class="chip" data-p="c">فترة مخصصة</button>
+   <span class="dates" id="dates"><input type="date" value="2026-11-01"> — <input type="date" value="2026-11-25"></span>
+   <span class="range" id="range">01-11-2026 → 25-11-2026</span>
+  </div>
+ </section>
+
+ <div class="alert" role="alert"><i><svg viewBox="0 0 24 24"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/></svg></i><div><b>الأرصدة الافتتاحية لسه ما اتعتمدتش</b><span>القوائم دي بتحسب الحركات المسجلة على السيستم بس، ومش بتمثل أرصدة المركز التاريخية كاملة لحد ما القيد الافتتاحي يتعتمد.</span></div><button class="ghost">مراجعة القيد الافتتاحي</button></div>
+
+ <section class="card">
+  <div class="tabs" role="tablist"><button class="tab on" data-t="pl">الأرباح والخسائر</button><button class="tab" data-t="bs">المركز المالي</button><button class="tab" data-t="cf">حركة النقد والبنك</button></div>
+
+  <div class="pane on" id="pl">
+   <div class="kpis"><div class="kpi"><span>صافي الإيراد</span><b>48,250.00</b><small>ج.م</small></div><div class="kpi"><span>المصروفات</span><b>31,900.00</b><small>ج.م</small></div><div class="kpi net"><span>صافي الربح</span><b>16,350.00</b><small>ج.م · ربح</small></div></div>
+   <div class="bar"><b>التفاصيل</b><label class="sw"><input type="checkbox" class="zt"> إظهار الحسابات اللي رصيدها صفر (14)</label></div>
+   <div class="tree">
+    <div class="sec"><h4><span>الإيرادات</span><b>48,250.00</b></h4>
+     <div class="grp"><div class="row l1"><span class="nm"><button class="tg" aria-label="طي"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><span>إيرادات النشاط الرئيسي</span> <code>0401</code></span><span class="v">48,250.00</span></div>
+      <div class="kids"><div class="row l2"><span class="nm"><span>المبيعات</span> <code>040101</code></span><span class="v">51,000.00</span></div>
+       <div class="row l3"><span class="nm"><span>مبيعات نقدي</span> <code>04010101</code></span><span class="v">39,500.00</span></div>
+       <div class="row l3"><span class="nm"><span>مبيعات آجل وتأمين</span> <code>04010102</code></span><span class="v">11,500.00</span></div>
+       <div class="row l2"><span class="nm"><span>الخصم على المبيعات (خصم مسموح به)</span> <code>040102</code></span><span class="v">-2,750.00</span></div>
+       <div class="row l2 zero"><span class="nm"><span>مردودات المبيعات</span> <code>040103</code></span><span class="v">0.00</span></div>
+       <div class="row l2 zero"><span class="nm"><span>إيرادات مستلزمات طبية</span> <code>040104</code></span><span class="v">0.00</span></div></div></div>
+     <div class="row l1 zero"><span class="nm"><span>إيرادات أخرى</span> <code>0402</code></span><span class="v">0.00</span></div>
+    </div>
+    <div class="sec"><h4><span>المصروفات</span><b>31,900.00</b></h4>
+     <div class="grp"><div class="row l1"><span class="nm"><button class="tg" aria-label="طي"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><span>أتعاب الأطباء</span> <code>0501</code></span><span class="v">18,400.00</span></div>
+      <div class="kids"><div class="row l2"><span class="nm"><span>أتعاب أطباء بالنسبة</span> <code>050101</code></span><span class="v">18,400.00</span></div><div class="row l2 zero"><span class="nm"><span>أتعاب ثابتة</span> <code>050102</code></span><span class="v">0.00</span></div></div></div>
+     <div class="row l1"><span class="nm"><span>المرتبات والأجور</span> <code>0502</code></span><span class="v">9,500.00</span></div>
+     <div class="row l1"><span class="nm"><span>مستلزمات ومواد</span> <code>0503</code></span><span class="v">4,000.00</span></div>
+     <div class="row l1 zero"><span class="nm"><span>الإيجارات</span> <code>0504</code></span><span class="v">0.00</span></div>
+    </div>
+   </div>
+   <div class="total t-pos"><span>صافي الربح للفترة</span><b>16,350.00 ج.م</b></div>
+  </div>
+
+  <div class="pane" id="bs">
+   <div class="kpis"><div class="kpi"><span>الأصول</span><b>126,800.00</b><small>ج.م في 25-11-2026</small></div><div class="kpi"><span>الالتزامات وحقوق الملكية</span><b>110,450.00</b><small>ج.م</small></div><div class="kpi net"><span>فرق المعادلة</span><b>0.00</b><small>متوازنة ✓</small></div></div>
+   <div class="bar"><b>التفاصيل</b><label class="sw"><input type="checkbox" class="zt"> إظهار الحسابات اللي رصيدها صفر (22)</label></div>
+   <div class="tree">
+    <div class="sec"><h4><span>الأصول</span><b>126,800.00</b></h4><div class="row l1"><span class="nm"><span>النقدية بالخزائن</span> <code>0101</code></span><span class="v">22,300.00</span></div><div class="row l1"><span class="nm"><span>البنوك والمحافظ</span> <code>0102</code></span><span class="v">64,500.00</span></div><div class="row l1"><span class="nm"><span>مستحقات شركات التأمين</span> <code>0103</code></span><span class="v">40,000.00</span></div><div class="row l1 zero"><span class="nm"><span>الأصول الثابتة</span> <code>0110</code></span><span class="v">0.00</span></div></div>
+    <div class="sec"><h4><span>الالتزامات وحقوق الملكية</span><b>110,450.00</b></h4><div class="row l1"><span class="nm"><span>مستحقات الأطباء</span> <code>0201</code></span><span class="v">18,400.00</span></div><div class="row l1"><span class="nm"><span>موردين</span> <code>0202</code></span><span class="v">7,050.00</span></div><div class="row l1"><span class="nm"><span>رأس المال</span> <code>0301</code></span><span class="v">85,000.00</span></div></div>
+   </div>
+   <div class="eq">الأصول 126,800.00 = الالتزامات وحقوق الملكية 110,450.00 + النتيجة المتراكمة 16,350.00</div>
+  </div>
+
+  <div class="pane" id="cf">
+   <div class="kpis"><div class="kpi"><span>رصيد أول الفترة</span><b>12,000.00</b><small>ج.م</small></div><div class="kpi"><span>صافي الحركة</span><b>74,800.00</b><small>ج.م</small></div><div class="kpi"><span>رصيد آخر الفترة</span><b>86,800.00</b><small>ج.م</small></div></div>
+   <div class="sec"><h4><span>الحركات</span><b>74,800.00</b></h4><div class="row l1"><span class="nm"><span>تحصيل من المرضى</span></span><span class="v">96,200.00</span></div><div class="row l1"><span class="nm"><span>صرف أتعاب أطباء</span></span><span class="v">-12,900.00</span></div><div class="row l1"><span class="nm"><span>مصروفات تشغيل</span></span><span class="v">-8,500.00</span></div></div>
+   <div class="total t-zero"><span>فرق المطابقة</span><b>0.00 ✓</b></div>
+  </div>
+ </section>
+</div>
+<script>
+document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t)});document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('on',p.id===t.dataset.t)});}});
+document.querySelectorAll('.chip').forEach(function(c){c.onclick=function(){document.querySelectorAll('.chip').forEach(function(x){x.classList.toggle('on',x===c)});document.getElementById('dates').classList.toggle('on',c.dataset.p==='c');var r={m:'01-11-2026 → 25-11-2026',pm:'01-10-2026 → 31-10-2026',y:'01-01-2026 → 25-11-2026',c:''};document.getElementById('range').textContent=r[c.dataset.p];}});
+document.querySelectorAll('.zt').forEach(function(z){z.onchange=function(){z.closest('.pane').querySelector('.tree').classList.toggle('showzero',z.checked)}});
+document.querySelectorAll('.tg').forEach(function(b){b.onclick=function(){var g=b.closest('.grp');g.classList.toggle('closed');g.querySelector('.kids').hidden=g.classList.contains('closed');}});
+</script>
+</body>
+</html>
