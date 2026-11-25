@@ -15,5 +15,6 @@
 "clinic_reception_agent_event(uuid,text,jsonb,text)",
 "clinic_reception_pbx_event(text,text,text,text,text,text,timestamp with time zone,timestamp with time zone,timestamp with time zone,integer,text,jsonb)",
 "clinic_reception_agent_set_communications(boolean)",
-"agent_match_patients_by_phone(text)"
+"agent_match_patients_by_phone(text)",
+"clinic_reception_message_validate(uuid,uuid)"
 ]

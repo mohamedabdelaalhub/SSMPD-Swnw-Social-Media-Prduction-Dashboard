@@ -13,7 +13,10 @@
 --                                    (X-WhatsApp-Alert-Secret + allow-list) → /rest/v1/rpc with the service role key; the agent holds
 --                                    no Supabase key (confirmed on both sides). agent_context returned a patient's context by phone
 --                                    to anyone with the public key.
---   clinic_reception_agent_set_communications, agent_match_patients_by_phone   no caller at all (agent, dashboard, edge)
+--   clinic_reception_message_validate   also on that edge's allow-list (supabase/functions/clinic-reception-agent, added to the
+--                                    repo from live in this PR, sha256 c1304c04…); no dashboard caller
+--   clinic_reception_agent_set_communications, agent_match_patients_by_phone   no caller in the dashboard / agent (the edge
+--                                    allow-list has agent_set_communications; it calls with the service role)
 -- Rollback: supabase/rollbacks/20261125190000_lock_held_definers.rollback.sql
 do $$ declare f text; begin
   foreach f in array array[
@@ -33,7 +36,8 @@ do $$ declare f text; begin
     'public.clinic_reception_agent_event(uuid,text,jsonb,text)',
     'public.clinic_reception_pbx_event(text,text,text,text,text,text,timestamp with time zone,timestamp with time zone,timestamp with time zone,integer,text,jsonb)',
     'public.clinic_reception_agent_set_communications(boolean)',
-    'public.agent_match_patients_by_phone(text)'] loop
+    'public.agent_match_patients_by_phone(text)',
+    'public.clinic_reception_message_validate(uuid,uuid)'] loop
     if to_regprocedure(f) is null then raise exception 'signature changed — review before applying: %', f; end if;
   end loop;
   foreach f in array array[
@@ -53,7 +57,8 @@ do $$ declare f text; begin
     'public.clinic_reception_agent_event(uuid,text,jsonb,text)',
     'public.clinic_reception_pbx_event(text,text,text,text,text,text,timestamp with time zone,timestamp with time zone,timestamp with time zone,integer,text,jsonb)',
     'public.clinic_reception_agent_set_communications(boolean)',
-    'public.agent_match_patients_by_phone(text)'] loop
+    'public.agent_match_patients_by_phone(text)',
+    'public.clinic_reception_message_validate(uuid,uuid)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to service_role', f);
   end loop;
