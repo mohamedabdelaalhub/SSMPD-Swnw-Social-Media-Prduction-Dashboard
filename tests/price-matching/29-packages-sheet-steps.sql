@@ -3,11 +3,16 @@
 -- Idempotent: updates the existing rows by name, inserts the missing ones; a second run changes nothing.
 -- Run inside BEGIN … COMMIT, then the reception catalogue sync (last block).
 -- ── settings still waiting for the owner (edit here only; the md5 changes) ──────────────────────────────────────────────
---   c_prefix : name of the 15 «3 جلسات» packages. Keep 'وايت فرايداي — ليزر كانديلا 3 جلسات — ' or make it permanent.
---   c_until  : last sale day of the 15, '' = no end (permanent).
---   d_days   : validity of the 1-session cosmetic packages (the sheet gives none).
-select set_config('pk.c_prefix','وايت فرايداي — ليزر كانديلا 3 جلسات — ',true),
-       set_config('pk.c_until','2026-11-30',true),
+--   Owner 2026-11-25: the 15 area offers are PERMANENT, named «عروض المناطق لليزر», 3 months; pulses = Candela only (Diode
+--   unchanged); physio 6 = 400/session (2400), 12 = 350/session (4200, 3 months).
+--   c_prefix    : name of the 15 area packages.        c_until : last sale day, '' = no end.
+--   c_min_first : minimum first payment % of the 15 (owner: today's 25 % minimum, the patient may pay all; '' = sheet values
+--                 100 / 50 for the two full-body rows).
+--   include_d   : 'true' once the owner answers the cosmetic (D) questions; d_days = their validity.
+select set_config('pk.c_prefix','عروض المناطق لليزر — كانديلا 3 جلسات — ',true),
+       set_config('pk.c_until','',true),
+       set_config('pk.c_min_first','25',true),
+       set_config('pk.include_d','false',true),
        set_config('pk.d_days','30',true),
        set_config('request.jwt.claims','{"sub":"21a0b295-f4ca-472d-b48b-7be456cf0c64","role":"authenticated"}',true);
 create temp table pk_plan(grp text, old_name text, name text, lines jsonb, visits int, days int, min_first numeric, fixed numeric,
@@ -31,9 +36,11 @@ from (values(1000,90,100,450),(3000,90,50,1350),(5000,150,50,2200),(10000,150,50
 union all
 -- C) Candela areas, 3 sessions, 3 months; full payment at the first session except the two full-body rows (50/50)
 select 'C','وايت فرايداي — ليزر كانديلا 3 جلسات — '||a, current_setting('pk.c_prefix')||a,
-       jsonb_build_array(jsonb_build_array(c,1,1),jsonb_build_array(c,1,2),jsonb_build_array(c,1,3)),3,90,mf,p,
+       jsonb_build_array(jsonb_build_array(c,1,1),jsonb_build_array(c,1,2),jsonb_build_array(c,1,3)),3,90,
+       coalesce(nullif(current_setting('pk.c_min_first'),'')::numeric,mf),p,
        '3 جلسات ليزر كانديلا جنتل برو لمنطقة '||a||'. صالح 3 شهور من يوم الشراء. '||
-       case when mf=100 then 'الدفع كامل في أول جلسة.' else '50% في أول جلسة و50% في تاني جلسة.' end,
+       case coalesce(nullif(current_setting('pk.c_min_first'),'')::numeric,mf) when 100 then 'الدفع كامل في أول جلسة.' when 50 then '50% في أول جلسة و50% في تاني جلسة.'
+         else 'أول دفعة '||current_setting('pk.c_min_first')||'% على الأقل في أول جلسة، وممكن الدفع كامل.' end,
        nullif(current_setting('pk.c_until'),'')::date
 from (values('الموستاج','0001232',100,120),('الوجه','0001239',100,380),('تحت الإبط','0001235',100,380),('البكيني','0001230',100,480),
   ('البكيني ولاين البكيني وتحت الإبط','0001252',100,750),('الوجه والرقبة','0001241',100,620),('نصف اليدين','0001270',100,980),
@@ -50,7 +57,7 @@ from (values
   ('باكج ليزر فراكشنال',array['0001289'],400,'جلسة ليزر فراكشنال لمنطقة واحدة (نضارة وتقشير). الدفع كامل في أول جلسة.'),
   ('باكج تنظيف بشرة عميق + هيدرافيشال + أوكسيجينو',array['0001260','0001261','0001262'],1500,'تنظيف بشرة عميق وهيدرافيشال وأوكسيجينو. جلسة واحدة. الدفع كامل في أول جلسة.')
   -- «تنظيف بشرة عميق للوش + ديرما بن أمبر» 2000: no «ديرما بن أمبر» service in the catalogue → not created (see report).
-) d(n,cs,p,t);
+ ) d(n,cs,p,t) where current_setting('pk.include_d')::boolean;
 do $$declare missing text;begin
  if public.my_admin_id() is distinct from 'bd5a528f-af8d-4ada-afe9-ce64e68b1d92'::uuid then raise exception 'wrong actor';end if;
  if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='pricing_packages' and column_name='booking_fixed_price')
