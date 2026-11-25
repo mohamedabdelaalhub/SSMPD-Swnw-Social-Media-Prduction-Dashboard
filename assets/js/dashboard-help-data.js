@@ -1,6 +1,6 @@
 /* Reviewed operational help; no patient records, network calls or generated AI answers. */
 window.SSMPDHelpData={
-  "version": "20261125-264",
+  "version": "20261125-265",
   "articles": [
     {
       "id": "doctor-contracts-refine",
