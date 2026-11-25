@@ -32,6 +32,9 @@ const tick = (ms = 15) => new Promise(r => setTimeout(r, ms));
   assert.ok(!/data-ab-review|data-ab-propose/.test(html), 'own pending not reviewable, no propose without create');
   // 2120 by doctor
   const dh = AB.body({ code: '2120', total: 775, rows: [{ key: 'EMP-24', label: 'د. أحمد سمير', amount: 775 }], other: 0, unset: [] }); assert.match(dh, /د\. أحمد سمير/); assert.match(dh, /كشف حساب الطبيب/); assert.match(AB.body({ code: '2120', total: 1905, rows: [], other: 180, unset: [] }), /قيود قديمة من غير طبيب محدد/);
+  // 1112 bank by method (owner «ضيف تفصيل البنك»)
+  const bh = AB.body({ code: '1112', total: 400, rows: [{ key: 'instapay', label: 'إنستا باي', amount: 500, count: 2 }, { key: 'bank', label: 'تحويل بنكي', amount: 550, count: 1 }], other: -650, unset: [] });
+  assert.match(bh, /طريقة التحصيل/); assert.match(bh, /إنستا باي/); assert.match(bh, /حركات تانية على البنك/); assert.match(bh, /-650\.00/); assert.ok(!/رصيد كل طبيب/.test(bh)); assert.equal(AB.CODES['1112'], 'البنك — حسب طريقة التحصيل');
   // collection form: «أنهي محفظة؟» appears only for wallet and is required then
   d.getElementById('b').innerHTML = '<form><label>طريقة السداد<select name="method"><option value="cash">نقدي</option><option value="wallet">محفظة إلكترونية</option></select></label><input name="amount" value="70"></form>';
   await tick(); const f = d.querySelector('form'), k = f.querySelector('[name="wallet_kind"]'); assert.ok(k, 'injected');
@@ -47,7 +50,7 @@ const tick = (ms = 15) => new Promise(r => setTimeout(r, ms));
   assert.equal(calls.length, 1); assert.ok(!('wallet_kind' in calls[0][1].p_payload), 'stripped for any RPC');
   calls.length = 0; await client.rpc('clinic_reception_command', { p_action: 'collect', p_payload: { method: 'cash', amount: 5, reference: 'C' } }); assert.equal(calls.length, 1, 'cash: no extra call');
   // chart button only on the 3 control accounts
-  const aw = fs.readFileSync('assets/js/accountant-workspace.js', 'utf8'); assert.ok(aw.includes("['1115','2120','5111'].indexOf(a.code)!==-1&&!a.archived?b('account-breakdown',a.code,'تفصيل')"));
+  const aw = fs.readFileSync('assets/js/accountant-workspace.js', 'utf8'); assert.ok(aw.includes("['1112','1115','2120','5111'].indexOf(a.code)!==-1&&!a.archived?b('account-breakdown',a.code,'تفصيل')"));
   // movements label
   const mv = fs.readFileSync('assets/js/finance-shift-movements.js', 'utf8'); const wk = new Function(mv.match(/var WK=[^;]*;/)[0] + mv.match(/function wk\(r\)\{[^}]*\}/)[0] + 'return wk;')();
   assert.equal(wk({ method: 'wallet', wallet_kind: 'vodafone' }), ' — فودافون كاش'); assert.equal(wk({ method: 'wallet' }), ''); assert.equal(wk({ method: 'cash', wallet_kind: 'valu' }), '');

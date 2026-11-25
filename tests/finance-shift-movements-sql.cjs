@@ -88,6 +88,13 @@ await assert.rejects(()=>call('clinic_finance_shift_movements',[null,'2026-01-01
   // movements: the wallet row carries its kind
   m=await call('clinic_finance_shift_movements',[sid]);assert.equal(m.movements.find(x=>x.reference==='W-KIND-1').wallet_kind,'vodafone');
   assert(m.movements.every(x=>'wallet_kind' in x));
+  // 20261125090000 «تفصيل البنك»: 1112 by collection method, adds up; re-apply refused; rollback
+  {await db.exec('reset role');const K=require('fs').readFileSync('supabase/migrations/20261125090000_bank_breakdown.sql','utf8');await db.exec(K);await assert.rejects(()=>db.exec(K),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+   await as(3);const bb=await call('clinic_finance_account_breakdown',['1112']);const bk=Object.fromEntries(bb.rows.map(r=>[r.key,+r.amount]));
+   assert.equal(bk.instapay,50,'instapay receipt counted');assert.equal(Math.round((bb.rows.reduce((x,r)=>x+ +r.amount,0)+ +bb.other)*100),Math.round(+bb.total*100),'1112 adds up');
+   await assert.rejects(()=>call('clinic_finance_account_breakdown',['4110']),/البنك والمحافظ/);
+   await db.exec('reset role');await db.exec(require('fs').readFileSync('supabase/rollbacks/20261125090000_bank_breakdown.rollback.sql','utf8'));
+   await as(3);await assert.rejects(()=>call('clinic_finance_account_breakdown',['1112']),/التفصيل متاح/);}
   // rollback
   await db.exec('reset role');await db.exec(require('fs').readFileSync('supabase/rollbacks/20261125030000_control_accounts_breakdown.rollback.sql','utf8'));
   assert.equal((await db.query("select to_regprocedure('public.clinic_finance_account_breakdown(text,date,date)') f")).rows[0].f,null);
@@ -95,6 +102,6 @@ await assert.rejects(()=>call('clinic_finance_shift_movements',[null,'2026-01-01
  await db.exec('reset role');await db.exec(require('fs').readFileSync('supabase/rollbacks/20261124220000_shift_movements_receipt_no.rollback.sql','utf8'));
  assert.equal((await db.query('select pg_get_functiondef('+sig+') d')).rows[0].d,before,'rollback restores the movements function');
  assert(!(await db.query("select to_regclass('clinic_finance.receipt_no_saved_defs') t")).rows[0].t,'rollback drops the saved defs');}}
-await db.close();console.log('PASS shift movements: wallet kind + 1115/2120/5111 breakdown (+rollback); receipt number per row (+rollback); cashier sees own shift (cash, instapay without drawer, refund out, insurance payer/claim/total) without expected cash; other staff refused; managers by shift/period with names; range limit.');})().catch(e=>{console.error(e);process.exit(1);});`;
+await db.close();console.log('PASS shift movements: bank 1112 breakdown (+rollback); wallet kind + 1115/2120/5111 breakdown (+rollback); receipt number per row (+rollback); cashier sees own shift (cash, instapay without drawer, refund out, insurance payer/claim/total) without expected cash; other staff refused; managers by shift/period with names; range limit.');})().catch(e=>{console.error(e);process.exit(1);});`;
 const file=path.join(require('os').tmpdir(),'shift-movements-run-'+process.pid+'.cjs');
 fs.writeFileSync(file,prefix+body);try{require(file);}finally{setTimeout(()=>{try{fs.unlinkSync(file);}catch(_){}},0);}

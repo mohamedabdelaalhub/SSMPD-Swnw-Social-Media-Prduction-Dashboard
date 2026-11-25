@@ -8,7 +8,7 @@
 (function (w, d) {
   'use strict';
   var KINDS = [['vodafone', 'فودافون كاش'], ['valu', 'فاليو'], ['other', 'محفظة تانية']];
-  var CODES = { '1115': 'المحافظ والتحويلات — حسب المحفظة', '2120': 'مستحقات الأطباء — حسب الطبيب', '5111': 'أتعاب ونسب الأطباء — حسب الطبيب (الشهر ده)' };
+  var CODES = { '1112': 'البنك — حسب طريقة التحصيل', '1115': 'المحافظ والتحويلات — حسب المحفظة', '2120': 'مستحقات الأطباء — حسب الطبيب', '5111': 'أتعاب ونسب الأطباء — حسب الطبيب (الشهر ده)' };
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function money(v) { return Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function day(v) { if (!v) return '—'; var t = new Date(v); return isNaN(t) ? '—' : t.toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo', day: '2-digit', month: '2-digit', year: 'numeric' }); }
@@ -20,10 +20,11 @@
 
   /* ---------- 1) chart breakdown ---------- */
   function body(b) {
+    var chan = b.code === '1115' || b.code === '1112', first = b.code === '1115' ? 'المحفظة' : b.code === '1112' ? 'طريقة التحصيل' : 'الطبيب';
     var h = '<p class="ab-total">رصيد الحساب: <b><bdi dir="ltr">' + money(b.total) + '</bdi></b>' + (b.from ? ' — من ' + esc(day(b.from)) + ' لحد ' + esc(day(b.to)) : '') + '</p>';
-    h += '<div class="fc-table"><table class="simple ab-table"><thead><tr><th>' + (b.code === '1115' ? 'المحفظة' : 'الطبيب') + '</th><th>المبلغ</th>' + (b.code === '1115' ? '<th>الإيصالات</th>' : '') + '</tr></thead><tbody>';
-    (b.rows || []).forEach(function (r) { h += '<tr data-ab-row="' + esc(r.key) + '"><td>' + esc(r.label) + '</td><td><bdi dir="ltr">' + money(r.amount) + '</bdi></td>' + (b.code === '1115' ? '<td>' + Number(r.count || 0) + '</td>' : '') + '</tr>'; });
-    if (Math.abs(Number(b.other || 0)) >= 0.005) h += '<tr data-ab-row="other" class="ab-other"><td>' + (b.code === '1115' ? 'حركات تانية على الحساب (تسويات / مرتجعات / عمليات قديمة)' : 'قيود قديمة من غير طبيب محدد (قبل ربط الأطباء بالسيستم)') + '</td><td><bdi dir="ltr">' + money(b.other) + '</bdi></td>' + (b.code === '1115' ? '<td>—</td>' : '') + '</tr>';
+    h += '<div class="fc-table"><table class="simple ab-table"><thead><tr><th>' + first + '</th><th>المبلغ</th>' + (chan ? '<th>الإيصالات</th>' : '') + '</tr></thead><tbody>';
+    (b.rows || []).forEach(function (r) { h += '<tr data-ab-row="' + esc(r.key) + '"><td>' + esc(r.label) + '</td><td><bdi dir="ltr">' + money(r.amount) + '</bdi></td>' + (chan ? '<td>' + Number(r.count || 0) + '</td>' : '') + '</tr>'; });
+    if (Math.abs(Number(b.other || 0)) >= 0.005) h += '<tr data-ab-row="other" class="ab-other"><td>' + (b.code === '1112' ? 'حركات تانية على البنك (صرف أطباء وموردين / سندات / إيداعات / رصيد افتتاحي)' : b.code === '1115' ? 'حركات تانية على الحساب (تسويات / مرتجعات / عمليات قديمة)' : 'قيود قديمة من غير طبيب محدد (قبل ربط الأطباء بالسيستم)') + '</td><td><bdi dir="ltr">' + money(b.other) + '</bdi></td>' + (chan ? '<td>—</td>' : '') + '</tr>';
     if (!(b.rows || []).length && Math.abs(Number(b.other || 0)) < 0.005) h += '<tr><td colspan="3">مفيش حركة على الحساب ده.</td></tr>';
     h += '</tbody></table></div>';
     if (b.code === '1115' && (b.unset || []).length) {
@@ -37,7 +38,7 @@
       });
       h += '</tbody></table></div><p class="fc-note">المحاسب يحدد المحفظة وشخص تاني يأكد. لو الإيصال طلع «إنستا باي» مش محفظة، صلّحه من «تصحيح طريقة السداد».</p>';
     }
-    if (b.code !== '1115') h += '<p class="fc-note">رصيد كل طبيب هو نفس رصيده في «حسابات الأطباء»، وتفاصيله في «كشف حساب الطبيب».</p>';
+    if (b.code === '2120' || b.code === '5111') h += '<p class="fc-note">رصيد كل طبيب هو نفس رصيده في «حسابات الأطباء»، وتفاصيله في «كشف حساب الطبيب».</p>';
     return h + '<p class="fc-note" data-ab-status role="status"></p>';
   }
   function open(code) {
