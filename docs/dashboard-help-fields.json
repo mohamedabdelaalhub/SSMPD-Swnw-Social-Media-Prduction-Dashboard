@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2016,
-    "labels": 1465,
+    "definitions": 2017,
+    "labels": 1464,
     "files": 159,
-    "groups": 1581
+    "groups": 1584
   },
   "fields": [
     {
@@ -4101,29 +4101,37 @@
     },
     {
       "file": "finance-business.js",
-      "label": "نوع العملية",
+      "label": "عايز تعمل إيه؟",
       "name": "kind",
       "kind": "helper",
-      "forms": [
-        "طلب مالي"
-      ],
+      "forms": [],
       "tab": "accounting",
-      "article": "ledger-guide",
-      "text_sha256": "9085c4437e2ecfe21fc30f10293ad677c5cefac260105eb92bbf554aa886ecfb"
+      "article": "finance-request-plain",
+      "text_sha256": "35d84f05249d75f5f0ca62d52cb21376b9dc4ab86d59af602b7499d8deef4926"
     },
     {
       "file": "finance-business.js",
-      "label": "مرجع المستند الفريد",
+      "label": "الموظف",
+      "name": "subject",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "finance-business.js",
+      "label": "رقم الورقة أو الإيصال",
       "name": "reference",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "requests",
-      "text_sha256": "f8459d8304fdf06b3ddc05e6e459fd34abd09d56e226268e0cbdbe494682140d"
+      "article": "finance-request-plain",
+      "text_sha256": "0770668a3d70128116eee58950b235a06fc7bdbcf4a425b79c8ad54e88a60d45"
     },
     {
       "file": "finance-business.js",
-      "label": "شرح المستند وسبب العملية",
+      "label": "السبب",
       "name": "note",
       "kind": "helper",
       "forms": [],
@@ -4163,123 +4171,123 @@
     },
     {
       "file": "finance-business.js",
-      "label": "عقد الموظف المعتمد",
+      "label": "الموظف",
       "name": "contract_id",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
       "article": "payroll",
-      "text_sha256": "db2f2bb1e6fe373c58d3cdc5f9de59e5a48e610dc91965422ef14ad3855a7744"
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
     },
     {
       "file": "finance-business.js",
-      "label": "شهر المرتب",
+      "label": "مرتب شهر",
       "name": "month",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "payroll",
-      "text_sha256": "6136c768789ebe531f8648bd431bfc662465a32e9a7e4fe53de6897d32fa7429"
+      "article": "finance-request-plain",
+      "text_sha256": "176b07036c94bb57fe5b6b0cc928cc99f676fb887aef928057d381e7b200c4b4"
     },
     {
       "file": "finance-business.js",
-      "label": "العمر الإنتاجي بالأشهر",
+      "label": "هيشتغل كام شهر",
       "name": "months",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "assets-tax",
-      "text_sha256": "987e3535194c0ddd75086dfb2b1324e8102f45dd67851e3add54a03b5afb60c7"
+      "article": "finance-request-plain",
+      "text_sha256": "7358c75f6d03ddd466d3404995205500d01c1f54f6065ce6bed9f46964ee9434"
     },
     {
       "file": "finance-business.js",
-      "label": "تاريخ بدء التشغيل والإهلاك",
+      "label": "بدأ يشتغل من",
       "name": "start",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "assets-tax",
-      "text_sha256": "00dea4f9126171e24ccde3e1852f36a106a846c34f10e879a2d4d158d611e29b"
+      "article": "finance-request-plain",
+      "text_sha256": "8e9d2b15150683578ae884adf5c80db2a327c3e9033d5088a63af105ba4f6253"
     },
     {
       "file": "finance-business.js",
-      "label": "عدد أشهر الإهلاك السابقة",
+      "label": "عدد الشهور اللي اتحسبت قبل كده",
       "name": "elapsed",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "assets-tax",
-      "text_sha256": "c1424fbf2a277d725d6b357c764cc0f088b96c8eab2150084106b10770e42c50"
+      "article": "finance-request-plain",
+      "text_sha256": "e868d9518f54b1fc146cc80973cc776c40be7f0cac153ff0c06dbb51bd8a243d"
     },
     {
       "file": "finance-business.js",
-      "label": "الأصل المعتمد",
+      "label": "الأصل",
       "name": "asset_id",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "assets-tax",
-      "text_sha256": "aa4fcb44aa949c5e9b219bcaedcf32905ac9f348e74b45a198473ba1b9878bec"
+      "article": "finance-request-plain",
+      "text_sha256": "c68c83a8a8bf953dce55ce0c6e8b0d6fd7d29103c6cd9b87b25a53bbb6d3b247"
     },
     {
       "file": "finance-business.js",
-      "label": "شهر الإهلاك التالي",
+      "label": "شهر الإهلاك",
       "name": "month",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
       "article": "assets-tax",
-      "text_sha256": "01744c80db8d9af4188488469413e4dc3d5b52faa2303fe96d1fbeb8644c8959"
+      "text_sha256": "a0b1ed85be2cd94dd59dd6a1093dd43e4daa5f9a10c859049d20928849d7b53c"
     },
     {
       "file": "finance-business.js",
-      "label": "المعالجة حسب المستند",
+      "label": "نوعها",
       "name": "direction",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "assets-tax",
-      "text_sha256": "7373730c1b0e7678167814266e2e245456a77937730c0c61f749f427e4466afa"
+      "article": "finance-request-plain",
+      "text_sha256": "367e8204381e59dba14f9c0284b8c9a27e501966df3cc5490963a4d5f398b4d2"
     },
     {
       "file": "finance-business.js",
-      "label": "الالتزام الضريبي المعتمد",
+      "label": "الضريبة اللي هتتدفع",
       "name": "tax_id",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "assets-tax",
-      "text_sha256": "7373730c1b0e7678167814266e2e245456a77937730c0c61f749f427e4466afa"
+      "article": "finance-request-plain",
+      "text_sha256": "b838233b4d7e73c12d0a670179b16695fee84cdbb62202409c3b8b9c5c0e8954"
     },
     {
       "file": "finance-business.js",
-      "label": "الالتزام",
+      "label": "بتدفع إيه؟",
       "name": "account",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "assets-tax",
-      "text_sha256": "7373730c1b0e7678167814266e2e245456a77937730c0c61f749f427e4466afa"
+      "article": "finance-request-plain",
+      "text_sha256": "233fe245ed455ef5ced6d7ba5d7d862d220d780645083293274b814bc5f2c8a9"
     },
     {
       "file": "finance-business.js",
-      "label": "قناة الصرف",
+      "label": "هيتصرف إزاي؟",
       "name": "method",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "collections",
-      "text_sha256": "bad058824d6993367e40fe91862b7553f779d528d306e1330ea3bdd7f4fb04c9"
+      "article": "finance-request-plain",
+      "text_sha256": "2bb9bc41fce47e9e7d1d0c026708a337cc69eadb46a69447ffbe1682f129fd92"
     },
     {
       "file": "finance-business.js",
-      "label": "الوردية النقدية",
+      "label": "من وردية",
       "name": "shift_id",
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "cash-shifts-guide",
-      "text_sha256": "c76df59d8ee5761c6003f4cc2fdda7f7adfd10a1bc9a9d51c5bc45558aa57e0b"
+      "article": "finance-request-plain",
+      "text_sha256": "ad7583066982d63aa676a674931de9328db82f0c56d7c48ab1cf38fa25cc1328"
     },
     {
       "file": "finance-cash.js",
