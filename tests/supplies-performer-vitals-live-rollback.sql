@@ -18,7 +18,7 @@ select set_config('pv_live.in_txn', 'yes', true);
 create temp table pv_live(n serial, step text, expected text, actual text, ok boolean);
 do $$
 declare mazen uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; hoda record; me uuid; kit_uid uuid; ws uuid; dent uuid; nurse uuid; svc record; it1 record; it2 record;
-  appt uuid; vis uuid; o1 uuid; o2 uuid; r jsonb; err text; amt numeric; note text; n int; s0 numeric; s1 numeric; cid uuid; j numeric;
+  slot timestamptz; appt uuid; vis uuid; o1 uuid; o2 uuid; r jsonb; err text; amt numeric; note text; n int; s0 numeric; s1 numeric; cid uuid; j numeric;
 begin
   if current_setting('pv_live.in_txn', true) is distinct from 'yes' then
     raise exception 'NOT inside begin … rollback — nothing done; run the whole file as one transaction';
@@ -63,8 +63,13 @@ begin
                                                                jsonb_build_object('item_id', it2.id, 'quantity', 1, 'included', true)) where id = svc.id;
   insert into clinic_reception.service_billing(workspace_id, service_id, item_id, billable, updated_by) values (ws, svc.id, it1.id, false, me), (ws, svc.id, it2.id, true, me)
     on conflict (service_id, item_id) do update set billable = excluded.billable;
+  -- a free 20-minute slot for this doctor near now (the appointment gap trigger wants 5 minutes between bookings)
+  select t into slot from generate_series(date_trunc('hour', now()) - interval '12 hours', date_trunc('hour', now()) + interval '12 hours', interval '5 minutes') t
+   where not exists (select 1 from clinic_reception.appointments a where a.provider_id = svc.provider_id and a.status not in ('cancelled', 'no_show')
+                      and a.starts_at < t + interval '30 minutes' and a.ends_at > t - interval '10 minutes')
+   order by abs(extract(epoch from t - now())) limit 1;
   insert into clinic_reception.appointments(workspace_id, patient_id, provider_id, service_id, starts_at, ends_at, status, created_by, arrived_at)
-    values (ws, svc.patient_id, svc.provider_id, svc.id, now(), now() + interval '20 minutes', 'arrived', me, now()) returning id into appt;
+    values (ws, svc.patient_id, svc.provider_id, svc.id, slot, slot + interval '20 minutes', 'arrived', me, now()) returning id into appt;
   insert into clinic_reception.visits(workspace_id, appointment_id, patient_id, opened_by) values (ws, appt, svc.patient_id, me) returning id into vis;
   insert into clinic_reception.orders(workspace_id, visit_id, service_id, provider_id, quantity, price, snapshot, created_by)
     select ws, vis, s.id, svc.provider_id, 1, s.price, to_jsonb(s), me from clinic_reception.services s where s.id = svc.id returning id into o1;
