@@ -1,0 +1,31 @@
+/* Upload card under every file picker (owner 2026-11-25 «زي كدة يا زعيم», help 267): header, big dashed drop zone, file rows with status. */
+.fdp-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;margin:0!important;padding:0!important;border:0!important}
+.fdp-card{grid-column:1/-1;display:grid;gap:10px;margin:6px 0 2px;padding:12px;border:1px solid #E6EBF3;border-radius:16px;background:#fff;box-shadow:0 6px 20px rgba(15,54,157,.06);max-width:100%;box-sizing:border-box;color:#16212E;font-size:13px;min-width:0}
+.fdp-head{display:flex;align-items:center;gap:10px;min-width:0}
+.fdp-ic{width:38px;height:38px;border-radius:11px;background:#EAF0FF;color:#0F369D;display:grid;place-items:center;font-size:17px;flex:none}
+.fdp-head b{display:block;font-size:14px}.fdp-head small{color:#667085;font-size:12px}
+.fdp-drop{border:2px dashed #C9D6F2;border-radius:14px;background:#F7FAFF;padding:16px 12px;display:grid;justify-items:center;gap:8px;text-align:center;transition:background .15s,border-color .15s}
+.fdp-card.is-over .fdp-drop{border-color:#0F369D;background:#EAF0FF}
+.fdp-btn{min-height:40px;border:0;border-radius:12px;background:#0F369D;color:#fff;font:inherit;font-weight:700;padding:0 18px;cursor:pointer}
+.fdp-btn:hover{background:#16212E}.fdp-btn:focus-visible,.fdp-x:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+.fdp-hint{margin:0;color:#344054}
+.fdp-kbd{display:inline-block;border:1px solid #D5DEEE;border-bottom-width:2px;border-radius:6px;padding:0 6px;font-size:11px;background:#fff;color:#475467}
+.fdp-paste{display:none;min-height:36px;padding:0 12px;border:1px dashed #CFDCF8;border-radius:10px;background:#fff;color:#0F369D;font-size:12px;font-weight:600;align-items:center;justify-content:center;cursor:text;outline:none;white-space:nowrap;overflow:hidden}
+.fdp-paste:focus{border-style:solid;border-color:#0F369D;box-shadow:0 0 0 3px #EAF0FF}
+@media (hover:none),(max-width:600px){.fdp-paste{display:inline-flex}.fdp-kbd{display:none}}
+.fdp-rows{display:grid;gap:8px}.fdp-rows:empty{display:none}
+.fdp-row{border:1px solid #E6EBF3;border-radius:12px;padding:8px 10px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center}
+.fdp-row.is-bad{border-color:#F4C7BF;background:#FFF8F6}
+.fdp-th{width:40px;height:40px;border-radius:9px;object-fit:cover;background:#EAF0FF;color:#0F369D;font-size:10px;font-weight:800;display:grid;place-items:center;grid-row:1/3}
+.fdp-th.is-pdf{background:#FDECEA;color:#D0402A}
+.fdp-nm{display:grid;min-width:0}.fdp-nm b{font-size:13px;overflow-wrap:anywhere}.fdp-nm small{font-size:12px;color:#667085}
+.is-ok .fdp-st{color:#2F7D5C;font-weight:700}.is-wait .fdp-st{color:#B54708;font-weight:700}.is-bad .fdp-st{color:#D0402A;font-weight:700}
+.fdp-x{width:34px;height:34px;border-radius:10px;border:1px solid #E6EBF3;background:#fff;color:#667085;display:grid;place-items:center;cursor:pointer;font-size:14px}
+.fdp-bar{grid-column:2/4;height:5px;border-radius:999px;background:#EEF2F8;overflow:hidden;position:relative}
+.fdp-bar i{position:absolute;inset:0;border-radius:999px;background:linear-gradient(90deg,#0F369D,#4F7BEA,#F15A22)}
+.fdp-bar.is-ind i{inset:0 auto 0 0;width:35%;animation:fdpSlide 1.2s infinite ease-in-out}
+@keyframes fdpSlide{0%{left:-35%}100%{left:100%}}
+@media (prefers-reduced-motion:reduce){.fdp-bar.is-ind i{animation:none;width:100%;opacity:.5}}
+.fdp-msg{margin:0;font-size:12px;color:#667085}.fdp-msg.is-bad{color:#D0402A}.fdp-msg[hidden]{display:none}
+.fdp-card.has-file ~ .fdp-src{display:none}
+.fdp-target.is-over{outline:2px dashed #0F369D;outline-offset:3px;background:#EAF0FF}
