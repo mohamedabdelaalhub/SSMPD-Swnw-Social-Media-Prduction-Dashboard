@@ -143,10 +143,19 @@
       if (action === 'open') { sel = id; return draw(); }
       if (action === 'new') {
         var rq = w.crypto.randomUUID();
-        return U.modal('بدء إنهاء خدمة', U.select('person_id', 'الموظف', data.people.map(function (p) { return [p.id, p.full_name + ' — ' + p.code]; }), '') + U.field('last_day', 'آخر يوم عمل', 'date', today, 'required') +
-          U.select('reason', 'السبب', opts(REASON), 'resignation') + U.field('reason_note', 'ملاحظات', 'text', ''), function (v) {
+        // UX review 2026-11-25: no employee is preselected (it used to default to the first one); the confirm button is red and names the person.
+        var nf = U.modal('بدء إنهاء خدمة', U.select('person_id', 'الموظف', [['', '— اختار الموظف —']].concat(data.people.map(function (p) { return [p.id, p.full_name + ' — ' + p.code]; })), '') + U.field('last_day', 'آخر يوم عمل', 'date', today, 'required') +
+          U.select('reason', 'السبب', opts(REASON), 'resignation') + U.field('reason_note', 'ملاحظات', 'text', '') +
+          '<p class="wp-wide" data-offb-next>بعد البدء بيتبعت للمحاسب يجهّز كشف المخالصة.</p>', function (v) {
           return command('open', { request_id: rq, person_id: v.person_id, last_day: v.last_day, reason: v.reason, reason_note: v.reason_note }).then(function () { /* shown in the list */ });
         });
+        var ps = nf && nf.elements && nf.elements.person_id, go = nf && nf.querySelector('button[type=submit]');
+        if (ps && go) {
+          ps.required = true; go.classList.add('danger-btn'); go.setAttribute('data-offb-confirm', '');
+          var label = function () { var o = ps.options[ps.selectedIndex]; go.textContent = ps.value ? 'ابدأ إنهاء خدمة ' + o.textContent.split(' — ')[0] : 'ابدأ إنهاء الخدمة'; };
+          ps.addEventListener('change', label); label();
+        }
+        return nf;
       }
       if (action === 'templates') return templates();
       if (!c) return;
