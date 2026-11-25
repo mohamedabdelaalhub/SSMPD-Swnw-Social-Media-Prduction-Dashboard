@@ -133,3 +133,12 @@
 .cs-facts{display:grid;grid-template-columns:120px 1fr;gap:4px 12px;font-size:13px;margin-bottom:8px}.cs-facts span:nth-child(odd){color:#5B6676}
 .cs-entry{border:1px dashed #C5CDDB;border-radius:12px;padding:10px 12px;font-size:13px;display:grid;gap:4px;background:#FBFCFE;margin:8px 0}.cs-entry div{display:flex;justify-content:space-between;gap:12px}
 .cs-warn{background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px;margin:8px 0}.cs-note{font-size:12px;color:#5B6676;margin:4px 0}
+/* «تفصيل» الحساب الرئيسي (account-breakdown.js, 20261125030000) */
+.ab-modal .modal{width:min(880px,95vw)}
+.ab-modal .fc-table{overflow-x:auto}
+.ab-modal .fc-table table{min-width:0;width:100%}
+.ab-modal td,.ab-modal th{white-space:nowrap}
+.ab-modal .ab-total{margin:0 0 10px;font-size:15px}
+.ab-modal .ab-other td{color:#5B6676}
+.ab-modal .ab-kind{min-height:34px;border:1px solid #C5CDDB;border-radius:8px;padding:4px 8px;font:inherit;background:#fff}
+.ab-modal h4{margin:16px 0 8px}
