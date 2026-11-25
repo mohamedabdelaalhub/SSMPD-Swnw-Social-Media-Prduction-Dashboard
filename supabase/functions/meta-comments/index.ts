@@ -53,6 +53,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     const me = await gget(cfg.instagram_business_account_id, { fields: "username", access_token: token });
     igUsername = me.ok ? me.data.username : null;
   }
+  await RUN_LOG?.step(`ig-username`);
   // Watch every post of the last 60 days on the page/Instagram (not only dashboard posts), but only
   // re-read comments of a post when its comment count changed — keeps Graph calls low every 2 minutes.
   const since = Math.floor((Date.now() - 60 * 864e5) / 1000).toString();
@@ -67,6 +68,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       if (!byFb.has(p.id)) byFb.set(p.id, { id: null, content_id: null, facebook_post_id: p.id });
     }
   }
+  await RUN_LOG?.step(`fb-posts ${counts.size}`);
   if (cfg?.instagram_business_account_id) {
     const r = await gget(`${cfg.instagram_business_account_id}/media`, { fields: "id,permalink,timestamp,comments_count", limit: "40", access_token: token });
     if (!r.ok) report.errors.push(`${brand} instagram media: ${r.error}`);
@@ -78,8 +80,10 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       else byIg.set(m.id, { id: null, content_id: null, instagram_media_id: m.id, instagram_permalink: m.permalink || null });
     }
   }
+  await RUN_LOG?.step(`ig-media ${counts.size}`);
   const { data: watched } = await db.from("social_comment_watch").select("post_ref,last_count,checked_at").eq("brand", brand);
   const watch = new Map((watched || []).map((w: any) => [w.post_ref, w]));
+  await RUN_LOG?.step(`watch ${watch.size}`);
   const PERMANENT = -2; // watch marker: the post cannot be read (deleted / no access); skipped for 6 hours, then tried again
   const stale = (ref: string) => {
     const w: any = watch.get(ref), c = counts.get(ref);
@@ -97,6 +101,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     watchRows.push({ post_ref: ref, platform: j.facebook_post_id ? "facebook" : "instagram", brand, last_count: counts.get(ref) ?? null, checked_at: new Date().toISOString() });
   }
   report.checked = (report.checked || 0) + jobs.length;
+  await RUN_LOG?.step(`jobs ${jobs.length}`);
   const rows: Row[] = [];
   const failed = new Set<string>();
   const pageReplied = new Set<string>();
@@ -141,11 +146,13 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     if (r.failedRef) failed.add(r.failedRef);
     if (r.permanentRef) permanent.add(r.permanentRef);
   }
+  await RUN_LOG?.step(`threads-read rows ${rows.length}`);
   if (rows.length) {
     // New comments only; existing rows keep their drafts/status.
     const sv = await saveCommentRows(db, rows, report, brand);
     report.seen += sv.saved;
     for (const ref of sv.failedRefs) failed.add(ref); // posts with an unsaved row are not marked as read: retried next run
+    await RUN_LOG?.step(`saved ${sv.saved}/${rows.length}`);
     // Rows saved before links were collected: fill comment/author links once.
     const ids = rows.map((r) => r.id as string);
     const missing: any[] = [];
@@ -159,6 +166,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       if (r?.comment_url) await db.from("social_comments").update({ comment_url: r.comment_url, author_url: r.author_url }).eq("id", m.id);
     }
   }
+  await RUN_LOG?.step(`links-filled`);
   const okWatch = watchRows.filter((w) => !failed.has(w.post_ref as string));
   for (const w of okWatch) if (permanent.has(w.post_ref as string)) w.last_count = PERMANENT;
   if (okWatch.length) await db.from("social_comment_watch").upsert(okWatch, { onConflict: "post_ref" });
