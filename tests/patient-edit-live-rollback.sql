@@ -10,8 +10,8 @@ declare mazen uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; ws uuid; p record;
 begin
   select id into ws from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
   -- a reception patient linked to an archive patient, with a two-word name
-  select x.* into rp from clinic_reception.patients x where x.workspace_id = ws and x.archive_patient_id is not null order by x.created_at desc limit 1;
-  select * into p from public.patients where id = rp.archive_patient_id;
+  select x.* into rp from clinic_reception.patients x where x.workspace_id = ws and x.patient_id is not null order by x.created_at desc limit 1;
+  select * into p from public.patients where id = rp.patient_id;
   insert into pe_live(step, expected, actual, ok) values ('fixture', 'a linked patient', coalesce(left(p.id::text, 8), 'none'), p.id is not null);
   perform set_config('request.jwt.claims', jsonb_build_object('sub', mazen, 'role', 'authenticated')::text, true);
   perform set_config('request.jwt.claim.sub', mazen::text, true);
