@@ -40,9 +40,15 @@ td.n,th.n{text-align:left;direction:ltr;font-variant-numeric:tabular-nums}
 .var{color:#D0402A;font-weight:700}.ok{color:#2F7D5C;font-weight:700}
 .note{font-size:12px;color:#5b6577}
 @media (max-width:480px){body{padding:16px 8px}.card{padding:14px}.kv{grid-template-columns:90px 1fr}table{font-size:12px}th,td{padding:6px 4px}}
+.vt{display:grid;gap:8px}
+.vr{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:center;font-size:13px;padding:8px 10px;border-radius:10px;background:#F5F7FB}
+.vr .v{font-variant-numeric:tabular-nums;direction:ltr;text-align:right;color:#16212E}
+.seg{display:flex;border:1px solid #D5DEEE;border-radius:9px;overflow:hidden;font-size:12px}.seg span{padding:5px 9px;background:#fff;color:#5b6577}.seg .on{background:#0F369D;color:#fff}.seg .off{background:#FDEEEB;color:#D0402A}
+.kit{display:grid;gap:6px;font-size:13px}.kit div{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;border-radius:8px;background:#E6F2EC}.kit div.no{background:#EEF1F6;color:#8a93a3}
+@media (max-width:480px){.vr{grid-template-columns:1fr auto}.vr .v{grid-column:1/-1;order:3}}
 </style></head><body>
 <div class="grid">
-  <section class="card" data-shot="performer"><p class="eyebrow">١) شاشة اللي بيعمل الخدمة (ممرضة / فني / مساعد دكتور) — موبايل أو تابلت، وقت الخدمة</p>
+  <section class="card" data-shot="performer"><p class="eyebrow">1) شاشة اللي بيعمل الخدمة (ممرضة / فني / مساعد دكتور) — موبايل أو تابلت، وقت الخدمة</p>
    <div class="phone"><div class="screen">
     <div class="bar"><b>تنفيذ وتسجيل المستلزمات</b><small>شروق — تمريض · النهارده الأربعاء 25/11</small></div>
     <div class="store"><span>بصرف من</span><b>فرعي مستلزمات تمريض ▾</b></div>
@@ -59,14 +65,14 @@ td.n,th.n{text-align:left;direction:ltr;font-variant-numeric:tabular-nums}
    </div></div>
    <p>الأصناف اللي «في سعر الخدمة» بتتخصم من المخزن تكلفة بس. اللي «بيتحاسب» بيظهر على فاتورة المريض فوراً قبل التحصيل. الموظف بيصرف من مخزنه بس.</p>
   </section>
-  <section class="card warn" data-shot="reception-warn"><p class="eyebrow">٢) الاستقبال (احتياطي) بيضيف مستلزم — تنبيهين قبل الحفظ</p>
+  <section class="card warn" data-shot="reception-warn"><p class="eyebrow">2) الاستقبال (احتياطي) بيضيف مستلزم — تنبيهين قبل الحفظ</p>
    <h3>⚠️ المستلزم ده متسجّل قبل كده على نفس الخدمة</h3>
    <div class="alert a-warn"><div class="kv"><b>الصنف</b><span>جوانتي (زوج) × 2</span><b>سجّله</b><span>شروق — تمريض</span><b>إمتى</b><span>11:04 الصبح</span></div></div>
    <h3>ℹ️ الصنف ده داخل في سعر الخدمة</h3>
    <div class="alert a-ok">«جل تبريد» محسوب في سعر «ليزر نص اليدين» ومش بيتحاسب عليه المريض. لو ضفته هيتخصم من المخزن تكلفة بس.</div>
    <div class="act"><div class="b or">متأكد، ضيفه</div><div class="b">رجوع</div></div>
   </section>
-  <section class="card stop" data-shot="finish-confirm"><p class="eyebrow">٣) «إنهاء الزيارة» ومستلزم بيتحاسب ناقص — تأكيدين (مش منع)</p>
+  <section class="card stop" data-shot="finish-confirm"><p class="eyebrow">3) «إنهاء الزيارة» ومستلزم بيتحاسب ناقص — تأكيدين (مش منع)</p>
    <h3>⚠️ فيه مستلزم ناقص على الزيارة</h3>
    <div class="alert a-stop"><div class="kv"><b>الخدمة</b><span>ليزر نص اليدين</span><b>الناقص</b><span>كريم مهدئ بعد الليزر — <b style="color:#D0402A">85 ج.م</b> (المعتاد يتسجّل ومتسجّلش)</span></div></div>
    <div class="act"><div class="b pri">رجوع وسجّل المستلزم</div><div class="b">كمّل الإنهاء</div></div>
@@ -74,7 +80,7 @@ td.n,th.n{text-align:left;direction:ltr;font-variant-numeric:tabular-nums}
    <p>هيتكتب على الزيارة: «تم التنبيه على <b>منى — استقبال</b> إن فيه مستلزم ناقص <b>كريم مهدئ بعد الليزر</b> قيمته <b>85 ج.م</b> واختار الإنهاء رغم ذلك».</p>
    <div class="act"><div class="b red">أيوه، إنهي الزيارة</div><div class="b">لأ، رجوع</div></div>
   </section>
-  <section class="card" data-shot="after-finish"><p class="eyebrow">٤) بعد «إنهاء الزيارة» وقبل «تحصيل» — لسه ينفع يتعدّل</p>
+  <section class="card" data-shot="after-finish"><p class="eyebrow">4) بعد «إنهاء الزيارة» وقبل «تحصيل» — لسه ينفع يتعدّل</p>
    <div class="steps"><span class="dn">وصل ✓</span><span class="dn">نفّذ ✓</span><span class="dn">إنهاء ✓</span><span class="on">مستني التحصيل</span><span>اتحصّل</span></div>
    <div class="alert a-ok">الزيارة انتهت بس لسه ماتحصلتش. أي تعديل هنا بيتسجّل باسمك ووقته، والفاتورة بتتحدّث قبل ما تحصّل.</div>
    <table><thead><tr><th>البند</th><th>النوع</th><th class="n">المبلغ</th></tr></thead><tbody>
@@ -83,18 +89,38 @@ td.n,th.n{text-align:left;direction:ltr;font-variant-numeric:tabular-nums}
    <div class="act"><div class="b">+ خدمة</div><div class="b">+ مستلزم</div><div class="b or">تحصيل 485 ج.م</div></div>
    <p class="note">بعد التحصيل: التعديل بيبقى بطلب مرتجع / إضافة للحسابات زي النهارده.</p>
   </section>
-  <section class="card" data-shot="correction"><p class="eyebrow">٥) «استهلاك أمس» = تصحيح بس، خلال ٤٨ ساعة، باعتماد مدير (اللي طلب ≠ اللي اعتمد)</p>
+  <section class="card" data-shot="correction"><p class="eyebrow">5) «استهلاك أمس» = تصحيح بس، خلال 48 ساعة، باعتماد مدير (اللي طلب ≠ اللي اعتمد)</p>
    <div class="kv"><b>الزيارة</b><span>F-0981 · علاج طبيعي · الثلاثاء 24/11</span><b>التصحيح</b><span>+ جل ألتراساوند × 1 (في سعر الخدمة) من فرعي مستلزمات تمريض</span><b>السبب</b><span>اتنسى يتسجّل وقت الجلسة</span><b>طلبه</b><span>شروق — تمريض · 09:12</span></div>
    <div class="act"><div class="b pri">اعتمد</div><div class="b">ارفض (بسبب)</div></div>
    <p class="note">التنظيف والتعقيم والهالك بيتسجّلوا من «صرف للاستخدام» بسبب، مش على مريض.</p>
   </section>
-  <section class="card" data-shot="reconcile"><p class="eyebrow">٦) المطابقة اليومية — لكل مخزن فرعي (لرئيسة التمريض والمدير المالي)</p>
+  <section class="card" data-shot="reconcile"><p class="eyebrow">6) المطابقة اليومية — لكل مخزن فرعي (لرئيسة التمريض والمدير المالي)</p>
    <h3>فرعي مستلزمات تمريض — الثلاثاء 24/11</h3>
    <table><thead><tr><th>الصنف</th><th class="n">اتصرف للمخزن</th><th class="n">على الزيارات</th><th class="n">استخدام داخلي</th><th class="n">المتوقع من الخدمات</th><th class="n">الفرق</th></tr></thead><tbody>
     <tr><td>جوانتي (زوج)</td><td class="n">100</td><td class="n">86</td><td class="n">10</td><td class="n">84</td><td class="n var">+2</td></tr>
     <tr><td>جل تبريد</td><td class="n">20</td><td class="n">12</td><td class="n">0</td><td class="n">12</td><td class="n ok">0</td></tr>
     <tr><td>كريم مهدئ (بيتحاسب)</td><td class="n">10</td><td class="n">6</td><td class="n">0</td><td class="n">7</td><td class="n var">−1 مش متحاسب</td></tr></tbody></table>
    <p class="note">الجرد الشهري بيقفل الفروق. الجرد اليومي السريع ممكن يتضاف بعدين.</p>
+  </section>
+  <section class="card" data-shot="vitals"><p class="eyebrow">7) الفيتلة — مستلزماتها ثابتة، بتتخصم لوحدها من «الفحص قبل الكشف»، ومش على المريض</p>
+   <h3>الفحص قبل الكشف — منى سعيد · F-1102</h3>
+   <div class="vt">
+    <div class="vr"><span>ضغط الدم</span><span class="v">120/80</span><div class="seg"><span class="on">اتقاس</span><span>رفض</span><span>متعملش</span></div></div>
+    <div class="vr"><span>النبض</span><span class="v">82</span><div class="seg"><span class="on">اتقاس</span><span>رفض</span><span>متعملش</span></div></div>
+    <div class="vr"><span>الحرارة</span><span class="v">37.1</span><div class="seg"><span class="on">اتقاس</span><span>رفض</span><span>متعملش</span></div></div>
+    <div class="vr"><span>الأكسجين</span><span class="v">98</span><div class="seg"><span class="on">اتقاس</span><span>رفض</span><span>متعملش</span></div></div>
+    <div class="vr"><span>سكر الدم</span><span class="v">—</span><div class="seg"><span>اتقاس</span><span class="off">رفض</span><span>متعملش</span></div></div>
+   </div>
+   <div class="alert a-ok"><b>هيتخصم مع «حفظ الفحص» من فرعي مستلزمات تمريض — مش على فاتورة المريض</b>
+    <div class="kit"><div><span>حرارة: غطا ترمومتر</span><span class="n">1</span></div><div><span>الأكسجين: قطن + كحول</span><span class="n">1 + 1</span></div><div class="no"><span>سكر: شكّاكة + شريحة + قطن + كحول</span><span>مش هيتخصم — المريضة رفضت</span></div></div></div>
+   <p class="note">اللي متقاسش (رفض أو متعملش) مفيش له خصم. أي مستلزم تاني حسب التشخيص بيتسجّل وقت الخدمة من الشاشة رقم 1.</p>
+   <h3>طقم الفيتلة — بتظبطه رئيسة التمريض</h3>
+   <table><thead><tr><th>القياس</th><th>المستلزمات لكل مرة</th><th class="n">الكمية</th></tr></thead><tbody>
+    <tr><td>سكر الدم</td><td>شكّاكة · شريحة سكر · قطن · كحول</td><td class="n">1 · 1 · 1 · 1</td></tr>
+    <tr><td>الحرارة</td><td>غطا ترمومتر</td><td class="n">1</td></tr>
+    <tr><td>الأكسجين</td><td>قطن · كحول</td><td class="n">1 · 1</td></tr>
+    <tr><td>الضغط / النبض / الوزن</td><td>مفيش مستهلكات</td><td class="n">—</td></tr></tbody></table>
+   <div class="act"><div class="b pri">حفظ الطقم</div><div class="b">+ مستلزم للقياس</div></div>
   </section>
 </div>
 </body></html>
