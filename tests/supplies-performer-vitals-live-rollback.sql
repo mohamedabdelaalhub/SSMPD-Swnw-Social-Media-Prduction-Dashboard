@@ -51,6 +51,9 @@ begin
   select i.id, i.name, i.sale_price into it2 from clinic_reception.items i
    where i.workspace_id = ws and i.sale_price > 0 and i.inventory_item_id is not null and i.id <> it1.id and clinic_reception.stock_at(ws, i.id, dent) >= 3 order by i.name limit 1;
   insert into pv_live(step, expected, actual, ok) values ('fixture items', '2 items with stock ≥ 3 in «رئيسي أسنان»', coalesce(it1.name, '-') || ' / ' || coalesce(it2.name, '-') || ' (' || coalesce(it2.sale_price::text, '?') || ')', it1.id is not null and it2.id is not null);
+  if it1.id is null or it2.id is null then raise exception 'fixture: «رئيسي أسنان» has fewer than 2 linked items with stock ≥ 3 and a sale price'; end if;
+  -- the fixture service: prefer a dental service a doctor executed recently; otherwise any active dental service + an active
+  -- provider of its department that has exactly ONE approved doctor contract for it in accounting (what live execute needs)
   select s.id, s.code, s.name, s.department, s.price, o.provider_id, v.patient_id into svc
     from clinic_reception.orders o join clinic_reception.visits v on v.id = o.visit_id join clinic_reception.services s on s.id = o.service_id
    where o.workspace_id = ws and o.status = 'completed' and o.completed_at > now() - interval '60 days'
@@ -58,7 +61,21 @@ begin
      and exists (select 1 from clinic_reception.doctor_agreements a where a.provider_id = o.provider_id and a.service_code = s.code and a.status = 'active'
                   and (now() at time zone 'Africa/Cairo')::date between a.valid_from and a.valid_to)
    order by o.completed_at desc limit 1;
-  insert into pv_live(step, expected, actual, ok) values ('fixture service', 'a dental service executed in the last 60 days', coalesce(svc.code || ' ' || svc.name || ' — ' || svc.department, 'none'), svc.id is not null);
+  if svc.id is null then
+    select s.id, s.code, s.name, s.department, s.price, p.id as provider_id,
+           coalesce((select v.patient_id from clinic_reception.visits v join clinic_reception.orders o on o.visit_id = v.id join clinic_reception.services s2 on s2.id = o.service_id
+                      where v.workspace_id = ws and clinic_reception.supply_section(s2.department) = 'dental' order by v.opened_at desc limit 1),
+                    (select pt.id from clinic_reception.patients pt where pt.workspace_id = ws order by pt.id limit 1)) as patient_id
+      into svc
+      from clinic_reception.services s join clinic_reception.providers p on p.workspace_id = ws and p.active and p.department = s.department
+     where s.workspace_id = ws and s.active and s.price > 0 and clinic_reception.supply_section(s.department) = 'dental'
+       and (select count(*) from clinic_finance.doctor_contract_for_service(p.doctor_key, s.code, null, s.department, clinic_reception.today())) = 1
+     order by s.name, p.name limit 1;
+  end if;
+  insert into pv_live(step, expected, actual, ok) values ('fixture service', 'a dental service + doctor with one approved contract', coalesce(svc.code || ' ' || svc.name || ' — ' || svc.department, 'none'), svc.id is not null and svc.patient_id is not null);
+  if svc.id is null or svc.patient_id is null then
+    raise exception 'fixture: no active dental service on live whose doctor has exactly one approved contract in accounting (or no patient) — nothing to test the dental path with';
+  end if;
   update clinic_reception.services set bom = jsonb_build_array(jsonb_build_object('item_id', it1.id, 'quantity', 1, 'included', true),
                                                                jsonb_build_object('item_id', it2.id, 'quantity', 1, 'included', true)) where id = svc.id;
   insert into clinic_reception.service_billing(workspace_id, service_id, item_id, billable, updated_by) values (ws, svc.id, it1.id, false, me), (ws, svc.id, it2.id, true, me)
