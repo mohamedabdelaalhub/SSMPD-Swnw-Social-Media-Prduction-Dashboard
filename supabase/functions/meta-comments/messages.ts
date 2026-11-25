@@ -4,25 +4,10 @@
 import { decideReply, clinicInfo } from "./ai.ts";
 import { advance, serviceLabel, MESSAGES } from "./flow.mjs";
 import { reviewHandoffs } from "./review.ts";
+import { gget, gpostJson } from "./graph.ts";
 
-const GRAPH = "https://graph.facebook.com/v26.0/";
 const LEAD_NAME_PLACEHOLDER = "عميل ماسنجر";
 const WINDOW_MS = 23.5 * 3600e3; // stay inside Meta's 24h standard messaging window
-
-async function gget(path: string, params: Record<string, string>) {
-  const u = new URL(GRAPH + path);
-  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
-  const r = await fetch(u.toString());
-  const d = await r.json().catch(() => ({}));
-  return { ok: r.ok && !d.error, data: d, error: d.error?.message as string | undefined };
-}
-async function gpostJson(path: string, token: string, body: unknown) {
-  const r = await fetch(`${GRAPH}${path}?access_token=${encodeURIComponent(token)}`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
-  });
-  const d = await r.json().catch(() => ({}));
-  return { ok: r.ok && !d.error, data: d, error: d.error?.message as string | undefined };
-}
 
 export async function syncMessages(db: any, brand: string, cfg: any, token: string, report: any, autopilot: boolean) {
   if (!cfg?.facebook_page_id) return;

@@ -5,7 +5,9 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),ts=require('typescript');
 const src=fs.readFileSync('supabase/functions/meta-comments/messages.ts','utf8').replace(/^import .*$/gm,'');
 const js=ts.transpileModule(src,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-function load(fetchImpl){const sb={exports:{},module:{},fetch:fetchImpl,URL,JSON,Date,String,Number,Set,Promise,console,
+const gjs=ts.transpileModule(fs.readFileSync('supabase/functions/meta-comments/graph.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+function load(fetchImpl){const gsb={exports:{},module:{},fetch:fetchImpl,URL,URLSearchParams,JSON,String,Number,Promise,AbortSignal,Error,Math};gsb.module.exports=gsb.exports;vm.runInNewContext(gjs,gsb);
+ const sb={exports:{},module:{},fetch:fetchImpl,gget:gsb.exports.gget,gpostJson:gsb.exports.gpostJson,URL,JSON,Date,String,Number,Set,Promise,console,
  decideReply:async()=>({ok:true,reply:'رد مقترح'}),clinicInfo:async()=>'',advance:()=>({}),serviceLabel:x=>x,reviewHandoffs:async()=>{}};sb.module.exports=sb.exports;vm.runInNewContext(js,sb);return sb.exports;}
 function fakeDb(rows){const writes=[];const q=(table)=>{const st={table,filters:{}};const api={select(){return api;},eq(k,v){st.filters[k]=v;return api;},order(){return api;},limit(){return api;},in(k,v){st.in=[k,v];return api;},
   maybeSingle(){return Promise.resolve({data:table==='meta_brand_config'?{facebook_page_id:'PAGE1'}:null,error:null});},
