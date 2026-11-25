@@ -64,7 +64,12 @@
       var b = e.target.closest('[data-hra-act]'); if (!b) return;
       var key = b.dataset.hraAct; if (key === 'call' || key === 'whatsapp') { close(dlg); return; }
       e.preventDefault(); close(dlg);
-      if (key === 'offboarding') { hrOpen('offboarding'); return; }
+      if (key === 'offboarding') {
+        // UX review 2026-11-25: open «بدء إنهاء خدمة» for THIS person (it used to open the section only, and the dialog defaulted to the first employee)
+        if (!hrOpen('offboarding')) return;
+        after(function () { var b = d.querySelector('[data-offb="new"]'); if (!b) { toast('بدء إنهاء الخدمة محتاج صلاحية إدارة الموارد البشرية'); return; } b.click(); after(function () { var s = d.querySelector('.wp-modal select[name=person_id]'); if (s) { s.value = p.id; s.dispatchEvent(new Event('change', { bubbles: true })); } }); });
+        return;
+      }
       ACTIONS.forEach(function (g) { g[1].forEach(function (a) { if (a[0] === key) a[4](p); }); });
     });
     dlg.addEventListener('cancel', function (e) { e.preventDefault(); close(dlg); });
