@@ -1,0 +1,69 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: التقارير المالية</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.head h2{margin:0;font-size:20px;color:var(--brand)}
+.per{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.per .seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}.per .seg button{border:0;background:#fff;min-height:38px;padding:0 12px;font-weight:600;color:#475467}.per .seg button.on{background:var(--brand);color:#fff}
+.alert{display:flex;gap:10px;align-items:center;background:#FFF6E8!important;border:1px solid #F5D9A8;padding:12px 16px;font-size:13px;color:#7A4A00}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}.tabs button{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;font-weight:600}.tabs button.on{background:var(--tint);border-color:#C9D6F2;color:var(--brand)}
+.kp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.kp div{border-radius:16px;padding:14px;display:grid;gap:2px;background:var(--soft)}.kp b{font-size:24px}.kp small{font-size:12px;color:#475467}.kp .w{background:#E7F3EC}.g{color:var(--pos)}
+.grp{border:1px solid var(--line);border-radius:16px;overflow:hidden}.grp+.grp{margin-top:10px}
+.gh{display:flex;justify-content:space-between;padding:12px 14px;background:var(--soft);font-weight:700}
+.ln{display:flex;justify-content:space-between;gap:10px;padding:10px 14px;border-top:1px solid var(--line)}.ln .c{font-size:11px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:6px;padding:0 6px;margin-inline-start:6px}
+.res{display:flex;justify-content:space-between;background:#E7F3EC;border-radius:14px;padding:12px 14px;font-weight:700;color:var(--pos);margin-top:10px}
+.tg{display:inline-flex;gap:8px;align-items:center;font-size:12.5px;color:#475467}.sw{width:34px;height:20px;border-radius:999px;background:#D0D5DD;position:relative}.sw:after{content:"";position:absolute;top:2px;inset-inline-start:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.cf{display:grid;gap:8px}.cf div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}.cf small{display:block;color:var(--muted);font-size:12px}
+.lg{display:grid;grid-template-columns:150px minmax(0,1fr) 160px;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);align-items:center}.lg:last-child{border-bottom:0}.lg small{display:block;color:var(--muted);font-size:12px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cmp div{border-radius:14px;padding:12px;font-size:12.5px;line-height:1.8}.cmp .b{background:#FFF6F4;border:1px dashed #F3C6BB}.cmp .a{background:#F2FAF5;border:1px solid #CFE6D8}.cmp code{font-size:11px;background:#fff;border-radius:6px;padding:0 4px}
+@media(max-width:760px){.kp,.two,.cmp{grid-template-columns:minmax(0,1fr)}.lg{grid-template-columns:minmax(0,1fr)}}
+</style></head><body><p class="note"><b>تصور — التقارير المالية + سجل المراجعة</b> (بيانات تجريبية · مفيش حاجة بتتحفظ). فلتر فترة واحد، تواريخ بالكلام، أرقام الحسابات مستخبية إلا لو المحاسب عايزها، وسجل المراجعة بالعربي.</p>
+<div class="wrap">
+<div class="card"><div class="head"><div><h2>القوائم المالية</h2><p class="sub">من 1 لـ 25 نوفمبر 2026</p></div><div class="per"><div class="seg"><button class="on">الشهر ده</button><button>الشهر اللي فات</button><button>من أول السنة</button></div><button class="btn">فترة تانية…</button><button class="btn">اطبع</button></div></div></div>
+<div class="card alert">⚠ أرصدة الافتتاح لسه ما اتعتمدتش — الأرقام دي من الحركات المتسجلة بس.</div>
+
+<div class="card"><div class="tabs"><button class="on">المكسب والخسارة</button><button>اللي لينا واللي علينا (المركز المالي)</button><button>الفلوس داخلة وخارجة منين</button></div>
+<div class="kp" style="margin-top:12px"><div><small>الإيرادات</small><b>21,400.00 ج</b></div><div><small>المصروفات</small><b>12,350.00 ج</b></div><div class="w"><small>صافي المكسب</small><b class="g">9,050.00 ج</b></div></div>
+<div class="head" style="margin:14px 0 8px"><h3 style="margin:0">التفاصيل</h3><span class="tg"><span class="sw"></span>أظهر أرقام الحسابات</span></div>
+<div class="grp"><div class="gh"><span>الإيرادات</span><span>21,400.00</span></div><div class="ln"><span>إيراد الخدمات الطبية</span><span>21,400.00</span></div></div>
+<div class="grp"><div class="gh"><span>المصروفات</span><span>12,350.00</span></div><div class="ln"><span>أتعاب ونسب الدكاترة</span><span>9,300.00</span></div><div class="ln"><span>مصروفات إدارية</span><span>3,050.00</span></div></div>
+<div class="res"><span>صافي المكسب للفترة</span><span>9,050.00 ج</span></div>
+</div>
+
+<div class="two">
+<div class="card"><h3>الفلوس داخلة وخارجة منين</h3><div class="cf">
+<div><span><b>من الشغل اليومي</b><small>تحصيل المرضى، المرتبات، المصاريف</small></span><b class="g">+ 8,200.00</b></div>
+<div><span><b>أجهزة وأصول</b><small>شراء أو بيع أجهزة</small></span><b>− 0.00</b></div>
+<div><span><b>فلوس من أو لأصحاب المركز</b><small>تمويل أو سحب</small></span><b>0.00</b></div></div></div>
+<div class="card"><h3>سجل المراجعة</h3>
+<div class="lg"><span>25 نوفمبر · 8:56 م</span><div><b>استلام تسليم وردية اتراجع</b><small>خزينة الاستقبال 1 · 4,350 ج</small></div><span>أ. هالة</span></div>
+<div class="lg"><span>25 نوفمبر · 8:40 م</span><div><b>وردية اتقفلت للتسليم</b><small>خزينة الاستقبال 1</small></div><span>منى سعيد</span></div>
+<div class="lg"><span>24 نوفمبر · 5:17 م</span><div><b>إعادة جرد بعد رفض التسليم</b><small>خزينة الاستقبال 2</small></div><span>أحمد فتحي</span></div></div>
+</div>
+
+<div class="card"><h3>إيه اللي اتغير؟</h3><div class="cmp">
+<div class="b"><b>دلوقتي</b><br>• فلترين للفترة: تواريخ فوق + «الشهر ده» تحت<br>• تواريخ زي <code>2026-11-01 — 2026-11-25</code><br>• أرقام حسابات جنب كل اسم (<code>4110</code>، <code>04</code>) ومستوى «الإيرادات» مكرر مرتين<br>• تنبيه الافتتاح بيقول نفس الكلام مرتين، وسطر تحت بيكرر الأرقام<br>• «حركة تشغيلية / استثمارية / تمويلية»<br>• سجل المراجعة فيه كلام إنجليزي زي <code>treasury_transfer_reviewed</code> وأكواد طويلة</div>
+<div class="a"><b>بعد</b><br>• فلتر واحد فوق<br>• «من 1 لـ 25 نوفمبر 2026»<br>• أرقام الحسابات مستخبية، وزرار «أظهر أرقام الحسابات» للمحاسب، ومستوى واحد<br>• تنبيه سطر واحد، والسطر المكرر اتشال<br>• «من الشغل اليومي / أجهزة وأصول / فلوس من أو لأصحاب المركز»<br>• كل عملية بالعربي («استلام تسليم وردية اتراجع») واسم الخزنة بدل الكود</div>
+</div><p class="sub" style="margin-top:10px">نفس الأرقام ونفس الحسبة. اسم الحاجة في سجل المراجعة بدل الكود محتاج يرجع من السيرفر؛ لحد ما يتضاف هيظهر اسم العملية بالعربي من غير الكود.</p></div>
+</div></body></html>
