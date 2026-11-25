@@ -4,6 +4,7 @@
 --   RLS: she reads ALL leads + attempts (before: only assigned); she updates the status of a lead assigned to someone else;
 --   the edge path: rpc_update_lead with p_caller_id = her (what leads-update-status calls after its scope check) works.
 -- A plain customer_service account without the grant (if one exists) still reads only its assigned leads.
+-- Activity trail: her export is logged; a super admin's «حركة الموظفين على الليدز» report shows her status changes + export.
 begin;
 -- transaction guard: SAVEPOINT fails outside an explicit begin … rollback block (also when the file is sent as one query
 -- without «begin;»), and then nothing in this file runs and nothing is kept
@@ -26,7 +27,7 @@ begin
 end $$;
 -- >>> apply supabase/migrations/20261125150000_leads_archive_grant_all.sql here (without its own begin / commit) if not applied yet <<<
 do $$
-declare z record; cs record; total int; seen int; att int; att_seen int; lid uuid; st text; n int; err text; assigned int;
+declare z record; cs record; total int; seen int; att int; att_seen int; lid uuid; st text; n int; err text; assigned int; rep jsonb;
 begin
   select a.id, a.user_id, a.name into z from public.admins a
    where a.active and a.user_id is not null and a.has_leads_archive_access is true and a.role not in ('super_admin', 'general_manager', 'reception')
@@ -58,6 +59,28 @@ begin
   insert into la_live(step, expected, actual, ok) values ('edge path rpc_update_lead as her', 'no_response', err || ' · ' || coalesce(st, '?'), st = 'no_response');
   select count(*) into n from public.lead_status_log s where s.lead_id = lid and s.changed_at >= now() - interval '1 minute';
   insert into la_live(step, expected, actual, ok) values ('status log rows for that lead', '≥ 1 (trigger)', n::text, n >= 1);
+  -- activity trail: her export is logged; a manager's report shows her actions; she cannot read the report
+  begin
+    execute 'set local role authenticated'; perform public.log_leads_export('archive', seen, '{}'::jsonb); execute 'reset role'; err := 'ok';
+  exception when others then execute 'reset role'; err := sqlerrm; end;
+  insert into la_live(step, expected, actual, ok) values ('her «تصدير إكسيل» logged (log_leads_export)', 'ok', err, err = 'ok');
+  begin
+    execute 'set local role authenticated'; perform public.leads_activity_report(null, null); execute 'reset role'; err := 'accepted';
+  exception when others then execute 'reset role'; err := sqlerrm; end;
+  insert into la_live(step, expected, actual, ok) values ('her: management report', 'refused', err, err <> 'accepted');
+  select a.id, a.user_id, a.name into cs from public.admins a where a.active and a.user_id is not null and a.role = 'super_admin' order by a.name limit 1;
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', cs.user_id, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', cs.user_id::text, true);
+  begin
+    execute 'set local role authenticated';
+    select x into rep from jsonb_array_elements(public.leads_activity_report(null, null)->'rows') x where (x->>'admin_id')::uuid = z.id;
+    select count(*) into n from jsonb_array_elements(public.leads_activity_feed(z.id, null, null, 50)) f where f->>'action' = 'export';
+    execute 'reset role'; err := 'ok';
+  exception when others then execute 'reset role'; err := sqlerrm; end;
+  insert into la_live(step, expected, actual, ok) values ('manager report (' || coalesce(cs.name, '?') || '): her row', 'status ≥ 2 · export ≥ 1 · feed has the export',
+    err || ' · status ' || coalesce(rep->>'status', '?') || ' · export ' || coalesce(rep->>'export', '?') || ' · feed exports ' || n,
+    (rep->>'status')::int >= 2 and (rep->>'export')::int >= 1 and n >= 1);
+  cs := null;
   -- plain customer service without the grant (if any): still assigned-only
   select a.id, a.user_id, a.name into cs from public.admins a
    where a.active and a.user_id is not null and a.has_leads_archive_access is not true and a.role not in ('super_admin', 'general_manager', 'reception')

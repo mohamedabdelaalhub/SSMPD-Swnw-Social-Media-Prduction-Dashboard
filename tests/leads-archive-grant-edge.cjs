@@ -50,5 +50,6 @@ const leadsQuery=st=>st.queries.find(q=>q.table==='leads'&&q.calls.some(c=>c[0]=
  // the other scoped functions: grant passes the scope check (whatever happens after), plain CS is refused with the scope message
  for(const fn of ['leads-update-details','lead-invoice-upload','leads-complete-missing-data']){
   const src=fs.readFileSync('supabase/functions/'+fn+'/index.ts','utf8');assert.match(src,/has_leads_archive_access/,fn+' loads the flag');assert.match(src,/hasLeadsGrant\(caller\)/,fn+' uses the grant');}
+ assert.match(fs.readFileSync('supabase/functions/leads-complete-missing-data/index.ts','utf8'),/from\("lead_activity_log"\)\.insert\(\{\s*admin_id: caller\.id, action: "complete_missing_data"/,'«إكمال البيانات» logged with who');
  console.log('PASS leads archive grant (real edge code): grant holder lists ALL leads (no assigned_to filter), even without a leads role; plain customer_service still assigned-only; no role/no grant 403; management stats stay managers-only; status update + attempt on a lead assigned to someone else work for the grant holder (rpc_update_lead as her) and are refused for plain customer_service.');
 })().catch(e=>{console.error(e);process.exit(1);});

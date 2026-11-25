@@ -132,5 +132,11 @@ Deno.serve(async (req) => {
     .eq("id", leadId);
   if (updateErr) return json({ error: updateErr.message }, 500);
 
+  // owner 2026-11-25 «اي حركة بيعملها عندنا تقرير منها»: who completed the missing data (public.lead_activity_log, 20261125150000)
+  await admin.from("lead_activity_log").insert({
+    admin_id: caller.id, action: "complete_missing_data", lead_id: leadId,
+    detail: { customer_name: customerName, patient_type: matchedPatient ? "existing" : "new" },
+  });
+
   return json({ ok: true });
 });
