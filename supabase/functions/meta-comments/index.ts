@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decideReply, clinicInfo, withContact } from "./ai.ts";
 import { syncMessages, sendManualMessage, suggestMessage } from "./messages.ts";
-import { cleanText, saveCommentRows, releaseStuckSending } from "./comment-store.ts";
+import { cleanText, saveCommentRows, releaseStuckSending, sendApprovedComments } from "./comment-store.ts";
 import { readFbThreads } from "./fb-comments.ts";
 import { gget, gpost } from "./graph.ts";
 import { createRunLog } from "./run-log.ts";
@@ -53,6 +53,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     const me = await gget(cfg.instagram_business_account_id, { fields: "username", access_token: token });
     igUsername = me.ok ? me.data.username : null;
   }
+  await RUN_LOG?.step(`ig-username`);
   // Watch every post of the last 60 days on the page/Instagram (not only dashboard posts), but only
   // re-read comments of a post when its comment count changed — keeps Graph calls low every 2 minutes.
   const since = Math.floor((Date.now() - 60 * 864e5) / 1000).toString();
@@ -67,6 +68,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       if (!byFb.has(p.id)) byFb.set(p.id, { id: null, content_id: null, facebook_post_id: p.id });
     }
   }
+  await RUN_LOG?.step(`fb-posts ${counts.size}`);
   if (cfg?.instagram_business_account_id) {
     const r = await gget(`${cfg.instagram_business_account_id}/media`, { fields: "id,permalink,timestamp,comments_count", limit: "40", access_token: token });
     if (!r.ok) report.errors.push(`${brand} instagram media: ${r.error}`);
@@ -78,8 +80,10 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       else byIg.set(m.id, { id: null, content_id: null, instagram_media_id: m.id, instagram_permalink: m.permalink || null });
     }
   }
+  await RUN_LOG?.step(`ig-media ${counts.size}`);
   const { data: watched } = await db.from("social_comment_watch").select("post_ref,last_count,checked_at").eq("brand", brand);
   const watch = new Map((watched || []).map((w: any) => [w.post_ref, w]));
+  await RUN_LOG?.step(`watch ${watch.size}`);
   const PERMANENT = -2; // watch marker: the post cannot be read (deleted / no access); skipped for 6 hours, then tried again
   const stale = (ref: string) => {
     const w: any = watch.get(ref), c = counts.get(ref);
@@ -97,6 +101,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     watchRows.push({ post_ref: ref, platform: j.facebook_post_id ? "facebook" : "instagram", brand, last_count: counts.get(ref) ?? null, checked_at: new Date().toISOString() });
   }
   report.checked = (report.checked || 0) + jobs.length;
+  await RUN_LOG?.step(`jobs ${jobs.length}`);
   const rows: Row[] = [];
   const failed = new Set<string>();
   const pageReplied = new Set<string>();
@@ -141,11 +146,13 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     if (r.failedRef) failed.add(r.failedRef);
     if (r.permanentRef) permanent.add(r.permanentRef);
   }
+  await RUN_LOG?.step(`threads-read rows ${rows.length}`);
   if (rows.length) {
     // New comments only; existing rows keep their drafts/status.
     const sv = await saveCommentRows(db, rows, report, brand);
     report.seen += sv.saved;
     for (const ref of sv.failedRefs) failed.add(ref); // posts with an unsaved row are not marked as read: retried next run
+    await RUN_LOG?.step(`saved ${sv.saved}/${rows.length}`);
     // Rows saved before links were collected: fill comment/author links once.
     const ids = rows.map((r) => r.id as string);
     const missing: any[] = [];
@@ -159,6 +166,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       if (r?.comment_url) await db.from("social_comments").update({ comment_url: r.comment_url, author_url: r.author_url }).eq("id", m.id);
     }
   }
+  await RUN_LOG?.step(`links-filled`);
   const okWatch = watchRows.filter((w) => !failed.has(w.post_ref as string));
   for (const w of okWatch) if (permanent.has(w.post_ref as string)) w.last_count = PERMANENT;
   if (okWatch.length) await db.from("social_comment_watch").upsert(okWatch, { onConflict: "post_ref" });
@@ -373,29 +381,7 @@ async function runSync(db: any, report: any) {
 
 async function sendApproved(db: any, report: any, onlyId?: string) {
   await releaseStuckSending(db).catch(() => {});
-  let q = db.from("social_comments").select("*").eq("status", "approved").limit(20);
-  if (onlyId) q = q.eq("id", onlyId);
-  const { data } = await q;
-  for (const c of data || []) {
-    // Claim the row so two runs never send the same reply twice.
-    const claim = await db.from("social_comments").update({ status: "sending", updated_at: new Date().toISOString() })
-      .eq("id", c.id).eq("status", "approved").select("id");
-    if (!claim.data?.length) continue;
-    const token = pageToken(c.brand);
-    const target = c.parent_comment_id || c.platform_comment_id; // reply in the same thread
-    const message = withContact(c.final_reply);
-    const r = !token ? { ok: false, error: "no page token", data: {} as any }
-      : c.platform === "facebook"
-        ? await gpost(`${target}/comments`, { message, access_token: token })
-        : await gpost(`${target}/replies`, { message, access_token: token });
-    if (r.ok) {
-      await db.from("social_comments").update({ status: "replied", final_reply: message, reply_platform_id: r.data.id || null, replied_at: new Date().toISOString(), last_error: null, updated_at: new Date().toISOString() }).eq("id", c.id);
-      report.sent++;
-    } else {
-      await db.from("social_comments").update({ status: "failed", last_error: String(r.error || "send failed").slice(0, 300), updated_at: new Date().toISOString() }).eq("id", c.id);
-      report.errors.push(`send ${c.id}: ${r.error}`);
-    }
-  }
+  await sendApprovedComments(db, report, { pageToken, gpost, withContact }, { onlyId });
 }
 
 Deno.serve(async (req) => {
