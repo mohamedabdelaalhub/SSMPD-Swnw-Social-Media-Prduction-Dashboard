@@ -1,5 +1,5 @@
 -- Live rollback dry-run for 20261126010000_shift_expense_more_items.sql (rule 9). ONE transaction ending with ROLLBACK; nothing kept.
--- On a THROWAWAY collection register + shift (opening book 500) created inside the transaction, as a real reception cashier:
+-- On a THROWAWAY collection register + shift (500 cash seeded by a posted collection) created inside the transaction, as a real reception cashier:
 -- the register is forced 'receive' like every real reception register (that is what refused the first dry-run);
 -- status lists 12 items; «إكراميات» with no receipt + a reason posts (Dr 5216); «صيانة» without a receipt is refused; a short tip reason is refused; any other payout from the same receive-only register is still refused.
 begin;
@@ -62,7 +62,7 @@ do $$ begin
 end $$;
 
 do $$
-declare ca uuid; cu uuid; fm_admin uuid; acct text; rg uuid; sid uuid; st jsonb; r jsonb; ok boolean;
+declare ca uuid; cu uuid; fm_admin uuid; acct text; inc text; rg uuid; sid uuid; st jsonb; r jsonb; ok boolean;
 begin
   select a.id, a.user_id into ca, cu from public.admins a
    where a.active and a.user_id is not null and a.role = 'reception'
@@ -77,7 +77,15 @@ begin
   values ('تجربة مصروفات — تتلغي ' || left(gen_random_uuid()::text, 8), 0, fm_admin, 'collection', acct, ca, (select id from clinic_finance.registers where treasury_kind = 'main' limit 1))
   returning id into rg;
   insert into clinic_finance.shifts(register_id, cashier_id, token, opening_book) values (rg, ca, gen_random_uuid(), 500) returning id into sid;
-  perform set_config('request.jwt.claim.sub', cu::text, true); execute 'set local role authenticated';
+  -- real cash in the drawer: a 500 cash collection posted through clinic_finance.post like a cashier's receipt (Dr 1111 → the
+  -- register's own cash account, Cr a throwaway income account); «opening_book» alone is not ledger cash for cash_limit().
+  inc := '9' || lpad((floor(random() * 1000000000))::bigint::text, 9, '0');
+  insert into clinic_finance.accounts(code, name, kind) values (inc, 'إيراد تجربة مصروفات الوردية — يتلغي', 'income');
+  insert into clinic_finance.account_config(code, is_system, is_postable) values (inc, false, true);
+  perform set_config('request.jwt.claim.sub', cu::text, true);
+  perform clinic_finance.post('collection', gen_random_uuid(), 'تجربة — تحصيل كاش يتلغي', sid, '1111', inc, 500);
+  if clinic_finance.cash_limit(sid) <> 500 then raise exception 'seeded cash not counted: %', clinic_finance.cash_limit(sid); end if;
+  execute 'set local role authenticated';
   st := public.clinic_finance_shift_expense('status', '{}'::jsonb);
   if jsonb_array_length(st->'items') <> 12 or not (st->'items') @> '[{"key":"tips","no_receipt":true}]'::jsonb then raise exception 'items: %', st->'items'; end if;
   r := public.clinic_finance_shift_expense('spend', jsonb_build_object('shift_id', sid, 'item', 'tips', 'amount', '20', 'reason', 'تجربة — عامل توصيل المياه', 'receipt_path', '', 'token', gen_random_uuid()));
