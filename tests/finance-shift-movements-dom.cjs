@@ -29,7 +29,7 @@ host.querySelector('[data-mv-export="xlsx"]').click();assert(blob);const bytes=n
 let html='';w.open=()=>({document:{open(){},write(x){html+=x;},close(){},images:[]},focus(){},print(){}});
 host.querySelector('[data-mv-filter="all"]').click();host.querySelector('[data-mv-export="pdf"]').click();
 assert.match(html,/swnw-official-letterhead/,'letterhead');assert.match(html,/<h2>كشف حركات الوردية<\/h2>/);assert.doesNotMatch(html,/<h2>[^<]*(سونو|Swnw)/,'no centre name in the title');
-assert.match(html,/التاريخ والوقت<\/th><th>المريض \/ البيان<\/th><th>الخدمة<\/th><th>رقم الملف<\/th><th>الموظف<\/th><th>طريقة الدفع<\/th><th>نوع السداد<\/th><th>رقم الإيصال \/ المرجع<\/th><th>المبلغ/);
+assert.match(html,/التاريخ والوقت<\/th><th>المريض \/ البيان<\/th><th>الخدمة<\/th><th>رقم الملف<\/th><th>الموظف<\/th><th>طريقة الدفع<\/th><th>نوع السداد<\/th><th>رقم الإيصال \/ رقم العملية<\/th><th>المبلغ/);
 assert.match(html,/<bdi class="ltr">15-11-2026<\/bdi><br>/,'date on every row');assert.match(html,/>P-1</,'file number split out');assert.match(html,/>كشف</);
 assert.match(html,/class="dh"><td colspan="9">[^<]*<bdi class="ltr">15-11-2026<\/bdi> — 5 حركات/,'day header');assert.match(html,/إجمالي يوم/);assert.match(html,/الإجمالي العام للفترة/);
 assert.match(html,/تأمين — حصة المريض/);assert.match(html,/صرف من الخزينة/);assert.match(html,/نقدي ← بطاقة/);assert.match(html,/−200.00/);
