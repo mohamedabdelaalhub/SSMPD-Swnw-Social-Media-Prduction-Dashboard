@@ -1434,6 +1434,20 @@
       "reviewed": true
     },
     {
+      "title": "القسم",
+      "labels": [
+        "القسم"
+      ],
+      "text": "اختار التخصص أو القسم الذي تخصه الخدمة أو المادة أو التقرير. في الفلترة يغيّر العرض فقط، وفي الحجز يؤثر على ترشيح الطبيب المطابق للقسم.",
+      "article": "content",
+      "tabs": [
+        "price_lists",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "بحث عن جهة",
       "labels": [
         "بحث عن جهة"
@@ -2258,20 +2272,6 @@
       ],
       "text": "اكتب اسم القسم أو جزءًا من اسم السجل المطلوب. النتائج تعتمد على صلاحية حسابك والبيانات المتاحة، والبحث لا يغير السجلات.",
       "article": "personal",
-      "tabs": [
-        "price_lists",
-        "contracting_entities"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "القسم",
-      "labels": [
-        "القسم"
-      ],
-      "text": "اختار التخصص أو القسم الذي تخصه الخدمة أو المادة أو التقرير. في الفلترة يغيّر العرض فقط، وفي الحجز يؤثر على ترشيح الطبيب المطابق للقسم.",
-      "article": "content",
       "tabs": [
         "price_lists",
         "contracting_entities"
@@ -23209,7 +23209,7 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2001,
+    "definitions": 2002,
     "labels": 1457,
     "files": 158,
     "groups": 1573

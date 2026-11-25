@@ -1,7 +1,7 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2001,
+    "definitions": 2002,
     "labels": 1457,
     "files": 158,
     "groups": 1573
@@ -1103,6 +1103,16 @@
       "tab": "accounting",
       "article": "entities",
       "text_sha256": "9a08a1f170058584db19df94eafa18ad1a2aecf3347fc8d9ebd63e29c2e6f954"
+    },
+    {
+      "file": "contract-navigation.js",
+      "label": "القسم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
     },
     {
       "file": "contract-navigation.js",
