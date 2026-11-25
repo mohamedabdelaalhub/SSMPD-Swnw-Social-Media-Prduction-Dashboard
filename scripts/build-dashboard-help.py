@@ -1109,7 +1109,7 @@ def domain(f):
  if f=='contract-navigation.js':return 'contracting_entities'
  if f in PRICE_FILES:return 'price_lists'
  if f=='insurance-contracts.js':return 'contracting_entities'
- if f in ('entity-claims.js','insurance-billing.js'):return 'accounting'
+ if f in ('entity-claims.js','insurance-billing.js','count-check.js'):return 'accounting'
  if f.startswith('today-operations'):return 'reception_services'
  if f=='lab-link-review.js':return 'price_lists'
  if f=='test-records.js':return 'admin'
@@ -1167,6 +1167,8 @@ frule('reception-legacy-package.js','خصم من باكج المريض','الخ�
 frule('price-name-review.js','ابحث باسم الخدمة عند الجهة أو عندنا…','اكتب جزء من اسم الخدمة زي ما هو مكتوب في لائحة الجهة أو زي ما هو عندنا. الأسماء اللي فيها الكلام ده بس هتفضل ظاهرة، ومش فارقة أ/ا ولا ة/ه ولا ى/ي.','price-name-review')
 frule('price-name-review.js','ابحث في خدماتنا','اكتب جزء من اسم الخدمة عندنا أو كودها، واختار الخدمة الصح من النتايج. الاختيار بيربط الاسم بالخدمة دي في كل اللوايح اللي فيها الاسم.','price-name-review')
 frule('finance-controls.js','طريقة التسوية','اختار إزاي فرق الخزينة يتسجّل: الزيادة «إيراد فروق زيادة الخزينة»، والعجز «مصروف عجز الخزينة» أو «على الموظف» لو القرار كده. القيد بيستنى موافقة شخص تاني ومفيش خصم من المرتب تلقائي.','cash-case-settlement')
+frule('count-check.js','السبب لو تعرفه (اختياري)','لو العد مش مطابق وإنت متأكد منه، اكتب السبب لو تعرفه (مثلًا مريض دفع ولسه ما اتسجّلش). السبب بيتسجّل مع ملاحظات الجرد ويظهر للمراجع في «فروق الخزينة».','shift-count-check')
+frule('count-check.js','مثلًا: مريض دفع ولسه ما اتسجّلش','مثال لسبب عدم مطابقة العد — اكتب السبب الحقيقي لو تعرفه، أو سيبها فاضية.','shift-count-check')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'
