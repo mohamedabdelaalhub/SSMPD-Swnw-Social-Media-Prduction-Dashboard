@@ -1,0 +1,50 @@
+/* «القيود وميزان المراجعة» look (owner 2026-11-25, mockup finance-ledger). Display only. */
+.le-how{border:1px solid #E4E9F2;border-radius:12px;padding:10px 14px;margin:10px 0;background:#FAFCFF}
+.le-how>summary{cursor:pointer;color:#0F369D;font-weight:600;min-height:28px}
+.le-how p{margin:6px 0;color:#475569;line-height:1.8;font-size:14px}
+.le-card{background:#fff;border:1px solid #E4E9F2;border-radius:16px;padding:16px;margin:14px 0;min-width:0}
+.le-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.le-head h4{margin:0;font-size:17px}
+.le-sub{color:#667085;font-size:13px}
+.le-bal{border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700}
+.le-bal.is-ok{background:#E7F3EC;color:#2F7D5C}.le-bal.is-bad{background:#FCEDEB;color:#D0402A}
+.le-zero{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#0F369D;cursor:pointer;min-height:36px}
+.le-scroll{overflow-x:auto;max-width:100%}
+.le-trial{width:100%;border-collapse:collapse;font-size:14px}
+.le-trial th{background:#F4F7FD;color:#536177;font-weight:600;font-size:13px;text-align:start;padding:10px}
+.le-trial td{padding:10px;border-bottom:1px solid #EEF2F8;font-variant-numeric:tabular-nums;white-space:nowrap}
+.le-trial td:first-child{white-space:normal}
+.le-trial td small{color:#667085;font-size:12px}
+.le-trial .le-z{display:none}
+.le-trial-card:has([data-le-zero]:checked) .le-z{display:table-row}
+.le-trial tfoot td{font-weight:700;border-top:2px solid #E4E9F2;border-bottom:0}
+.le-trial tfoot tr.is-ok td:last-child{color:#2F7D5C}.le-trial tfoot tr.is-bad td{color:#D0402A}
+.le-list{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
+.le-entry{border:1px solid #E4E9F2;border-radius:12px;background:#fff}
+.le-entry>summary{display:grid;grid-template-columns:130px 90px minmax(0,1fr) auto 64px;gap:10px;align-items:center;padding:10px 12px;cursor:pointer;list-style:none;min-height:44px}
+.le-entry>summary::-webkit-details-marker{display:none}
+.le-entry[open]>summary{border-bottom:1px solid #EEF2F8;background:#FAFCFF;border-radius:12px 12px 0 0}
+.le-entry>:not(summary){margin:10px 12px;overflow-x:auto;max-width:calc(100% - 24px)}
+.le-date{color:#475569;font-size:13px}.le-no{color:#667085;font-size:13px;font-variant-numeric:tabular-nums}
+.le-desc{display:grid;min-width:0;overflow-wrap:anywhere}.le-desc small{color:#667085;font-size:12px}
+.le-amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.le-tag{justify-self:end;border-radius:999px;padding:3px 10px;font-size:12px;background:#EAF0FF;color:#0F369D}
+.le-tag.is-manual{background:#FFF2E8;color:#8A441E}
+.le-empty{color:#667085;text-align:center;padding:18px}
+.le-entry:focus-within>summary,.le-entry>summary:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+@media(max-width:700px){
+ .le-card{padding:12px}
+ .le-zero{margin-inline-start:0}
+ .le-scroll{overflow:visible}
+ .le-trial thead{display:none}
+ .le-trial,.le-trial tbody,.le-trial tfoot{display:block}
+ .le-trial tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;padding:10px 0;border-bottom:1px solid #EEF2F8}
+ .le-trial-card:has([data-le-zero]:checked) .le-z{display:grid}
+ .le-trial td{border:0;padding:2px 0;white-space:normal}
+ .le-trial td:first-child{grid-column:1/-1}
+ .le-trial td[data-label]:not(:first-child)::before{content:attr(data-label);display:block;font-size:11px;color:#667085}
+ .le-trial tfoot td:empty{display:none}
+ .le-entry>summary{grid-template-columns:minmax(0,1fr) auto;gap:4px 10px}
+ .le-desc{grid-column:1/-1;order:-1}
+ .le-tag{justify-self:start}
+}
