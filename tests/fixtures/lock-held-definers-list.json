@@ -1,0 +1,14 @@
+[
+"claim_server_meta_publish_jobs(integer)",
+"storage_offload_mark_deleted(text,text[])",
+"storage_offload_candidates(integer)",
+"storage_offload_ready_for_delete(integer)",
+"claim_next_video_job(text)",
+"claim_next_video_job(text,integer)",
+"claude_cap_use(text,jsonb)",
+"claude_propose_ad_plan(text,text,text,numeric,numeric,date,date,text,text,text,uuid)",
+"staff_summary_save(uuid,date,text,text,text,text)",
+"staff_kpis_admin(timestamp with time zone,timestamp with time zone)",
+"staff_kpi_month_data(date)",
+"staff_summary_fallback(date)"
+]
