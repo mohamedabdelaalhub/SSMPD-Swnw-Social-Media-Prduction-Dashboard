@@ -9,9 +9,9 @@ const hr={can_manage:true,people,documents:[],accounts:[],doctor_keys:[],employe
  requests:[{id:'q1',person_id:'p2',kind:'leave',leave_type:'annual',from_date:'2026-11-26',to_date:'2026-11-28',units:3,status:'pending',created_by:'a2'},{id:'q2',person_id:'p1',kind:'permission',from_date:'2026-11-25',to_date:'2026-11-25',units:2,status:'pending',created_by:'hr'}],
  attendance:[{id:'t1',person_id:'p2',day:'2026-11-24',actual_start:'2026-11-24T07:00:00Z',actual_end:null,status:'pending',created_by:'a9'}]};
 const ws={hr_overtime:{to_review:[{id:'o1',person_name:'كريم محمود',day:'2026-11-23',minutes:90}],mine:[],people:[]},
- hr_shift_swaps_list:{me:'hr',swaps:[{id:'s1',status:'pending_manager',created_by:'a1',partner_by:'a2',requester_name:'منى أحمد السيد',partner_name:'كريم محمود'},{id:'s2',status:'pending_manager',created_by:'hr',requester_name:'x',partner_name:'y'}]},
+ hr_shift_swaps_list:{me:'hr',can_manage:true,swaps:[{id:'s1',status:'pending_manager',created_by:'a1',partner_by:'a2',requester_name:'منى أحمد السيد',partner_name:'كريم محمود'},{id:'s2',status:'pending_manager',created_by:'hr',requester_name:'x',partner_name:'y'}]},
  hr_offboarding_workspace:{can_review:true,cases:[{id:'c1',status:'sheet_ready',full_name:'ياسمين خالد'},{id:'c2',status:'requested',full_name:'z'}]},
- hr_insurance_workspace:{today:'2026-11-25',items:[{id:'i1',full_name:'كريم محمود',status:'stopped',notification_deadline:'2026-11-30',stop_reference:''},{id:'i2',full_name:'z',status:'stopped',notification_deadline:'2027-03-01',stop_reference:''}]}};
+ hr_insurance_workspace:{can_manage:true,today:'2026-11-25',items:[{id:'i1',full_name:'كريم محمود',status:'stopped',notification_deadline:'2026-11-30',stop_reference:''},{id:'i2',full_name:'z',status:'stopped',notification_deadline:'2027-03-01',stop_reference:''}]}};
 (async()=>{const browser=await chromium.launch({args:['--no-sandbox']});try{for(const width of [1280,390]){
  const page=await browser.newPage({viewport:{width,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('https://hrn.test/',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><html dir="rtl" lang="ar"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body><main id="view-container" style="padding:10px"></main></body></html>'}));

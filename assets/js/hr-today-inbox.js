@@ -27,9 +27,9 @@ function asyncRows(me,month){
     call('hr_shift_swaps_list',{}),
     call('hr_offboarding_workspace',{}),
     call('hr_insurance_workspace',{})
-  ]).then(function(r){var rows=[],ot=r[0]&&r[0].to_review||[],sw=(r[1]&&r[1].swaps||[]).filter(function(s){return s.status==='pending_manager'&&s.created_by!==me&&s.partner_by!==me;}),
+  ]).then(function(r){var rows=[],ot=r[0]&&(r[0].is_hr||r[0].to_review)&&r[0].to_review||[],sw=(r[1]&&r[1].can_manage&&r[1].swaps||[]).filter(function(s){return s.status==='pending_manager'&&s.created_by!==me&&s.partner_by!==me;}),
     off=r[2]&&r[2].can_review?(r[2].cases||[]).filter(function(c){return c.status==='sheet_ready';}):[],
-    ins=r[3]||{},t=ins.today||today(),lim=new Date(Date.parse(t+'T12:00:00Z')+14*864e5).toISOString().slice(0,10),
+    ins=r[3]&&r[3].can_manage?r[3]:{},t=ins.today||today(),lim=new Date(Date.parse(t+'T12:00:00Z')+14*864e5).toISOString().slice(0,10),
     due=(ins.items||[]).filter(function(i){return i.status==='stopped'&&i.notification_deadline&&!i.stop_reference&&i.notification_deadline<=lim;});
     if(ot.length)rows.push({id:'overtime',sec:'overtime',t:'ساعات إضافية مستنية موافقتك',s:names(ot.map(function(q){return{n:(q.person_name||'')+' يوم '+words(q.day)};}),'n'),n:ot.length});
     if(off.length)rows.push({id:'offboarding',sec:'offboarding',t:'مخالصة إنهاء خدمة مستنية اعتماد',s:names(off,'full_name'),n:off.length});
