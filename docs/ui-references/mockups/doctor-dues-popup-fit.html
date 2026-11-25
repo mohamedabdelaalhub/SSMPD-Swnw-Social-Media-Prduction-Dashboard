@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: شباك «صرف مستحقات بالفواتير» على مقاس الشاشة</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:rgba(22,33,46,.55);font-size:14px;min-height:100vh;padding:24px 12px}
+button,input,select{font:inherit;color:inherit}
+.note{max-width:1100px;margin:0 auto 12px;color:#fff;font-size:12px}.note b{color:#FFD7C4}
+.modal{background:#fff;border-radius:24px;width:min(1100px,96vw);margin:0 auto;padding:20px;box-shadow:0 24px 64px rgba(0,0,0,.25);display:grid;gap:14px}
+.mh{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--brand);color:#fff;border-radius:16px;padding:14px 18px}.mh h3{margin:0;font-size:19px}
+.x{width:44px;height:44px;border-radius:12px;border:1px solid #ffffff55;background:#ffffff18;color:#fff;font-size:20px;flex:none}
+.help{justify-self:start;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--brand);padding:6px 12px;font-size:12px;font-weight:600}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.card{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:10px 14px}.card span{display:block;font-size:12px;color:var(--muted)}.card b{font-size:22px}
+.card.ok b{color:var(--pos)}.card.wait b{color:var(--accent)}
+.hint{margin:0;color:#475467;font-size:13px;line-height:1.8}
+.all{display:flex;align-items:center;gap:8px;font-weight:600}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--brand)}
+.tw{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse;table-layout:auto}
+th{background:var(--soft);font-size:12px;color:var(--muted);font-weight:600;text-align:start;padding:10px;white-space:nowrap}
+td{padding:10px;border-top:1px solid var(--line);vertical-align:middle}
+td.nw,th.nw{white-space:nowrap}td.num{font-weight:700;direction:ltr;text-align:end}
+td small{display:block;color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.b-ok{background:#E6F3EC;color:var(--pos)}.b-wait{background:#FDEEE6;color:#B8420F}.b-req{background:#EEF2FB;color:var(--brand)}
+.det{color:var(--muted);font-size:12.5px}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}.f input,.f select{width:100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:#fff}
+.tot{background:#E6F3EC;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.tot b{font-size:20px;color:var(--pos)}.tot small{color:#475467}
+.act{display:flex;gap:10px;justify-content:flex-start}.act button{min-height:44px;border-radius:12px;padding:0 20px;font-weight:700}.go{background:var(--brand);color:#fff;border:0}.cn{background:#fff;border:1px solid var(--line)}
+@media (max-width:760px){
+ .modal{padding:14px;border-radius:20px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.cards .card:last-child{grid-column:1/-1}
+ .tw{border:0}thead{display:none}table,tbody,tr,td{display:block;width:100%}
+ tr{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center}
+ td{border:0;padding:0}td.pick{grid-row:1/3}td.ref{grid-column:2}td.date{grid-column:3;text-align:end;color:var(--muted);font-size:12px}
+ td.svc{grid-column:2;color:#475467;font-size:13px}td.num{grid-column:3;text-align:end}td.st{grid-column:2/4}td.det{grid-column:2/4}
+ .sum{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+<p class="note"><b>تصور</b> — الشباك بقى أعرض (لحد 1100 بكسل) والجدول كله بيبان من غير سكرول يمين وشمال. صغّر الشاشة تشوف شكل الموبايل: كل فاتورة كارت. (بيانات تجريبية)</p>
+<section class="modal" role="dialog">
+ <button class="help">شرح النموذج</button>
+ <div class="mh"><h3>صرف مستحقات بالفواتير — د.يحيى زكريا</h3><button class="x" aria-label="إغلاق">×</button></div>
+ <div class="cards"><div class="card ok"><span>مستحق للصرف الآن (3 فاتورة)</span><b>700.00</b></div><div class="card wait"><span>بانتظار التحصيل</span><b>75.00</b></div><div class="card"><span>المتاح للصرف حسب الرصيد</span><b>775.00</b></div></div>
+ <p class="hint">كل حالات الدكتور موجودة تحت. اختر الفواتير اللي هتصرف أتعابها دلوقتي (المستحقة بس تتحدد). اللي مش مختارة تفضل مستحقة للصرف بعدين، واللي اتصرفت أو داخلة في طلب معلّق مش بتظهر للاختيار تاني.</p>
+ <label class="all"><input type="checkbox" id="all"> تحديد كل المستحق للصرف الآن (3)</label>
+ <div class="tw"><table>
+  <thead><tr><th>اختيار</th><th class="nw">التاريخ</th><th>الفاتورة</th><th>الخدمات</th><th class="nw">الأتعاب</th><th>الحالة</th><th>التفاصيل</th></tr></thead>
+  <tbody>
+   <tr><td class="pick"><input type="checkbox" class="r" data-v="250"></td><td class="date nw">2026-11-22</td><td class="ref"><b>RX-20</b><small>يحيى أحمد كامل — P-2026-001971</small></td><td class="svc">كشف استشاري تغذية</td><td class="num">250.00</td><td class="st"><span class="badge b-ok">مستحق للصرف الآن</span></td><td class="det">اتسددت بالكامل</td></tr>
+   <tr><td class="pick"><input type="checkbox" class="r" data-v="200"></td><td class="date nw">2026-11-22</td><td class="ref"><b>RX-21</b><small>موسى فضل محمد — P-2026-001777</small></td><td class="svc">علاج طبيعي الصدر</td><td class="num">200.00</td><td class="st"><span class="badge b-ok">مستحق للصرف الآن</span></td><td class="det">اتسددت بالكامل</td></tr>
+   <tr><td class="pick">—</td><td class="date nw">2026-11-22</td><td class="ref"><b>RX-25</b><small>شهاب الدين إبراهيم حامد — P-2026-001878</small></td><td class="svc">متابعة التغذية</td><td class="num">75.00</td><td class="st"><span class="badge b-wait">بانتظار حصة المريض</span></td><td class="det">متبقي على المريض 75.00</td></tr>
+   <tr><td class="pick"><input type="checkbox" class="r" data-v="250"></td><td class="date nw">2026-11-21</td><td class="ref"><b>RX-28</b><small>منة الله سامي — P-2026-001990</small></td><td class="svc">كشف استشاري تغذية</td><td class="num">250.00</td><td class="st"><span class="badge b-ok">مستحق للصرف الآن</span></td><td class="det">اتسددت بالكامل</td></tr>
+   <tr><td class="pick">—</td><td class="date nw">2026-11-18</td><td class="ref"><b>RX-11</b><small>سارة محمود — P-2026-001502</small></td><td class="svc">كشف استشاري تغذية</td><td class="num">250.00</td><td class="st"><span class="badge b-req">طلب صرف معلّق</span></td><td class="det">داخلة في طلب صرف ينتظر المراجعة</td></tr>
+  </tbody></table></div>
+ <div class="tot"><span>إجمالي المحدد</span><b id="tot">0.00</b><small id="net">الإجمالي 0.00 — ضريبة 0.00 — استقطاع 0.00 — الصافي للدكتور 0.00</small></div>
+ <div class="sum"><div class="f"><label>نسبة الضريبة %</label><input value="0"></div><div class="f"><label>نسبة الاستقطاع %</label><input value="0"></div><div class="f"><label>طريقة الصرف</label><select><option>تحويل بنكي</option><option>نقدي</option><option>إنستا باي</option></select></div></div>
+ <div class="f"><label>مرجع السداد أو التحويل</label><input placeholder="مثلاً رقم الإيصال أو التحويل"></div>
+ <div class="act"><button class="go">إرسال طلب الصرف</button><button class="cn">إلغاء</button></div>
+</section>
+<script>
+var rs=[].slice.call(document.querySelectorAll('.r')),all=document.getElementById('all');
+function re(){var t=rs.filter(function(x){return x.checked}).reduce(function(a,x){return a+ +x.dataset.v},0);document.getElementById('tot').textContent=t.toFixed(2);document.getElementById('net').textContent='الإجمالي '+t.toFixed(2)+' — ضريبة 0.00 — استقطاع 0.00 — الصافي للدكتور '+t.toFixed(2);all.checked=rs.every(function(x){return x.checked});}
+rs.forEach(function(x){x.onchange=re});all.onchange=function(){rs.forEach(function(x){x.checked=all.checked});re();};
+</script>
+</body>
+</html>
