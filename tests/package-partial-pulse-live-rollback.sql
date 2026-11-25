@@ -8,12 +8,17 @@
 -- A partial draw (320 pulses) is then simulated on the entitlement as postgres (the laser execute itself is already live and unchanged)
 -- to prove the line is still listed with 680 left and the next order takes those 680; a second OPEN order on the same line is refused.
 begin;
+-- transaction guard: set_config(..., true) lives only inside an explicit transaction; the DO block below refuses to run without it
+select set_config('pp_live.in_txn', 'yes', true);
 -- >>> apply supabase/migrations/20261125130000_package_partial_pulse.sql here (without its own begin / commit) if not applied yet <<<
 create temp table pp_live(n serial, step text, expected text, actual text, ok boolean);
 do $$
 declare mazen uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; me uuid; ws uuid; v record; svc record; r jsonb; tpl uuid; pkg uuid;
   o1 uuid; o2 uuid; ent uuid; lp jsonb; s jsonb; err text; oq numeric; op numeric;
 begin
+  if current_setting('pp_live.in_txn', true) is distinct from 'yes' then
+    raise exception 'NOT inside begin … rollback — nothing done; run the whole file as one transaction';
+  end if;
   select id into ws from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
   insert into pp_live(step, expected, actual, ok) values ('migration applied', 'order_use_package_before_pulse exists',
     coalesce(to_regproc('clinic_reception.order_use_package_before_pulse')::text, 'missing'), to_regproc('clinic_reception.order_use_package_before_pulse') is not null);
