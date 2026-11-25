@@ -1,0 +1,62 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: المرتبات والسلف</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.head h2{margin:0;font-size:20px;color:var(--brand)}
+.btn.bl{background:var(--brand);border-color:var(--brand);color:#fff}.btn.or{background:var(--accent);border-color:var(--accent);color:#fff}.acts{display:flex;gap:8px;flex-wrap:wrap}
+.kp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}.kp div{border-radius:16px;padding:12px;display:grid;gap:2px;background:var(--soft)}.kp b{font-size:22px}.kp small{font-size:12px;color:#475467}
+.g{color:var(--pos)}.o{color:#C2410C}
+.need{border:1px solid #F6C9B6;background:#FFF8F4}.need h3{color:#B23B12}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff;border-inline-start:4px solid var(--accent)}.row+.row{margin-top:8px}.row b{display:block;font-size:14px}.row small{display:block;color:#475467;font-size:12.5px}.amt{font-weight:700;font-size:16px;white-space:nowrap}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:0 0 10px}.srch{min-height:38px;border:1px solid var(--line);border-radius:12px;padding:0 12px;min-width:220px;color:var(--muted);display:flex;align-items:center}
+.lh,.it{display:grid;grid-template-columns:minmax(0,1.4fr) 150px 150px minmax(0,1fr);gap:12px;align-items:center}
+.lh{padding:0 4px 6px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}.it{padding:12px 4px;border-bottom:1px solid var(--line)}
+.it b{display:block}.it small{display:block;color:var(--muted);font-size:12px}.it .m{font-weight:700}
+.more{display:flex;justify-content:space-between;gap:10px;align-items:center;background:var(--soft);border-radius:14px;padding:10px 14px;margin-top:10px;font-size:13px;color:#475467}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cmp div{border-radius:14px;padding:12px;font-size:12.5px;line-height:1.8}.cmp .b{background:#FFF6F4;border:1px dashed #F3C6BB}.cmp .a{background:#F2FAF5;border:1px solid #CFE6D8}.cmp code{font-size:11px;background:#fff;border-radius:6px;padding:0 4px}
+@media(max-width:760px){.kp,.cmp{grid-template-columns:minmax(0,1fr)}.row{grid-template-columns:minmax(0,1fr) auto}.row .btn{grid-column:1/-1;justify-content:center}.lh{display:none}.it{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:6px}.it .nm,.it .x{grid-column:1/-1}.srch{min-width:0;flex:1}}
+</style></head><body><p class="note"><b>تصور — المرتبات والسلف</b> (شكل المدير المالي · بيانات تجريبية · مفيش حاجة بتتحفظ). اسم الموظف بدل الكود، والموظفين اللي ملهمش رصيد مستخبيين لحد ما تدوس «اعرض الكل».</p>
+<div class="wrap">
+<div class="card"><div class="head"><div><h2>المرتبات والسلف</h2><p class="sub">مرتب كل موظف المستحق، والسلفة اللي لسه عليه.</p></div><div class="acts"><button class="btn bl">طلب صرف مرتب</button><button class="btn">سجّل عقد أو مرتب أو سلفة</button></div></div>
+<div class="kp"><div><small>مرتبات مستحقة لسه ماتصرفتش</small><b class="g">14,600.00 ج</b><small>لـ 3 موظفين</small></div><div><small>سلف لسه على الموظفين</small><b class="o">2,500.00 ج</b><small>على 2 موظفين</small></div><div><small>موظفين ليهم رصيد</small><b>4</b><small>من 15 موظف</small></div></div></div>
+
+<div class="card need"><h3>محتاج منك (2)</h3>
+<div class="row"><div><b>طلب صرف مرتب نوفمبر — منى سعيد</b><small>طلبه أ. سامح (محاسب) · 25 نوفمبر · 11:20 ص · نقدي</small></div><span class="amt">5,200.00 ج</span><button class="btn or">راجع</button></div>
+<div class="row"><div><b>سلفة جديدة — أحمد فتحي</b><small>طلبها أ. سامح · 24 نوفمبر · تتخصم على 3 شهور</small></div><span class="amt">1,500.00 ج</span><button class="btn or">راجع</button></div>
+</div>
+
+<div class="card"><div class="tools"><h3 style="margin:0">الموظفين</h3><span class="srch">🔍 ابحث باسم الموظف</span></div>
+<div class="lh"><span>الموظف</span><span>مرتب مستحق</span><span>سلفة لسه عليه</span><span></span></div>
+<div class="it"><div class="nm"><b>منى سعيد</b><small>استقبال · EMP-000004</small></div><span class="m g">5,200.00</span><span class="m">0.00</span><span class="x"><span class="chip warn">طلب صرف مستني المراجعة</span></span></div>
+<div class="it"><div class="nm"><b>أحمد فتحي</b><small>استقبال · EMP-000006</small></div><span class="m g">4,800.00</span><span class="m o">1,000.00</span><span class="x"><span class="chip warn">سلفة جديدة مستنية المراجعة</span></span></div>
+<div class="it"><div class="nm"><b>أ. سامح</b><small>محاسب · EMP-000003</small></div><span class="m g">4,600.00</span><span class="m">0.00</span><span class="x"></span></div>
+<div class="it" style="border-bottom:0"><div class="nm"><b>هبة محمود</b><small>تمريض · EMP-000008</small></div><span class="m">0.00</span><span class="m o">1,500.00</span><span class="x"><small>بتتخصم 500 كل شهر</small></span></div>
+<div class="more"><span>11 موظف تاني ملهمش مرتب مستحق ولا سلفة.</span><button class="btn">اعرض الكل</button></div>
+</div>
+
+<div class="card"><h3>إيه اللي اتغير؟</h3><div class="cmp">
+<div class="b"><b>دلوقتي</b><br>• عمود «معرف الموظف» كله أكواد <code>EMP-000001</code>… من غير اسم<br>• 15 سطر أغلبهم 0.00 و0.00<br>• مفيش إجمالي فوق، ومفيش حاجة بتقولك فيه طلبات مستنية<br>• فلتر «من / إلى» فوق مش بيأثر على الجدول<br>• زرار «عقد أو استحقاق أو سلفة» كلمة «استحقاق» مش واضحة</div>
+<div class="a"><b>بعد</b><br>• اسم الموظف ووظيفته، والكود صغير تحت<br>• اللي ليهم رصيد بس، والباقي ورا «اعرض الكل»<br>• 3 أرقام فوق: مرتبات مستحقة، سلف، موظفين ليهم رصيد<br>• «محتاج منك» فيها طلبات الصرف والسلف المستنية<br>• «سجّل عقد أو مرتب أو سلفة»، والفلتر مش بيظهر هنا</div>
+</div><p class="sub" style="margin-top:10px">نفس الصلاحيات ونفس الإجراءات. الاسم موجود أصلًا في عقود الموظفين؛ المستخدم اللي صلاحيته مشاهدة بس هيشوف الكود لحد ما شات الحسابات يضيف الاسم في السيرفر (لو حبيت).</p></div>
+</div></body></html>
