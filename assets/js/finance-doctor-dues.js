@@ -40,6 +40,8 @@
       if (total > Number(st.dues.available_now) + 0.004) throw new Error('المحدد (' + m(total) + ') أكبر من المتاح للصرف حسب رصيد الدكتور (' + m(st.dues.available_now) + ')');
       return db.financePayoutInvoices(id, ids, Number(v.tax_pct), Number(v.withholding_pct), v.method, v.method === 'cash' ? (v.shift_id || null) : null, v.reference, from, to, k);
     });
+    // Owner 2026-11-25 («طبقه», mockup docs/ui-references/mockups/doctor-dues-popup-fit.html): this window is wide enough for the whole invoice table, and on phones each invoice is a card.
+    var shell = document.querySelector('.fc-modal'); if (shell) shell.classList.add('fc-dues-modal');
     var form = document.querySelector('.fc-modal form'), box = form && form.querySelector('[data-dues-body]');
     Promise.resolve(db.financeDoctorDues(id, from, to)).then(function (r) {
       if (!box || !box.isConnected) return;
@@ -65,6 +67,9 @@
         '<p class="fc-note" data-dues-sum></p>' + s('method', 'طريقة الصرف', [['bank', 'تحويل بنكي'], ['cash', 'نقدي'], ['instapay', 'إنستا باي']]) +
         s('shift_id', 'الوردية النقدية', (d.active_shifts || []).map(function (x) { return [x.id, x.register_name]; })) + f('reference', 'مرجع السداد أو التحويل', 'text', '', 'required minlength="2" maxlength="120" placeholder="مثلاً رقم الإيصال أو التحويل"') + '<p class="fc-note" data-ref-hint>المرجع حرفين على الأقل — في النقدي بيتملى لوحده «نقدي-التاريخ» وتقدر تغيّره.</p>';
       box.innerHTML = html;
+      // label every cell so the phone layout can stack each invoice as a card (visual only)
+      var COLS = ['pick', 'date', 'ref', 'svc', 'num', 'st', 'det'];
+      [].forEach.call(box.querySelectorAll('[data-dues-list] tbody tr'), function (tr) { [].forEach.call(tr.children, function (td, i) { if (COLS[i]) td.classList.add('dd-' + COLS[i]); }); });
       var fm = box.closest('form'), all = box.querySelector('[data-dues-all]');
       function rows() { return [].slice.call(box.querySelectorAll('[data-dues-row]')); }
       function recalc() {
