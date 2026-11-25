@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2007,
-    "labels": 1461,
-    "files": 158,
-    "groups": 1577
+    "definitions": 2016,
+    "labels": 1465,
+    "files": 159,
+    "groups": 1581
   },
   "fields": [
     {
@@ -10316,6 +10316,36 @@
     },
     {
       "file": "medicines-pricing.js",
+      "label": "يتحاسب على المريض؟",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "supplies-billable-at-service",
+      "text_sha256": "272ec60a855e8b957159e6a7c63ebcb47617c9f6cc11410ef5431ee8f5a4df75"
+    },
+    {
+      "file": "medicines-pricing.js",
+      "label": "دوّر باسم الخدمة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "supplies-billable-at-service",
+      "text_sha256": "136151d9c2f7b77dfdfe66edd89df5f401521028e24b47a88111528058595020"
+    },
+    {
+      "file": "medicines-pricing.js",
+      "label": "للخدمة دي",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "supplies-billable-at-service",
+      "text_sha256": "0da7ba70bb7ac2230e2f4feb32d3a1b9a283f2152ef5c02d6cb7020aeebb0c44"
+    },
+    {
+      "file": "medicines-pricing.js",
       "label": "المورد",
       "name": "",
       "kind": "html",
@@ -13701,6 +13731,68 @@
       "tab": "reception_services",
       "article": "personal",
       "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "reception-visit-supplies.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "reception-visit-supplies.js",
+      "label": "المستلزم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "supply-map",
+      "text_sha256": "d7b62ce064f4fcb4219c9bddd102e417c99dc29b286530815f1f199a6d7fd314"
+    },
+    {
+      "file": "reception-visit-supplies.js",
+      "label": "المخزن",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "inventory-count",
+      "text_sha256": "e122379738ad3d6afb3e24b51be69e2a0279dc6d4ec7ce5089532ae9d80bf4ad"
+    },
+    {
+      "file": "reception-visit-supplies.js",
+      "label": "الكمية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "supply-map",
+      "text_sha256": "89a26556e80b2cc158b89ad8264d242d3351b45abac7977572e474c92dff7499"
+    },
+    {
+      "file": "reception-visit-supplies.js",
+      "label": "السبب (اختياري)",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "تعديل قبل التحصيل"
+      ],
+      "tab": "reception_services",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "reception-visit-supplies.js",
+      "label": "سبب إنهاء الزيارة دون خدمة منفذة إن وجد",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "f186ff516ab68cbcf2b7d906760ecd8515976646850caf64047112c215215085"
     },
     {
       "file": "reception-visit-usage.js",
