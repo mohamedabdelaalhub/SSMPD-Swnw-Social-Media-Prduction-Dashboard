@@ -7,7 +7,7 @@
 -- doctor + referral fees, margin after doctor fees, and a status: price below supplies / usage missing («ناقص») / ok / no supplies.
 -- Plus the supplies SOLD to the patient (medicines and billable nursing supplies): quantity, sale value, cost, profit.
 -- READ-ONLY: one registry row, one access row, one function. Reuses report_order_costs / report_stock_out (wave 5/7). Nothing moves.
--- Rollback: supabase/rollbacks/20261125230000_service_profit_report.rollback.sql
+-- Rollback: supabase/rollbacks/20261125233000_service_profit_report.rollback.sql
 begin;
 
 do $$ begin

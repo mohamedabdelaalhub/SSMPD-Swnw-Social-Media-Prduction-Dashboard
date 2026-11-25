@@ -1,4 +1,4 @@
-// «ربح كل خدمة بعد المستلزمات» (20261125230000): the report function on PGlite with the wave 5/7 helpers stubbed by fixed rows.
+// «ربح كل خدمة بعد المستلزمات» (20261125233000): the report function on PGlite with the wave 5/7 helpers stubbed by fixed rows.
 // Checks: revenue = net − contractual, supplies actual, per-visit over visits with usage, planned BOM from the price model × quantity,
 // margin after supplies and after doctor + referral fees, status (below / missing / no_supplies / ok), sold extras, totals, gate called.
 const {PGlite}=require('@electric-sql/pglite'),fs=require('fs'),assert=require('node:assert/strict');
@@ -18,7 +18,7 @@ create table public.oc(order_id uuid,workspace_id uuid,day date,service text,spe
 create function public.report_order_costs(a date,b date,c uuid) returns table(order_id uuid,workspace_id uuid,day date,service text,specialty text,provider_id uuid,doctor text,visit_id uuid,net numeric,contractual numeric,doctor_fee numeric,referral_fee numeric,supplies numeric) language sql as $$select * from public.oc$$;
 create table public.so(day date,location_id uuid,location text,branch_name text,is_pharmacy boolean,item_id uuid,item text,category text,unit text,is_medicine boolean,reason text,quantity numeric,cost numeric,sale numeric,order_id uuid,service text,specialty text);
 create function public.report_stock_out(a date,b date,c uuid) returns table(day date,location_id uuid,location text,branch_name text,is_pharmacy boolean,item_id uuid,item text,category text,unit text,is_medicine boolean,reason text,quantity numeric,cost numeric,sale numeric,order_id uuid,service text,specialty text) language sql as $$select * from public.so$$;`);
-const sql=fs.readFileSync('supabase/migrations/20261125230000_service_profit_report.sql','utf8');await db.exec(sql);
+const sql=fs.readFileSync('supabase/migrations/20261125233000_service_profit_report.sql','utf8');await db.exec(sql);
 await assert.rejects(()=>db.exec(sql),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
 assert.deepEqual((await db.query("select role from report_access where report_code='service_profit'")).rows.map(r=>r.role),['financial_manager']);
 const u=n=>'00000000-0000-0000-0000-'+String(n).padStart(12,'0');
