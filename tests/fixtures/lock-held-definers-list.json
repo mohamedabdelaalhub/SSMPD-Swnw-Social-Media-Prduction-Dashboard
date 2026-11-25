@@ -10,5 +10,10 @@
 "staff_summary_save(uuid,date,text,text,text,text)",
 "staff_kpis_admin(timestamp with time zone,timestamp with time zone)",
 "staff_kpi_month_data(date)",
-"staff_summary_fallback(date)"
+"staff_summary_fallback(date)",
+"clinic_reception_agent_context(text)",
+"clinic_reception_agent_event(uuid,text,jsonb,text)",
+"clinic_reception_pbx_event(text,text,text,text,text,text,timestamp with time zone,timestamp with time zone,timestamp with time zone,integer,text,jsonb)",
+"clinic_reception_agent_set_communications(boolean)",
+"agent_match_patients_by_phone(text)"
 ]

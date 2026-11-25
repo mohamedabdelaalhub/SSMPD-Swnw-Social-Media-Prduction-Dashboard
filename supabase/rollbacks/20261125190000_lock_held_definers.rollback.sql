@@ -12,7 +12,12 @@ do $$ declare f text; begin
     'public.staff_summary_save(uuid,date,text,text,text,text)',
     'public.staff_kpis_admin(timestamp with time zone,timestamp with time zone)',
     'public.staff_kpi_month_data(date)',
-    'public.staff_summary_fallback(date)'] loop
+    'public.staff_summary_fallback(date)',
+    'public.clinic_reception_agent_context(text)',
+    'public.clinic_reception_agent_event(uuid,text,jsonb,text)',
+    'public.clinic_reception_pbx_event(text,text,text,text,text,text,timestamp with time zone,timestamp with time zone,timestamp with time zone,integer,text,jsonb)',
+    'public.clinic_reception_agent_set_communications(boolean)',
+    'public.agent_match_patients_by_phone(text)'] loop
     if to_regprocedure(f) is not null then execute format('grant execute on function %s to anon, authenticated', f); end if;
   end loop;
 end $$;

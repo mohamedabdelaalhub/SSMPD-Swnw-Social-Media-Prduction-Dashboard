@@ -9,7 +9,11 @@
 --   staff_kpis_admin                 impersonates the first super admin and returns EVERY employee's KPIs — any logged-in user
 --                                    could read them; my_staff_kpis (SECURITY DEFINER, filtered to the caller) is unaffected
 -- → revoke public / anon / authenticated, grant service_role (postgres is the owner).
--- NOT here: the external agent's functions (pbx / agent events, agent_context, agent_match_patients_by_phone) — caller pending.
+--   clinic_reception_agent_context / _agent_event / _pbx_event   the WhatsApp agent → edge function clinic-reception-agent
+--                                    (X-WhatsApp-Alert-Secret + allow-list) → /rest/v1/rpc with the service role key; the agent holds
+--                                    no Supabase key (confirmed on both sides). agent_context returned a patient's context by phone
+--                                    to anyone with the public key.
+--   clinic_reception_agent_set_communications, agent_match_patients_by_phone   no caller at all (agent, dashboard, edge)
 -- Rollback: supabase/rollbacks/20261125190000_lock_held_definers.rollback.sql
 do $$ declare f text; begin
   foreach f in array array[
@@ -24,7 +28,12 @@ do $$ declare f text; begin
     'public.staff_summary_save(uuid,date,text,text,text,text)',
     'public.staff_kpis_admin(timestamp with time zone,timestamp with time zone)',
     'public.staff_kpi_month_data(date)',
-    'public.staff_summary_fallback(date)'] loop
+    'public.staff_summary_fallback(date)',
+    'public.clinic_reception_agent_context(text)',
+    'public.clinic_reception_agent_event(uuid,text,jsonb,text)',
+    'public.clinic_reception_pbx_event(text,text,text,text,text,text,timestamp with time zone,timestamp with time zone,timestamp with time zone,integer,text,jsonb)',
+    'public.clinic_reception_agent_set_communications(boolean)',
+    'public.agent_match_patients_by_phone(text)'] loop
     if to_regprocedure(f) is null then raise exception 'signature changed — review before applying: %', f; end if;
   end loop;
   foreach f in array array[
@@ -39,7 +48,12 @@ do $$ declare f text; begin
     'public.staff_summary_save(uuid,date,text,text,text,text)',
     'public.staff_kpis_admin(timestamp with time zone,timestamp with time zone)',
     'public.staff_kpi_month_data(date)',
-    'public.staff_summary_fallback(date)'] loop
+    'public.staff_summary_fallback(date)',
+    'public.clinic_reception_agent_context(text)',
+    'public.clinic_reception_agent_event(uuid,text,jsonb,text)',
+    'public.clinic_reception_pbx_event(text,text,text,text,text,text,timestamp with time zone,timestamp with time zone,timestamp with time zone,integer,text,jsonb)',
+    'public.clinic_reception_agent_set_communications(boolean)',
+    'public.agent_match_patients_by_phone(text)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to service_role', f);
   end loop;
