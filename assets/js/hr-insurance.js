@@ -11,7 +11,7 @@
 
   function mount(shell, active) {
     if (!shell || !active) return;
-    var U = w.SSMPDWorkforceUtils, owner = w.SSMPDAuth && w.SSMPDAuth.currentAdmin && w.SSMPDAuth.currentAdmin.id, data = null, filter = { type: '', status: 'active', q: '' }, serial = 0;
+    var U = w.SSMPDWorkforceUtils, owner = w.SSMPDAuth && w.SSMPDAuth.currentAdmin && w.SSMPDAuth.currentAdmin.id, data = null, filter = { type: '', status: '', q: '' }, serial = 0;
     var host = document.createElement('div');
     host.dataset.hrInsurance = '';
     shell.append(host);
@@ -44,7 +44,7 @@
 
     function actions(i) {
       if (!data.can_manage) return '—';
-      return (i.status === 'active' ? btn('edit', 'تعديل', i.id) + btn('stop', 'إيقاف الاشتراك', i.id) : btn('edit', 'استكمال بيانات الإخطار', i.id));
+      return (i.status === 'active' ? btn('edit', 'تعديل', i.id) + btn('stop', 'إيقاف الاشتراك', i.id).replace('class="btn ghost"', 'class="btn ghost hrl-danger"') : btn('edit', 'استكمال بيانات الإخطار', i.id));
     }
 
     function rows() {
@@ -62,14 +62,22 @@
       });
     }
 
+    // Owner 2026-11-25 («طبق الكل», mockup hr-lists-mobile.html): stopped subscriptions whose MANUAL notification deadline is within 14 days (or past)
+    // and still without a notification reference are pinned on top, so they are not hidden behind a filter.
+    function insBanner() {
+      var today = data.today || new Date().toISOString().slice(0, 10), lim = new Date(Date.parse(today + 'T12:00:00Z') + 14 * 864e5).toISOString().slice(0, 10);
+      var due = (data.items || []).filter(function (i) { return i.status === 'stopped' && i.notification_deadline && !i.stop_reference && i.notification_deadline <= lim; });
+      if (!due.length) return '';
+      return '<section class="hrl-banner" role="alert" data-insurance-due><b>إخطارات تأمين قرب ميعادها (' + due.length + ')</b>' + due.map(function (i) { var left = Math.round((Date.parse(i.notification_deadline) - Date.parse(today)) / 864e5); return '<div class="hrl-due"><span>' + esc(i.full_name) + ' — ' + esc(TYPE[i.insurance_type] || '') + ' · <em>' + (left < 0 ? 'الميعاد عدّى من ' + (-left) + ' يوم' : left === 0 ? 'آخر يوم النهارده' : 'فاضل ' + left + ' يوم') + '</em></span>' + btn('edit', 'كمّل الإخطار', i.id).replace('class="btn ghost"', 'class="btn hrl-primary"') + '</div>'; }).join('') + '</section>';
+    }
     function draw() {
       var act = data.items.filter(function (i) { return i.status === 'active'; });
       var sum = function (k) { return act.reduce(function (t, i) { return t + Number(i[k] || 0); }, 0); };
       var cards = [['اشتراكات قائمة', act.length], ['استقطاع الموظفين شهريًا', money(sum('employee_deduction'))], ['حصة المركز شهريًا', money(sum('center_share'))], ['إجمالي المستحق للجهة شهريًا', money(sum('employee_deduction') + sum('center_share'))]];
       host.innerHTML = '<p>لكل موظف نوع التأمين ورقمه وقيمة الاستقطاع من المرتب وحصة المركز وحالة الاشتراك. هذه الأرقام تُقرأ تلقائيًا في شاشة حساب المرتب، والحسابات تسدّد للجهة من «سداد التأمينات».</p>' +
-        '<div class="wp-grid" data-insurance-cards>' + cards.map(function (c) { return '<div class="wp-card"><b>' + esc(c[1]) + '</b><span>' + esc(c[0]) + '</span></div>'; }).join('') + '</div>' +
+        insBanner() + '<div class="wp-grid hrl-kpis" data-insurance-cards>' + cards.map(function (c) { return '<div class="wp-card"><b>' + esc(c[1]) + '</b><span>' + esc(c[0]) + '</span></div>'; }).join('') + '</div>' +
         '<div class="wp-actions">' + (data.can_manage ? btn('new', 'إضافة اشتراك') : '') + U.select('ins_type', 'النوع', [['', 'الكل']].concat(opts(TYPE)), filter.type) + U.select('ins_status', 'الحالة', [['', 'الكل']].concat(opts(STATUS)), filter.status) + U.field('ins_q', 'بحث بالاسم أو الكود أو رقم التأمين', 'search', filter.q) + '</div>' +
-        '<div data-insurance-table></div>';
+        '<div data-insurance-table class="hrl-table"></div>';
       table(); bind();
       [['ins_type', 'type', 'change'], ['ins_status', 'status', 'change'], ['ins_q', 'q', 'input']].forEach(function (c) {
         var n = host.querySelector('[name=' + c[0] + ']');
