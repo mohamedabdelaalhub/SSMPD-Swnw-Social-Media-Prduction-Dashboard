@@ -19,9 +19,13 @@
   function tr(text) { return window.SSMPDI18n ? window.SSMPDI18n.t(text) : text; }
   function label(text) { return window.SSMPDI18n ? window.SSMPDI18n.textHtml(text) : esc(text); }
 
-  function applyPermissions(root){var R=window.SSMPDRoles,a=window.SSMPDAuth.currentAdmin;[['create','#ce-new,#ced-add,#ced-link'],['update','[data-edit-contract],[data-upload-contract]']].forEach(function(pair){if(!R.canModuleAction(a,'contracting_entities',pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.disabled=true;el.onclick=null;});});if(!R.canModuleAction(a,'contracting_entities','create'))root.querySelectorAll('#ced-note,#ced-type,#ced-follow').forEach(function(el){el.disabled=true;});}
-  function canSuspend(){return window.SSMPDRoles.isControlledFinance(window.SSMPDAuth.currentAdmin)?window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,'contracting_entities','update'):canDelete();}
-  function canDelete() { return window.SSMPDRoles.canDeleteContractingEntity(window.SSMPDAuth.currentAdmin); }
+  /* The database lets finance accounts (accountant / financial manager) read entities but not create or change them (RLS «finance restrict create»;
+     live dry-run 2026-11-25: insert refused, update = 0 rows). «إضافة جهة» and suspend/delete are hidden for them; contract edit/activation keeps its own rules. */
+  function financeOnly(){var R=window.SSMPDRoles,a=window.SSMPDAuth.currentAdmin;return !!(R.isControlledFinance&&R.isControlledFinance(a))&&!(R.hasRole&&R.hasRole(a,'contract_manager'));}
+  function entityWrite(action){return window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,'contracting_entities',action)&&!(action==='create'&&financeOnly());}
+  function applyPermissions(root){var R=window.SSMPDRoles,a=window.SSMPDAuth.currentAdmin;[['create','#ce-new,#ced-add,#ced-link'],['update','[data-edit-contract],[data-upload-contract]']].forEach(function(pair){if(!entityWrite(pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.disabled=true;el.onclick=null;});});if(!entityWrite('create'))root.querySelectorAll('#ced-note,#ced-type,#ced-follow').forEach(function(el){el.disabled=true;});}
+  function canSuspend(){return window.SSMPDRoles.isControlledFinance(window.SSMPDAuth.currentAdmin)?!financeOnly()&&window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,'contracting_entities','update'):canDelete();}
+  function canDelete() { var R=window.SSMPDRoles,a=window.SSMPDAuth.currentAdmin; return R.canDeleteContractingEntity(a)&&!financeOnly(); }
   // تفعيل العقد: السوبر أدمن أو المدير المالي بس، والبنود وصورة العقد اختيارية (المالك 2026-11-23)
   function canActivate() { return !!(window.SSMPDRoles.canApproveContracts && window.SSMPDRoles.canApproveContracts(window.SSMPDAuth.currentAdmin)); }
   function statusOptions(current) { return Object.keys(STATUSES).filter(function (k) { return k !== "active" || k === current || canActivate(); }).map(function (k) { return '<option value="' + k + '"' + (k === current ? " selected" : "") + '>' + STATUSES[k] + '</option>'; }).join(""); }
@@ -38,7 +42,7 @@
     return Promise.all(contracts.map(function (c) {
       return window.SSMPDDb.updateContractingEntityContract(c.id, entityId, { status: "suspended" });
     })).then(function () { if (bd) bd.remove(); T.show(tr("تم تعليق التعاقد")); done(); })
-      .catch(function (e) { T.show(tr(e.message), "error"); });
+      .catch(function (e) { T.show(tr(e && e.code === "PGRST116" ? "التعاقد ماتعلّقش — حسابك مش مسموح له يعدّل التعاقد ده" : e.message), "error"); });
   }
 
   function suspendEntity(entityId, done) {
