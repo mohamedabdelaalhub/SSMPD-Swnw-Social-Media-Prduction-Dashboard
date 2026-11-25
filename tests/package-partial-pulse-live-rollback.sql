@@ -1,7 +1,8 @@
 -- Live rollback test for 20261125130000_package_partial_pulse.sql («من الباكج» for laser PULSE packages). ONE transaction ending in
 -- ROLLBACK, as postgres; apply the migration body at the marked spot first if it is not applied. Nothing is kept.
--- Fixture (all rolled back): another active super admin creates a 1000-pulse template (1600) on a live pulse service; Mazen (reception)
--- sells it to the patient of an open live visit, puts the pulse service on that visit, then «خصم من باكج المريض»:
+-- Fixture (all rolled back): as postgres, a 1000-pulse package (1600) on a live pulse service for the patient of an open live visit (live
+-- templates only come from the price editor sync, so the fixture is built like the legacy-package approval builds one). Mazen (reception)
+-- puts the pulse service on that visit, then «خصم من باكج المريض»:
 --   clinic_reception_legacy_packages(ws, patient)            → the session says pulses / 1000 left
 --   clinic_reception_command(ws, 'order_use_package', {...})  → the order takes qty 1000 at 1.6 per pulse
 -- A partial draw (320 pulses) is then simulated on the entitlement as postgres (the laser execute itself is already live and unchanged)
@@ -10,7 +11,7 @@ begin;
 -- >>> apply supabase/migrations/20261125130000_package_partial_pulse.sql here (without its own begin / commit) if not applied yet <<<
 create temp table pp_live(n serial, step text, expected text, actual text, ok boolean);
 do $$
-declare mazen uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; adm uuid; adm_name text; ws uuid; v record; svc record; r jsonb; tpl uuid; pkg uuid;
+declare mazen uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; me uuid; ws uuid; v record; svc record; r jsonb; tpl uuid; pkg uuid;
   o1 uuid; o2 uuid; ent uuid; lp jsonb; s jsonb; err text; oq numeric; op numeric;
 begin
   select id into ws from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
@@ -24,30 +25,33 @@ begin
    where vv.workspace_id = ws and vv.status = 'open' and o.status = 'ordered'
    order by (o.service_id = svc.id) desc, o.created_at desc limit 1;
   insert into pp_live(step, expected, actual, ok) values ('fixture visit', 'an open live visit', coalesce(v.visit_id::text, 'none'), v.visit_id is not null);
-  select a.user_id, a.name into adm, adm_name from public.admins a where a.active and a.user_id is not null and a.user_id <> mazen and a.role = 'super_admin' limit 1;
-  insert into pp_live(step, expected, actual, ok) values ('template admin', 'another active super admin', coalesce(adm_name, 'none'), adm is not null);
+  select id into me from public.admins where user_id = mazen;
 
-  -- 0) the super admin creates a 1000-pulse template
-  perform set_config('request.jwt.claims', jsonb_build_object('sub', adm, 'role', 'authenticated')::text, true);
-  perform set_config('request.jwt.claim.sub', adm::text, true);
-  begin execute 'set local role authenticated';
-    r := public.clinic_reception_command(ws, 'template', jsonb_build_object('code', 'RB-PULSE-1000', 'name', 'تجربة تراجع 1000 نبضة', 'price', '1600', 'visits', 1,
-      'validity_days', 120, 'terms', 'تجربة تراجع', 'lines', jsonb_build_array(jsonb_build_object('visit_no', 1, 'service_id', svc.id, 'quantity', '1000'))), gen_random_uuid());
-    execute 'reset role'; tpl := (r->>'id')::uuid; err := 'ok';
-  exception when others then execute 'reset role'; err := sqlerrm; end;
-  insert into pp_live(step, expected, actual, ok) values ('template (super admin)', 'ok', err, tpl is not null);
+  -- 0) fixture as postgres (rolled back): a 1000-pulse package (1600) for the visit's patient, built the way the legacy-package approval
+  --    builds one (inactive template + package + one entitlement line). Live templates only come from the price editor sync.
+  insert into clinic_reception.package_templates(workspace_id, code, name, version, price, visits, validity_days, terms, active)
+    values (ws, 'RB-PULSE-' || left(gen_random_uuid()::text, 8), 'تجربة تراجع 1000 نبضة', 1, 1600, 1, 120, 'تجربة تراجع — لا تحفظ', false) returning id into tpl;
+  insert into clinic_reception.packages(workspace_id, patient_id, template_id, name, contract_price, visits, expires_on, terms, created_by)
+    values (ws, v.patient_id, tpl, 'تجربة تراجع 1000 نبضة', 1600, 1, (now() at time zone 'Africa/Cairo')::date + 120, 'تجربة تراجع', me) returning id into pkg;
+  insert into clinic_reception.entitlements(package_id, visit_no, service_id, quantity, allocated_value, snapshot)
+    select pkg, 1, x.id, 1000, 1600, to_jsonb(x) from clinic_reception.services x where x.id = svc.id;
+  insert into pp_live(step, expected, actual, ok) select 'fixture package (postgres)', 'active · 1 line × 1000', k.status || ' · ' || count(e.id) || ' × ' || max(e.quantity),
+    k.status = 'active' and count(e.id) = 1 and max(e.quantity) = 1000
+    from clinic_reception.packages k left join clinic_reception.entitlements e on e.package_id = k.id where k.id = pkg group by k.status;
 
   perform set_config('request.jwt.claims', jsonb_build_object('sub', mazen, 'role', 'authenticated')::text, true);
   perform set_config('request.jwt.claim.sub', mazen::text, true);
-  -- 1) Mazen sells it + puts the pulse service on the visit
-  begin execute 'set local role authenticated';
-    r := public.clinic_reception_command(ws, 'package_sell', jsonb_build_object('patient_id', v.patient_id, 'template_id', tpl), gen_random_uuid());
-    pkg := (r->>'id')::uuid;
-    perform public.clinic_reception_command(ws, 'order_add', jsonb_build_object('visit_id', v.visit_id, 'service_id', svc.id, 'provider_id', v.provider_id, 'quantity', '1'), gen_random_uuid());
-    execute 'reset role'; err := 'ok';
-  exception when others then execute 'reset role'; err := sqlerrm; end;
-  select o.id into o1 from clinic_reception.orders o where o.visit_id = v.visit_id and o.service_id = svc.id and o.status = 'ordered' and o.entitlement_id is null order by o.created_at desc limit 1;
-  insert into pp_live(step, expected, actual, ok) values ('Mazen package_sell + order_add', 'ok + ordered pulse order', err || ' · ' || coalesce(o1::text, 'no order'), pkg is not null and o1 is not null);
+  -- 1) Mazen puts the pulse service on the visit («+ إضافة خدمة», unless the visit already has one waiting)
+  select o.id into o1 from clinic_reception.orders o where o.visit_id = v.visit_id and o.service_id = svc.id and o.status = 'ordered' and o.entitlement_id is null limit 1;
+  err := 'already on the visit';
+  if o1 is null then
+    begin execute 'set local role authenticated';
+      perform public.clinic_reception_command(ws, 'order_add', jsonb_build_object('visit_id', v.visit_id, 'service_id', svc.id, 'provider_id', v.provider_id, 'quantity', '1'), gen_random_uuid());
+      execute 'reset role'; err := 'ok';
+    exception when others then execute 'reset role'; err := sqlerrm; end;
+    select o.id into o1 from clinic_reception.orders o where o.visit_id = v.visit_id and o.service_id = svc.id and o.status = 'ordered' and o.entitlement_id is null order by o.created_at desc limit 1;
+  end if;
+  insert into pp_live(step, expected, actual, ok) values ('Mazen order_add (pulse service)', 'ordered pulse order', err || ' · ' || coalesce(o1::text, 'no order'), o1 is not null);
 
   -- 2) Mazen: the session list says pulses, 1000 of 1000
   begin execute 'set local role authenticated'; lp := public.clinic_reception_legacy_packages(ws, v.patient_id); execute 'reset role'; err := 'ok';
