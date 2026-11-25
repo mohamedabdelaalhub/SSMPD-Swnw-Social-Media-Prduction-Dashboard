@@ -1,0 +1,40 @@
+/* HR navigation in 5 groups + «محتاج منك النهارده» (owner 2026-11-25, mockup hr-navigation-home). Display only. */
+.hrn{display:grid;gap:10px;background:#fff;border:1px solid #E4E9F2;border-radius:16px;padding:12px;margin-block:8px 16px;min-width:0}
+.hrn-groups,.hrn-subs{display:flex;gap:8px;flex-wrap:wrap;min-width:0}
+.hrn-groups button{min-height:44px;border:0;border-radius:14px;background:#F3F6FB;padding:0 14px;font:inherit;font-weight:600;color:#16212E;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;cursor:pointer}
+.hrn-groups button[aria-pressed=true]{background:#0F369D;color:#fff}
+.hrn-badge{min-width:22px;height:22px;border-radius:999px;background:#F15A22;color:#fff;font-size:11px;display:inline-grid;place-items:center;padding:0 6px;font-variant-numeric:tabular-nums}
+.hrn-badge[hidden]{display:none}
+.hrn-subs{border-top:1px solid #E4E9F2;padding-top:10px}
+.hrn-subs button{min-height:40px;border:1px solid #E4E9F2;border-radius:12px;background:#fff;padding:0 12px;font:inherit;font-size:13px;color:#667085;white-space:nowrap;cursor:pointer}
+.hrn-subs button[aria-pressed=true]{background:#EAF0FF;border-color:#CFDCF8;color:#0F369D;font-weight:600}
+.hrn button:focus-visible,.hrn-row button:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+.wn-month[hidden]{display:none!important}
+.hrn-crumb{display:block;font-size:12px;color:#667085;margin-bottom:4px}
+.hrn-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hrn-inbox{display:grid;gap:10px}
+.hrn-date{margin:-8px 0 0;color:#667085;font-size:13px}
+.hrn-left{margin:0;color:#9A4E00;font-weight:600}
+.hrn-left:empty{display:none}
+.hrn-rows{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.hrn-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;border:1px solid #E6EBF3;border-inline-start:4px solid #F15A22;border-radius:16px;padding:12px 14px;min-width:0}
+.hrn-row.is-calm{border-inline-start-color:#CFDCF8}
+.hrn-row>div{display:grid;gap:2px;min-width:0}
+.hrn-row small{color:#667085;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.hrn-n{min-width:34px;height:30px;border-radius:999px;background:#FFF1E0;color:#9A4E00;font-weight:700;display:grid;place-items:center;padding:0 10px;font-variant-numeric:tabular-nums}
+.hrn-row .btn{min-height:40px;white-space:nowrap}
+.hrn-done{color:#2F7D5C;margin:0}
+.hrn-loading{color:#667085;font-size:12px;margin:0}
+.wn-panel.hrn-reviews{border:0;padding:0;margin-top:18px;background:transparent}
+.hrn-sub-h{font-size:16px;margin:0 0 8px;color:#16212E}
+@media(max-width:700px){
+ .hrn{padding:10px}
+ .hrn-groups,.hrn-subs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+ .hrn-groups::-webkit-scrollbar,.hrn-subs::-webkit-scrollbar{display:none}
+ .hrn-subs button{flex:none}
+ .hrn-row{grid-template-columns:minmax(0,1fr) auto;padding:12px}
+ .hrn-row>div{grid-row:1/span 2}
+ .hrn-row .hrn-n{grid-column:2;grid-row:1;justify-self:end}
+ .hrn-row .btn{grid-column:2;min-height:40px}
+}
+.hrn-subs button[hidden]{display:none}

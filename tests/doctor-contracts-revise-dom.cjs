@@ -20,7 +20,7 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   const box = d.createElement('div'); box.innerHTML = w.SSMPDFinanceControls.panel('doctors', data, h); d.body.append(box);
   const revBtns = box.querySelectorAll('[data-fin-action="doctor-contract-revise"]');
   assert.equal(revBtns.length, 1, 'only the active contract gets the revise button'); assert.equal(revBtns[0].dataset.id, 'a1');
-  assert(box.textContent.includes('حلّ محله إصدار معدّل'), 'superseded status label');
+  assert(box.textContent.includes('اتعدّل (نسخة أقدم)'), 'superseded status label');
   assert(box.textContent.includes('إصدار معدّل من عقد سابق'), 'revision is labelled');
   const none = d.createElement('div'); none.innerHTML = w.SSMPDFinanceControls.panel('doctors', Object.assign({}, data, { can_create: false }), h);
   assert(!none.querySelector('[data-fin-action="doctor-contract-revise"]'), 'no button without create rights');

@@ -33,7 +33,7 @@ const tick = () => new Promise(r => setTimeout(r, 25));
   const trs = () => [...root().querySelectorAll('tbody tr')];
   assert.equal(trs().length, 3);
   const txt = root().textContent;
-  for (const s of ['لاب توب', 'CUS-000001', 'SN1', '25,000.00', 'موظف أول', 'المخزن', 'مفتاح العيادة', 'مفقودة', 'في المخزن', 'مع موظف', '2026-10-05']) assert(txt.includes(s), 'shows ' + s);
+  for (const s of ['لاب توب', 'CUS-000001', 'SN1', '25,000.00', 'موظف أول', 'المخزن', 'مفتاح العيادة', 'مفقودة', 'في المخزن', 'مع موظف', '5 أكتوبر 2026']) assert(txt.includes(s), 'shows ' + s); // dates in words (owner 2026-11-25)
   const cards = [...root().querySelectorAll('[data-custody-cards] .wp-card')].map(x => x.textContent); assert(cards[1].includes('25,000.00') && cards[2].includes('4,000.00'), 'cards: held value and lost value: ' + cards.join('|'));
   assert.equal(w.__xss, undefined); assert(!root().querySelector('img'), 'item names are escaped');
   assert(root().textContent.includes('<img src=x'), 'escaped markup is shown as text');
@@ -46,7 +46,7 @@ const tick = () => new Promise(r => setTimeout(r, 25));
 
   // ---- per-status actions
   const actionsOf = tr => [...tr.querySelectorAll('[data-custody]')].map(b => b.dataset.custody);
-  assert.deepEqual(actionsOf(trs()[0]), ['transfer', 'return', 'lost', 'damaged', 'edit', 'history']);
+  assert.deepEqual(actionsOf(trs()[0]), ['return', 'transfer', 'edit', 'history', 'lost', 'damaged'], 'primary first, the rest in «⋯», loss/damage last (owner 2026-11-25)');
   assert.deepEqual(actionsOf(trs()[1]), ['issue', 'edit', 'history']);
   assert.deepEqual(actionsOf(trs()[2]), ['return', 'edit', 'history']);
 

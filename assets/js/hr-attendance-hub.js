@@ -15,7 +15,7 @@
     if (w.SSMPDHRActions) w.SSMPDHRActions.remember(opts.people);
     var root = document.createElement('div');
     root.className = 'att-hub'; root.dataset.attHub = '';
-    root.innerHTML = C.sprite() + '<header class="hero"><div class="hero-top"><div><h1>' + ico('check', '') + ' الحضور والانصراف</h1><p data-att-today></p></div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="live" data-att-live></div>' +
+    root.innerHTML = C.sprite() + '<header class="hero"><div class="hero-top"><div><h1>' + ico('check', '') + ' الحضور اللحظي</h1><p data-att-today></p></div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="live" data-att-live></div>' +
       '<button type="button" class="hbtn" data-att="refresh">' + ico('refresh') + 'تحديث</button></div></div><nav class="tabs-main" role="tablist" data-att-tabs></nav></header><div class="att-panel" data-att-panel></div>';
     shell.append(root);
     var panel = root.querySelector('[data-att-panel]');

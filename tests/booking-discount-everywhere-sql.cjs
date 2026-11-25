@@ -12,7 +12,9 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  await cmd('availability',{provider_id:provider,starts_at:date+'T04:00:00Z',ends_at:date+'T21:00:00Z'});
  const mk=async(n,ph)=>(await q("insert into clinic_reception.patients(workspace_id,file_no,name,phone,created_by) values($1,$2,$3,$4,$5) returning id",[w,'F'+n,'مريض '+n,ph,id(1)]))[0].id;
  const A=await mk(1,'01000000001'),B=await mk(2,'01000000002'),C=await mk(3,'0100 000 0001'),D=await mk(4,'01000000004');
- let slot=4*60;const next=()=>{slot+=20;const h=String(Math.floor(slot/60)).padStart(2,'0'),m=String(slot%60).padStart(2,'0');return date+'T'+h+':'+m+':00Z';};
+ let slot=4*60;const nowMin=(()=>{const d=new Date();return d.getUTCHours()*60+d.getUTCMinutes();})();
+ // booked slots skip ±75 min around NOW: the walk-ins below take the current time, so a slot there overlapped («الموعد يتداخل مع حجز قائم») at some hours of the day
+ const next=()=>{do slot+=20;while(Math.abs(slot-nowMin)<75);const h=String(Math.floor(slot/60)).padStart(2,'0'),m=String(slot%60).padStart(2,'0');return date+'T'+h+':'+m+':00Z';};
  const book=(pat,extra)=>cmd('book',{patient_id:pat,provider_id:provider,service_id:svc,starts_at:next(),same_day_ok:true,...extra});
  const orderOf=async ap=>{const s2=await snap();return s2.orders.find(o=>s2.visits.find(v=>v.id===o.visit_id).appointment_id===ap);};
 
