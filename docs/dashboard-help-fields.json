@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1999,
-    "labels": 1455,
-    "files": 157,
-    "groups": 1571
+    "definitions": 2001,
+    "labels": 1457,
+    "files": 158,
+    "groups": 1573
   },
   "fields": [
     {
@@ -1792,6 +1792,26 @@
       "tab": "price_lists",
       "article": "price-lists",
       "text_sha256": "c76e67e674ce727189fc397ba8bc21d7b854593fc6dd093632e469a1bf255683"
+    },
+    {
+      "file": "count-check.js",
+      "label": "مثلًا: مريض دفع ولسه ما اتسجّلش",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "accounting",
+      "article": "shift-count-check",
+      "text_sha256": "9e69428cca75a34938e6a335b74d24171fa6cff1b70b0c7a379573bfe112d919"
+    },
+    {
+      "file": "count-check.js",
+      "label": "السبب لو تعرفه (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "shift-count-check",
+      "text_sha256": "f0b6037c70e1ac11b07a45ccef93961d8725936744c4860298d81bb049711871"
     },
     {
       "file": "daily-clinics.js",

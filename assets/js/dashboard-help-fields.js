@@ -2308,6 +2308,34 @@
       "reviewed": true
     },
     {
+      "title": "مثلًا: مريض دفع ولسه ما اتسجّلش",
+      "labels": [
+        "مثلًا: مريض دفع ولسه ما اتسجّلش"
+      ],
+      "text": "مثال لسبب عدم مطابقة العد — اكتب السبب الحقيقي لو تعرفه، أو سيبها فاضية.",
+      "article": "shift-count-check",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "السبب لو تعرفه (اختياري)",
+      "labels": [
+        "السبب لو تعرفه (اختياري)"
+      ],
+      "text": "لو العد مش مطابق وإنت متأكد منه، اكتب السبب لو تعرفه (مثلًا مريض دفع ولسه ما اتسجّلش). السبب بيتسجّل مع ملاحظات الجرد ويظهر للمراجع في «فروق الخزينة».",
+      "article": "shift-count-check",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "نوع التصميم والنشر",
       "labels": [
         "نوع التصميم والنشر"
@@ -23181,9 +23209,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1999,
-    "labels": 1455,
-    "files": 157,
-    "groups": 1571
+    "definitions": 2001,
+    "labels": 1457,
+    "files": 158,
+    "groups": 1573
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
