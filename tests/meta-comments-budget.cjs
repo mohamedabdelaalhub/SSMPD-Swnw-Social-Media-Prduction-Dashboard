@@ -36,5 +36,6 @@ const pool = b("supabase/functions/meta-comments/pool.ts", "pool"), fb = b("supa
   assert(run.includes("skipped ${name}: run time budget used") && (run.match(/await budgeted\(/g) || []).length >= 5, "later stages are budgeted");
   assert(idx.includes("mapPool(jobs, 5, async (job)") && idx.includes("if (t.permanent) out.permanentRef") && idx.includes("isPermanentGraphError(r.error)"), "posts read in parallel; permanent errors marked as read");
   assert(idx.includes("const PERMANENT = -2") && idx.includes("w.last_count === PERMANENT") && idx.includes("w.last_count = PERMANENT") && idx.includes("if (r.permanentRef) permanent.add"), "permanent failures are written to the watch table and skipped for 6 hours");
+  for (const step of ["ig-username", "fb-posts ", "ig-media ", "watch ", "jobs ", "threads-read rows ", "saved ", "links-filled"]) assert(idx.includes("RUN_LOG?.step(`" + step), "syncBrand trace step " + step);
   console.log("PASS meta-comments budget: bounded parallel posts/replies keep order, permanent Graph errors not retried every run, approved replies first, brands rotate, stages skipped past the time budget.");
 })().catch((e) => { console.error(e); process.exit(1); });

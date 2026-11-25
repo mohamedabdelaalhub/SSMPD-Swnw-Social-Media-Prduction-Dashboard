@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { execFileSync } = require("node:child_process");
 const fs = require("node:fs"), path = require("node:path"), os = require("node:os");
 const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "cs-")), "cs.cjs");
-execFileSync("npx", ["-y", "esbuild", "supabase/functions/meta-comments/comment-store.ts", "--format=cjs", "--log-level=error", `--outfile=${out}`], { stdio: "inherit" });
+execFileSync("npx", ["-y", "esbuild", "supabase/functions/meta-comments/comment-store.ts", "--bundle", "--format=cjs", "--log-level=error", `--outfile=${out}`], { stdio: "inherit" });
 const cs = require(out);
 (async () => {
   assert.equal(cs.cleanText("a\u0000b"), "ab"); assert.equal(cs.cleanText(null), "");

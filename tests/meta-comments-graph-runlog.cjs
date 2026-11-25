@@ -31,6 +31,11 @@ const keepAlive = setInterval(() => {}, 1000); // AbortSignal.timeout timers are
   assert.equal(rows.length, 4); assert.deepEqual(rows.map((x) => x.value.phase + ":" + x.value.stage), ["start:dr_dina syncBrand", "done:dr_dina syncBrand", "start:sendApproved", "done:sendApproved"]);
   assert.equal(rows[0].key, "comments_last_run"); const last = rows[3].value; assert.deepEqual(Object.keys(last.timings_ms), ["dr_dina syncBrand", "sendApproved"]);
   assert(report.errors.some((e) => /dr_dina syncBrand threw: boom/.test(e)), "stage error recorded"); assert(last.errors.every((e) => e.length <= 240), "errors clipped"); assert.equal(last.seen, 3);
+  // sub-step marker: keeps the stage fields, adds step + timing (+ memory when Deno is there), and never breaks the run
+  const rows2 = []; const log2 = rl.createRunLog({ from: () => ({ upsert: async (row) => { rows2.push(row); return {}; } }) }, now);
+  await log2.run("dr_dina syncBrand", { errors: [], seen: 1 }, async () => { await log2.step("fb-posts 42"); await log2.step("jobs 7"); });
+  const steps = rows2.map((x) => x.value.step || "-"); assert.deepEqual(steps, ["-", "fb-posts 42", "jobs 7", "-"], "start, two steps, done");
+  assert.equal(rows2[2].value.stage, "dr_dina syncBrand"); assert.equal(rows2[2].value.phase, "start"); assert.equal(rows2[2].value.seen, 1); assert(rows2[2].value.step_at && rows2[2].value.step_elapsed_ms >= 0);
   const bad = rl.createRunLog({ from: () => ({ upsert: async () => { throw new Error("db down"); } }) }, now);
   await bad.run("x", { errors: [] }, async () => {}); // tracing never breaks the run
   // order inside runSync
