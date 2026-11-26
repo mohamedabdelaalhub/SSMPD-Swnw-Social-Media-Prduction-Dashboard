@@ -1,0 +1,10 @@
+/* «طلب صرف من الدرج» — reuses the shift-expenses card (.rse-*) */
+.rdr-card{margin-top:.75rem}
+.rdr-list li{flex-wrap:wrap;gap:.4rem .6rem}
+.rdr-list li small{flex-basis:100%;color:#6b7684}
+.rdr-st{font-style:normal;font-size:.8rem;padding:.1rem .5rem;border-radius:999px;background:#eef1f6;color:#16212E}
+.rdr-st.ok{background:#e3f2ea;color:#2F7D5C}
+.rdr-st.bad{background:#fbe7e3;color:#D0402A}
+.rdr-st.wait{background:#fdeee6;color:#b0461a}
+.rdr-st.done{background:#eef1f6;color:#6b7684}
+[data-rdr-emp][hidden],[data-rdr-sup][hidden]{display:none}
