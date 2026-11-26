@@ -5,7 +5,12 @@
      تأمين / تعاقد — active contracts only (public.clinic_reception_payer_options), list price, coupon / approval no,
                      «نسبة تحمّل الجهة ٪» typed from the approval, approval photo (mandatory);
      نقابات / نوادي — cash with a flat 30%, union / club list or «أخرى», card no + valid until + card photo.
-   Server: 20261123070000_booking_payer_kind.sql. Hook: SSMPDReceptionPayer.enhance(form, {data, workspace, appointment}). */
+   Server: 20261123070000_booking_payer_kind.sql. Hook: SSMPDReceptionPayer.enhance(form, {data, workspace, appointment}).
+   «اسم سونو واسم الجهة» (owner 2026-11-26 «طبقه», mockup docs/ui-references/mockups/entity-service-names.html, server
+   20261126090000_entity_service_names.sql): تأمين / تعاقد → after the entity is picked, the service search covers THAT entity's list
+   (public.clinic_reception_entity_services): Sono name / Sono code / the entity's own name + code (+ its aliases); each result shows
+   «عند <الجهة>: <اسمها> <كودها>» (or «نفس اسم سونو») and the entity price; services outside the list are greyed «مش متاحة للجهة».
+   decorate(form) re-applies it after the service list is rebuilt (department change). */
 (function(w){'use strict';
 var KINDS=[['cash','كاش','المريض بيدفع'],['contract','تأمين / تعاقد','جهة بتغطي'],['union','نقابات / نوادي','كاش بخصم 30٪']],UNION=30,OTHER='__other';
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -20,6 +25,21 @@ function upload(ws,file){var c=client();if(!c||!c.storage)return Promise.reject(
 /* fresh on every form (a contract can be activated / stopped any time); one call per service + day inside a form */
 function options(ws,service,day){var c=client();if(!c)return Promise.reject(new Error('تعذر الاتصال'));
  return Promise.resolve(c.rpc('clinic_reception_payer_options',{p_workspace:ws,p_service:service||null,p_day:day||null})).then(function(r){if(r&&r.error)throw r.error;return (r&&r.data)||{contracts:[],unions:[]};});}
+/* the entity's list, fresh per contract + day */
+function entityServices(ws,contract,day){var c=client();if(!c)return Promise.reject(new Error('تعذر الاتصال'));
+ return Promise.resolve(c.rpc('clinic_reception_entity_services',{p_workspace:ws,p_contract:contract,p_day:day||null})).then(function(r){if(r&&r.error)throw r.error;return (r&&r.data)||[];});}
+/* the service <select> options under the chosen entity (form._rpkEnt = {name, map}) or back to cash */
+function decorate(form,quiet){var sel=form&&form.elements&&form.elements.service_id;if(!sel||!sel.options)return;var st=form._rpkEnt||null,cur=sel.value,lost=false;
+ Array.prototype.forEach.call(sel.options,function(o){if(!o.value)return;var d=o.dataset;
+  if(!('rpkPrice' in d)){d.rpkPrice=d.price||'';d.rpkText=o.text;d.rpkOff=o.disabled?'1':'';}
+  if(!st){d.price=d.rpkPrice;o.text=d.rpkText;o.disabled=!!d.rpkOff;delete d.alt;delete d.ent;delete d.entCode;return;}
+  var r=st.map[o.value],blocked=!r||r.blocked||!!d.rpkOff,nm=d.name||d.rpkText;
+  d.alt=r?[r.entity_name,r.entity_code].concat((r.aliases||[]).reduce(function(a,x){return a.concat([x.name,x.code]);},[])).filter(Boolean).join(' '):'';
+  if(blocked){d.ent='مش في قايمة أسعار '+st.name;delete d.entCode;d.price='مش متاحة للجهة';o.text=nm+' — مش متاحة للجهة';o.disabled=true;if(o.value===cur)lost=true;}
+  else{d.ent='عند '+st.name+': '+(r.entity_name||'نفس اسم سونو');if(r.entity_code)d.entCode=r.entity_code;else delete d.entCode;d.price=money(r.price)+' سعر الجهة';o.text=nm+' — '+money(r.price);o.disabled=false;}});
+ var q=form.querySelector('#rx-svc-q');if(q)q.placeholder=st?'دوّر باسم سونو أو اسم الجهة أو كودها':'اكتب حرفين من اسم الخدمة أو كود سونو';
+ if(lost&&!quiet){sel.value='';sel.dispatchEvent(new Event('change',{bubbles:true}));}
+ sel.dispatchEvent(new Event('rx-svc-refresh'));}
 function seg(val){return '<div class="rpk-seg" role="radiogroup" aria-label="طريقة الدفع">'+KINDS.map(function(k){return '<label class="rpk-opt"><input type="radio" name="payer_kind" value="'+k[0]+'" required'+(k[0]===val?' checked':'')+'><span>'+esc(k[1])+'<small>'+esc(k[2])+'</small></span></label>';}).join('')+'</div>';}
 function fileRow(label,hidden,attr){return '<div class="rbd-row"><span class="rbd-l">'+label+' <b class="rpk-req">*</b></span><input type="file" accept="image/*,application/pdf" capture="environment" '+attr+'><input type="hidden" name="'+hidden+'" required><small class="rbd-up" role="status"></small></div>';}
 /* ctx: {data, workspace, appointment, order, only} — only: limit the choices (after arrival on a contract visit) */
@@ -31,6 +51,7 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.ele
   '<fieldset class="rpk-body" data-rpk-contract hidden disabled>'+
    '<label class="rbd-row"><span class="rbd-l">الجهة (العقود المتفعّلة بس)</span><select name="payer_contract_id" required data-rpk-c><option value="">جاري التحميل…</option></select></label>'+
    '<p class="rpk-empty" data-rpk-cempty hidden>مفيش عقود متفعّلة — الحسابات تفعّل العقد الأول</p>'+
+   '<p class="rbd-note" data-rpk-entnote aria-live="polite" hidden></p>'+
    '<div class="rbd-two"><label class="rbd-row"><span class="rbd-l">رقم الكوبون / الكارنيه <b class="rpk-req">*</b></span><input name="payer_coupon_no" maxlength="60" required dir="ltr"></label>'+
    '<label class="rbd-row"><span class="rbd-l">رقم موافقة التغطية <b class="rpk-req">*</b></span><input name="payer_auth_ref" maxlength="80" required dir="ltr"></label></div>'+
    '<div class="rbd-two"><label class="rbd-row"><span class="rbd-l">نسبة تحمّل الجهة ٪ <b class="rpk-req">*</b></span><span class="rbd-pctin"><input name="payer_coverage_percent" type="number" min="0" max="100" step="0.5" inputmode="decimal" required dir="ltr"> ٪</span></label>'+
@@ -53,7 +74,7 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.ele
  if(anchor&&anchor.parentNode)anchor.before(box);else form.prepend(box);
  var cBox=box.querySelector('[data-rpk-contract]'),uBox=box.querySelector('[data-rpk-union]'),cSel=box.querySelector('[data-rpk-c]'),cEmpty=box.querySelector('[data-rpk-cempty]'),
      uSel=box.querySelector('[data-rpk-u]'),uOther=box.querySelector('[data-rpk-uother]'),cSum=box.querySelector('[data-rpk-csum]'),uSum=box.querySelector('[data-rpk-usum]'),cashSum=box.querySelector('[data-rpk-cash]'),
-     E=form.elements,opts=null,optKey='',seq=0;
+     E=form.elements,opts=null,optKey='',seq=0,entNote=box.querySelector('[data-rpk-entnote]'),entKey='',entSeq=0;
  if(ctx.only)box.querySelectorAll('input[name="payer_kind"]').forEach(function(r){if(ctx.only.indexOf(r.value)<0){r.disabled=true;r.closest('label').classList.add('rpk-off');}});
  function kind(){var r=box.querySelector('input[name="payer_kind"]:checked');return r?r.value:'';}
  function pkg(){return !!(E.package_id&&E.package_id.value);}
@@ -71,6 +92,13 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.ele
   if(keep){if(list.some(function(u){return u.name===keep;}))uSel.value=keep;else{uSel.value=OTHER;E.payer_union_other.value=keep;}}syncUnion();}
  function load(){var k=(E.service_id.value||'')+'|'+day();if(k===optKey)return;optKey=k;var my=++seq;
   options(ws,E.service_id.value,day()).then(function(o){if(my!==seq)return;opts=o;fillContracts();fillUnions();paint();}).catch(function(e){if(my!==seq)return;optKey='';opts={contracts:[],unions:[]};fillContracts();fillUnions();cEmpty.hidden=false;cEmpty.textContent=(e&&e.message)||'تعذر تحميل الجهات';});}
+ /* entity first → its list drives the service search */
+ function entSync(){var c=kind()==='contract'&&!pkg()?cSel.value:'',key=c?c+'|'+day():'';if(key===entKey)return;entKey=key;var my=++entSeq;
+  form._rpkEnt=null;if(!c){entNote.hidden=true;decorate(form);return;}
+  var nm=(contract()||{}).entity_name||'الجهة';entNote.hidden=false;entNote.textContent='جاري تحميل قايمة أسعار '+nm+'…';decorate(form);
+  entityServices(ws,c,day()).then(function(rows){if(my!==entSeq)return;var map={};rows.forEach(function(r){map[r.service_id]=r;});form._rpkEnt={name:nm,map:map};
+   entNote.textContent='دوّر على الخدمة تحت باسم سونو أو اسم '+nm+' أو كودها — اللي مش في قايمة أسعار '+nm+' بتظهر رمادي ومش بتتختار';decorate(form);})
+  .catch(function(e){if(my!==entSeq)return;entKey='';entNote.textContent=(e&&e.message)||'تعذر تحميل قايمة أسعار الجهة';});}
  function syncUnion(){var other=uSel.value===OTHER;uOther.hidden=!other;E.payer_union_other.required=other;E.payer_union_other.disabled=uBox.disabled||!other;E.payer_union.value=other?'':uSel.value;}
  function wireFile(sel,hidden,msg){var f=box.querySelector(sel),h=E[hidden],up=f.parentNode.querySelector('.rbd-up');
   f.addEventListener('change',function(ev){ev.stopPropagation();var x=f.files&&f.files[0];h.value='';if(!x)return;if(x.size>8*1024*1024){up.textContent='الصورة أكبر من ٨ ميجا — صوّرها تاني';f.value='';return;}
@@ -92,7 +120,7 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.ele
   if(k==='union'){var nm=E.payer_union.value||E.payer_union_other.value.trim();uSum.hidden=!(base>0);
    if(base>0)uSum.innerHTML='<span>السعر</span><s>'+money(base)+'</s><span>خصم 30٪'+(nm?' — '+esc(nm):'')+'</span><span>− '+money(r2(base*UNION/100))+'</span><span>المريض يدفع</span><b>'+money(r2(base*(100-UNION)/100))+'</b>';}
   cashSum.hidden=k!=='cash'||!(base>0)||!!form.querySelector('[data-rbd-on]:checked');if(!cashSum.hidden)cashSum.innerHTML='<span>المريض يدفع</span><b>'+money(base)+'</b>';
-  var d=day();if(d)E.payer_card_expiry.min=d;}
+  var d=day();if(d)E.payer_card_expiry.min=d;entSync();}
  /* prefill when editing */
  if(ap){if(ap.payer_kind==='contract'){E.payer_coupon_no.value=ap.payer_coupon_no||'';E.payer_auth_ref.value=ap.payer_auth_ref||'';E.payer_coverage_percent.value=ap.payer_coverage_percent!=null?String(+ap.payer_coverage_percent):'';
    if(ap.payer_proof_path){E.payer_proof_path.value=ap.payer_proof_path;cUp.textContent='صورة الموافقة متسجّلة ✓ (ارفع تاني لو اتغيّرت)';}}
@@ -134,5 +162,5 @@ function openForVisit(apId,c){var d=c.data||{},ap=(d.appointments||[]).find(func
 function canBooking(ap){return !!ap&&ap.status==='booked'&&!ap.package_id;}
 function canVisit(ap,d){return !!ap&&ap.status==='arrived'&&!ap.discount_kind&&visitOrders(ap,d).some(function(o){return !(+o.discount>0);});}
 function label(ap){return ap&&ap.payer_kind==='contract'?'طريقة الدفع (تأمين / تعاقد)':'طريقة الدفع / الخصم';}
-w.SSMPDReceptionPayer={enhance:enhance,openForBooking:openForBooking,openForVisit:openForVisit,canBooking:canBooking,canVisit:canVisit,label:label,pick:pick,UNION:UNION};
+w.SSMPDReceptionPayer={enhance:enhance,decorate:decorate,openForBooking:openForBooking,openForVisit:openForVisit,canBooking:canBooking,canVisit:canVisit,label:label,pick:pick,UNION:UNION};
 })(window);

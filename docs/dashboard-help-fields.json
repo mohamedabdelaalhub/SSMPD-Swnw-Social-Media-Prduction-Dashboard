@@ -13944,13 +13944,13 @@
     },
     {
       "file": "reception-workspace.js",
-      "label": "اكتب حرفين من اسم الخدمة",
+      "label": "اكتب حرفين من اسم الخدمة أو كود سونو",
       "name": "",
       "kind": "placeholder",
       "forms": [],
       "tab": "reception_services",
-      "article": "booking-flow",
-      "text_sha256": "71437b4cf74f00464133fc4672c06e67cc111f938d56d453386618aa848c1f72"
+      "article": "reception-entity-service-names",
+      "text_sha256": "83898e1d2e6269c01c15a842b339acbdf6ec01a04d99c470906a024ca1bf47cf"
     },
     {
       "file": "reception-workspace.js",
