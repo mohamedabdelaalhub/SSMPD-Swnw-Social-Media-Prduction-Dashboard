@@ -779,6 +779,7 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .peer-form label.peer-mode{display:flex;align-items:center;gap:8px;font-weight:500}
 .peer-form input,.peer-form select{min-height:40px;padding:6px 10px;border:1px solid #cfd6e4;border-radius:10px;font:inherit}
 .peer-form .fc-counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px}
+.peer-form [hidden]{display:none}.peer-form .fc-counts label{min-width:0}.peer-form .fc-counts input{min-width:0;width:100%;box-sizing:border-box}
 .peer-pending{margin:0 0 12px;padding:8px 10px;border-radius:12px;background:rgba(241,90,34,.08)}
 .peer-pending p{margin:0;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .peer-status{min-height:1.4em;margin:8px 0 0 !important;color:#D0402A !important;font-size:14px !important;text-align:center}

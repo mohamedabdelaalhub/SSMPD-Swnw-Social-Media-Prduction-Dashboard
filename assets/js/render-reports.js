@@ -519,6 +519,39 @@
       },
       notice: function (d) { var t = d.totals || {}; return num(t.orders) && !num(t.supplies) ? "تكلفة المستلزمات لسه مش بتتسجل على الخدمات، فالهامش هنا قبل المستلزمات." : ""; }
     },
+    service_profit: {
+      sub: "لكل خدمة: الإيراد، والمستلزمات اللي داخلة في سعرها اتكلفت كام فعلاً (من «استهلاك أمس»)، والمفروض حسب التسعير، والهامش قبل وبعد أتعاب الدكتور.",
+      range: true, sensitive: true,
+      cols: [C("service", "الخدمة"), C("specialty", "القسم"), C("orders", "عدد المرات", "int"), C("revenue", "الإيراد", "money"), C("supplies", "مستلزمات فعلي", "money"),
+        C("per_visit", "للزيارة", "money"), C("bom_per_visit", "المفروض للزيارة", "money"), C("margin", "بعد المستلزمات", "diff"), C("margin_pct", "%", "pct"),
+        C("doctor_fees", "أتعاب الدكتور", "money"), C("net_margin", "بعد أتعاب الدكتور", "diff"), C("net_margin_pct", "% بعد الأتعاب", "pct"),
+        C("status", "الحالة", "status", { below: "السعر أقل من المستلزمات", missing: "ناقص استهلاك", ok: "تمام", no_supplies: "مالهاش مستلزمات" })],
+      totalKeys: { orders: 1, revenue: 1, supplies: 1, margin: 1, margin_pct: 1, doctor_fees: 1, net_margin: 1, net_margin_pct: 1 },
+      load: function (f) { return rpc("report_service_profit", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "الهامش بعد المستلزمات", v: money(t.margin), hero: true, sub: (t.margin_pct == null ? "" : fmtNum(t.margin_pct) + "% — ") + "بعد أتعاب الدكتور " + money(t.net_margin) },
+          { l: "الإيراد", v: money(t.revenue), sub: fmtNum(t.orders) + " خدمة — مستلزمات " + money(t.supplies) },
+          { l: "خدمات سعرها أقل من مستلزماتها", v: fmtNum(t.below), neg: num(t.below) > 0 },
+          { l: "زيارات من غير استهلاك متسجل", v: fmtNum(t.missing), neg: num(t.missing) > 0 }];
+      },
+      notice: function (d) {
+        var n = [], f = state.f;
+        if (f && f.from && d.costs_from && String(f.from) < String(d.costs_from)) n.push("تكلفة المستلزمات بتبدأ من " + String(d.costs_from).split("-").reverse().join("-") + " (بداية رصيد المخزن) — اللي قبلها هيبان من غير مستلزمات.");
+        if (num((d.totals || {}).missing)) n.push("«ناقص استهلاك» = زيارة اتعملت ومافيش استهلاك متسجل عليها في «استهلاك أمس»، فالهامش بتاعها أعلى من الحقيقة لحد ما يتسجل.");
+        return n.join(" ");
+      },
+      extraHtml: function (d) {
+        var sold = d.sold || [], items = d.items || {}, names = { medicines: "أدوية", nursing: "مستلزمات تمريض بتتحاسب" }, h = "";
+        if (sold.length) h += '<div class="rc-card"><div class="rc-ch"><h3>المستلزمات اللي بتتباع للمريض<small>الأدوية وباقي مستلزمات التمريض — بتتحاسب لوحدها</small></h3></div><div class="rc-tw"><table><thead><tr><th>الصنف</th><th class="rc-n">الكمية</th><th class="rc-n">اتباعت بـ</th><th class="rc-n">التكلفة</th><th class="rc-n">الربح</th><th class="rc-n">%</th></tr></thead><tbody>' +
+          sold.map(function (r) { return "<tr><td>" + esc(names[r.kind] || r.kind) + '</td><td class="rc-n">' + fmtNum(r.qty) + '</td><td class="rc-n">' + fmtNum(r.sale) + '</td><td class="rc-n">' + fmtNum(r.cost) + '</td><td class="rc-n' + (num(r.profit) < 0 ? " rc-negc" : "") + '">' + fmtNum(r.profit) + '</td><td class="rc-n">' + (r.pct == null ? "—" : fmtNum(r.pct) + "%") + "</td></tr>"; }).join("") + "</tbody></table></div></div>";
+        var keys = Object.keys(items);
+        if (keys.length) h += '<div class="rc-card"><div class="rc-ch"><h3>المستلزمات اللي اتصرفت على كل خدمة<small>دوس على الخدمة يفتح أصنافها</small></h3></div>' +
+          keys.map(function (k) { var rows = items[k] || []; return '<details class="rc-svc"><summary>' + esc(k) + " — " + fmtNum(rows.reduce(function (a, r) { return a + num(r.cost); }, 0)) + "</summary><table><tbody>" +
+            rows.map(function (r) { return "<tr><td>" + esc(r.item) + '</td><td class="rc-n">' + fmtNum(r.qty) + " " + esc(r.unit || "") + '</td><td class="rc-n">' + fmtNum(r.cost) + "</td></tr>"; }).join("") + "</tbody></table></details>"; }).join("") + "</div>";
+        return h;
+      }
+    },
     device_roi: {
       sub: "لكل جهاز: عدد مرات الاستخدام والساعات والعداد، والإيراد اللي جابه بعد التكاليف المباشرة.",
       range: true, sensitive: true,
