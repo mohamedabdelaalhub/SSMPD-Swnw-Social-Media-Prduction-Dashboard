@@ -87,14 +87,14 @@ revoke all on function clinic_finance.drawer_row(clinic_finance.drawer_requests)
 
 create function public.clinic_finance_drawer_request(p_action text, p jsonb default '{}'::jsonb) returns jsonb
 language plpgsql security definer set search_path = pg_catalog, public as $$
-declare me uuid := public.my_admin_id(); role text := public.my_role(); r clinic_finance.drawer_requests%rowtype; sh clinic_finance.shifts%rowtype;
+declare me uuid := public.my_admin_id(); r clinic_finance.drawer_requests%rowtype; sh clinic_finance.shifts%rowtype;
   k text; amt numeric; tok uuid; sub text; sname text; sup uuid; ev text; why text; ok boolean; note text; v uuid; e uuid; lim numeric;
   step1 boolean; step2 boolean; supok boolean;
 begin
   if me is null then raise exception 'سجل الدخول تاني' using errcode = '42501'; end if;
-  step1 := role in ('general_manager', 'super_admin');
-  step2 := role = 'financial_manager';
-  supok := role in ('accountant', 'financial_manager');
+  step1 := public.has_role('general_manager') or public.has_role('super_admin');
+  step2 := public.has_role('financial_manager');
+  supok := public.has_role('accountant') or public.has_role('financial_manager');
   p := coalesce(p, '{}'::jsonb);
 
   if p_action = 'status' then
@@ -224,7 +224,6 @@ begin
 end $$;
 revoke all on function public.clinic_finance_drawer_request(text, jsonb) from public, anon;
 grant execute on function public.clinic_finance_drawer_request(text, jsonb) to authenticated;
-
 
 do $$
 declare ca uuid; cu uuid; ga uuid; gu uuid; fa uuid; fu uuid; aa uuid; au uuid; acct text; inc text; rg uuid; sid uuid; sup uuid; ev text;

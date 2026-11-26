@@ -13,6 +13,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   create table admins(id uuid primary key,user_id uuid,name text,role text,active boolean default true);
   create function my_admin_id() returns uuid language sql stable security definer as $$select id from admins where user_id=auth.uid()$$;
   create function my_role() returns text language sql stable security definer as $$select role from admins where user_id=auth.uid()$$;
+  create function has_role(r text) returns boolean language sql stable security definer as $$select my_role()=r$$;
   create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);
   create table inventory_suppliers(id uuid primary key,name text,active boolean default true);
   create function clinic_finance.allowed(a text) returns boolean language sql stable security definer as $$select my_role() in ('accountant','financial_manager','super_admin')$$;
