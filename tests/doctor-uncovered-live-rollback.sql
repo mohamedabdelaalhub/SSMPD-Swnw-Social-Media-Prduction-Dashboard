@@ -1,4 +1,4 @@
--- Live rollback dry-run for 20261126050000_doctor_uncovered_without_contract.sql. ONE transaction ending with ROLLBACK; nothing kept.
+-- Live rollback dry-run for 20261126070000_doctor_uncovered_without_contract.sql. ONE transaction ending with ROLLBACK; nothing kept.
 -- As a real finance reviewer (financial_manager / super_admin): a doctor with completed live orders and NO active contract now gets an
 -- `uncovered` ARRAY (was null) with the same rows the old rule gives for contracted doctors; a contracted doctor's statement is identical
 -- before/after; nothing is written.

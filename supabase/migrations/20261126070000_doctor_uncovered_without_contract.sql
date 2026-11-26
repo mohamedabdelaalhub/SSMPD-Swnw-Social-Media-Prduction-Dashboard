@@ -4,7 +4,7 @@
 -- Now: the completed live reception orders of the doctor in the period are listed for every doctor (reason 'none' / 'pending' /
 -- 'starts_later' / 'expired', unchanged rules). READ-ONLY: nothing is computed or written — these orders still carry no fee until a
 -- contract is created and approved. The screens already render the section whenever `uncovered` is an array.
--- In-place patch at one anchor; saved def for rollback. Rollback: supabase/rollbacks/20261126050000_doctor_uncovered_without_contract.rollback.sql
+-- In-place patch at one anchor; saved def for rollback. Rollback: supabase/rollbacks/20261126070000_doctor_uncovered_without_contract.rollback.sql
 begin;
 
 do $$ declare d text; a constant text := $a$if v_active and to_regclass('clinic_reception.orders') is not null$a$; begin

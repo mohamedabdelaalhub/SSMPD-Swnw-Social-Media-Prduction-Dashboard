@@ -217,15 +217,15 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   assert.equal((await owner("select count(*)::int n from pg_proc where proname in ('clinic_finance_doctor_statement_detail','doctor_statement_detail')"))[0].n, 0);
   assert.equal((await owner("select count(*)::int n from pg_proc where proname in ('clinic_finance_doctor_statement','doctor_statement')"))[0].n, 2, 'base statement untouched');
   await db.exec(mig(DET));
-  // 20261126050000: the section is filled for doctors with NO active contract too (read-only), rollback restores null
-  const NOC='20261126050000_doctor_uncovered_without_contract.sql';
+  // 20261126070000: the section is filled for doctors with NO active contract too (read-only), rollback restores null
+  const NOC='20261126070000_doctor_uncovered_without_contract.sql';
   await db.exec('reset role'); await db.exec(mig(NOC));
   await assert.rejects(async () => { await db.exec('reset role'); await db.exec(mig(NOC)); }, /تم تطبيق هذا الملف/); await db.exec('rollback');
   let n2 = await det(2, 'DOC-NOC'); assert.equal(n2.has_active_contract, false); assert.equal(n2.uncovered.length, 1, 'the completed live order of a doctor without any contract is listed');
   assert.equal(n2.uncovered[0].reason, 'none'); assert.equal(n2.uncovered[0].amount, 360); assert.deepEqual(n2.invoices, [], 'no fee, no invoice');
   assert.equal((await det(2, 'DOC-ST')).uncovered.length, 1, 'doctors with a contract unchanged');
   const c1 = await cnt(); await det(2, 'DOC-NOC'); assert.equal(await cnt(), c1, 'still writes nothing');
-  await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261126050000_doctor_uncovered_without_contract.rollback.sql', 'utf8'));
+  await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261126070000_doctor_uncovered_without_contract.rollback.sql', 'utf8'));
   assert.equal((await det(2, 'DOC-NOC')).uncovered, null, 'rollback restores the old behaviour');
-  console.log('PASS doctor statement detail SQL: base statement unchanged, patient/insurer split (claim, paid, contractual, refunds), uncovered services (none/starts_later/expired, cancelled+test ignored, only doctors with an active contract; 20261126050000: also doctors without any contract), access, grants, read-only, rollback');
+  console.log('PASS doctor statement detail SQL: base statement unchanged, patient/insurer split (claim, paid, contractual, refunds), uncovered services (none/starts_later/expired, cancelled+test ignored, only doctors with an active contract; 20261126070000: also doctors without any contract), access, grants, read-only, rollback');
 })().catch(e => { console.error(e.message, e.where || '', e.position || ''); process.exitCode = 1; });
