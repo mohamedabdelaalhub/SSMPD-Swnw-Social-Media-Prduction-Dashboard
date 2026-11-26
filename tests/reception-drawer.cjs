@@ -42,9 +42,11 @@ try{for(const width of [1280,390]){const page=await browser.newPage({viewport:{w
  // «عايز تعمل كذا؟»: sheet, search, a sentence opens the action
  await home(page,RX,OPEN);await page.waitForSelector('[data-rd-home] [data-rd="want"]');await page.click('[data-rd-home] [data-rd="want"]');await page.waitForSelector('[data-rd-want]');
  assert.equal(await page.locator('[data-rd-want] [data-rd-go="payout"]').count(),0,'P2 sentence hidden too');
+ assert.equal(await page.locator('[data-rd-want] [data-rd-go="fixvisit"]').count(),0,'«في غلط في زيارة» hidden until fix-visit.js is loaded');
  await page.fill('[data-rd-want] .rd-sheet-q','ورديتي');assert.equal(await page.locator('[data-rd-want] [data-rd-go]:visible').count(),2,'search filters (خلصت ورديتي + لسه ما فتحتش ورديتي)');
  if(shots)await page.screenshot({path:path.join(shots,'rd-want-'+width+'.png')});
  await page.click('[data-rd-want] [data-rd-go="end"]');await page.waitForFunction(()=>hits.includes('treasury-end'));assert.equal(await page.locator('[data-rd-want]').count(),0,'sheet closes');
+ await home(page,RX,OPEN);await page.evaluate(()=>{window.SSMPDFixVisit={open:()=>hits.push('fix.open')};});await page.waitForSelector('[data-rd-home] [data-rd="want"]');await page.click('[data-rd-home] [data-rd="want"]');await page.waitForSelector('[data-rd-want] [data-rd-go="fixvisit"]');await page.click('[data-rd-want] [data-rd-go="fixvisit"]');await page.waitForFunction(()=>hits.includes('fix.open'));assert.equal(await page.locator('[data-rd-want]').count(),0,'sheet closes before the fix-visit panel opens');await page.evaluate(()=>{delete window.SSMPDFixVisit;});
  // need_open: only «افتح ورديتي» → openShiftOpen(true)
  await home(page,RX,{show:true,state:'need_open',reason:'punched'});await page.waitForSelector('[data-rd-home] .rd-closed');assert.equal(await page.locator('[data-rd-home] .rd-t').count(),0);
  if(shots)await page.screenshot({path:path.join(shots,'rd-closed-'+width+'.png'),fullPage:false});

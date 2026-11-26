@@ -5918,12 +5918,12 @@
       "reviewed": true
     },
     {
-      "title": "بحث باسم الدكتور أو كوده",
+      "title": "ابحث باسم الدكتور",
       "labels": [
-        "بحث باسم الدكتور أو كوده"
+        "ابحث باسم الدكتور"
       ],
-      "text": "اكتب اسم الطبيب أو كوده لتصفية القائمة. البحث مابيغيرش حاجة.",
-      "article": "payroll",
+      "text": "اكتب جزء من اسم الدكتور علشان القايمة تتصفّى عليه.",
+      "article": "doctor-accounts-plain",
       "tabs": [
         "accounting",
         "booking_cash"
@@ -6049,6 +6049,20 @@
         "المبلغ الثابت (جنيه) لكل خدمة تُنفَّذ"
       ],
       "text": "مبلغ ثابت للطبيب عن كل خدمة بيعملها، من غير نسبة. لو الفاتورة اتخفضت أو اتمرتجعت بيقل بنفس النسبة.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "بحث باسم الدكتور أو كوده",
+      "labels": [
+        "بحث باسم الدكتور أو كوده"
+      ],
+      "text": "اكتب اسم الطبيب أو كوده لتصفية القائمة. البحث مابيغيرش حاجة.",
       "article": "payroll",
       "tabs": [
         "accounting",
@@ -12795,6 +12809,19 @@
       ],
       "text": "الممرض أو الممرضة اللي هينفّذ الخدمة. القايمة فيها موظفين التمريض بس، والحجز بياخد وقته/وقتها فمينفعش زيارتين متداخلين.",
       "article": "reception-booking-nurse",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "وقت الطريق (رايح وجاي)",
+      "labels": [
+        "وقت الطريق (رايح وجاي)"
+      ],
+      "text": "للكشف المنزلي بس: وقت الطريق للطبيب رايح وراجع (30 أو 60 أو 90 أو 120 دقيقة، الافتراضي 60). الحجز بياخد 15 دقيقة كشف + الوقت ده، فالطبيب والممرض/ة اللي معاه مش بيتحجزلهم حاجة تانية فيه.",
+      "article": "home-consult-split",
       "tabs": [
         "reception_services"
       ],
@@ -23392,9 +23419,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2020,
-    "labels": 1466,
+    "definitions": 2021,
+    "labels": 1468,
     "files": 161,
-    "groups": 1587
+    "groups": 1589
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

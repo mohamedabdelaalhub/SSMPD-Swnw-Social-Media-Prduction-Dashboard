@@ -41,6 +41,7 @@ var ACT={
   var here=[].slice.call(d.querySelectorAll('[data-rse-spend]')).filter(visible)[0];if(here){here.click();return Promise.resolve(true);}
   return openReception('appointments').then(function(){return pressWhenReady('[data-rse-spend]','صرف من مصروفات الوردية');});},
  payout:function(){var api=payoutApi();if(api)return Promise.resolve(api());return Promise.resolve(false);},
+ fixvisit:function(){var api=fixVisitApi();if(api)return Promise.resolve(api());return Promise.resolve(false);},
  advance:function(){gotoTab('booking_cash');return pressWhenReady('[data-fin-action="advance-receive"]','مقدم حجز جديد');},
  refund:function(){gotoTab('booking_cash');return pressWhenReady('[data-bcv-advances]','مقدمات الحجز',6000).then(function(){var s=d.querySelector('[data-bcv-advances]');if(s&&s.scrollIntoView)s.scrollIntoView({block:'start',behavior:'smooth'});});},
  peer:function(){var P=w.SSMPDPeerHandover;if(P&&P.openSend)return Promise.resolve(P.openSend());gotoTab('booking_cash');return pressWhenReady('[data-ft-peer]','سلّم كاش لزميل');},
@@ -49,6 +50,8 @@ var ACT={
 };
 /* «طلب صرف من الدرج» belongs to the finance chat (P2); the button appears only once that screen exports an opener */
 function payoutApi(){var P=w.SSMPDDrawerPayout;return P&&typeof P.open==='function'?P.open:null;}
+/* «في غلط في زيارة أو حساب مريض» (fix-visit.js, help 295): the entry shows only when that panel is loaded */
+function fixVisitApi(){var F=w.SSMPDFixVisit;return F&&typeof F.open==='function'?F.open:null;}
 function run(k){var f=ACT[k];if(!f)return;var a=me();if(!eligible(a)){toast('الزرار ده لموظف الاستقبال بس.');return;}
  if(w.SSMPDRoleLanding&&w.SSMPDRoleLanding.count)w.SSMPDRoleLanding.count('booking_cash');
  Promise.resolve(f()).then(function(){cache=null;});}
@@ -85,10 +88,10 @@ function mountBar(host){var a=me();if(!host)return Promise.resolve();if(!eligibl
 /* «عايز تعمل كذا؟» — plain sentences that open the action directly */
 var WANT=[['collect','مريض عايز يدفع','كشف، خدمة، أو باقي فاتورة'],['expense','اشتريت حاجة للعيادة من الدرج','مياه، أدوات نظافة، صيانة، إكراميات…'],['advance','مريض بيحجز ودافع عربون','مقدم حجز'],
  ['refund','مريض عايز فلوسه ترجع','استرداد مقدم الحجز'],['payout','حد طالب فلوس من الدرج','دكتور أو مورد أو سلفة'],['peer','هسلّم كاش لزميل','والوردية تفضل مفتوحة'],
- ['end','خلصت ورديتي','العد والتسليم في خطوة واحدة'],['end','الدرج فاضي وعايز أقفل','بصفر وبسبب مكتوب'],['open_shift','لسه ما فتحتش ورديتي','افتح وردية النهارده']];
+ ['end','خلصت ورديتي','العد والتسليم في خطوة واحدة'],['end','الدرج فاضي وعايز أقفل','بصفر وبسبب مكتوب'],['fixvisit','في غلط في زيارة أو حساب مريض','الخدمة، الحجز، الخصم، التحصيل اللي مش ظاهر'],['open_shift','لسه ما فتحتش ورديتي','افتح وردية النهارده']];
 function wantSheet(){var old=d.querySelector('[data-rd-want]');if(old)old.remove();
  var m=d.createElement('div');m.className='rd-sheet';m.setAttribute('data-rd-want','');m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.setAttribute('aria-label','عايز تعمل كذا؟');
- var rows=WANT.filter(function(x){return x[0]!=='payout'||payoutApi();});
+ var rows=WANT.filter(function(x){return (x[0]!=='payout'||payoutApi())&&(x[0]!=='fixvisit'||fixVisitApi());});
  m.innerHTML='<div class="rd-sheet-box"><div class="rd-sheet-h"><b>عايز تعمل كذا؟</b><button type="button" class="btn" data-rd-close aria-label="إغلاق">✕</button></div><input type="search" class="rd-sheet-q" placeholder="اكتب اللي عايزه… مثلاً: مصروف" aria-label="دوّر"><div class="rd-sheet-list">'+
   rows.map(function(x){return '<button type="button" data-rd-go="'+x[0]+'"><span>'+esc(x[1])+'<small>'+esc(x[2])+'</small></span><em>←</em></button>';}).join('')+'</div></div>';
  d.body.appendChild(m);var close=function(){m.remove();};
