@@ -1,6 +1,6 @@
 -- Live rollback dry-run for 20261126180000_platform_audit.sql (rule 9). ONE transaction ending with ROLLBACK; nothing kept.
--- Applies the migration inside the transaction, then as REAL people (accountant, financial manager, GM / super admin — three
--- different logins): takes ONE real live visit whose booked service is a كشف / استشارة, moves it (triggers off for that update only)
+-- Applies the migration inside the transaction, then as REAL people — maker = an accountant if live has one, else the financial
+-- manager; checker = a different person (FM / GM / super admin, never «Admin Test»): takes ONE real live visit whose booked service is a كشف / استشارة, moves it (triggers off for that update only)
 -- to vezeeta → counts 25%; marks it «فيزيتا شامل» → counts 0; audits vezeeta with a deduction to income 4122 (accountant asks, FM
 -- approves; accountant approve / overlap refused; accountant chart account refused on kafaret), clinidu with a deduction to payable 2111 (GM / SA approves),
 -- كفارة وسلامتك by the FM to chart account 5233 (FM self-approval refused), then settles vezeeta's audited balance by bank
@@ -321,14 +321,23 @@ grant execute on function public.clinic_finance_month_end(text, jsonb) to authen
 
 -- ===================== checks as real people (everything below is rolled back) =====================
 do $$
-declare acc uuid; fmu uuid; apr uuid; ap uuid; ap_src text; ap_dk text; v_id uuid; ma date; mx date; net numeric; r jsonb; a jsonb; o1 numeric; o2 numeric; n int; bal numeric;
+declare acc uuid; mk uuid; chk uuid; fmu uuid; apr uuid; ap uuid; ap_src text; ap_dk text; v_id uuid; ma date; mx date; net numeric; r jsonb; a jsonb; o1 numeric; o2 numeric; n int; bal numeric;
   ln text; want text;
 begin
-  -- three DIFFERENT real people: accountant, financial manager, approver (GM / super admin)
-  select a.user_id into acc from public.admins a where a.active and a.user_id is not null and a.role = 'accountant' order by a.id limit 1;
-  select a.user_id into fmu from public.admins a where a.active and a.user_id is not null and a.role = 'financial_manager' and a.user_id is distinct from acc order by a.id limit 1;
-  select a.user_id into apr from public.admins a where a.active and a.user_id is not null and a.role in ('general_manager', 'super_admin') and a.user_id is distinct from acc and a.user_id is distinct from fmu order by a.role, a.id limit 1;
-  if acc is null or fmu is null or apr is null then raise exception 'need a real accountant, financial manager and GM / super admin with logins (got % / % / %)', acc is not null, fmu is not null, apr is not null; end if;
+  -- real people, the way live is staffed (roles from admins.role OR admin_extra_roles via has_role_for; never «Admin Test»):
+  --   maker = an accountant if live has one, else the financial manager; checker = another person (FM if the maker is the
+  --   accountant, else GM, else a super admin — non-owner first); apr = a GM / super admin who is neither (for the FM-as-maker case)
+  select a.user_id into acc from public.admins a where a.active and a.user_id is not null and coalesce(a.name, '') <> 'Admin Test'
+     and public.has_role_for(a.id, 'accountant') order by a.id limit 1;
+  select a.user_id into fmu from public.admins a where a.active and a.user_id is not null and coalesce(a.name, '') <> 'Admin Test'
+     and public.has_role_for(a.id, 'financial_manager') and a.user_id is distinct from acc order by a.id limit 1;
+  select a.user_id into apr from public.admins a where a.active and a.user_id is not null and coalesce(a.name, '') <> 'Admin Test'
+     and (public.has_role_for(a.id, 'general_manager') or public.has_role_for(a.id, 'super_admin')) and a.user_id is distinct from acc and a.user_id is distinct from fmu
+   order by public.has_role_for(a.id, 'general_manager') desc, (a.role = 'super_admin') asc, a.id limit 1;
+  if fmu is null or apr is null then raise exception 'need a real financial manager and a different GM / super admin with logins (got % / %)', fmu is not null, apr is not null; end if;
+  mk := coalesce(acc, fmu); chk := case when acc is not null then fmu else apr end;
+  raise notice 'people: maker = %, checker = %, third approver = % (accountant on live: %)', case when acc is null then 'financial manager' else 'accountant' end,
+    case when acc is null then 'GM / super admin' else 'financial manager' end, 'GM / super admin', acc is not null;
 
   -- one REAL live visit whose booked service is a كشف / استشارة and was completed on that visit (any source), latest first
   select ap0.id, ap0.source, ap0.discount_kind, v.id, date_trunc('month', ap0.starts_at at time zone 'Africa/Cairo')::date,
@@ -348,13 +357,13 @@ begin
   set local session_replication_role = replica;
   update clinic_reception.appointments set source = 'vezeeta', discount_kind = null where id = ap;
   set local session_replication_role = origin;
-  perform set_config('request.jwt.claim.sub', acc::text, true); execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
   o1 := (public.clinic_finance_month_end('audit_preview', jsonb_build_object('party', 'vezeeta', 'from', ma))->>'ours')::numeric;
   execute 'reset role';
   set local session_replication_role = replica;
   update clinic_reception.appointments set discount_kind = 'vezeeta' where id = ap;
   set local session_replication_role = origin;
-  perform set_config('request.jwt.claim.sub', acc::text, true); execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
   o2 := (public.clinic_finance_month_end('audit_preview', jsonb_build_object('party', 'vezeeta', 'from', ma))->>'ours')::numeric;
   execute 'reset role';
   if o1 - o2 <> round(net * 25 / 100, 2) then raise exception 'vezeeta 25%% vs «فيزيتا شامل»: delta % ≠ 25%% of % ', o1 - o2, net; end if;
@@ -364,15 +373,15 @@ begin
   set local session_replication_role = origin;
 
   -- 2) accountant: deduction → income 4122; accountant cannot approve, cannot pick a chart account; overlap refused; FM approves
-  perform set_config('request.jwt.claim.sub', acc::text, true); execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
   a := public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'vezeeta', 'from', ma, 'to', ma, 'theirs', o1 + 50, 'theirs_ref', 'DRY-RUN',
         'agreed_mode', 'amount', 'agreed_value', o1 - 1, 'reason', 'dry-run income', 'dest_kind', 'income', 'token', gen_random_uuid()));
-  begin perform public.clinic_finance_month_end('audit_review', jsonb_build_object('id', a->>'id', 'ok', true)); raise exception 'accountant approved!';
-  exception when others then if sqlerrm not like '%اعتماد المراجعة%' then raise; end if; end;
+  begin perform public.clinic_finance_month_end('audit_review', jsonb_build_object('id', a->>'id', 'ok', true)); raise exception 'maker approved his own audit!';
+  exception when others then if sqlerrm not like '%اعتماد المراجعة%' and sqlerrm not like '%انت عاملها%' then raise; end if; end;
   begin perform public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'vezeeta', 'from', ma, 'theirs', 1, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'amount',
           'agreed_value', 0, 'reason', 'dry-run', 'dest_kind', 'income', 'token', gen_random_uuid())); raise exception 'overlap accepted!';
   exception when others then if sqlerrm not like '%اتراجعت قبل كده%' then raise; end if; end;
-  perform set_config('request.jwt.claim.sub', fmu::text, true);
+  perform set_config('request.jwt.claim.sub', chk::text, true);
   r := public.clinic_finance_month_end('audit_review', jsonb_build_object('id', a->>'id', 'ok', true));
   execute 'reset role';
   select string_agg(l.account || ':' || l.debit::numeric(14,2) || '/' || l.credit::numeric(14,2), ' ' order by l.account, l.debit) into ln
@@ -383,7 +392,7 @@ begin
 
   -- 3) clinidu: deduction → payable 2111, accountant asks, GM / SA approves
   set local session_replication_role = replica; update clinic_reception.appointments set source = 'clinidu' where id = ap; set local session_replication_role = origin;
-  perform set_config('request.jwt.claim.sub', acc::text, true); execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
   o2 := (public.clinic_finance_month_end('audit_preview', jsonb_build_object('party', 'clinidu', 'from', ma))->>'ours')::numeric;
   a := public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'clinidu', 'from', ma, 'theirs', o2, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'amount',
         'agreed_value', o2 - 2, 'reason', 'dry-run payable', 'dest_kind', 'payable', 'dest_account', '2111', 'token', gen_random_uuid()));
@@ -397,11 +406,13 @@ begin
 
   -- 4) كفارة وسلامتك: FM picks a chart account (5233); FM cannot approve his own; GM / SA approves
   set local session_replication_role = replica; update clinic_reception.appointments set source = 'kafaret' where id = ap; set local session_replication_role = origin;
+  if acc is not null then
   perform set_config('request.jwt.claim.sub', acc::text, true); execute 'set local role authenticated';
   begin perform public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'kafaret', 'from', ma, 'theirs', 1, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'amount',
           'agreed_value', 0, 'reason', 'dry-run', 'dest_kind', 'account', 'dest_account', '5233', 'token', gen_random_uuid())); raise exception 'accountant used a chart account!';
   exception when others then if sqlerrm not like '%للمدير المالي بس%' then raise; end if; end;
   execute 'reset role';
+  else raise notice 'skipped: accountant-only refusal (chart account) — live has no accountant login'; end if;
   perform set_config('request.jwt.claim.sub', fmu::text, true); execute 'set local role authenticated';
   o2 := (public.clinic_finance_month_end('audit_preview', jsonb_build_object('party', 'kafaret', 'from', ma))->>'ours')::numeric;
   a := public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'kafaret', 'from', ma, 'theirs', o2, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'percent',
@@ -417,12 +428,12 @@ begin
   raise notice 'OK account: kafaret ours % agreed 50%% → Cr 5233 %', o2, o2 - round(o2 * 50 / 100, 2);
 
   -- 5) settle vezeeta's audited balance by bank: accountant asks (over the balance refused), FM approves → Dr 2112 / Cr 1112
-  perform set_config('request.jwt.claim.sub', acc::text, true); execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
   select (x->>'balance')::numeric into bal from jsonb_array_elements(public.clinic_finance_month_end('platforms', '{}')->'platforms') x where x->>'party' = 'vezeeta';
   begin perform public.clinic_finance_month_end('settle_request', jsonb_build_object('party', 'vezeeta', 'amount', bal + 1, 'method', 'bank', 'reference', 'DRY-RUN', 'token', gen_random_uuid()));
     raise exception 'over-balance accepted!'; exception when others then if sqlerrm not like '%أكبر من المستحق المعتمد%' then raise; end if; end;
   a := public.clinic_finance_month_end('settle_request', jsonb_build_object('party', 'vezeeta', 'amount', bal, 'method', 'bank', 'reference', 'DRY-RUN', 'token', gen_random_uuid()));
-  perform set_config('request.jwt.claim.sub', fmu::text, true);
+  perform set_config('request.jwt.claim.sub', chk::text, true);
   perform public.clinic_finance_month_end('settle_review', jsonb_build_object('id', a->>'id', 'ok', true));
   r := public.clinic_finance_month_end('statement', jsonb_build_object('month', ma));
   execute 'reset role';
