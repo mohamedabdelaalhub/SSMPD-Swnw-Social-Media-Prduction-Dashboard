@@ -25,15 +25,16 @@ for(const n of Array.from(d.querySelectorAll('.wp-overlay')))n.remove();
 d.querySelector('[data-hr-section=reviews] [data-wp=request-review][data-id=q1]').click();await tick();
 const rm=Array.from(d.querySelectorAll('.wp-modal')).pop();assert.match(rm.textContent,/الطلب خارج القواعد/);assert.match(rm.textContent,/سبب الاستثناء: طارئ/);
 for(const n of Array.from(d.querySelectorAll('.wp-overlay')))n.remove();
+const pick=()=>{const s=reqs.querySelector('[name=person_for_request]');if(s&&!s.value){s.value=Array.from(s.options).find(o=>o.value).value;s.dispatchEvent(new w.Event('change',{bubbles:true}));}};
 // New request: the leave type is sent; days are computed for casual leave; other kinds carry no leave type.
-reqs.querySelector('[data-wp=request]').click();await tick();
+pick();reqs.querySelector('[data-wp=request]').click();await tick();
 f=Array.from(d.querySelectorAll('.wp-modal form')).pop();assert(!f.elements.leave_type.closest('label').hidden);
 assert(Array.from(f.elements.leave_type.options).some(o=>o.value==='excused'),'HR managers may record an excused absence');
 f.elements.leave_type.value='casual';f.elements.from_date.value='2026-12-01';f.elements.to_date.value='2026-12-02';f.elements.units.value='1';f.elements.note.value='ظرف عائلي';
 f.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await tick();await tick();
 let r=calls.filter(x=>x[0]==='hr_command'&&x[1].p_action==='request').pop();assert.equal(r[1].p_payload.leave_type,'casual');assert.equal(r[1].p_payload.units,'2');
 for(const n of Array.from(d.querySelectorAll('.wp-overlay')))n.remove();
-reqs.querySelector('[data-wp=request]').click();await tick();
+pick();reqs.querySelector('[data-wp=request]').click();await tick();
 f=Array.from(d.querySelectorAll('.wp-modal form')).pop();f.elements.kind.value='permission';f.elements.kind.onchange();assert(f.elements.leave_type.closest('label').hidden);
 f.elements.note.value='إذن ساعة';f.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await tick();await tick();
 r=calls.filter(x=>x[0]==='hr_command'&&x[1].p_action==='request').pop();assert.equal(r[1].p_payload.kind,'permission');assert.equal(r[1].p_payload.leave_type,undefined);
