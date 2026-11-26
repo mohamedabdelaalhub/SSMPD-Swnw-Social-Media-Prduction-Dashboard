@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2024,
-    "labels": 1467,
+    "definitions": 2025,
+    "labels": 1468,
     "files": 161,
-    "groups": 1591
+    "groups": 1592
   },
   "fields": [
     {
@@ -11165,6 +11165,16 @@
       "tab": "reception_services",
       "article": "reception-booking-nurse",
       "text_sha256": "70372b079ea97284ce204cae9b71eec3fa2de7bef1e75e669fae4a6d89f1b8fc"
+    },
+    {
+      "file": "reception-booking-plus.js",
+      "label": "وقت الطريق (رايح وجاي)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "home-consult-split",
+      "text_sha256": "ff8c1dbf07acf8ea732a24edb4097163473b31cd7cb7b591fe10b7511d314ae2"
     },
     {
       "file": "reception-booking-plus.js",

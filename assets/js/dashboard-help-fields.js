@@ -12880,6 +12880,19 @@
       "reviewed": true
     },
     {
+      "title": "وقت الطريق (رايح وجاي)",
+      "labels": [
+        "وقت الطريق (رايح وجاي)"
+      ],
+      "text": "للكشف المنزلي بس: وقت الطريق للطبيب رايح وراجع (30 أو 60 أو 90 أو 120 دقيقة، الافتراضي 60). الحجز بياخد 15 دقيقة كشف + الوقت ده، فالطبيب والممرض/ة اللي معاه مش بيتحجزلهم حاجة تانية فيه.",
+      "article": "home-consult-split",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "عدد الخدمة",
       "labels": [
         "عدد الخدمة"
@@ -23444,9 +23457,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2024,
-    "labels": 1467,
+    "definitions": 2025,
+    "labels": 1468,
     "files": 161,
-    "groups": 1591
+    "groups": 1592
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
