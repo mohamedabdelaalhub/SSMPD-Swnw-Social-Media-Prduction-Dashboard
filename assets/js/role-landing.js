@@ -56,7 +56,7 @@ function btn(label,attr,cls){return '<button type="button" class="btn '+(cls||''
 function hero(k,a,v){
  if(k==='desk'){var acts=btn('افتح تشغيل اليوم','data-rl-rx="journey"','rl-main')+btn('الحجز والاستقبال','data-rl-rx="appointments"')+btn('ملفات المرضى','data-rl-rx="patients"','rl-ghost');
   var kp=v?'<div class="rl-kp">'+kpi(v.total,'حجز النهارده')+kpi(v.waiting,'مستنيين دلوقتي',v.waiting>0)+kpi(v.late,'متأخرين عن ميعادهم',v.late>0)+kpi(v.done,'خلّصوا الكشف')+'</div>':'';
-  return '<h2>تشغيل اليوم — '+esc(dateWords())+'</h2><p class="rl-sub">'+(v?'أرقام النهارده من شاشة تشغيل اليوم.':'افتح تشغيل اليوم علشان تشوف الطابور والحجوزات.')+'</p>'+kp+'<div class="rl-acts">'+acts+'</div>';}
+  return '<h2>تشغيل اليوم — '+esc(dateWords())+'</h2><p class="rl-sub">'+(v?'أرقام النهارده من شاشة تشغيل اليوم.':'افتح تشغيل اليوم علشان تشوف الطابور والحجوزات.')+'</p>'+kp+'<div class="rl-acts">'+acts+'</div><div data-rd-home-slot hidden></div>';}
  if(k==='nurse')return '<h2>تشغيل اليوم — التمريض</h2><p class="rl-sub">مرضى النهارده في كل قسم، والتجهيز قبل الكشف.</p><div class="rl-acts">'+btn('افتح تشغيل اليوم','data-rl-rx="'+(nursingOnly(a)?'nursing':'journey')+'"','rl-main')+'</div>';
  if(k==='finance'){var rows=v&&v.tasks||[],total=rows.reduce(function(s,t){return s+t.count;},0);
   return '<h2>شغلي النهارده — الحسابات</h2><p class="rl-sub">'+(v?(total?(total===1?'حاجة واحدة مستنياك':total+' حاجات مستنياك'):'مفيش حاجة مستنياك دلوقتي ✓'):'افتح الحسابات علشان تشوف شغلك.')+'</p>'+
@@ -67,7 +67,9 @@ function tiles(a){var top=topTabs(a,4);if(top.length<2)return '';return '<sectio
 function wire(host){
  host.querySelectorAll('[data-rl-rx]').forEach(function(b){b.onclick=function(){openReception(b.dataset.rlRx);};});
  host.querySelectorAll('[data-rl-ft]').forEach(function(b){b.onclick=openFinanceToday;});
- host.querySelectorAll('[data-rl-tab]').forEach(function(b){b.onclick=function(){gotoTab(b.dataset.rlTab);};});}
+ host.querySelectorAll('[data-rl-tab]').forEach(function(b){b.onclick=function(){gotoTab(b.dataset.rlTab);};});
+ /* «درجي» (reception only, reception-drawer.js) under the desk numbers */
+ var rd=host.querySelector('[data-rd-home-slot]');if(rd&&w.SSMPDReceptionDrawer)w.SSMPDReceptionDrawer.mountHome(rd);}
 
 /* mount into the slot the personal home leaves at its top; safe to call on every home redraw */
 function mount(host,a){

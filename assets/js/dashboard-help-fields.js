@@ -3232,6 +3232,84 @@
       "reviewed": true
     },
     {
+      "title": "الموظف",
+      "labels": [
+        "الموظف"
+      ],
+      "text": "اختر الموظف الذي يخصه التكليف أو العقد أو الاستحقاق أو الفلترة. في مستحقات الرواتب طابق الاسم بالعقد والفترة ولا تستخدم اسم مسجل الطلب بدل المستفيد.",
+      "article": "payroll",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المورد / الصيدلية",
+      "labels": [
+        "المورد / الصيدلية"
+      ],
+      "text": "المورد أو الصيدلية اللي هتدفعلها. لازم يكون متسجل في الموردين — المحاسب بيسجل فاتورته بأصنافها قبل الموافقة.",
+      "article": "drawer-requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "📷 صورة فاتورة المورد (إجباري)",
+      "labels": [
+        "📷 صورة فاتورة المورد (إجباري)"
+      ],
+      "text": "صوّر فاتورة المورد. من غيرها الطلب مش هيتبعت، والمحاسب بيراجع عليها.",
+      "article": "drawer-requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ (جنيه)",
+      "labels": [
+        "المبلغ (جنيه)"
+      ],
+      "text": "المبلغ اللي محتاج يطلع من درجك. بعد الموافقة لازم الكاش اللي في الدرج يكفيه وقت «اتصرف».",
+      "article": "drawer-requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: سلفة شخصية — تتخصم من مرتب الشهر",
+      "labels": [
+        "مثلاً: سلفة شخصية — تتخصم من مرتب الشهر"
+      ],
+      "text": "اكتب الطلب ليه بالظبط — بيظهر للي هيوافق.",
+      "article": "drawer-requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "السبب",
+      "labels": [
+        "السبب"
+      ],
+      "text": "اكتب الحدث الذي يستدعي الطلب وسببه والمستند الذي يثبته، مثل رد دفعة عن موعد ملغي. لا تكتب سببًا عامًا لا يسمح للمراجع بفهم العملية.",
+      "article": "requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اكتب اللي مش عارف تعمله…",
       "labels": [
         "اكتب اللي مش عارف تعمله…"
@@ -5918,12 +5996,12 @@
       "reviewed": true
     },
     {
-      "title": "بحث باسم الدكتور أو كوده",
+      "title": "ابحث باسم الدكتور",
       "labels": [
-        "بحث باسم الدكتور أو كوده"
+        "ابحث باسم الدكتور"
       ],
-      "text": "اكتب اسم الطبيب أو كوده لتصفية القائمة. البحث مابيغيرش حاجة.",
-      "article": "payroll",
+      "text": "اكتب جزء من اسم الدكتور علشان القايمة تتصفّى عليه.",
+      "article": "doctor-accounts-plain",
       "tabs": [
         "accounting",
         "booking_cash"
@@ -6049,6 +6127,20 @@
         "المبلغ الثابت (جنيه) لكل خدمة تُنفَّذ"
       ],
       "text": "مبلغ ثابت للطبيب عن كل خدمة بيعملها، من غير نسبة. لو الفاتورة اتخفضت أو اتمرتجعت بيقل بنفس النسبة.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "بحث باسم الدكتور أو كوده",
+      "labels": [
+        "بحث باسم الدكتور أو كوده"
+      ],
+      "text": "اكتب اسم الطبيب أو كوده لتصفية القائمة. البحث مابيغيرش حاجة.",
       "article": "payroll",
       "tabs": [
         "accounting",
@@ -13637,6 +13729,32 @@
       ],
       "text": "للي بيعتمد بس: اكتب سبب تغيير المبلغ أو سبب الرفض (3 حروف على الأقل). الاعتماد بالمبلغ زي ما هو مش محتاج ملاحظة.",
       "article": "doctor-payout-approve",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دوّر",
+      "labels": [
+        "دوّر"
+      ],
+      "text": "اختر دور الموظف الذي ستعرض أو تعدل مستهدفاته وأوزان مؤشراته، وليس حساب شخص منفرد أو منح صلاحية جديدة.",
+      "article": "indicators",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب اللي عايزه… مثلاً: مصروف",
+      "labels": [
+        "اكتب اللي عايزه… مثلاً: مصروف"
+      ],
+      "text": "اكتب كلمة من اللي عايز تعمله (مثلاً: مصروف، تحصيل، ورديتي) والقايمة هتوريك الجمل اللي فيها الكلمة دي بس.",
+      "article": "reception-drawer",
       "tabs": [
         "reception_services"
       ],
@@ -23392,9 +23510,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2020,
-    "labels": 1466,
-    "files": 161,
-    "groups": 1587
+    "definitions": 2028,
+    "labels": 1472,
+    "files": 163,
+    "groups": 1596
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

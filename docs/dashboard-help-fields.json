@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2020,
-    "labels": 1466,
-    "files": 161,
-    "groups": 1587
+    "definitions": 2028,
+    "labels": 1472,
+    "files": 163,
+    "groups": 1596
   },
   "fields": [
     {
@@ -2964,6 +2964,66 @@
       "text_sha256": "eec768dae27bf2de3693d2d37ba93ae01c2648aaf8c5e7b69afdb717e662d0c0"
     },
     {
+      "file": "drawer-requests.js",
+      "label": "الموظف",
+      "name": "subject",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "المورد / الصيدلية",
+      "name": "supplier_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "drawer-requests",
+      "text_sha256": "8dbbfc2d99b7382193ed965dc61997de72c314c2142c8d41efe66c04d9fb1b25"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "📷 صورة فاتورة المورد (إجباري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "drawer-requests",
+      "text_sha256": "030c5c62362d03e8fd2a8f487689631ea622672486a9c0419e863afb25102dbd"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "المبلغ (جنيه)",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "drawer-requests",
+      "text_sha256": "a625c08e53aef782024a72890a09653fb9837a5381f442693168bc85a3e0bab8"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "مثلاً: سلفة شخصية — تتخصم من مرتب الشهر",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "drawer-requests",
+      "text_sha256": "46bc0d154f977751d7d96c5731efcc748b0301c0b2541634313a06ff3d7cb177"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "السبب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
       "file": "employee-assistant.js",
       "label": "اكتب اللي مش عارف تعمله…",
       "name": "",
@@ -5161,13 +5221,13 @@
     },
     {
       "file": "finance-doctor-accounts.js",
-      "label": "بحث باسم الدكتور أو كوده",
+      "label": "ابحث باسم الدكتور",
       "name": "",
       "kind": "placeholder",
       "forms": [],
       "tab": "accounting",
-      "article": "payroll",
-      "text_sha256": "01797bdcd381d3f49ad886634bda28dafe94aa2b129ad59fe7a1aeb196f21e49"
+      "article": "doctor-accounts-plain",
+      "text_sha256": "3b2d87c09c8cb86df44a50704a8b9c70169a579c7c569237b115fed57bf4e08f"
     },
     {
       "file": "finance-doctor-accounts.js",
@@ -11919,6 +11979,26 @@
       "tab": "reception_services",
       "article": "doctor-payout-approve",
       "text_sha256": "16acf166859302c040bd994ba6b0461be39ccdfa4ef5c86b2307136d17db4d5f"
+    },
+    {
+      "file": "reception-drawer.js",
+      "label": "دوّر",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "indicators",
+      "text_sha256": "5c0d8bc6e7d747e6bf4c8af607e98ce79b9c33142c950bec2087672ed840c829"
+    },
+    {
+      "file": "reception-drawer.js",
+      "label": "اكتب اللي عايزه… مثلاً: مصروف",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-drawer",
+      "text_sha256": "5b49034ab79315a3c229085217aee88b15d2120a5545b2823968582971d3a9a9"
     },
     {
       "file": "reception-follow-ups.js",

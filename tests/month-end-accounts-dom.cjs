@@ -48,7 +48,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  let ai=calls.find(c=>c[1]==='add_item')[2];assert.equal(ai.party,'tahera');assert.equal(ai.amount,4500);
  d.querySelector('[data-mea-card]').querySelector('[data-mea-dental]').click();await submit({ref:'زيارة 13',description:'زيركون',amount:'1350'});
  assert.equal(calls.filter(c=>c[1]==='add_item')[1][2].party,'dental_lab');assert.match(d.querySelector('[data-mea-card]').textContent,/رنين ركبة/);
- const fc=fs.readFileSync('assets/js/finance-cash.js','utf8');assert.match(fc,/\['month-end','حسابات آخر الشهر'\]/);assert.match(fc,/'requests','month-end',/);
+ const fc=fs.readFileSync('assets/js/finance-cash.js','utf8');assert.match(fc,/\['month-end','حسابات آخر الشهر'\]/);assert.match(fc,/items:\['requests',(?:'drawer-requests',)?'month-end',/);
  assert.match(fs.readFileSync('assets/js/accounting-shell.js','utf8'),/\['month-end','حسابات آخر الشهر'\]/);
  const html=fs.readFileSync('index.html','utf8');assert.ok(html.indexOf('reception-shift-expenses.js')<html.indexOf('month-end-accounts.js')&&html.indexOf('month-end-accounts.js')<html.indexOf('finance-cash.js?v='));
  console.log('PASS month-end accounts screens: FM rate, accountant details/void/settle (bank, wallet default for receivable), GM approve/reject, reception Tahera + dental entries, wiring.');
