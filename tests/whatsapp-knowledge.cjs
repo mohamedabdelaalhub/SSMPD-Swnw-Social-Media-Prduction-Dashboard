@@ -51,7 +51,7 @@ assert.match(legacy, /الخدمات: Hearing/);
   now += 30001; fail = false; assert.equal(await get(), 'complete facts');
 
   let promptRequests = [], websiteReads = 0;
-  const ai = load(['meta-comments/clinic-facts.ts', 'meta-comments/clinic-catalog.ts', 'whatsapp-webhook/reply-rules.ts', 'meta-comments/ai.ts'], {
+  const ai = load(['meta-comments/clinic-facts.ts', 'meta-comments/clinic-catalog.ts', 'whatsapp-webhook/reply-rules.ts', '_shared/llm.ts', 'meta-comments/ai.ts'], {
     Deno: { env: { get: () => 'test-key-not-a-real-secret' } },
     fetch: async (url, options) => {
       if (url.includes('published.json')) { websiteReads++; return Response.json(site); }
