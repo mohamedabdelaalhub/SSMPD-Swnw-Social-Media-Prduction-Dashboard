@@ -7781,6 +7781,32 @@
       "reviewed": true
     },
     {
+      "title": "دوّر",
+      "labels": [
+        "دوّر"
+      ],
+      "text": "اختر دور الموظف الذي ستعرض أو تعدل مستهدفاته وأوزان مؤشراته، وليس حساب شخص منفرد أو منح صلاحية جديدة.",
+      "article": "indicators",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب اسم المريض أو التليفون أو رقم الملف",
+      "labels": [
+        "اكتب اسم المريض أو التليفون أو رقم الملف"
+      ],
+      "text": "دوّر على المريض باسمه أو تليفونه أو رقم ملفه علشان تفتح زيارته وتصلّح اللي فيها.",
+      "article": "fix-visit",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "القسم",
       "labels": [
         "القسم"
@@ -23497,9 +23523,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2027,
-    "labels": 1471,
-    "files": 162,
-    "groups": 1595
+    "definitions": 2029,
+    "labels": 1472,
+    "files": 163,
+    "groups": 1597
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
