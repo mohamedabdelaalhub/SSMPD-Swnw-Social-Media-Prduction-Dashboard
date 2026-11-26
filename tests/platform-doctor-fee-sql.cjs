@@ -8,7 +8,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
  const ck=fs.readFileSync('supabase/migrations/20261124210000_auto_book_consult_only.sql','utf8').match(/create function clinic_reception\.consult_kind[\s\S]*?\n\$\$;/)[0];
  const W=id(),WT=id(),K=id(),F=id(),G=id(),AG=id(),PR=id(),ADM=id();
  try{await db.exec(`create role authenticated;create role anon;create schema clinic_finance;create schema clinic_reception;
-  create table admins(id uuid primary key);
+  create table admins(id uuid primary key);create table clinic_reception.providers(id uuid primary key,doctor_key text);
   create table clinic_finance.platform_audits(id uuid);
   create table clinic_finance.month_end_parties(key text primary key,percent numeric);
   insert into clinic_finance.month_end_parties values('vezeeta',25),('clinidu',25),('akshef',25),('kafaret',25),('lab',null),('tahera',30);
@@ -19,7 +19,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   create table clinic_reception.visits(id uuid primary key default gen_random_uuid(),appointment_id uuid,visit_no bigint generated always as identity);
   create table clinic_reception.doctor_agreements(id uuid primary key,rate numeric,deduct_material_cost boolean default false);
   create table clinic_reception.orders(id uuid primary key default gen_random_uuid(),workspace_id uuid,visit_id uuid,service_id uuid,status text default 'ordered',price numeric,quantity numeric default 1,discount numeric default 0,
-    net_revenue numeric,doctor_fee numeric default 0,agreement_id uuid,completed_at timestamptz,created_at timestamptz default now());
+    net_revenue numeric,doctor_fee numeric default 0,agreement_id uuid,provider_id uuid,completed_at timestamptz,created_at timestamptz default now());
   create table clinic_reception.journal(id uuid primary key default gen_random_uuid(),workspace_id uuid,source text,source_id uuid,description text,dimensions jsonb,unique(workspace_id,source,source_id));
   create table clinic_reception.journal_lines(entry_id uuid,account text,debit numeric,credit numeric);
   create function clinic_reception.event_post(p_workspace uuid,p_source text,p_id uuid,p_description text,p_debit text,p_credit text,p_amount numeric,p_dimensions jsonb default '{}') returns uuid language plpgsql as $f$declare v uuid;begin
@@ -37,12 +37,12 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
    dims:=jsonb_build_object('provider_id','${PR}','invoice_id',inv,'order_id',o.id);
    if fee>0 then perform clinic_reception.post(p_workspace,'doctor_fee',o.id,'استحقاق طبيب لخدمة منفذة','5111','2120',fee,dims);end if;
    update clinic_reception.orders set status='completed',completed_at=now(),doctor_fee=fee,net_revenue=net where id=o.id;return jsonb_build_object('fee',fee,'invoice',inv);end$f$;`+ck);
-  await q("insert into admins values($1)",[ADM]);await q("insert into clinic_reception.workspaces values($1,'live'),($2,'trial')",[W,WT]);
+  await q("insert into admins values($1)",[ADM]);await q("insert into clinic_reception.providers values($1,'dr1')",[PR]);await q("insert into clinic_reception.workspaces values($1,'live'),($2,'trial')",[W,WT]);
   await q("insert into clinic_reception.services values($1,'كشف الاستشاري'),($2,'متابعة باطنة'),($3,'رسم قلب')",[K,F,G]);
   await q("insert into clinic_reception.doctor_agreements values($1,50,false)",[AG]);
   const order=async(ws,src,svc,price,dk,extraSvc)=>{const a=await one("insert into clinic_reception.appointments(service_id,source,discount_kind) values($1,$2,$3) returning id",[svc,src,dk||null]);
     const v=await one("insert into clinic_reception.visits(appointment_id) values($1) returning id,visit_no",[a.id]);
-    const o=await one("insert into clinic_reception.orders(workspace_id,visit_id,service_id,price,agreement_id) values($1,$2,$3,$4,$5) returning id",[ws,v.id,extraSvc||svc,price,AG]);return o.id;};
+    const o=await one("insert into clinic_reception.orders(workspace_id,visit_id,service_id,price,agreement_id,provider_id) values($1,$2,$3,$4,$5,$6) returning id",[ws,v.id,extraSvc||svc,price,AG,PR]);return o.id;};
   const exec=async oid=>(await one("select clinic_reception.service_operation($1,'execute',$2,$3) r",[W,{order_id:oid},ADM])).r;
   // BEFORE: two completed live vezeeta کشف orders with the old fee (300), one already paid out with nothing left on 2120
   const old1=await order(W,'vezeeta',K,600),old2=await order(W,'kafaret',K,400),oldWalk=await order(W,'walk_in',K,600);
@@ -56,7 +56,8 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   await q("insert into clinic_reception.journal_lines values($1,'2120',$2,0),($1,'1111',0,$2)",[pj,bal]); // everything paid out → liability 0
   // apply
   await db.exec(fs.readFileSync(M,'utf8'));await assert.rejects(()=>db.exec(fs.readFileSync(M,'utf8')),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
-  const fix=(await q("select order_id,old_fee::float o,new_fee::float n,paid_out,receivable::float r,platform_cut::float c from clinic_finance.platform_fee_fixes order by visit_no")).rows;
+  const fix=(await q("select order_id,old_fee::float o,new_fee::float n,paid_out,receivable::float r,platform_cut::float c,service,performer from clinic_finance.platform_fee_fixes order by visit_no")).rows;
+  assert.deepEqual(fix.map(x=>[x.service,x.performer]),[['كشف الاستشاري','doctor'],['كشف الاستشاري','doctor']],'service name + performer kind recorded');
   assert.deepEqual(fix.map(x=>[x.o,x.n,x.c,x.paid_out]),[[300,225,150,false],[200,150,100,true]],'vezeeta 600 and kafaret 400 corrected; walk-in untouched');
   assert.equal(+(await one("select doctor_fee f from clinic_reception.orders where id=$1",[old1])).f,225);
   assert.equal(+(await one("select doctor_fee f from clinic_reception.orders where id=$1",[oldWalk])).f,300);

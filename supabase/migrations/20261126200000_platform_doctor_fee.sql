@@ -9,7 +9,9 @@
 --       fee := (net − platform_cut − included material if the agreement deducts it) × agreement rate.
 --     Revenue is unchanged: the invoice / 4110 stay at the patient's net (600), the platform's 25% is the 5233 expense posted when the
 --     period audit is approved (#899), so the centre keeps net − platform − doctor (600 − 150 − 225 = 225). Nothing is counted twice.
---   * Correction of LIVE orders completed since 2026-11-01 that fall in that scope (one time, at apply): the difference is reversed in the
+--   * Applies to EVERY performer (doctor, nursing / unit provider, any agreement) — the one fee line serves them all; the patient
+--     discount (خاص / staff / family / نقابة / «فيزيتا شامل») already comes off before the split (verified live: 195, 179).
+--   * Correction of ALL past LIVE completed orders in that scope (owner «صلح كل القديم بهذا المنطق», one time, at apply): the difference is reversed in the
 --     reception journal with the original fee's dimensions — Dr 2120 / Cr 5111 (source doctor_fee_platform, the order id); if the doctor
 --     was already paid more than his remaining balance, the excess becomes a receivable from the doctor exactly like doctor_credit_note
 --     (Dr 1194 / Cr 2120, source doctor_receivable_platform). orders.doctor_fee is set to the corrected fee; every row is kept in
@@ -52,26 +54,29 @@ do $$ begin
     $b$fee:=round(greatest(0,net-clinic_reception.platform_cut(o.id,net)-case when agreement.deduct_material_cost then included_cost else 0 end)*agreement.rate/100,2);$b$);
 end $$;
 
--- one-time correction of live platform visits completed since 2026-11-01
+-- one-time correction of ALL past live platform orders (any performer)
 create table clinic_finance.platform_fee_fixes (
-  order_id uuid primary key references clinic_reception.orders(id), workspace_id uuid not null, visit_no bigint, source text not null,
+  order_id uuid primary key references clinic_reception.orders(id), workspace_id uuid not null, visit_no bigint, source text not null, service text, performer text,
   net numeric(14,2) not null, platform_cut numeric(14,2) not null, rate numeric not null, old_fee numeric(14,2) not null, new_fee numeric(14,2) not null,
   paid_out boolean not null, receivable numeric(14,2) not null default 0, fixed_at timestamptz not null default now());
 alter table clinic_finance.platform_fee_fixes enable row level security;
 revoke all on clinic_finance.platform_fee_fixes from public, anon, authenticated;
 
 do $$
-declare r record; diff numeric; liability numeric; dims jsonb; paid boolean; recv numeric; n int := 0;
+declare r record; diff numeric; liability numeric; dims jsonb; paid boolean; recv numeric; n int := 0; t_old numeric := 0; t_new numeric := 0; t_recv numeric := 0; n_paid int := 0;
 begin
   for r in
-    select o.id, o.workspace_id, v.visit_no, a.source, o.doctor_fee old_fee, ag.rate, o.net_revenue,
+    select o.id, o.workspace_id, v.visit_no, a.source, o.doctor_fee old_fee, ag.rate, o.net_revenue, s.name service,
+           case when nullif(btrim(coalesce(p.doctor_key, '')), '') is null then 'unit' else 'doctor' end performer,
            coalesce(o.net_revenue, round(o.price * o.quantity * (1 - o.discount / 100), 2)) net
       from clinic_reception.orders o
       join clinic_reception.workspaces w on w.id = o.workspace_id and w.mode = 'live'
       join clinic_reception.visits v on v.id = o.visit_id
       join clinic_reception.appointments a on a.id = v.appointment_id
       join clinic_reception.doctor_agreements ag on ag.id = o.agreement_id
-     where o.status = 'completed' and o.doctor_fee > 0 and coalesce(o.completed_at, o.created_at) >= timestamptz '2026-11-01 00:00 Africa/Cairo'
+      join clinic_reception.services s on s.id = o.service_id
+      left join clinic_reception.providers p on p.id = o.provider_id
+     where o.status = 'completed' and o.doctor_fee > 0
        and clinic_reception.platform_cut(o.id, 1) > 0
      order by v.visit_no
   loop
@@ -88,13 +93,14 @@ begin
       perform clinic_reception.event_post(r.workspace_id, 'doctor_receivable_platform', r.id, 'مبلغ مستحق من الطبيب بعد تصحيح أتعاب سبق صرفها', '1194', '2120', recv, dims);
     end if;
     update clinic_reception.orders set doctor_fee = r.old_fee - diff where id = r.id;
-    insert into clinic_finance.platform_fee_fixes(order_id, workspace_id, visit_no, source, net, platform_cut, rate, old_fee, new_fee, paid_out, receivable)
-      values (r.id, r.workspace_id, r.visit_no, r.source, r.net, clinic_reception.platform_cut(r.id, r.net), r.rate, r.old_fee, r.old_fee - diff, paid, recv);
-    raise notice 'fee fix: visit % (%): net %, platform cut %, doctor rate %, fee % -> %, already paid out: %', r.visit_no, r.source, r.net,
-      clinic_reception.platform_cut(r.id, r.net), r.rate, r.old_fee, r.old_fee - diff, paid;
+    insert into clinic_finance.platform_fee_fixes(order_id, workspace_id, visit_no, source, service, performer, net, platform_cut, rate, old_fee, new_fee, paid_out, receivable)
+      values (r.id, r.workspace_id, r.visit_no, r.source, r.service, r.performer, r.net, clinic_reception.platform_cut(r.id, r.net), r.rate, r.old_fee, r.old_fee - diff, paid, recv);
+    raise notice 'fee fix: visit % — % (%, %): net %, platform cut %, rate %, fee % -> %, already paid out: %, owed back: %', r.visit_no, r.service, r.performer,
+      r.source, r.net, clinic_reception.platform_cut(r.id, r.net), r.rate, r.old_fee, r.old_fee - diff, paid, recv;
+    t_old := t_old + r.old_fee; t_new := t_new + r.old_fee - diff; t_recv := t_recv + recv; if paid then n_paid := n_paid + 1; end if;
     n := n + 1;
   end loop;
-  raise notice 'platform doctor-fee fixes: % order(s)', n;
+  raise notice 'platform fee fixes: % order(s), fees % -> % (returned %), % already paid out, owed back by performers %', n, t_old, t_new, t_old - t_new, n_paid, t_recv;
 end $$;
 
 commit;
