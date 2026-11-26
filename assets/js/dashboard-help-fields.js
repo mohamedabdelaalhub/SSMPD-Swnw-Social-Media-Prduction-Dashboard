@@ -6654,6 +6654,38 @@
       "reviewed": true
     },
     {
+      "title": "القرار على كل العقود المعلّقة",
+      "labels": [
+        "القرار على كل العقود المعلّقة"
+      ],
+      "text": "اختار اعتماد الكل أو رفض الكل على كل العقود المعلّقة اللي تقدر تراجعها (من غير عقودك إنت).",
+      "article": "doctor-contracts-layout",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "مراجعة "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "سبب القرار (مطلوب للرفض)",
+      "labels": [
+        "سبب القرار (مطلوب للرفض)"
+      ],
+      "text": "اكتب سبب القرار على كل العقود المعلّقة. لو الرفض، السبب إجباري. بيتسجّل مع القرار.",
+      "article": "doctor-contracts-layout",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "مراجعة "
+      ],
+      "reviewed": true
+    },
+    {
       "title": "القرار على كل العقود المعلّقة لهذا الطبيب",
       "labels": [
         "القرار على كل العقود المعلّقة لهذا الطبيب"
@@ -23735,9 +23767,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2043,
-    "labels": 1482,
+    "definitions": 2045,
+    "labels": 1484,
     "files": 166,
-    "groups": 1613
+    "groups": 1615
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

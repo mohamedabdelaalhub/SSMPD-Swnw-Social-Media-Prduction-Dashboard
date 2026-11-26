@@ -1217,6 +1217,8 @@ frule('hr-mission.js','إلى يوم','آخر يوم في المهمة الخا�
 frule('hr-mission.js','إلى الساعة','ساعة نهاية المهمة لما تختار «ساعات». بعدها الموظف يرجع يظهر زي أي موظف عادي.','hr-external-mission')
 frule('hr-mission.js','الملاحظة / السبب','سبب المهمة أو تفاصيلها (3 حروف على الأقل). بتظهر للي بيراجع الطلب.','hr-external-mission')
 frule('hr-mission.js','المدة بالدقايق','مدة الطريق بالدقايق (من 1 لـ 720). بتتحسب جوه الوردية بس، ومش وقت إضافي، والمدير بيراجعها.','hr-external-mission')
+frule('finance-doctors.js','القرار على كل العقود المعلّقة','اختار اعتماد الكل أو رفض الكل على كل العقود المعلّقة اللي تقدر تراجعها (من غير عقودك إنت).','doctor-contracts-layout')
+frule('finance-doctors.js','سبب القرار (مطلوب للرفض)','اكتب سبب القرار على كل العقود المعلّقة. لو الرفض، السبب إجباري. بيتسجّل مع القرار.','doctor-contracts-layout')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'

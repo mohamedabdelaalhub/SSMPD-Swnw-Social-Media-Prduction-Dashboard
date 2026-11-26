@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2043,
-    "labels": 1482,
+    "definitions": 2045,
+    "labels": 1484,
     "files": 166,
-    "groups": 1613
+    "groups": 1615
   },
   "fields": [
     {
@@ -5776,6 +5776,30 @@
       "tab": "accounting",
       "article": "payroll",
       "text_sha256": "669c60e3e98e88413748b15f4bfe6ce2a8b41879ff5cec62d3c16c111a806140"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "القرار على كل العقود المعلّقة",
+      "name": "approval",
+      "kind": "helper",
+      "forms": [
+        "مراجعة "
+      ],
+      "tab": "accounting",
+      "article": "doctor-contracts-layout",
+      "text_sha256": "90e904651c1c6681fcb83f67620c97cb22b7c0c3992167ff168b5a221ffe61a8"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "سبب القرار (مطلوب للرفض)",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة "
+      ],
+      "tab": "accounting",
+      "article": "doctor-contracts-layout",
+      "text_sha256": "a413342fa010ed8abd57f30064c3ad0336915841316ef67a3c2393c5d3010b78"
     },
     {
       "file": "finance-doctors.js",
