@@ -36,10 +36,28 @@
       box.querySelector('[data-cc-anyway]').onclick = function () { var r = box.querySelector('[data-cc-reason]').value.trim(); box.remove(); resolve({ reason: r }); };
     });
   }
+  /* «امنع تكرار العد» (20261126020000): the count is exactly the cashier's previous shift count → «عدّيت فعلًا؟» */
+  function repeated(at) {
+    return new Promise(function (resolve) {
+      var when = at ? new Date(at) : null, day = when && !isNaN(when) ? when.toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'long' }) : '';
+      var box = dialog('العد ده هو هو عد الوردية اللي فاتت', '<div class="cc-alert"><b>الأرقام اللي كتبتها هي هي بالظبط عدّ ورديتك اللي فاتت' + (day ? ' (' + esc(day) + ')' : '') + '.</b><span>ممكن المتصفح يكون كتبها لوحده، أو العد اتكرر. عدّ الفلوس اللي في الدرج دلوقتي فئة فئة.</span></div>' +
+        '<div class="cc-actions"><button type="button" class="btn btn-primary" data-cc-recount>هعدّ تاني</button><button type="button" class="btn ghost" data-cc-same>عدّيت فعلًا النهارده — نفس الأرقام</button></div>');
+      box.querySelector('[data-cc-recount]').onclick = function () { box.remove(); resolve(false); };
+      box.querySelector('[data-cc-same]').onclick = function () { box.remove(); resolve(true); };
+    });
+  }
   function gate(shiftId, counts, note) {
     note = note || '';
     return review(counts).then(function (ok) {
       if (!ok) throw new Error('رجعت تعدّل العد — صلّح الأرقام ودوس حفظ تاني.');
+      return rpc('clinic_finance_count_repeat', { p_shift: shiftId, p_counts: counts }).then(function (x) {
+        if (!x || !x.same) return;
+        return repeated(x.last_at).then(function (yes) {
+          if (!yes) throw new Error('عدّ الفلوس تاني وعدّل الأرقام، وبعدين دوس حفظ.');
+          note = (note ? note + ' — ' : '') + 'نفس عدّ الوردية اللي فاتت بالظبط — الكاشير أكّد إنه عدّ فعلي';
+        });
+      }, function () { return null; });
+    }).then(function () {
       return rpc('clinic_finance_count_check', { p_action: 'check', p_payload: { shift_id: shiftId, counts: counts } }).then(function (r) {
         if (!r || !r.enabled || r.limit || r.match) return note;
         return mismatch(Number(r.left)).then(function (x) {

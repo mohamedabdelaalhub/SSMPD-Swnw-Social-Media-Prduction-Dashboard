@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — ربح كل خدمة بعد المستلزمات</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}.sub{color:#5B6676;margin:0}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
+.card h2{margin:0;font-size:17px}.card h2 small{display:block;color:#5B6676;font-weight:400;font-size:12px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.bar b{border:1px solid #C5CDDB;border-radius:999px;padding:6px 14px;font-size:13px;background:#fff;font-weight:400}.bar b.on{background:#0F369D;color:#fff;border-color:#0F369D}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.kpi{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:16px;display:grid;gap:4px}
+.kpi b{font-size:22px;direction:ltr;unicode-bidi:isolate;text-align:right}.kpi span{color:#5B6676;font-size:13px}
+.kpi.bad b{color:#D0402A}.kpi.warn b{color:#F15A22}.kpi.ok b{color:#2F7D5C}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:9px 8px;border-bottom:1px solid #EEF1F6;vertical-align:middle}th{color:#5B6676;font-weight:400;white-space:nowrap}
+.num{direction:ltr;unicode-bidi:isolate;white-space:nowrap}.neg{color:#D0402A;font-weight:700}.pos{color:#2F7D5C}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.st.ok{background:#E6F4EC;color:#2F7D5C}.st.bad{background:#FDECEA;color:#D0402A}.st.warn{background:#FFF1E8;color:#F15A22}
+tr.hl td{background:#FFF8F6}
+.drill td{background:#F7F9FC;font-size:12px}
+.note{font-size:12px;color:#5B6676;margin:0}
+.q{background:#fff;border:1px dashed #F15A22;border-radius:16px;padding:16px 18px;font-size:13px;display:grid;gap:4px}
+@media (max-width:760px){.wrap{padding:14px}.kpis{grid-template-columns:1fr 1fr}table{display:block;overflow-x:auto}th,td{white-space:nowrap}}
+</style></head><body><div class="wrap">
+<div><span class="tag">تصور — مش متنفذ · الأرقام للتوضيح</span><h1>ربح كل خدمة بعد المستلزمات</h1>
+<p class="sub">الحسابات ← «التقارير والرقابة» ← «ربح كل خدمة». لكل خدمة: اتعملت كام مرة، دخلت كام، المستلزمات اللي داخلة في سعرها كلّفت كام فعلاً (من «استهلاك أمس»)، وفاضل كام. الأرقام من 24-11-2026 (بداية رصيد المخزن).</p></div>
+
+<div class="card">
+ <div class="bar"><span>الفترة:</span><b>النهارده</b><b>أمس</b><b class="on">من أول الشهر</b><b>فترة تانية…</b><span style="margin-inline-start:16px">القسم:</span><b class="on">الكل</b><b>أسنان</b><b>تمريض</b><b>عيادات</b></div>
+</div>
+
+<div class="kpis">
+ <div class="kpi"><b>39,600</b><span>إيراد الخدمات (بعد الخصم)</span></div>
+ <div class="kpi"><b>2,946</b><span>تكلفة المستلزمات الداخلة في السعر</span></div>
+ <div class="kpi bad"><b>2</b><span>خدمات سعرها أقل من مستلزماتها</span></div>
+ <div class="kpi warn"><b>12</b><span>زيارات من غير استهلاك متسجل («ناقص»)</span></div>
+</div>
+
+<section class="card">
+ <h2>1) كل خدمة<small>مرتّبة من الأقل هامش — دوس على الخدمة يفتح المستلزمات اللي اتصرفت عليها</small></h2>
+ <table><thead><tr><th>الخدمة</th><th>عدد المرات</th><th>الإيراد</th><th>مستلزمات فعلي</th><th>للزيارة</th><th>المفروض (من التسعير)</th><th>الهامش بعد المستلزمات</th><th>%</th><th>الحالة</th></tr></thead><tbody>
+  <tr class="hl"><td>تركيب محلول غير شامل المستلزمات</td><td class="num">6</td><td class="num">600</td><td class="num">714</td><td class="num">119</td><td class="num">95</td><td class="num neg">−114</td><td class="num neg">−19%</td><td><span class="st bad">السعر أقل من المستلزمات</span></td></tr>
+  <tr class="drill"><td colspan="9">فتيلة (قطن، كحول، جلافز) 6 × 14 = 84 · كانيولا 6 × 35 = 210 · سِت محلول 6 × 70 = 420 — المفروض حسب التسعير 95 للزيارة، الفعلي 119</td></tr>
+  <tr class="hl"><td>غيار جرح عادي مع التمريض</td><td class="num">4</td><td class="num">400</td><td class="num">436</td><td class="num">109</td><td class="num">60</td><td class="num neg">−36</td><td class="num neg">−9%</td><td><span class="st bad">السعر أقل من المستلزمات</span></td></tr>
+  <tr><td>حشو عصب (أسنان)</td><td class="num">5</td><td class="num">7,500</td><td class="num">1,240</td><td class="num">248</td><td class="num">230</td><td class="num pos">6,260</td><td class="num">83%</td><td><span class="st ok">تمام</span></td></tr>
+  <tr><td>حقنة عضل شاملة المستلزمات</td><td class="num">22</td><td class="num">1,100</td><td class="num">286</td><td class="num">13</td><td class="num">12</td><td class="num pos">814</td><td class="num">74%</td><td><span class="st ok">تمام</span></td></tr>
+  <tr><td>كشف أسنان</td><td class="num">18</td><td class="num">3,600</td><td class="num">270</td><td class="num">18</td><td class="num">15</td><td class="num pos">3,330</td><td class="num">93%</td><td><span class="st warn">ناقص: 3 زيارات من غير استهلاك</span></td></tr>
+  <tr><td>غسيل الأذنين</td><td class="num">9</td><td class="num">1,800</td><td class="num">0</td><td class="num">—</td><td class="num">25</td><td class="num">1,800</td><td class="num">100%</td><td><span class="st warn">ناقص: مفيش استهلاك متسجل خالص</span></td></tr>
+  <tr><td>كشف استشاري</td><td class="num">41</td><td class="num">24,600</td><td class="num">0</td><td class="num">—</td><td class="num">0</td><td class="num pos">24,600</td><td class="num">100%</td><td><span class="st ok">مالهاش مستلزمات</span></td></tr>
+ </tbody></table>
+ <p class="note">«الإيراد» = اللي اتحصّل على الخدمة نفسها بعد الخصم (من غير المستلزمات اللي اتباعت للمريض لوحدها). «مستلزمات فعلي» = المستلزمات الداخلة في السعر (كل مستلزمات الأسنان + الفتيلة) بتكلفة المخزن. «المفروض» = اللي في تسعير الخدمة (قايمة مستلزماتها) — لو الفعلي أعلى بكتير يبقى فيه صرف زيادة أو التسعير محتاج يتراجع.</p>
+</section>
+
+<section class="card">
+ <h2>2) المستلزمات اللي بتتباع للمريض<small>الأدوية وباقي مستلزمات التمريض — بتتحاسب لوحدها، فليها إيراد وتكلفة لوحدها</small></h2>
+ <table><thead><tr><th>الصنف</th><th>الكمية</th><th>اتباعت بـ</th><th>التكلفة</th><th>الربح</th><th>%</th></tr></thead><tbody>
+  <tr><td>أدوية (كل الأصناف)</td><td class="num">64</td><td class="num">2,880</td><td class="num">1,950</td><td class="num pos">930</td><td class="num">32%</td></tr>
+  <tr><td>مستلزمات تمريض بتتحاسب</td><td class="num">31</td><td class="num">1,240</td><td class="num">905</td><td class="num pos">335</td><td class="num">27%</td></tr>
+ </tbody></table>
+</section>
+
+<div class="q"><b>محتاجين قرارك:</b><span>1) الهامش يتحسب بعد المستلزمات بس (زي ما طلبت)، ولا نضيف عمود تاني «بعد أتعاب الدكتور» عشان تشوف اللي فاضل للمركز فعلاً؟</span><span>2) مين يشوف التقرير ده: انت والمدير المالي بس، ولا المحاسب كمان؟</span></div>
+</div></body></html>

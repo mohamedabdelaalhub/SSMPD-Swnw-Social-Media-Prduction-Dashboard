@@ -26,10 +26,19 @@ function spendModal(c,s,done){var left=Math.max(0,(+s.allowance||0)-(+s.spent||0
   '<fieldset class="rse-items" data-wide><legend>البند</legend>'+(s.items||[]).map(function(it,i){return '<label class="rse-chip"><input type="radio" name="item" value="'+esc(it.key)+'"'+(i===0?' required':'')+'> '+esc(it.label)+'</label>';}).join('')+'</fieldset>'+
   c.field('amount','المبلغ (جنيه)','number','','required min="1" max="'+lim+'" step="0.01" inputmode="decimal"')+c.field('vendor','اشتريت من مين / المورد','text','','maxlength="120"')+
   '<label data-wide>السبب / التفاصيل<input name="reason" required minlength="3" maxlength="300" placeholder="مثلاً: ٢ كرتونة مناديل + صابون للحمام"></label>'+
-  '<label data-wide class="rse-up">📷 صورة الفاتورة أو الإيصال (إجباري)<input type="file" name="receipt" accept="image/*,application/pdf" capture="environment" required></label>'+
+  '<label data-wide class="rse-up" data-rse-up>📷 صورة الفاتورة أو الإيصال (إجباري)<input type="file" name="receipt" accept="image/*,application/pdf" capture="environment" required></label>'+
+  '<p class="rse-note" data-wide data-rse-noreceipt hidden>البند ده من غير إيصال — اكتب في السبب لمين وليه (٥ حروف على الأقل)، والحسابات بتراجعه.</p>'+
   '<p class="rse-note" data-wide>المبلغ بيتخصم من نقدية ورديتك على طول، والحسابات بتراجعه بالإيصال. لو المبلغ أكبر من المسموح، اطلبه من الحسابات.</p>';
- return c.modal('صرف من مصروفات الوردية',body,async function(v,key){var amt=+v.amount;if(!(amt>0))throw new Error('اكتب المبلغ');if(amt>lim)throw new Error('المبلغ أكبر من المسموح ('+money(lim)+' جنيه) — اطلبه من الحسابات');
-   var path=await upload(v.receipt);return rpc('spend',{shift_id:s.shift_id,item:v.item,amount:amt,vendor:v.vendor||'',reason:v.reason,receipt_path:path,token:key});},function(r){toast('اتصرف '+money(r&&r.amount)+' جنيه من مصروفات الوردية');if(done)done();});}
+ var m=c.modal('صرف من مصروفات الوردية',body,async function(v,key){var amt=+v.amount;if(!(amt>0))throw new Error('اكتب المبلغ');if(amt>lim)throw new Error('المبلغ أكبر من المسموح ('+money(lim)+' جنيه) — اطلبه من الحسابات');
+   var it=(s.items||[]).filter(function(x){return x.key===v.item;})[0],nr=!!(it&&it.no_receipt);
+   if(nr&&String(v.reason||'').trim().length<5)throw new Error('اكتب سبب الإكرامية بالتفصيل (لمين وليه)');
+   var path=nr?'':await upload(v.receipt);return rpc('spend',{shift_id:s.shift_id,item:v.item,amount:amt,vendor:v.vendor||'',reason:v.reason,receipt_path:path,token:key});},function(r){toast('اتصرف '+money(r&&r.amount)+' جنيه من مصروفات الوردية');if(done)done();});
+ /* «إكراميات» (no_receipt): no photo field; the reason is the evidence */
+ var f=(m&&m.querySelector&&m.querySelector('form'))||d.querySelector('.rx-modal form');
+ if(f&&f.querySelector('[data-rse-up]')){var sync=function(){var k=(f.querySelector('input[name=item]:checked')||{}).value,it=(s.items||[]).filter(function(x){return x.key===k;})[0],nr=!!(it&&it.no_receipt);
+   var up=f.querySelector('[data-rse-up]'),inp=up.querySelector('input');up.hidden=nr;up.style.display=nr?'none':'';inp.required=!nr;inp.disabled=nr;f.querySelector('[data-rse-noreceipt]').hidden=!nr;};
+  f.addEventListener('change',sync);sync();}
+ return m;}
 function decorate(c,section){if(!c||!c.host||!c.data||!c.data.workspace||c.data.workspace.mode!=='live')return;if(section&&section!=='operations'&&section!=='appointments')return;
  var host=c.host;if(host.querySelector('[data-rse]'))return;
  rpc('status',{}).then(function(s){if(!s||!s.open||!(+s.allowance>0)||!host.isConnected||host.querySelector('[data-rse]'))return;
@@ -46,7 +55,7 @@ function panelHtml(x){var can=!!x.can_review,list=(x.expenses||[]).filter(functi
   '<div class="rse-tw"><table class="rse-t"><thead><tr><th>الوقت</th><th>الخزنة / مين</th><th>البند والسبب</th><th>المبلغ</th><th>الإيصال</th><th>المراجعة</th></tr></thead><tbody>'+
   (list.length?list.map(function(e){var st=e.post_review==='ok'?'<span class="rse-ok">اتراجع'+(e.reviewed_by?' — '+esc(e.reviewed_by):'')+'</span>':e.post_review==='rejected'?'<span class="rse-bad">مرفوض — '+esc(e.review_note||'')+'</span>':
      (can&&!e.own?'<button type="button" class="btn" data-rse-ok="'+esc(e.id)+'">اتراجع ✓</button> <button type="button" class="btn" data-rse-no="'+esc(e.id)+'">رفض</button>':'<span>مستني مراجعة</span>');
-    return '<tr><td dir="ltr">'+esc(dt(e.at))+'</td><td>'+esc(e.register)+'<br><small>'+esc(e.by||'')+'</small></td><td>'+esc(e.reason)+(e.vendor?'<br><small>'+esc(e.vendor)+'</small>':'')+'</td><td dir="ltr">'+money(e.amount)+'</td><td><button type="button" class="btn" data-rse-file="'+esc(e.receipt)+'">عرض</button></td><td>'+st+'</td></tr>';}).join(''):'<tr><td colspan="6">مفيش مصروفات في الفترة دي</td></tr>')+'</tbody></table></div>'+
+    return '<tr><td dir="ltr">'+esc(dt(e.at))+'</td><td>'+esc(e.register)+'<br><small>'+esc(e.by||'')+'</small></td><td>'+esc(e.reason)+(e.vendor?'<br><small>'+esc(e.vendor)+'</small>':'')+'</td><td dir="ltr">'+money(e.amount)+'</td><td>'+(e.receipt&&e.receipt!=='no-receipt'?'<button type="button" class="btn" data-rse-file="'+esc(e.receipt)+'">عرض</button>':'<small>من غير إيصال</small>')+'</td><td>'+st+'</td></tr>';}).join(''):'<tr><td colspan="6">مفيش مصروفات في الفترة دي</td></tr>')+'</tbody></table></div>'+
   (can?'<h4>هامش مصروفات الوردية لكل خزنة</h4><div class="rse-tw"><table class="rse-t"><thead><tr><th>الخزنة</th><th>هامش الوردية</th><th>حد المصروف الواحد</th><th></th></tr></thead><tbody>'+(x.registers||[]).filter(function(r){return r.kind!=='main';}).map(function(r){
     return '<tr><td>'+esc(r.name)+'</td><td dir="ltr">'+money(r.allowance)+'</td><td dir="ltr">'+money(r.max)+'</td><td><button type="button" class="btn" data-rse-lim="'+esc(r.id)+'" data-a="'+esc(r.allowance)+'" data-m="'+esc(r.max)+'">تعديل</button></td></tr>';}).join('')+'</tbody></table></div><p class="rse-note">صفر = مصروفات الوردية مقفولة للخزنة دي.</p>':'');}
 function load(box){box.setAttribute('aria-busy','true');return rpc('list',{from:state.from,to:state.to}).then(function(x){box.removeAttribute('aria-busy');box.innerHTML=panelHtml(x||{});wire(box,x||{});})
