@@ -70,3 +70,10 @@
 .fc-da-more[open]{display:grid}
 .fc-st-eq{background:#F3F6FB;border-radius:12px;padding:8px 12px}
 .fc-st-warn{background:#FFF6EC;border:1px solid #FBD9B4;color:#9A4E00;border-radius:12px;padding:10px 14px;font-size:13.5px;font-weight:600;margin:10px 0}
+/* help 284 — payroll & advances */
+.fc-pr{grid-template-columns:minmax(0,1.4fr) 140px 140px 0 220px}.fc-pr[hidden]{display:none}
+.fc-pr .fc-ho-m small{font-weight:400}
+.fc-pr-need{border:1px solid #F6C9B6;background:#FFF8F4;border-radius:14px;padding:10px 12px;margin:0 0 14px}.fc-pr-need h4{margin:0 0 6px;color:#B23B12}
+.fc-pr-need .fc-ho{border-bottom-color:#F6DCCF}
+.fc-pr-more{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#F3F6FB;border-radius:12px;padding:8px 12px;font-size:13px;color:#475467;margin:-6px 0 14px}
+@media(max-width:760px){.fc-pr{grid-template-columns:repeat(2,minmax(0,1fr))}.fc-pr .fc-ho-w,.fc-pr .fc-ho-s{grid-column:1/-1}}
