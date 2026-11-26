@@ -8478,12 +8478,51 @@
       "reviewed": true
     },
     {
+      "title": "من يوم",
+      "labels": [
+        "من يوم"
+      ],
+      "text": "أول يوم في المهمة الخارجية. لو المهمة يوم واحد خلّي «إلى يوم» نفس اليوم.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "إلى يوم",
+      "labels": [
+        "إلى يوم"
+      ],
+      "text": "آخر يوم في المهمة الخارجية (لحد 31 يوم). نفس الفترة بتتطبق على كل الأيام.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "من الساعة",
       "labels": [
         "من الساعة"
       ],
       "text": "حدد بداية أو نهاية الفترة وفق المواعيد المقصودة. عند تجهيز تصميم مواعيد راجعها مع الجدول، فهي لا تعدل جدول الحجز تلقائيًا.",
       "article": "design-guide",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "إلى الساعة",
+      "labels": [
+        "إلى الساعة"
+      ],
+      "text": "ساعة نهاية المهمة لما تختار «ساعات». بعدها الموظف يرجع يظهر زي أي موظف عادي.",
+      "article": "hr-external-mission",
       "tabs": [
         "human_resources"
       ],
@@ -8501,6 +8540,34 @@
         "human_resources"
       ],
       "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الملاحظة / السبب",
+      "labels": [
+        "الملاحظة / السبب"
+      ],
+      "text": "سبب المهمة أو تفاصيلها (3 حروف على الأقل). بتظهر للي بيراجع الطلب.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المدة بالدقايق",
+      "labels": [
+        "المدة بالدقايق"
+      ],
+      "text": "مدة الطريق بالدقايق (من 1 لـ 720). بتتحسب جوه الوردية بس، ومش وقت إضافي، والمدير بيراجعها.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [
+        "ساعات الطريق"
+      ],
       "reviewed": true
     },
     {
@@ -23554,6 +23621,6 @@
     "definitions": 2036,
     "labels": 1474,
     "files": 163,
-    "groups": 1599
+    "groups": 1604
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
