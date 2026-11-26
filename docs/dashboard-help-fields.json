@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2018,
-    "labels": 1464,
-    "files": 160,
-    "groups": 1585
+    "definitions": 2019,
+    "labels": 1465,
+    "files": 161,
+    "groups": 1586
   },
   "fields": [
     {
@@ -10431,6 +10431,16 @@
       "tab": "production",
       "article": "patient-records",
       "text_sha256": "a21ad9d28e2191e6557244226e39fd526699de2cecda568291a4f8dceb372f43"
+    },
+    {
+      "file": "month-end-accounts.js",
+      "label": "شهر الحسابات",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "month-end-accounts",
+      "text_sha256": "a9253f7f65835cb24e2ff477add1e1b104449f86578657c743c6a485411ef676"
     },
     {
       "file": "my-contract.js",

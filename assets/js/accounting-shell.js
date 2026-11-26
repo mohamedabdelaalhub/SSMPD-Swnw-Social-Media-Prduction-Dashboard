@@ -9,7 +9,7 @@ var I={shifts:'<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12
 var GROUPS=[
  {id:'home',name:'',c:'#0F369D',t:'#E8EEFB',items:[['overview','نظرة عامة']]},
  {id:'cash',name:'الخزينة اليومية',c:'#2563EB',t:'#E5ECFD',items:[['shifts','الخزائن والورديات'],['invoices','الخدمات والفواتير'],['payments','التحصيل'],['advances','مقدمات الحجز']]},
- {id:'dues',name:'الصرف والمستحقات',c:'#D4087F',t:'#FBE6F2',items:[['requests','طلبات الصرف'],['doctor-accounts','حساب الأطباء'],['doctors','عقود الأطباء'],['suppliers','الموردين'],['payroll','المرتبات والسلف'],['staff-insurance','سداد التأمينات'],['staff-tax','ضريبة المرتبات'],['staff-settlement','مخالصات الموظفين']]},
+ {id:'dues',name:'الصرف والمستحقات',c:'#D4087F',t:'#FBE6F2',items:[['requests','طلبات الصرف'],['month-end','حسابات آخر الشهر'],['doctor-accounts','حساب الأطباء'],['doctors','عقود الأطباء'],['suppliers','الموردين'],['payroll','المرتبات والسلف'],['staff-insurance','سداد التأمينات'],['staff-tax','ضريبة المرتبات'],['staff-settlement','مخالصات الموظفين']]},
  {id:'review',name:'المراجعة والتسويات',c:'#09A0BE',t:'#E1F4F7',items:[['bank','البنك والبطاقات'],['insurance','التأمين'],['cases','فروق الخزينة'],['shift-expenses','مصروفات الورديات']]},
  {id:'accounting',name:'المحاسبة',c:'#6600FF',t:'#EFE5FF',items:[['ledger','القيود وميزان المراجعة'],['manual','الأرصدة والتصحيحات'],['chart','الشجرة المحاسبية'],['assets','الأصول والإهلاك'],['taxes','الضرائب']]},
  {id:'reports',name:'التقارير',c:'#2F7D5C',t:'#E7F3EE',items:[['reports','القوائم المالية'],['masa-payments','تحصيل ماسا'],['masa-net','صافي القديم (ماسا)'],['audit','سجل المراجعة']]},
