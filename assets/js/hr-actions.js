@@ -30,6 +30,7 @@
   var current = null;
   var ACTIONS = [
     ['الورديات والحضور', [
+      ['mission', 'في مهمة خارجية', 'من وإلى ومكان وملاحظة', '🚗', function (p) { if (w.SSMPDHRMission) w.SSMPDHRMission.form(p); else toast('المهمة الخارجية غير متاحة'); }],
       ['sched', 'تعديل جدول الورديات', 'الأيام ونوع الوردية', '🗓', function (p) { if (w.SSMPDHRShifts && w.SSMPDHRShifts.editPerson) w.SSMPDHRShifts.editPerson(p.id).catch(function (e) { toast((e && e.message) || 'تعذر فتح الجدول'); }); else toast('الورديات مش متاحة'); }],
       ['swap', 'تبديل وردية', 'طلبات التبديل في الورديات', '⇄', function () { if (!hrOpen('presence')) return; after(function () { var t = d.querySelector('[data-att-tab="shifts"]'); if (t) t.click(); }); }],
       ['attend', 'تسجيل وردية وحضور', 'يدوي بعد المراجعة', '⏱', function (p) { if (!hrOpen('attendance')) return; after(function () { var box = d.querySelector('[data-hr-section="attendance"]'), sel = box && box.querySelector('[name=person_for_attendance]'), b = box && box.querySelector('[data-wp="attendance"]'); if (sel) sel.value = p.id; if (b) { b.dataset.id = p.id; b.click(); } }); }],

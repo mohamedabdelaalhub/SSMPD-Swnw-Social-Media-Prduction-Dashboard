@@ -1,0 +1,9 @@
+.hmi-body{display:grid;gap:8px;padding:4px 2px;max-height:70dvh;overflow:auto}.hmi-body h3{font-size:14px;margin:8px 0 0}
+.hmi-card{border:1px solid #D5DEEE;border-radius:12px;padding:10px;display:grid;gap:4px;min-width:0}.hmi-card small{color:#5b6b82}
+.hmi-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hmi-chip{border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;background:#EDE9FE;color:#5B3FB5}
+.hmi-chip.pending{background:#FFF4EE;color:#F15A22}.hmi-chip.rejected{background:#FDECE8;color:#D0402A}.hmi-chip.cancelled{background:#EEF1F6;color:#6B7688}.hmi-chip.approved{background:#E6F3EC;color:#2F7D5C}
+.hmi-b{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.hmi-b .btn{min-height:44px}
+.hmi-tr{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:#F1F4F8;border-radius:8px;padding:6px 10px;font-size:13px}
+.hmi-note{font-size:12px;color:#5b6b82;background:#F1F4F8;border-radius:8px;padding:6px 10px}.hmi-hours{display:contents}.hmi-hours[hidden]{display:none}
+.hmi-entry{margin-top:8px}

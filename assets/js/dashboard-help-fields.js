@@ -8491,6 +8491,127 @@
       "reviewed": true
     },
     {
+      "title": "المدة",
+      "labels": [
+        "المدة"
+      ],
+      "text": "اكتب مدة الجلسة أو الاستخدام المقصود بوحدة الحقل، مع التمييز بينها وبين فترة العلاج الكاملة أو فاصل تكرار الجرعة.",
+      "article": "patient-records",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "من يوم",
+      "labels": [
+        "من يوم"
+      ],
+      "text": "أول يوم في المهمة الخارجية. لو المهمة يوم واحد خلّي «إلى يوم» نفس اليوم.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "إلى يوم",
+      "labels": [
+        "إلى يوم"
+      ],
+      "text": "آخر يوم في المهمة الخارجية (لحد 31 يوم). نفس الفترة بتتطبق على كل الأيام.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "من الساعة",
+      "labels": [
+        "من الساعة"
+      ],
+      "text": "حدد بداية أو نهاية الفترة وفق المواعيد المقصودة. عند تجهيز تصميم مواعيد راجعها مع الجدول، فهي لا تعدل جدول الحجز تلقائيًا.",
+      "article": "design-guide",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "إلى الساعة",
+      "labels": [
+        "إلى الساعة"
+      ],
+      "text": "ساعة نهاية المهمة لما تختار «ساعات». بعدها الموظف يرجع يظهر زي أي موظف عادي.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المكان",
+      "labels": [
+        "المكان"
+      ],
+      "text": "اختر مكان حفظ الكمية المقصودة، أو اكتب اسمًا يميز المخزن عند إنشائه. الأرصدة والجرد والحركات تُراجع على المكان المحدد.",
+      "article": "inventory-count",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الملاحظة / السبب",
+      "labels": [
+        "الملاحظة / السبب"
+      ],
+      "text": "سبب المهمة أو تفاصيلها (3 حروف على الأقل). بتظهر للي بيراجع الطلب.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المدة بالدقايق",
+      "labels": [
+        "المدة بالدقايق"
+      ],
+      "text": "مدة الطريق بالدقايق (من 1 لـ 720). بتتحسب جوه الوردية بس، ومش وقت إضافي، والمدير بيراجعها.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [
+        "ساعات الطريق"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة (اختياري)",
+      "labels": [
+        "ملاحظة (اختياري)"
+      ],
+      "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
+      "article": "personal",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [
+        "ساعات الطريق"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "الموظف",
       "labels": [
         "الموظف"
@@ -23601,9 +23722,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2033,
-    "labels": 1478,
-    "files": 165,
-    "groups": 1603
+    "definitions": 2042,
+    "labels": 1481,
+    "files": 166,
+    "groups": 1612
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

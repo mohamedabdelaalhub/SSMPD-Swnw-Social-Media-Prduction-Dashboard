@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2033,
-    "labels": 1478,
-    "files": 165,
-    "groups": 1603
+    "definitions": 2042,
+    "labels": 1481,
+    "files": 166,
+    "groups": 1612
   },
   "fields": [
     {
@@ -7485,6 +7485,100 @@
       "tab": "human_resources",
       "article": "job-catalog",
       "text_sha256": "4fc2fd9821d9aebd776f0340a9ed8d3c75c6d6c7c762deb3e20664c9c037f42b"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "المدة",
+      "name": "mode",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "patient-records",
+      "text_sha256": "375a5dc7452535eef90388f4d91c30991080165a34daf4474495ca5d4491c8a1"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "من يوم",
+      "name": "from_date",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-external-mission",
+      "text_sha256": "43d17a6a3a20617926bf44dea3f551fab9bbff1b624cd4f3e8313e3086ca665b"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "إلى يوم",
+      "name": "to_date",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-external-mission",
+      "text_sha256": "462bc3a54341e73eccaa1831e1892e6cd1f721f7a7a024264da4eebfbadbfbfc"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "من الساعة",
+      "name": "from_time",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "design-guide",
+      "text_sha256": "eec768dae27bf2de3693d2d37ba93ae01c2648aaf8c5e7b69afdb717e662d0c0"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "إلى الساعة",
+      "name": "to_time",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-external-mission",
+      "text_sha256": "d986a4f3727db5028c8525170c3c50efbb155c14705437817f59fbfaf0157c13"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "المكان",
+      "name": "place",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "inventory-count",
+      "text_sha256": "e122379738ad3d6afb3e24b51be69e2a0279dc6d4ec7ce5089532ae9d80bf4ad"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "الملاحظة / السبب",
+      "name": "note",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-external-mission",
+      "text_sha256": "a8a2236d14eeba914c46c0d8996839891f24e90118863d172e85bd995ea5c9e6"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "المدة بالدقايق",
+      "name": "minutes",
+      "kind": "helper",
+      "forms": [
+        "ساعات الطريق"
+      ],
+      "tab": "human_resources",
+      "article": "hr-external-mission",
+      "text_sha256": "da9efb88b539e56fea704707bc6cf692f4a26ec917bbb3a0ec6d5588b2723a74"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "ساعات الطريق"
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
     {
       "file": "hr-offboarding.js",

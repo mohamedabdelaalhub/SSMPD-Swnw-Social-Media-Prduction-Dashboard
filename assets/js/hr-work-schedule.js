@@ -50,6 +50,7 @@
       var pend = leaveOn(s, 'pending'); if (pend) return { k: 'pending', req: pend };
       var row = st.att[s], dow = dowOf(s), days = st.wsp && st.wsp.days, has = days && Object.prototype.hasOwnProperty.call(days, dow);
       if (row && row.status === 'leave') return { k: 'leave', row: row };
+      if (row && row.status === 'mission') return { k: 'work', row: row, t: tpl(days && days[dow]), mission: row.mission };
       if (row && row.status === 'absent') return { k: 'absent', row: row, t: tpl(days && days[dow]) };
       if (has && !days[dow]) return { k: 'rest' };
       if (has) return { k: 'work', t: tpl(days[dow]), row: row, future: s > today };
@@ -82,6 +83,7 @@
         if (k.k === 'work') {
           var t = k.t;
           body = '<dl><dt>المواعيد</dt><dd>' + (t ? 'من <bdi>' + esc(short(t.start_time)) + '</bdi> إلى <bdi>' + esc(short(t.end_time)) + '</bdi>' : '—') + '</dd>';
+          if (k.mission) body += '<dt>مهمة خارجية</dt><dd>' + esc(k.mission.place || '') + '</dd>';
           if (k.future) body += '</dl><p class="hws-note">حسب الجدول الحالي</p>';
           else body += '<dt>الحضور</dt><dd>' + (r.first_in ? '<bdi>' + clock(r.first_in) + '</bdi>' : 'لا توجد بصمة') + '</dd><dt>التأخير</dt><dd>' + (r.late_min > 0 ? '<bdi>' + r.late_min + '</bdi> دقيقة' : 'لا يوجد') + '</dd><dt>الانصراف</dt><dd>' + (r.last_out ? '<bdi>' + clock(r.last_out) + '</bdi>' : (r.first_in ? 'لا توجد بصمة انصراف' : '—')) + '</dd></dl>';
         } else if (k.k === 'rest') body = '<p>راحة أسبوعية — مش بتتحسب غياب ولا بتتخصم من رصيد الإجازات.</p>';
