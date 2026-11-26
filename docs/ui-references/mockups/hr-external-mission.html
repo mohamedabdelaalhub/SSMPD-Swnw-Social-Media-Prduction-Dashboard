@@ -1,6 +1,6 @@
 <!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: مهمة خارجية</title>
 <style>*{box-sizing:border-box}body{margin:0;padding:16px;background:#f4f7fc;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
-.wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:1000px;margin:auto}
+.wrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;max-width:1240px;margin:auto}
 .card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;align-content:start;min-width:0}.cap{font-size:12px;color:#5b6b82}h3,p{margin:0}
 .btn{border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:8px 12px;font:inherit;min-width:0}.pri{background:#0F369D;color:#fff;border-color:#0F369D}
 .head{display:flex;align-items:center;justify-content:space-between;gap:8px}.ic{width:36px;height:36px;border:1px solid #D5DEEE;background:#fff;border-radius:10px;font-size:19px;line-height:1;flex:none}
@@ -35,4 +35,25 @@ label{display:grid;gap:4px;font-size:12px;color:#5b6b82}input,textarea{font:inhe
 <div class="row"><span><b>محمود عبدالعال</b><small>وردية 09:00</small></span><span class="chip mis">مهمة خارجية — لحد 14:00</span><button class="ic" aria-label="إجراءات">⋯</button></div>
 <div class="row"><span><b>رنا سمير</b><small>وردية 09:00</small></span><span class="chip" style="background:#E6F3EC;color:#2F7D5C">دخل 08:55</span><button class="ic" aria-label="إجراءات">⋯</button></div>
 <div class="note">مش في «الغايبون الآن». لو الوقت عدّى وما رجعش يرجع يظهر زي أي موظف عادي.</div></section>
+<section class="card"><span class="cap">٥) الموظف بيطلب بنفسه — «طلباتي»</span>
+<div class="head"><b>طلب مهمة خارجية</b><button class="ic" aria-label="إغلاق">✕</button></div>
+<div class="two"><label class="cap"><span style="display:flex;gap:6px;align-items:center"><input type="radio" name="m" checked style="width:auto"> يوم كامل</span></label><label class="cap"><span style="display:flex;gap:6px;align-items:center"><input type="radio" name="m" style="width:auto"> ساعات محددة</span></label></div>
+<div class="two"><label>من يوم<input value="2026-11-29"></label><label>إلى يوم<input value="2026-11-29"></label></div>
+<label>الملاحظة (المكان / السبب)<textarea rows="2">زيارة مورّد — مدينة نصر</textarea></label>
+<div class="note">الطلب بيتبعت لمديرك المباشر أو الموارد البشرية زي طلب الإجازة، ومش بيتحسب غير بعد الموافقة.</div>
+<div style="display:flex;gap:8px"><button class="btn pri">إرسال الطلب</button><button class="btn">إلغاء</button></div></section>
+
+<section class="card"><span class="cap">٦) المدير يراجع — نفس شاشة مراجعة الإجازات</span>
+<div class="head"><b>مراجعة السجل</b><button class="ic" aria-label="إغلاق">✕</button></div>
+<div class="row" style="background:#F1F4F8"><b>محمود عبدالعال · مهمة خارجية · 2026-11-29 · يوم كامل<small>الملاحظة: زيارة مورّد — مدينة نصر</small></b></div>
+<label>القرار<input value="اعتماد"></label><label>سبب القرار<input></label>
+<div style="display:flex;gap:8px"><button class="btn pri">حفظ</button><button class="btn">إلغاء</button></div></section>
+
+<section class="card"><span class="cap">٧) بعد ما يرجع — «أضف ساعات الطريق» (هو اللي يضيفها)</span>
+<div class="row"><span><b>مهمة خارجية — 26 نوفمبر</b><small>من 09:00 إلى 14:00 · معتمدة</small></span><span class="chip mis">معتمدة</span></div>
+<button class="btn pri" style="width:100%">أضف ساعات الطريق</button>
+<div class="head" style="margin-top:6px"><b>ساعات الطريق</b><button class="ic" aria-label="إغلاق">✕</button></div>
+<label>المدة بالدقايق<input value="90"></label><label>ملاحظة (اختياري)<input placeholder="مثلاً: رايح وجاي مدينة نصر"></label>
+<div class="note">بتتضاف لساعات اليوم من غير موافقة تانية.</div>
+<div style="display:flex;gap:8px"><button class="btn pri">حفظ</button><button class="btn">إلغاء</button></div></section>
 </div>
