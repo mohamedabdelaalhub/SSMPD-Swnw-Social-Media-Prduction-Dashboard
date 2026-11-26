@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2021,
-    "labels": 1468,
-    "files": 161,
-    "groups": 1589
+    "definitions": 2027,
+    "labels": 1471,
+    "files": 162,
+    "groups": 1595
   },
   "fields": [
     {
@@ -2962,6 +2962,66 @@
       "tab": "production",
       "article": "design-guide",
       "text_sha256": "eec768dae27bf2de3693d2d37ba93ae01c2648aaf8c5e7b69afdb717e662d0c0"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "الموظف",
+      "name": "subject",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "المورد / الصيدلية",
+      "name": "supplier_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "drawer-requests",
+      "text_sha256": "8dbbfc2d99b7382193ed965dc61997de72c314c2142c8d41efe66c04d9fb1b25"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "📷 صورة فاتورة المورد (إجباري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "drawer-requests",
+      "text_sha256": "030c5c62362d03e8fd2a8f487689631ea622672486a9c0419e863afb25102dbd"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "المبلغ (جنيه)",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "drawer-requests",
+      "text_sha256": "a625c08e53aef782024a72890a09653fb9837a5381f442693168bc85a3e0bab8"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "مثلاً: سلفة شخصية — تتخصم من مرتب الشهر",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "drawer-requests",
+      "text_sha256": "46bc0d154f977751d7d96c5731efcc748b0301c0b2541634313a06ff3d7cb177"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "السبب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
     {
       "file": "employee-assistant.js",
