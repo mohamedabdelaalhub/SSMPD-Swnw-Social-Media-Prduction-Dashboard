@@ -4,7 +4,7 @@
 -- paid out, owed back) with totals. Read-only check that the patient discount already comes off before the split (doctor + unit). Then a
 -- REAL reception user (Mazen if present, never «Admin Test») executes ONE real open live كشف order three times, each in a throwaway
 -- sub-transaction (appointment fields changed with triggers off for that update only): as vezeeta → fee = (net − 25%) × rate; as
--- «فيزيتا شامل» → same fee as walk-in (no platform cut); as walk-in → net × rate, unchanged; as a referred walk-in (another doctor,
+-- «فيزيتا شامل» (order discount 40%) → (gross − 40%) × rate, no platform cut; as walk-in → net × rate, unchanged; as a referred walk-in (another doctor,
 -- commission 10% of net) → (net − referral) × rate. Notices print amounts only; errors print the
 -- message and constraint name only.
 begin;
@@ -181,7 +181,7 @@ begin
   select a.user_id, a.name into rec, rec_name from public.admins a where a.active and a.user_id is not null and coalesce(a.name, '') <> 'Admin Test'
      and public.has_role_for(a.id, 'reception') order by (a.name like '%مازن%') desc, a.id limit 1;
   if rec is null then raise exception 'no real reception login'; end if;
-  select o0.id, o0.workspace_id, o0.provider_id, v.appointment_id ap, round(o0.price * o0.quantity, 2) - round(o0.price * o0.quantity * o0.discount / 100, 2) net
+  select o0.id, o0.workspace_id, o0.provider_id, v.appointment_id ap, round(o0.price * o0.quantity, 2) - round(o0.price * o0.quantity * o0.discount / 100, 2) net, round(o0.price * o0.quantity, 2) gross
     into od
     from clinic_reception.orders o0 join clinic_reception.workspaces w on w.id = o0.workspace_id and w.mode = 'live'
     join clinic_reception.visits v on v.id = o0.visit_id join clinic_reception.appointments ap on ap.id = v.appointment_id and ap.service_id = o0.service_id
@@ -210,6 +210,8 @@ begin
     set local session_replication_role = replica;
     begin update clinic_reception.appointments set source = 'vezeeta', discount_kind = 'vezeeta', discount_percent = 40, discount_card_no = 'DRY-RUN',
             discount_card_expiry = current_date + 30, discount_card_path = 'dry-run/none' where id = od.ap;
+          -- realistic: the «فيزيتا شامل» 40% is on the ORDER too (applied at booking / arrival)
+          update clinic_reception.orders set discount = 40 where id = od.id;
     exception when others then get stacked diagnostics cn = constraint_name; raise exception 'fixture update failed (% %)', sqlstate, cn; end;
     set local session_replication_role = origin;
     perform set_config('request.jwt.claim.sub', rec::text, true); execute 'set local role authenticated';
@@ -255,14 +257,17 @@ begin
       raise exception 'referral fee % ≠ (net % − referral %) × % = %', f_ref, net, refx, ag.rate, round(greatest(0, net - refx) * ag.rate / 100, 2); end if;
     raise notice 'OK referral: net %, referral %, fee % = (net − referral) × rate', net, refx, f_ref;
   end if;
-  raise notice 'fees: vezeeta %, «شامل» % (patient −40%%), walk-in % (doctor rate %, deducts material: %)', f_vez, f_shamel, f_walk, ag.rate, ag.deduct_material_cost;
+  raise notice 'fees: vezeeta %, «شامل» % (order discount 40%%), walk-in % (doctor rate %, deducts material: %)', f_vez, f_shamel, f_walk, ag.rate, ag.deduct_material_cost;
   if coalesce(ag.deduct_material_cost, false) = false then
     want := round(greatest(0, net - cut) * ag.rate / 100, 2);
     if f_vez <> want then raise exception 'vezeeta fee % ≠ (net % − 25%% %) × % = %', f_vez, net, cut, ag.rate, want; end if;
     if f_walk <> round(net * ag.rate / 100, 2) then raise exception 'walk-in fee changed: % ≠ %', f_walk, round(net * ag.rate / 100, 2); end if;
   elsif not (f_vez < f_walk) then raise exception 'vezeeta fee % not below walk-in fee %', f_vez, f_walk;
   end if;
-  if f_shamel <> f_walk then raise exception '«فيزيتا شامل» fee % ≠ walk-in fee % — it must get no platform cut', f_shamel, f_walk; end if;
+  want := round((od.gross - round(od.gross * 40 / 100, 2)) * ag.rate / 100, 2);
+  if coalesce(ag.deduct_material_cost, false) = false and f_shamel <> want then
+    raise exception '«فيزيتا شامل» fee % ≠ (gross % − 40%%) × % = % — discount first, no platform cut', f_shamel, od.gross, ag.rate, want; end if;
+  raise notice 'OK «شامل»: gross %, patient −40%% → fee % (no platform cut)', od.gross, f_shamel;
   raise notice 'platform doctor fee dry-run OK: vezeeta % = (net − 25%%) × rate, walk-in % unchanged, «شامل» % with no platform cut; % correction(s) listed above; nothing kept', f_vez, f_walk, f_shamel, n;
 exception when others then
   get stacked diagnostics cn = constraint_name;
