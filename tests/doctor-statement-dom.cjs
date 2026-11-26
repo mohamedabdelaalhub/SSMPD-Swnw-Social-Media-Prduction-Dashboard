@@ -47,10 +47,11 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   let detCalls = 0; w.SSMPDDb.financeDoctorStatementDetail = async (k, f, t) => { detCalls++; return DET; }; w.SSMPDDb.financeDoctorStatement = async () => STMT;
   d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
   const dt = d.querySelector('.fc-modal form').textContent; assert.equal(detCalls, 1, 'detail RPC preferred');
-  for (const s2 of ['بانتظار حصة المريض — متبقي 150.00', 'بانتظار التأمين (شركة ب) — متبقي 300.00', 'بانتظار التأمين (شركة ج) — متبقي 300.00', 'خدمات بدون عقد ساري (2)', 'مفيش عقد ساري يغطي الخدمة', 'العقد بيبدأ بعد تاريخ التنفيذ', 'تحليل', '360.00', 'طلبات الاستقبال']) assert(dt.includes(s2), 'detail shows ' + s2);
+  for (const s2 of ['بانتظار حصة المريض — متبقي 150.00', 'بانتظار التأمين (شركة ب) — متبقي 300.00', 'بانتظار التأمين (شركة ج) — متبقي 300.00', 'اتعملت ومالهاش عقد (2)', 'مفيش عقد ساري يغطي الخدمة', 'العقد بيبدأ بعد تاريخ التنفيذ', 'تحليل', '360.00', 'طلبات الاستقبال']) assert(dt.includes(s2), 'detail shows ' + s2);
   assert(!dt.includes('بانتظار حصة المريض — متبقي 0.00'), 'a closed part is not shown'); assert.equal((dt.match(/بانتظار حصة المريض/g) || []).length, 1, 'patient part only where it is open');
   // doctor without an active contract: no uncovered section
-  DET.uncovered = null; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); assert(!d.querySelector('.fc-modal form').textContent.includes('بدون عقد ساري'));
+  assert(!dt.includes('(L-1)'),'no service codes');assert(!dt.includes('ماعندوش عقد فعّال'));
+  DET.uncovered = null; DET.has_active_contract = false; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); { const t0 = d.querySelector('.fc-modal form').textContent; assert(!t0.includes('ومالهاش عقد')); assert(t0.includes('الدكتور ماعندوش عقد فعّال — الخدمات اللي اتعملت مش بتتحسب'), 'no-contract note'); } DET.has_active_contract = true;
   DET.uncovered = []; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); assert(d.querySelector('.fc-modal form').textContent.includes('مفيش خدمات منفذة من غير عقد ساري'));
   // detail RPC not applied yet -> base statement still works
   w.SSMPDDb.financeDoctorStatementDetail = async () => { throw new Error('404'); }; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
