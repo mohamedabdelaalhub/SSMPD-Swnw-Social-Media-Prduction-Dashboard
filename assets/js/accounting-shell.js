@@ -28,8 +28,8 @@ function label(id){for(var i=0;i<GROUPS.length;i++)for(var j=0;j<GROUPS[i].items
 
 /* mount(container,{allowed:fn(id)->bool, active:id, onSelect:fn(id)}) → {view, setActive, setBadges, refresh} */
 function mount(container,opts){
- var active=opts.active,badges={};document.querySelectorAll('body>.acs-rail,body>.acs-scrim').forEach(function(n){n.remove();});
- container.innerHTML='<div class="acs" dir="rtl"><div class="acs-mbar"><button type="button" class="acs-open" data-acs-open aria-haspopup="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h16"/></svg><span>أقسام الحسابات</span><b data-acs-current></b></button></div>'+
+ var active=opts.active,badges={},hist=[];document.querySelectorAll('body>.acs-rail,body>.acs-scrim').forEach(function(n){n.remove();});
+ container.innerHTML='<div class="acs" dir="rtl"><div class="acs-mbar"><button type="button" class="acs-open" data-acs-open aria-haspopup="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h16"/></svg><span>أقسام الحسابات</span><b data-acs-current></b></button><button type="button" class="acs-back" data-acs-back aria-label="رجوع للصفحة السابقة" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>'+
   '<aside class="acs-rail" data-acs-rail aria-label="أقسام الحسابات"><div class="acs-rail-head"><b>أقسام الحسابات</b><button type="button" class="acs-close" data-acs-close aria-label="إغلاق">×</button></div><label class="acs-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="search" data-acs-q placeholder="ابحث في الحسابات…" aria-label="ابحث في أقسام الحسابات"></label><nav data-acs-groups></nav></aside>'+
   '<div class="acs-scrim" data-acs-scrim></div><div class="acs-main" id="acc-sub-view"></div></div>';
  var root=container.firstChild,rail=root.querySelector('[data-acs-groups]'),q=root.querySelector('[data-acs-q]');
@@ -49,7 +49,7 @@ function mount(container,opts){
   if(on){var cur=rail.querySelector('[aria-current]');if(cur)railEl.scrollTop=Math.max(0,cur.offsetTop-railEl.clientHeight/2);var f=railEl.querySelector('[data-acs-close]');if(f)f.focus({preventScroll:true});}
   else if(railEl.parentNode!==root){var back=function(){if(document.body.classList.contains('acs-drawer-open'))return;if(!root.isConnected){railEl.remove();scrimEl.remove();return;}root.insertBefore(railEl,root.querySelector('.acs-main'));root.insertBefore(scrimEl,root.querySelector('.acs-main'));};setTimeout(back,400);}}
  rail.addEventListener('click',function(e){var h=e.target.closest('.acs-gh');if(h){var g=h.parentNode,id=g.dataset.acsGroup,closed=readClosed().filter(function(x){return x!==id;});var now=!g.classList.contains('closed');g.classList.toggle('closed',now);h.setAttribute('aria-expanded',String(!now));if(now)closed.push(id);writeClosed(closed);sound(!now);return;}
-  var b=e.target.closest('[data-acs-go]');if(!b)return;open(false);if(b.dataset.acsGo===active&&!opts.reselect)return;api.setActive(b.dataset.acsGo);opts.onSelect(b.dataset.acsGo);});
+  var b=e.target.closest('[data-acs-go]');if(!b)return;open(false);if(b.dataset.acsGo===active&&!opts.reselect)return;if(active!==b.dataset.acsGo)hist.push(active);api.setActive(b.dataset.acsGo);opts.onSelect(b.dataset.acsGo);if(window.SSMPDBackNav)window.SSMPDBackNav.repaint();});
  q.addEventListener('input',filter);
  root.querySelector('[data-acs-open]').onclick=function(){open(true);};root.querySelector('[data-acs-close]').onclick=function(){open(false);};root.querySelector('[data-acs-scrim]').onclick=function(){open(false);};
  railEl.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.body.classList.contains('acs-drawer-open')){open(false);root.querySelector('[data-acs-open]').focus();}});
@@ -58,9 +58,12 @@ function mount(container,opts){
  /* phones (owner 2026-11-18): every treasury table turns into one card per row. Each cell gets its column title
     (data-th) so the card can show «الرصيد 1,000» instead of a sideways-scrolling table. */
  /* in-page shortcuts to another section: <button data-acs-jump="doctors"> */
- root.addEventListener('click',function(e){var j=e.target.closest('[data-acs-jump]');if(!j)return;var id=j.getAttribute('data-acs-jump');if(!opts.allowed(id))return;api.setActive(id);opts.onSelect(id);window.scrollTo(0,0);});
+ root.addEventListener('click',function(e){var j=e.target.closest('[data-acs-jump]');if(!j)return;var id=j.getAttribute('data-acs-jump');if(!opts.allowed(id))return;if(active!==id)hist.push(active);api.setActive(id);opts.onSelect(id);window.scrollTo(0,0);if(window.SSMPDBackNav)window.SSMPDBackNav.repaint();});
  function labelTables(){api.view.querySelectorAll('.fc-table table:not([data-acs-cards]),.rx-table table:not([data-acs-cards]),table.acc-table:not([data-acs-cards]),.inv-scroll table:not([data-acs-cards])').forEach(function(t){var th=[].map.call(t.querySelectorAll('thead th'),function(x){return x.textContent.trim();});if(!th.length)return;t.setAttribute('data-acs-cards','');t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){if(th[i]&&!td.hasAttribute('data-th'))td.setAttribute('data-th',th[i]);});});});}
  if(window.MutationObserver){var mo=new MutationObserver(function(){if(!root.isConnected){mo.disconnect();return;}labelTables();if(window.SSMPDFinanceLabels)window.SSMPDFinanceLabels.translate(api.view);});mo.observe(api.view,{childList:true,subtree:true});}
+ /* back arrow (help 298): sections first, then the screen before accounting (SSMPDBackNav) */
+ var sb=root.querySelector('[data-acs-back]');if(sb)sb.onclick=function(){if(window.SSMPDBackNav)window.SSMPDBackNav.back();};
+ if(window.SSMPDBackNav)window.SSMPDBackNav.setLocal({canBack:function(){return hist.some(function(x){return opts.allowed(x);});},back:function(){var prev=hist.pop();while(prev&&!opts.allowed(prev))prev=hist.pop();if(prev){api.setActive(prev);opts.onSelect(prev);window.scrollTo(0,0);}}});
  document.body.classList.remove('acs-drawer-open');draw();return api;
 }
 /* floating help / assistant buttons (owner 2026-11-18): on phones they slide away while you scroll down and come
