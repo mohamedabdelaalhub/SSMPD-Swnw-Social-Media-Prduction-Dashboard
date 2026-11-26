@@ -13,6 +13,8 @@ function money(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDig
 function purge(data){var l=data&&data.services;if(!l)return;for(var i=l.length-1;i>=0;i--)if(l[i]&&l[i]._sl)l.splice(i,1);}
 function provider(data,id){return (data.providers||[]).find(function(p){return p.id===id;})||null;}
 function serves(data,p,dept){return !!(p&&dept&&(p.department===dept||((data.provider_departments||{})[p.id]||[]).indexOf(dept)>=0));}
+// «طبيب مقيّد» (20261126050000): a department management restricted for the doctor offers only his scoped services (basics stay open)
+function restrictedOut(data,p,s){var r=(data.provider_restricted||{})[p.id],codes=r&&r[s.department];return !!(codes&&codes.indexOf(s.code)<0&&(data.basic_service_ids||[]).indexOf(s.id)<0);}
 function placeholder(data,dept){var x=(data.service_later||[]).find(function(s){return s.department===dept;});
  return {id:x?x.id:FAKE+dept,code:x?x.code:'',name:LABEL,department:dept,minutes:x?+x.minutes||30:30,price:0,placeholder:true,_sl:true};}
 
@@ -55,7 +57,7 @@ function take(payload){if(!payload)return payload;
 function arrival(root,appt,ctx){var data=ctx&&ctx.data;if(!root||!appt||!appt.service_later||!data)return;
  var form=root.querySelector('form');if(!form||form.elements.service_id)return;
  var p=provider(data,appt.provider_id)||{},scopes=(data.provider_service_scopes||{})[p.id]||[];
- var list=(data.services||[]).filter(function(s){return !s.placeholder&&!s._sl&&s.active!==false&&(serves(data,p,s.department)||scopes.indexOf(s.code)>=0);})
+ var list=(data.services||[]).filter(function(s){return !s.placeholder&&!s._sl&&s.active!==false&&(serves(data,p,s.department)||scopes.indexOf(s.code)>=0)&&!restrictedOut(data,p,s);})
   .sort(function(a,b){return String(a.name).localeCompare(String(b.name),'ar');});
  var box=document.createElement('div');box.className='rx-sl-arrive';box.setAttribute('data-wide','');
  box.innerHTML='<p class="rx-sl-warn">الحجز ده «'+LABEL+'». اختار الخدمة اللي المريض قررها علشان نكمّل الحضور.</p><label>الخدمة (إجباري)<select name="service_id" required><option value="">— اختار خدمة'+(p.department?' من قسم '+esc(p.department):'')+' —</option>'+list.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+' — '+esc(money(s.price))+'</option>';}).join('')+'</select></label><p class="rx-sl-err" data-sl-err>اختار الخدمة الأول</p>';
