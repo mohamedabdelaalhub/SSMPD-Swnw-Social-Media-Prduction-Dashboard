@@ -75,6 +75,7 @@ if the owner forwards a GitHub link.
 2. Review against the Refactoring UI checklist (hierarchy, spacing scale, grouping, button hierarchy,
    clutter, shadows, contrast, empty states). Counts sit next to their titles; numbers sit under their labels.
 3. Spacing tokens: 16px gap on desktop, 12px on phones (presence board uses 14/12, matching the attendance hub).
+4. Close/back always (owner 2026-11-26, CLAUDE.md rule 10): every screen, modal, sheet and panel shows a visible ✕ close or a ←/→ back button, and its DOM test clicks it. Esc / click-outside are extras, not a substitute.
 
 ## Motion & sound foundations (owner-approved 2026-11-17)
 
