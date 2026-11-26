@@ -11,7 +11,6 @@ grant execute on function public.clinic_finance_month_end(text, jsonb) to authen
 do $$ begin execute (select def from clinic_finance.platform_audit_saved_defs where name = 'month_end_lines'); end $$;
 revoke all on function clinic_finance.month_end_lines(text, date, date) from public, anon, authenticated;
 drop function clinic_finance.platform_balances();
-drop function clinic_finance.platform_dest_ok(text, text);
 alter table clinic_finance.platform_audits rename to platform_audits_rolled_back;
 update clinic_finance.month_end_parties set percent = null, updated_at = now() where key in ('vezeeta', 'clinidu', 'akshef', 'kafaret');
 drop table clinic_finance.platform_audit_saved_defs;

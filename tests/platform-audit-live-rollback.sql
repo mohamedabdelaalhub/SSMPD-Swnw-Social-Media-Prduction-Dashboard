@@ -1,9 +1,10 @@
 -- Live rollback dry-run for 20261126180000_platform_audit.sql (rule 9). ONE transaction ending with ROLLBACK; nothing kept.
 -- Applies the migration inside the transaction, then as REAL people — maker = an accountant if live has one, else the financial
 -- manager; checker = a different person (FM / GM / super admin, never «Admin Test»): takes ONE real live visit whose booked service is a كشف / استشارة, moves it (triggers off for that update only)
--- to vezeeta → counts 25%; marks it «فيزيتا شامل» → counts 0; audits vezeeta with a deduction to income 4122 (accountant asks, FM
--- approves; accountant approve / overlap refused; accountant chart account refused on kafaret), clinidu with a deduction to payable 2111 (GM / SA approves),
--- كفارة وسلامتك by the FM to chart account 5233 (FM self-approval refused), then settles vezeeta's audited balance by bank
+-- to vezeeta → counts 25%; marks it «فيزيتا شامل» → counts 0; audits vezeeta with the deduction to the company 4122 (maker asks,
+-- checker approves; maker self-approval and overlap refused); proves a payable (2111) or chart (5233) destination is refused for the
+-- maker and the FM (owner: «خليه رصيد في حساب الشركة»); audits كفارة وسلامتك by the FM (self-approval refused, GM / SA approves,
+-- deduction → 4122), then settles vezeeta's audited balance by bank
 -- (over-balance refused) → Dr 2112 / Cr 1112. Notices / errors print amounts and constraint names only — never rows or patient data.
 begin;
 do $$ begin
@@ -90,7 +91,7 @@ create table clinic_finance.platform_audits (
   agreed_mode text not null check (agreed_mode in ('amount', 'percent')), agreed_value numeric(14,3) not null check (agreed_value >= 0),
   agreed numeric(14,2) not null check (agreed >= 0 and agreed <= 10000000),
   reason text not null check (length(btrim(reason)) between 3 and 400),
-  dest_kind text check (dest_kind in ('income', 'payable', 'account')), dest_account text references clinic_finance.accounts(code),
+  dest_kind text check (dest_kind = 'income'), dest_account text references clinic_finance.accounts(code) check (dest_account = '4122'),
   check ((agreed < ours) = (dest_kind is not null and dest_account is not null)),
   created_by uuid not null references public.admins(id), created_at timestamptz not null default now(), token uuid not null,
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
@@ -99,20 +100,6 @@ create table clinic_finance.platform_audits (
 create index platform_audits_party_idx on clinic_finance.platform_audits(party, from_month);
 alter table clinic_finance.platform_audits enable row level security;
 revoke all on clinic_finance.platform_audits from public, anon, authenticated;
-
--- may this account receive an audit deduction of the given kind?
-create function clinic_finance.platform_dest_ok(p_kind text, p_account text) returns boolean
-language sql stable security definer set search_path = pg_catalog, public as $$
-  select case p_kind
-    when 'income' then p_account = '4122'
-    when 'payable' then exists (select 1 from clinic_finance.accounts a left join clinic_finance.account_config c on c.code = a.code
-                                 where a.code = p_account and a.kind = 'liability' and a.code <> '2112' and coalesce(c.active, true) and not coalesce(c.archived, false))
-    when 'account' then exists (select 1 from clinic_finance.accounts a left join clinic_finance.account_config c on c.code = a.code
-                                 where a.code = p_account and a.kind in ('liability', 'equity', 'income', 'expense') and a.code <> '2112'
-                                   and coalesce(c.active, true) and not coalesce(c.archived, false))
-    else false end
-$$;
-revoke all on function clinic_finance.platform_dest_ok(text, text) from public, anon, authenticated;
 
 -- per platform: what the approved audits put on 2112, the deductions, the settlements and the balance we still owe
 create function clinic_finance.platform_balances() returns table(party text, name text, percent numeric, audited numeric, extra numeric, deducted numeric,
@@ -137,7 +124,7 @@ revoke all on function clinic_finance.clinic_finance_month_end_before_audit(text
 
 create function public.clinic_finance_month_end(p_action text, p jsonb default '{}'::jsonb) returns jsonb
 language plpgsql security definer set search_path = pg_catalog, public as $$
-declare me uuid := public.my_admin_id(); fin boolean; mgr boolean; reqr boolean; fm boolean; r jsonb; pt clinic_finance.month_end_parties%rowtype;
+declare me uuid := public.my_admin_id(); fin boolean; mgr boolean; reqr boolean; r jsonb; pt clinic_finance.month_end_parties%rowtype;
   au clinic_finance.platform_audits%rowtype; st clinic_finance.month_end_settlements%rowtype; f date; t date; t_end date; ours_ numeric; n int;
   amt numeric; val numeric; tok uuid; left_ numeric; e1 uuid; e2 uuid; cashacct text; sh uuid; ok boolean; dk text; da text; m date;
   plat constant text[] := array['vezeeta', 'clinidu', 'akshef', 'kafaret'];
@@ -146,7 +133,6 @@ begin
   fin := public.has_role('accountant') or public.has_role('financial_manager') or public.has_role('general_manager') or public.has_role('super_admin');
   mgr := public.has_role('financial_manager') or public.has_role('general_manager') or public.has_role('super_admin');
   reqr := public.has_role('accountant') or public.has_role('financial_manager');
-  fm := public.has_role('financial_manager') or public.has_role('super_admin');
   p := coalesce(p, '{}'::jsonb);
 
   -- every non-platform path is the previous function, unchanged
@@ -161,7 +147,7 @@ begin
         'balance', b.balance, 'pending', b.pending, 'settled', b.settled, 'deducted', b.deducted, 'remaining', greatest(b.balance - b.pending, 0), 'audited_through', b.last_audit, 'platform', true)
         else x end order by (x->>'sort')::int), '[]'::jsonb)
       from jsonb_array_elements(r->'parties') x left join clinic_finance.platform_balances() b on b.party = x->>'key'),
-      'can_audit', reqr, 'can_account_dest', fm);
+      'can_audit', reqr);
   elsif p_action not in ('platforms', 'audits', 'audit_preview', 'audit_request', 'audit_review') then
     return clinic_finance.clinic_finance_month_end_before_audit(p_action, p);
   end if;
@@ -173,12 +159,8 @@ begin
 
   elsif p_action = 'audits' then
     if not fin then raise exception 'مراجعات المنصات للحسابات والإدارة' using errcode = '42501'; end if;
-    return jsonb_build_object('can_audit', reqr, 'can_review', mgr, 'can_account_dest', fm,
+    return jsonb_build_object('can_audit', reqr, 'can_review', mgr,
       'income_account', jsonb_build_object('code', '4122', 'name', (select name from clinic_finance.accounts where code = '4122')),
-      'payable_accounts', (select coalesce(jsonb_agg(jsonb_build_object('code', a.code, 'name', a.name) order by a.code), '[]'::jsonb)
-         from clinic_finance.accounts a where clinic_finance.platform_dest_ok('payable', a.code)),
-      'other_accounts', case when fm then (select coalesce(jsonb_agg(jsonb_build_object('code', a.code, 'name', a.name, 'kind', a.kind) order by a.code), '[]'::jsonb)
-         from clinic_finance.accounts a where clinic_finance.platform_dest_ok('account', a.code)) else '[]'::jsonb end,
       'audits', (select coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'party', a.party, 'party_name', q.name, 'from', a.from_month, 'to', a.to_month,
           'ours', a.ours, 'cases', a.cases, 'theirs', a.theirs, 'theirs_ref', a.theirs_ref, 'agreed_mode', a.agreed_mode, 'agreed_value', a.agreed_value,
           'agreed', a.agreed, 'deduction', greatest(a.ours - a.agreed, 0), 'extra', greatest(a.agreed - a.ours, 0), 'reason', a.reason,
@@ -223,13 +205,10 @@ begin
       amt := val;
     end if;
     if length(btrim(coalesce(p->>'reason', ''))) < 3 then raise exception 'اكتب سبب الاتفاق'; end if;
+    if coalesce(p->>'dest_kind', 'income') <> 'income' or coalesce(nullif(p->>'dest_account', ''), '4122') <> '4122'
+      then raise exception 'خصم المراجعة بيروح لحساب الشركة بس (4122)'; end if;
     dk := null; da := null;
-    if amt < ours_ then
-      dk := p->>'dest_kind'; da := case when dk = 'income' then '4122' else nullif(p->>'dest_account', '') end;
-      if dk is null or dk not in ('income', 'payable', 'account') then raise exception 'اختار خصم المراجعة يروح فين'; end if;
-      if dk = 'account' and not fm then raise exception 'اختيار حساب من الشجرة للمدير المالي بس' using errcode = '42501'; end if;
-      if not clinic_finance.platform_dest_ok(dk, da) then raise exception 'الحساب ده مينفعش يستقبل خصم المراجعة'; end if;
-    end if;
+    if amt < ours_ then dk := 'income'; da := '4122'; end if;
     insert into clinic_finance.platform_audits(party, from_month, to_month, ours, cases, theirs, theirs_ref, agreed_mode, agreed_value, agreed, reason,
       dest_kind, dest_account, created_by, token)
       values (pt.key, f, t, ours_, n, (p->>'theirs')::numeric, btrim(p->>'theirs_ref'), p->>'agreed_mode', val, amt, btrim(p->>'reason'), dk, da, me, tok)
@@ -252,7 +231,6 @@ begin
       select * into pt from clinic_finance.month_end_parties where key = au.party;
       select coalesce(sum(l.amount), 0) into ours_ from clinic_finance.month_end_lines(au.party, au.from_month, (au.to_month + interval '1 month' - interval '1 day')::date) l;
       if ours_ <> au.ours then raise exception 'رقمنا اتغيّر من وقت الطلب (% بدل %) — ارفض واعمل طلب جديد', ours_, au.ours; end if;
-      if au.dest_account is not null and not clinic_finance.platform_dest_ok(au.dest_kind, au.dest_account) then raise exception 'حساب خصم المراجعة اتقفل — ارفض واعمل طلب جديد'; end if;
       e1 := null; e2 := null;
       if au.ours > 0 then
         e1 := clinic_finance.post('platform_audit', au.id, 'استحقاق ' || pt.name || ' — ' || to_char(au.from_month, 'YYYY-MM') ||
@@ -374,7 +352,7 @@ begin
   begin update clinic_reception.appointments set discount_kind = null where id = ap; exception when others then get stacked diagnostics cn = constraint_name; raise exception 'fixture update failed (% %)', sqlstate, cn; end;
   set local session_replication_role = origin;
 
-  -- 2) accountant: deduction → income 4122; accountant cannot approve, cannot pick a chart account; overlap refused; FM approves
+  -- 2) maker: deduction → company 4122; maker cannot approve; overlap refused; checker approves
   perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
   a := public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'vezeeta', 'from', ma, 'to', ma, 'theirs', o1 + 50, 'theirs_ref', 'DRY-RUN',
         'agreed_mode', 'amount', 'agreed_value', o1 - 1, 'reason', 'dry-run income', 'dest_kind', 'income', 'token', gen_random_uuid()));
@@ -392,42 +370,35 @@ begin
   if ln <> want then raise exception 'income entries: % (want %)', ln, want; end if;
   raise notice 'OK income: %', ln;
 
-  -- 3) clinidu: deduction → payable 2111, accountant asks, GM / SA approves
+  -- 3) a non-company destination is refused (owner: the deduction is a COMPANY balance only), for the maker and the FM alike
   set local session_replication_role = replica; begin update clinic_reception.appointments set source = 'clinidu' where id = ap; exception when others then get stacked diagnostics cn = constraint_name; raise exception 'fixture update failed (% %)', sqlstate, cn; end; set local session_replication_role = origin;
   perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
   o2 := (public.clinic_finance_month_end('audit_preview', jsonb_build_object('party', 'clinidu', 'from', ma))->>'ours')::numeric;
-  a := public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'clinidu', 'from', ma, 'theirs', o2, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'amount',
-        'agreed_value', o2 - 2, 'reason', 'dry-run payable', 'dest_kind', 'payable', 'dest_account', '2111', 'token', gen_random_uuid()));
-  perform set_config('request.jwt.claim.sub', apr::text, true);
-  perform public.clinic_finance_month_end('audit_review', jsonb_build_object('id', a->>'id', 'ok', true));
+  begin perform public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'clinidu', 'from', ma, 'theirs', o2, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'amount',
+          'agreed_value', o2 - 2, 'reason', 'dry-run payable', 'dest_kind', 'payable', 'dest_account', '2111', 'token', gen_random_uuid())); raise exception 'payable destination accepted!';
+  exception when others then if sqlerrm not like '%لحساب الشركة بس%' then raise; end if; end;
+  perform set_config('request.jwt.claim.sub', fmu::text, true);
+  begin perform public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'clinidu', 'from', ma, 'theirs', o2, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'amount',
+          'agreed_value', o2 - 2, 'reason', 'dry-run account', 'dest_kind', 'account', 'dest_account', '5233', 'token', gen_random_uuid())); raise exception 'chart-account destination accepted!';
+  exception when others then if sqlerrm not like '%لحساب الشركة بس%' then raise; end if; end;
   execute 'reset role';
-  select string_agg(l.account || ':' || l.debit::numeric(14,2) || '/' || l.credit::numeric(14,2), ' ' order by l.account, l.debit) into ln
-    from clinic_finance.lines l join clinic_finance.entries e on e.id = l.entry_id where e.source like 'platform\_audit%' and e.source_id = (a->>'id')::uuid;
-  if ln not like '2111:0.00/2.00 %' then raise exception 'payable entries: %', ln; end if;
-  raise notice 'OK payable: %', ln;
+  raise notice 'OK: payable 2111 / chart 5233 destinations refused — company 4122 only';
 
-  -- 4) كفارة وسلامتك: FM picks a chart account (5233); FM cannot approve his own; GM / SA approves
+  -- 4) كفارة وسلامتك: the FM asks (agreed 50%% of ours, no destination given → 4122); FM cannot approve his own; GM / SA approves
   set local session_replication_role = replica; begin update clinic_reception.appointments set source = 'kafaret' where id = ap; exception when others then get stacked diagnostics cn = constraint_name; raise exception 'fixture update failed (% %)', sqlstate, cn; end; set local session_replication_role = origin;
-  if acc is not null then
-  perform set_config('request.jwt.claim.sub', acc::text, true); execute 'set local role authenticated';
-  begin perform public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'kafaret', 'from', ma, 'theirs', 1, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'amount',
-          'agreed_value', 0, 'reason', 'dry-run', 'dest_kind', 'account', 'dest_account', '5233', 'token', gen_random_uuid())); raise exception 'accountant used a chart account!';
-  exception when others then if sqlerrm not like '%للمدير المالي بس%' then raise; end if; end;
-  execute 'reset role';
-  else raise notice 'skipped: accountant-only refusal (chart account) — live has no plain accountant login (not also FM / super admin)'; end if;
   perform set_config('request.jwt.claim.sub', fmu::text, true); execute 'set local role authenticated';
   o2 := (public.clinic_finance_month_end('audit_preview', jsonb_build_object('party', 'kafaret', 'from', ma))->>'ours')::numeric;
   a := public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'kafaret', 'from', ma, 'theirs', o2, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'percent',
-        'agreed_value', 50, 'reason', 'dry-run account', 'dest_kind', 'account', 'dest_account', '5233', 'token', gen_random_uuid()));
+        'agreed_value', 50, 'reason', 'dry-run company', 'token', gen_random_uuid()));
   begin perform public.clinic_finance_month_end('audit_review', jsonb_build_object('id', a->>'id', 'ok', true)); raise exception 'self-approval accepted!';
   exception when others then if sqlerrm not like '%انت عاملها%' then raise; end if; end;
   perform set_config('request.jwt.claim.sub', apr::text, true);
   perform public.clinic_finance_month_end('audit_review', jsonb_build_object('id', a->>'id', 'ok', true));
   execute 'reset role';
   select count(*) into n from clinic_finance.lines l join clinic_finance.entries e on e.id = l.entry_id
-   where e.source like 'platform\_audit%' and e.source_id = (a->>'id')::uuid and l.account = '5233' and l.credit = o2 - round(o2 * 50 / 100, 2);
-  if n <> 1 then raise exception 'chart-account deduction not posted to 5233'; end if;
-  raise notice 'OK account: kafaret ours % agreed 50%% → Cr 5233 %', o2, o2 - round(o2 * 50 / 100, 2);
+   where e.source = 'platform_audit_deduction' and e.source_id = (a->>'id')::uuid and l.account = '4122' and l.credit = o2 - round(o2 * 50 / 100, 2);
+  if n <> 1 then raise exception 'kafaret deduction not posted to 4122'; end if;
+  raise notice 'OK company: kafaret ours % agreed 50%% → Cr 4122 %', o2, o2 - round(o2 * 50 / 100, 2);
 
   -- 5) settle vezeeta's audited balance by bank: accountant asks (over the balance refused), FM approves → Dr 2112 / Cr 1112
   perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
@@ -443,7 +414,7 @@ begin
     from clinic_finance.lines l join clinic_finance.entries e on e.id = l.entry_id where e.source_id = (a->>'id')::uuid;
   if ln <> '2112:' || bal::numeric(14,2) || '/0.00 1112:0.00/' || bal::numeric(14,2) then raise exception 'settlement entries: %', ln; end if;
   if (select count(*) from jsonb_array_elements(r->'parties') x where x->>'key' = 'kafaret') <> 1 then raise exception 'statement lost kafaret'; end if;
-  raise notice 'platform audit dry-run OK: real visit month %, vezeeta 25%% = % / «شامل» 0, income / payable 2111 / FM account 5233 deductions posted, maker≠checker and overlap refused, settlement %; nothing kept', to_char(ma, 'YYYY-MM'), o1, ln;
+  raise notice 'platform audit dry-run OK: real visit month %, vezeeta 25%% = % / «شامل» 0, deductions to company 4122 posted, other destinations / maker self-approval / overlap refused, settlement %; nothing kept', to_char(ma, 'YYYY-MM'), o1, ln;
 exception when others then
   -- message only: never the DETAIL line (a failing row) or any patient data
   get stacked diagnostics cn = constraint_name;

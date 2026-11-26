@@ -12301,19 +12301,6 @@
       "reviewed": true
     },
     {
-      "title": "خصم المراجعة يروح فين؟",
-      "labels": [
-        "خصم المراجعة يروح فين؟"
-      ],
-      "text": "لو المتفق عليه أقل من رقمنا: إيراد للشركة (4122)، أو حساب دائن تاني، أو حساب من الشجرة (للمدير المالي بس).",
-      "article": "platform-audit",
-      "tabs": [
-        "production"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "سبب الرفض",
       "labels": [
         "سبب الرفض"
@@ -23815,9 +23802,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2049,
-    "labels": 1486,
+    "definitions": 2048,
+    "labels": 1485,
     "files": 166,
-    "groups": 1619
+    "groups": 1618
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

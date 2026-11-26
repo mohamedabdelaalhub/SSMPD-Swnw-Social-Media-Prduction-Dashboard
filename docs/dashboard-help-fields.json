@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2049,
-    "labels": 1486,
+    "definitions": 2048,
+    "labels": 1485,
     "files": 166,
-    "groups": 1619
+    "groups": 1618
   },
   "fields": [
     {
@@ -10655,16 +10655,6 @@
       "tab": "production",
       "article": "platform-audit",
       "text_sha256": "90dbb3adc5d0ea02faed2b01512f08d10a66f043fde20f21e2461891b5a5562b"
-    },
-    {
-      "file": "month-end-accounts.js",
-      "label": "خصم المراجعة يروح فين؟",
-      "name": "",
-      "kind": "html",
-      "forms": [],
-      "tab": "production",
-      "article": "platform-audit",
-      "text_sha256": "fd912d221b5e52bda40f54441a50c723f19c200d07d7f13574ac8df9f8080868"
     },
     {
       "file": "month-end-accounts.js",

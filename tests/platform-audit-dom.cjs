@@ -1,5 +1,5 @@
 // Booking platforms screens (20261126180000, help 306), every new button by its real role (live data shape from the server):
-// accountant «مراجعة الفترة» from «حسابات آخر الشهر» (preview, 1 / 2 months, agreed amount → deduction destination 4122) and from
+// accountant «مراجعة الفترة» from «حسابات آخر الشهر» (preview, 1 / 2 months, agreed amount → deduction to the company 4122) and from
 // «مستحقات الموردين»; FM sees the «حساب تاني من الشجرة» choices and agrees by %; GM approves / rejects (with a reason) another
 // person's audit; nobody sees approve on their own; the platform settle request; ✕ closes every new window (rule 10).
 const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsdom');
@@ -11,9 +11,9 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
   {key:'lab',name:'المعمل',direction:'payable',percent:null,count:0,accrued:0,settled:0,pending:0,remaining:0,sort:5}];
  const audits=[{id:'a1',party:'vezeeta',party_name:'فيزيتا',from:'2030-01-01',to:'2030-01-01',ours:212.5,theirs:300,theirs_ref:'فاتورة 1',agreed_mode:'amount',agreed_value:180,agreed:180,deduction:32.5,extra:0,reason:'حجزين اتلغوا',dest_kind:'income',dest_account:'4122',dest_name:'إيراد تسويات منصات الحجز',status:'pending',by:'المحاسب',who:'acc'}];
  const server=(a,p)=>{if(!fin()&&a!=='my_items')throw Object.assign(new Error('للحسابات والإدارة'));
-  if(a==='statement')return {month:'2030-01-01',can_rate:role==='fm',can_request:reqr(),can_review:mgr(),can_audit:reqr(),can_account_dest:role==='fm',main_shift:'msh',parties:parties(),settlements:[]};
-  if(a==='audits')return {can_audit:reqr(),can_review:mgr(),can_account_dest:role==='fm',income_account:{code:'4122',name:'إيراد تسويات منصات الحجز'},payable_accounts:[{code:'2111',name:'مستحقات الموردين'}],
-   other_accounts:role==='fm'?[{code:'5233',name:'عمولات منصات الحجز'}]:[],audits:audits.map(x=>Object.assign({},x,{mine:x.who===role}))};
+  if(a==='statement')return {month:'2030-01-01',can_rate:role==='fm',can_request:reqr(),can_review:mgr(),can_audit:reqr(),main_shift:'msh',parties:parties(),settlements:[]};
+  if(a==='audits')return {can_audit:reqr(),can_review:mgr(),income_account:{code:'4122',name:'إيراد تسويات منصات الحجز'},
+   audits:audits.map(x=>Object.assign({},x,{mine:x.who===role}))};
   if(a==='audit_preview')return {party:p.party,ours:p.from.slice(0,7)===p.to.slice(0,7)?212.5:300,cases:2,percent:25,overlap:false};
   if(a==='audit_request'){if(!reqr())throw new Error('مراجعة الفترة للمحاسب أو المدير المالي');const x=Object.assign({id:'a'+(audits.length+1),status:'pending',who:role,party_name:p.party},p);audits.push(x);return x;}
   if(a==='audit_review'){if(!mgr())throw new Error('اعتماد المراجعة');const x=audits.find(y=>y.id===p.id);if(x.who===role)throw new Error('انت عاملها');x.status=p.ok?'approved':'rejected';x.review_note=p.note;return x;}
@@ -36,23 +36,22 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  box.querySelector('[data-mea-audit="vezeeta"]').click();for(let i=0;i<4;i++)await tick();let m=modalEl();assert.ok(m,'audit window open');
  assert.deepEqual(last('audit_preview')[2],{party:'vezeeta',from:'2030-01-01',to:'2030-01-01'});assert.equal(m.querySelector('[data-mea-ours]').textContent,'212.50');
  assert.ok(m.querySelector('[data-mea-destwrap]').hidden,'no destination before the agreed figure');
- assert.ok(![...m.querySelectorAll('[name=dest] option')].some(o=>o.value.startsWith('account:')),'no chart accounts for the accountant');
+ assert.ok(!m.querySelector('[name=dest]'),'no destination choice — always the company');
  set(m,{span:'2'});for(let i=0;i<3;i++)await tick();assert.deepEqual(last('audit_preview')[2],{party:'vezeeta',from:'2029-12-01',to:'2030-01-01'},'2 months = this + previous');
  assert.equal(m.querySelector('[data-mea-ours]').textContent,'300.00');set(m,{span:'1'});for(let i=0;i<3;i++)await tick();
  set(m,{theirs:'300',theirs_ref:'فاتورة فيزيتا 1125',agreed_mode:'amount',agreed_value:'180',reason:'كشفين اتلغوا'});
- assert.equal(m.querySelector('[data-mea-destwrap]').hidden,false,'deduction → destination shown');assert.match(m.querySelector('[data-mea-sum]').textContent,/خصم المراجعة 32.50/);
- set(m,{dest:'income:4122'});await submit();assert.ok(!modalEl(),'closed after send');
- assert.deepEqual(last('audit_request')[2],{party:'vezeeta',from:'2030-01-01',to:'2030-01-01',theirs:'300',theirs_ref:'فاتورة فيزيتا 1125',agreed_mode:'amount',agreed_value:'180',reason:'كشفين اتلغوا',dest_kind:'income',dest_account:'4122',token:last('audit_request')[2].token});
+ assert.equal(m.querySelector('[data-mea-destwrap]').hidden,false,'deduction → company note shown');assert.match(m.querySelector('[data-mea-destwrap]').textContent,/حساب الشركة.*4122/);assert.match(m.querySelector('[data-mea-sum]').textContent,/خصم المراجعة 32.50/);
+ await submit();assert.ok(!modalEl(),'closed after send');
+ assert.deepEqual(last('audit_request')[2],{party:'vezeeta',from:'2030-01-01',to:'2030-01-01',theirs:'300',theirs_ref:'فاتورة فيزيتا 1125',agreed_mode:'amount',agreed_value:'180',reason:'كشفين اتلغوا',token:last('audit_request')[2].token});
  // ✕ closes the audit window (rule 10)
  box=await open();box.querySelector('[data-mea-audit="kafaret"]').click();for(let i=0;i<4;i++)await tick();modalEl().querySelector('.modal-close').click();assert.ok(!modalEl(),'✕ closes');
  // platform settle request (accountant) from the audited balance
  box.querySelector('[data-mea-settle="vezeeta"]').click();await tick();m=modalEl();set(m,{amount:'180',method:'bank',reference:'تحويل فيزيتا'});await submit();
  assert.equal(last('settle_request')[2].party,'vezeeta');assert.equal(last('settle_request')[2].amount,180);
- // ---- FM: agreed by % (above ours → no destination); sees chart accounts
+ // ---- FM: agreed by % (above ours → extra, no deduction)
  role='fm';box=await open();box.querySelector('[data-mea-audit="kafaret"]').click();for(let i=0;i<4;i++)await tick();m=modalEl();
- assert.ok([...m.querySelectorAll('[name=dest] option')].some(o=>o.value==='account:5233'),'FM may pick a chart account');
  set(m,{theirs:'110',theirs_ref:'مطالبة كفارة',agreed_mode:'percent',agreed_value:'110',reason:'اتفاق'});assert.ok(m.querySelector('[data-mea-destwrap]').hidden);assert.match(m.querySelector('[data-mea-sum]').textContent,/زيادة/);
- await submit();assert.equal(last('audit_request')[2].dest_kind,null);assert.equal(last('audit_request')[2].agreed_mode,'percent');
+ await submit();assert.equal(last('audit_request')[2].dest_kind,undefined);assert.equal(last('audit_request')[2].agreed_mode,'percent');
  // FM sees approve on the accountant's audit but not on his own
  box=await open();assert.ok(box.querySelector('[data-mea-aok="a1"]'));assert.ok(!box.querySelector('[data-mea-aok="a3"]'),'own audit: no approve');
  // ---- GM: approve one, reject the other with a reason (✕-able window)
@@ -68,5 +67,5 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  role='gm';d.getElementById('fin').innerHTML=w.SSMPDFinanceControls.panel('suppliers',{},{});for(let i=0;i<4;i++)await tick();assert.ok(!d.querySelector('[data-mea-paudit]'),'GM: no audit request');
  assert.equal(w.SSMPDFinanceControls.panel('reports',{},{}),'<p data-prior>prior:reports</p>');
  const html=fs.readFileSync('index.html','utf8');assert.ok(html.indexOf('finance-suppliers.js')<html.indexOf('month-end-accounts.js'),'wraps the suppliers layer');
- console.log('PASS platform audit screens: accountant period audit (1/2 months, preview, deduction → 4122) from month-end and suppliers, platform settle, FM % agreement + chart accounts, GM approve / reject with reason, no self-approve, ✕ closes.');
+ console.log('PASS platform audit screens: accountant period audit (1/2 months, preview, deduction → 4122) from month-end and suppliers, platform settle, FM % agreement, GM approve / reject with reason, no self-approve, ✕ closes.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

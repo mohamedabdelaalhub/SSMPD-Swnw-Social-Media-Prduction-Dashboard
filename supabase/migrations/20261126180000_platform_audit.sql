@@ -10,9 +10,9 @@
 --     reason. A DIFFERENT person (FM / GM / super admin) approves; only then it posts:
 --        accrual     Dr 5233 عمولات منصات الحجز / Cr 2112 مستحقات منصات الحجز   = ours
 --        agreed > ours  Dr 5233 / Cr 2112                                     = agreed − ours
---        agreed < ours  Dr 2112 / Cr <destination>                            = ours − agreed  (the «خصم المراجعة»)
---     destination: 'income' → 4122 إيراد تسويات منصات الحجز; 'payable' → another liability account (2xxx, not 2112); 'account' →
---     any other non-asset account (financial manager / super admin requester only). No period of a platform may be audited twice.
+--        agreed < ours  Dr 2112 / Cr 4122 إيراد تسويات منصات الحجز            = ours − agreed  (the «خصم المراجعة»)
+--     The deduction ALWAYS goes to the company (owner 2026-11-26: «خليه رصيد في حساب الشركة» — it can later fund invoices, dues,
+--     debts or installments through the normal treasury / payment paths); any other destination is refused.
 --     Entry sources (entries are unique per source + source_id): 'platform_audit' (accrual), 'platform_audit_extra',
 --     'platform_audit_deduction' — all with the audit id.
 --   * A platform's balance (shown in «مستحقات الموردين» and «حسابات آخر الشهر») = Σ approved agreed − Σ approved/pending settlements.
@@ -105,7 +105,7 @@ create table clinic_finance.platform_audits (
   agreed_mode text not null check (agreed_mode in ('amount', 'percent')), agreed_value numeric(14,3) not null check (agreed_value >= 0),
   agreed numeric(14,2) not null check (agreed >= 0 and agreed <= 10000000),
   reason text not null check (length(btrim(reason)) between 3 and 400),
-  dest_kind text check (dest_kind in ('income', 'payable', 'account')), dest_account text references clinic_finance.accounts(code),
+  dest_kind text check (dest_kind = 'income'), dest_account text references clinic_finance.accounts(code) check (dest_account = '4122'),
   check ((agreed < ours) = (dest_kind is not null and dest_account is not null)),
   created_by uuid not null references public.admins(id), created_at timestamptz not null default now(), token uuid not null,
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
@@ -114,20 +114,6 @@ create table clinic_finance.platform_audits (
 create index platform_audits_party_idx on clinic_finance.platform_audits(party, from_month);
 alter table clinic_finance.platform_audits enable row level security;
 revoke all on clinic_finance.platform_audits from public, anon, authenticated;
-
--- may this account receive an audit deduction of the given kind?
-create function clinic_finance.platform_dest_ok(p_kind text, p_account text) returns boolean
-language sql stable security definer set search_path = pg_catalog, public as $$
-  select case p_kind
-    when 'income' then p_account = '4122'
-    when 'payable' then exists (select 1 from clinic_finance.accounts a left join clinic_finance.account_config c on c.code = a.code
-                                 where a.code = p_account and a.kind = 'liability' and a.code <> '2112' and coalesce(c.active, true) and not coalesce(c.archived, false))
-    when 'account' then exists (select 1 from clinic_finance.accounts a left join clinic_finance.account_config c on c.code = a.code
-                                 where a.code = p_account and a.kind in ('liability', 'equity', 'income', 'expense') and a.code <> '2112'
-                                   and coalesce(c.active, true) and not coalesce(c.archived, false))
-    else false end
-$$;
-revoke all on function clinic_finance.platform_dest_ok(text, text) from public, anon, authenticated;
 
 -- per platform: what the approved audits put on 2112, the deductions, the settlements and the balance we still owe
 create function clinic_finance.platform_balances() returns table(party text, name text, percent numeric, audited numeric, extra numeric, deducted numeric,
@@ -152,7 +138,7 @@ revoke all on function clinic_finance.clinic_finance_month_end_before_audit(text
 
 create function public.clinic_finance_month_end(p_action text, p jsonb default '{}'::jsonb) returns jsonb
 language plpgsql security definer set search_path = pg_catalog, public as $$
-declare me uuid := public.my_admin_id(); fin boolean; mgr boolean; reqr boolean; fm boolean; r jsonb; pt clinic_finance.month_end_parties%rowtype;
+declare me uuid := public.my_admin_id(); fin boolean; mgr boolean; reqr boolean; r jsonb; pt clinic_finance.month_end_parties%rowtype;
   au clinic_finance.platform_audits%rowtype; st clinic_finance.month_end_settlements%rowtype; f date; t date; t_end date; ours_ numeric; n int;
   amt numeric; val numeric; tok uuid; left_ numeric; e1 uuid; e2 uuid; cashacct text; sh uuid; ok boolean; dk text; da text; m date;
   plat constant text[] := array['vezeeta', 'clinidu', 'akshef', 'kafaret'];
@@ -161,7 +147,6 @@ begin
   fin := public.has_role('accountant') or public.has_role('financial_manager') or public.has_role('general_manager') or public.has_role('super_admin');
   mgr := public.has_role('financial_manager') or public.has_role('general_manager') or public.has_role('super_admin');
   reqr := public.has_role('accountant') or public.has_role('financial_manager');
-  fm := public.has_role('financial_manager') or public.has_role('super_admin');
   p := coalesce(p, '{}'::jsonb);
 
   -- every non-platform path is the previous function, unchanged
@@ -176,7 +161,7 @@ begin
         'balance', b.balance, 'pending', b.pending, 'settled', b.settled, 'deducted', b.deducted, 'remaining', greatest(b.balance - b.pending, 0), 'audited_through', b.last_audit, 'platform', true)
         else x end order by (x->>'sort')::int), '[]'::jsonb)
       from jsonb_array_elements(r->'parties') x left join clinic_finance.platform_balances() b on b.party = x->>'key'),
-      'can_audit', reqr, 'can_account_dest', fm);
+      'can_audit', reqr);
   elsif p_action not in ('platforms', 'audits', 'audit_preview', 'audit_request', 'audit_review') then
     return clinic_finance.clinic_finance_month_end_before_audit(p_action, p);
   end if;
@@ -188,12 +173,8 @@ begin
 
   elsif p_action = 'audits' then
     if not fin then raise exception 'مراجعات المنصات للحسابات والإدارة' using errcode = '42501'; end if;
-    return jsonb_build_object('can_audit', reqr, 'can_review', mgr, 'can_account_dest', fm,
+    return jsonb_build_object('can_audit', reqr, 'can_review', mgr,
       'income_account', jsonb_build_object('code', '4122', 'name', (select name from clinic_finance.accounts where code = '4122')),
-      'payable_accounts', (select coalesce(jsonb_agg(jsonb_build_object('code', a.code, 'name', a.name) order by a.code), '[]'::jsonb)
-         from clinic_finance.accounts a where clinic_finance.platform_dest_ok('payable', a.code)),
-      'other_accounts', case when fm then (select coalesce(jsonb_agg(jsonb_build_object('code', a.code, 'name', a.name, 'kind', a.kind) order by a.code), '[]'::jsonb)
-         from clinic_finance.accounts a where clinic_finance.platform_dest_ok('account', a.code)) else '[]'::jsonb end,
       'audits', (select coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'party', a.party, 'party_name', q.name, 'from', a.from_month, 'to', a.to_month,
           'ours', a.ours, 'cases', a.cases, 'theirs', a.theirs, 'theirs_ref', a.theirs_ref, 'agreed_mode', a.agreed_mode, 'agreed_value', a.agreed_value,
           'agreed', a.agreed, 'deduction', greatest(a.ours - a.agreed, 0), 'extra', greatest(a.agreed - a.ours, 0), 'reason', a.reason,
@@ -238,13 +219,10 @@ begin
       amt := val;
     end if;
     if length(btrim(coalesce(p->>'reason', ''))) < 3 then raise exception 'اكتب سبب الاتفاق'; end if;
+    if coalesce(p->>'dest_kind', 'income') <> 'income' or coalesce(nullif(p->>'dest_account', ''), '4122') <> '4122'
+      then raise exception 'خصم المراجعة بيروح لحساب الشركة بس (4122)'; end if;
     dk := null; da := null;
-    if amt < ours_ then
-      dk := p->>'dest_kind'; da := case when dk = 'income' then '4122' else nullif(p->>'dest_account', '') end;
-      if dk is null or dk not in ('income', 'payable', 'account') then raise exception 'اختار خصم المراجعة يروح فين'; end if;
-      if dk = 'account' and not fm then raise exception 'اختيار حساب من الشجرة للمدير المالي بس' using errcode = '42501'; end if;
-      if not clinic_finance.platform_dest_ok(dk, da) then raise exception 'الحساب ده مينفعش يستقبل خصم المراجعة'; end if;
-    end if;
+    if amt < ours_ then dk := 'income'; da := '4122'; end if;
     insert into clinic_finance.platform_audits(party, from_month, to_month, ours, cases, theirs, theirs_ref, agreed_mode, agreed_value, agreed, reason,
       dest_kind, dest_account, created_by, token)
       values (pt.key, f, t, ours_, n, (p->>'theirs')::numeric, btrim(p->>'theirs_ref'), p->>'agreed_mode', val, amt, btrim(p->>'reason'), dk, da, me, tok)
@@ -267,7 +245,6 @@ begin
       select * into pt from clinic_finance.month_end_parties where key = au.party;
       select coalesce(sum(l.amount), 0) into ours_ from clinic_finance.month_end_lines(au.party, au.from_month, (au.to_month + interval '1 month' - interval '1 day')::date) l;
       if ours_ <> au.ours then raise exception 'رقمنا اتغيّر من وقت الطلب (% بدل %) — ارفض واعمل طلب جديد', ours_, au.ours; end if;
-      if au.dest_account is not null and not clinic_finance.platform_dest_ok(au.dest_kind, au.dest_account) then raise exception 'حساب خصم المراجعة اتقفل — ارفض واعمل طلب جديد'; end if;
       e1 := null; e2 := null;
       if au.ours > 0 then
         e1 := clinic_finance.post('platform_audit', au.id, 'استحقاق ' || pt.name || ' — ' || to_char(au.from_month, 'YYYY-MM') ||

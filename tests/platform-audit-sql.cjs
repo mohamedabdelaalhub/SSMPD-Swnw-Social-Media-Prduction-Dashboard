@@ -60,23 +60,22 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   assert.deepEqual(['vezeeta','clinidu','akshef','kafaret'].map(k=>+party(st,k).percent),[25,25,25,25]);
   assert.equal(+party(st,'vezeeta').accrued,212.5,'25% × (450 + 400) — not متابعة, not «فيزيتا شامل», not the laser');assert.equal(party(st,'vezeeta').count,2);
   assert.equal(+party(st,'kafaret').accrued,100);assert.equal(party(st,'kafaret').name,'كفارة وسلامتك');assert.equal(party(st,'vezeeta').platform,true);
-  assert.equal(+party(st,'vezeeta').remaining,0,'nothing payable before an approved audit');assert.equal(st.can_audit,true);assert.equal(st.can_account_dest,false);
+  assert.equal(+party(st,'vezeeta').remaining,0,'nothing payable before an approved audit');assert.equal(st.can_audit,true);
   await assert.rejects(()=>call('settle_request',{party:'vezeeta',amount:'10',method:'bank',reference:'سداد',token:id()}),/راجع الفترة الأول/);
   await as('rec');await assert.rejects(()=>call('audits'),/للحسابات والإدارة/);await assert.rejects(()=>call('platforms'),/للحسابات والإدارة/);
   // preview + request (accountant): ours 212.50, theirs 300, agreed 180 → deduction 32.50
   await as('acc');const pv=await call('audit_preview',{party:'vezeeta',from:month});assert.equal(+pv.ours,212.5);assert.equal(pv.cases,2);assert.equal(pv.overlap,false);
   const base={party:'vezeeta',from:month,to:month,theirs:'300',theirs_ref:'فاتورة فيزيتا 1125',agreed_mode:'amount',agreed_value:'180',reason:'كشفين اتلغوا ومتحسبين عندهم'};
-  await assert.rejects(()=>call('audit_request',{...base,token:id()}),/يروح فين/);
-  await assert.rejects(()=>call('audit_request',{...base,dest_kind:'account',dest_account:'4110',token:id()}),/للمدير المالي بس/);
-  await assert.rejects(()=>call('audit_request',{...base,dest_kind:'payable',dest_account:'1111',token:id()}),/مينفعش يستقبل/);
-  await assert.rejects(()=>call('audit_request',{...base,dest_kind:'payable',dest_account:'2112',token:id()}),/مينفعش يستقبل/);
+  // the deduction goes to the company only (owner: «خليه رصيد في حساب الشركة»)
+  await assert.rejects(()=>call('audit_request',{...base,dest_kind:'payable',dest_account:'2111',token:id()}),/لحساب الشركة بس/);
+  await assert.rejects(()=>call('audit_request',{...base,dest_kind:'account',dest_account:'4110',token:id()}),/لحساب الشركة بس/);
+  await as('fm');await assert.rejects(()=>call('audit_request',{...base,dest_kind:'account',dest_account:'5233',token:id()}),/لحساب الشركة بس/,'not even the FM');await as('acc');
   await assert.rejects(()=>call('audit_request',{...base,to:'2099-01-01',dest_kind:'income',token:id()}),/شهر أو شهرين|لسه مجتش/);
   const tok=id();let a1=await call('audit_request',{...base,dest_kind:'income',token:tok});assert.equal(a1.status,'pending');assert.equal(+a1.ours,212.5);assert.equal(+a1.agreed,180);assert.equal(a1.dest_account,'4122');
   assert.equal((await call('audit_request',{...base,dest_kind:'income',token:tok})).id,a1.id,'idempotent token');
   await assert.rejects(()=>call('audit_request',{...base,dest_kind:'income',token:id()}),/اتراجعت قبل كده/);
   await assert.rejects(()=>call('audit_review',{id:a1.id,ok:true}),/اعتماد المراجعة/);
-  let au=await call('audits');assert.equal(au.audits[0].mine,true);assert.equal(+au.audits[0].deduction,32.5);assert.equal(au.other_accounts.length,0,'other accounts only for the FM');
-  assert.ok(au.payable_accounts.some(x=>x.code==='2111')&&!au.payable_accounts.some(x=>x.code==='2112'));
+  let au=await call('audits');assert.equal(au.audits[0].mine,true);assert.equal(+au.audits[0].deduction,32.5);assert.equal(au.income_account.code,'4122');
   // FM approves → accrual 212.50 + deduction 32.50 to 4122
   await as('fm');let r=await call('audit_review',{id:a1.id,ok:true});assert.equal(r.status,'approved');assert.equal(r.entry_ids.length,2);
   assert.deepEqual((await lines(a1.id)).sort(),[['2112',0,212.5],['2112',32.5,0],['4122',0,32.5],['5233',212.5,0]].sort());
@@ -86,11 +85,11 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   assert.equal(+a1.agreed,110);assert.equal(a1.dest_kind,null);
   await assert.rejects(()=>call('audit_review',{id:a1.id,ok:true}),/انت عاملها/);
   await as('gm');await call('audit_review',{id:a1.id,ok:true});assert.deepEqual((await lines(a1.id)).sort(),[['2112',0,100],['2112',0,10],['5233',100,0],['5233',10,0]].sort());
-  // clinidu: deduction to a payable (2111) asked by the accountant, approved by SA; FM may pick any non-asset account
-  await as('fm');assert.ok((await call('audits')).other_accounts.some(x=>x.code==='4110'));
-  await as('acc');a1=await call('audit_request',{party:'clinidu',from:month,theirs:'50',theirs_ref:'كلينيدو 11',agreed_mode:'amount',agreed_value:'40',reason:'خصم متفق عليه',dest_kind:'payable',dest_account:'2111',token:id()});
+  // clinidu: no dest given at all → still 4122 (accountant asks, SA approves after a reason-less reject is refused)
+  await as('acc');a1=await call('audit_request',{party:'clinidu',from:month,theirs:'50',theirs_ref:'كلينيدو 11',agreed_mode:'amount',agreed_value:'40',reason:'خصم متفق عليه',token:id()});
+  assert.equal(a1.dest_account,'4122');
   await as('sa');await assert.rejects(()=>call('audit_review',{id:a1.id,ok:false}),/سبب الرفض/);await call('audit_review',{id:a1.id,ok:true});
-  assert.deepEqual((await lines(a1.id)).sort(),[['2111',0,10],['2112',0,50],['2112',10,0],['5233',50,0]].sort());
+  assert.deepEqual((await lines(a1.id)).sort(),[['2112',0,50],['2112',10,0],['4122',0,10],['5233',50,0]].sort());
   // akshef: our number changes after the request → approval refused; then rejected with a reason
   await as('acc');a1=await call('audit_request',{party:'akshef',from:month,theirs:'25',theirs_ref:'اكشف 11',agreed_mode:'percent',agreed_value:'100',reason:'زي ما هو',token:id()});
   await visit('akshef',K,100);await as('fm');await assert.rejects(()=>call('audit_review',{id:a1.id,ok:true}),/اتغيّر/);
@@ -111,6 +110,6 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   assert.equal(+party(st,'vezeeta').accrued,0);assert.equal(party(st,'vezeeta').platform,undefined);
   assert.equal((await one("select count(*)::int n from clinic_finance.platform_audits_rolled_back")).n,4,'history kept');
   assert.equal((await q("select 1 from pg_proc where proname='platform_balances'")).rows.length,0);
-  console.log('PASS platform audit SQL: 25% of كشف/استشارة only (متابعة, «فيزيتا شامل» and other services excluded), كفارة وسلامتك, ours/theirs/agreed (amount or %), deduction → 4122 / payable / FM-only account, extra → 5233, overlap + changed-number + self-approval refusals, settlement Dr 2112 from the audited balance, other parties unchanged, rollback');
+  console.log('PASS platform audit SQL: 25% of كشف/استشارة only (متابعة, «فيزيتا شامل» and other services excluded), كفارة وسلامتك, ours/theirs/agreed (amount or %), deduction → company 4122 only (other destinations refused), extra → 5233, overlap + changed-number + self-approval refusals, settlement Dr 2112 from the audited balance, other parties unchanged, rollback');
  }catch(e){console.error(e.message,e.where||'');process.exitCode=1;}
 })();

@@ -3,7 +3,7 @@
    % of the executed كشف), the external lab (price-list cost) and the dental lab (per case), and what مركز الطاهرة owes us (30% of
    the referrals). Rates (FM / super admin), details, «طلب سداد» (accountant / FM) and «اعتماد» by another person (FM / GM / SA).
    Reception card (live workspace): «تحويل لمركز الطاهرة» and «فاتورة معمل أسنان». Server: public.clinic_finance_month_end (20261126110000).
-   Booking platforms (20261126180000, help 306): «مراجعة الفترة» (ours / theirs / agreed + reason, deduction destination), the audits
+   Booking platforms (20261126180000, help 306): «مراجعة الفترة» (ours / theirs / agreed + reason; the deduction always goes to the company, 4122), the audits
    list with approve / reject by another person, and the platforms rows in «مستحقات الموردين» (suppliers tab). */
 (function(w,d){'use strict';
 var MET={cash:'كاش من الخزينة الرئيسية',bank:'تحويل بنكي',wallet:'فودافون كاش (المحافظ)'};
@@ -58,7 +58,7 @@ function settleModal(box,s,key){var p=(s.parties||[]).find(function(x){return x.
  modal(recv?'طلب تحصيل — '+p.name:'طلب سداد — '+p.name,body,async function(v,k){var amt=+v.amount;if(!(amt>0))throw new Error('اكتب المبلغ');if(amt>+p.remaining)throw new Error('المبلغ أكبر من المتبقي');
    await rpc('settle_request',{party:key,month:s.month,amount:amt,method:v.method,reference:v.reference,note:v.note||'',token:k});toast('الطلب اتبعت للاعتماد');load(box);},'ابعت للاعتماد');}
 /* ---------- booking platforms: period audit (help 306) ---------- */
-var DK={income:'إيراد للشركة',payable:'جهة دائنة تانية',account:'حساب تاني من الشجرة'};
+var DK={income:'حساب الشركة'};
 function ym(v){return v?String(v).slice(0,7):'';}
 function addMonth(m,n){var p=m.split('-'),y=+p[0],mo=+p[1]-1+n;y+=Math.floor(mo/12);mo=((mo%12)+12)%12;return y+'-'+String(mo+1).padStart(2,'0');}
 function auditsHtml(a){var xs=a.audits||[];if(!xs.length)return '<p class="fc-note">مفيش مراجعات لسه. «مراجعة الفترة» قصاد كل منصة.</p>';
@@ -69,7 +69,7 @@ function auditsHtml(a){var xs=a.audits||[];if(!xs.length)return '<p class="fc-no
     '<td>'+(x.dest_kind?esc(DK[x.dest_kind]||x.dest_kind)+'<br><small>'+esc(x.dest_name||'')+' ('+esc(x.dest_account)+')</small>':'—')+'</td><td>'+esc(x.by||'')+'<br><small>'+esc(x.reason)+'</small></td><td>'+badge(x.status)+(x.review_note?'<br><small>'+esc(x.review_note)+'</small>':'')+'</td>'+
     '<td>'+(x.status==='pending'&&a.can_review&&!x.mine?'<button type="button" class="btn btn-primary" data-mea-aok="'+esc(x.id)+'">اعتماد</button> <button type="button" class="btn" data-mea-ano="'+esc(x.id)+'">رفض</button>':'')+'</td></tr>';}).join('')+'</tbody></table></div>';}
 function auditModal(key,name,month,a,done){
- var dest=[['income:4122',DK.income+' — '+((a.income_account||{}).name||'إيراد تسويات منصات الحجز')+' (4122)']].concat((a.payable_accounts||[]).map(function(x){return ['payable:'+x.code,DK.payable+' — '+x.name+' ('+x.code+')'];}),(a.other_accounts||[]).map(function(x){return ['account:'+x.code,DK.account+' — '+x.name+' ('+x.code+')'];}));
+ var inc=(a.income_account||{}).name||'إيراد تسويات منصات الحجز';
  var body='<p class="rse-intro" data-wide>رقمنا من السجلات: <b dir="ltr" data-mea-ours>…</b> جنيه <small data-mea-cases></small></p>'+
   '<label>الفترة<select name="span" required><option value="1">شهر</option><option value="2">شهرين (الشهر ده واللي قبله)</option></select></label>'+
   fld('month','آخر شهر في الفترة','month',ym(month),'required')+
@@ -77,23 +77,23 @@ function auditModal(key,name,month,a,done){
   '<label>المتفق عليه<select name="agreed_mode" required><option value="amount">مبلغ</option><option value="percent">نسبة من رقمنا</option></select></label>'+
   fld('agreed_value','قيمة المتفق عليه','number','','required min="0" step="0.01" inputmode="decimal"')+
   '<label data-wide>سبب الاتفاق<input name="reason" required minlength="3" maxlength="400" placeholder="مثلاً: حجزين اتلغوا ومتحسبين عندهم"></label>'+
-  '<label data-wide data-mea-destwrap hidden>خصم المراجعة يروح فين؟<select name="dest">'+dest.map(function(o){return '<option value="'+esc(o[0])+'">'+esc(o[1])+'</option>';}).join('')+'</select></label>'+
+  '<p class="rse-note" data-wide data-mea-destwrap hidden>خصم المراجعة بيروح لحساب الشركة: «'+esc(inc)+'» (4122) — رصيد للشركة يتصرف منه بعدين على الفواتير والمستحقات من طرق الصرف العادية.</p>'+
   '<p class="rse-note" data-wide data-mea-sum></p>'+
-  '<p class="rse-note" data-wide>الأرقام التلاتة بتتحفظ مع السبب. القيد بيتسجل لما شخص تاني (المدير المالي أو المدير العام أو السوبر أدمن) يعتمد: الاستحقاق على «مستحقات منصات الحجز»، والخصم على المكان اللي اخترته.</p>';
- var ours=null,root=modal('مراجعة الفترة — '+name,body,async function(v,k){if(ours==null)throw new Error('استنى رقمنا يتحسب');var range=per(v),ag=agreed(v),d0=ag<ours?String(v.dest||'').split(':'):[null,null];
-   await rpc('audit_request',{party:key,from:range[0]+'-01',to:range[1]+'-01',theirs:v.theirs,theirs_ref:v.theirs_ref,agreed_mode:v.agreed_mode,agreed_value:v.agreed_value,reason:v.reason,dest_kind:d0[0],dest_account:d0[1],token:k});
+  '<p class="rse-note" data-wide>الأرقام التلاتة بتتحفظ مع السبب. القيد بيتسجل لما شخص تاني (المدير المالي أو المدير العام أو السوبر أدمن) يعتمد: الاستحقاق على «مستحقات منصات الحجز»، والخصم لحساب الشركة.</p>';
+ var ours=null,root=modal('مراجعة الفترة — '+name,body,async function(v,k){if(ours==null)throw new Error('استنى رقمنا يتحسب');var range=per(v),ag=agreed(v);
+   await rpc('audit_request',{party:key,from:range[0]+'-01',to:range[1]+'-01',theirs:v.theirs,theirs_ref:v.theirs_ref,agreed_mode:v.agreed_mode,agreed_value:v.agreed_value,reason:v.reason,token:k});
    toast('المراجعة اتبعتت للاعتماد');if(done)done();},'ابعت للاعتماد');if(!root)return null;
  var form=root.querySelector('form');
  function per(v){var end=v.month||ym(month);return [+v.span===2?addMonth(end,-1):end,end];}
  function agreed(v){var x=+v.agreed_value||0;return v.agreed_mode==='percent'?Math.round((ours||0)*x)/100:x;}
  function vals(){var v={};Array.prototype.forEach.call(form.elements,function(x){if(x.name)v[x.name]=x.value;});return v;}
- function sum(){var v=vals(),ag=agreed(v),wrap=form.querySelector('[data-mea-destwrap]'),need=ours!=null&&v.agreed_value!==''&&ag<ours;wrap.hidden=!need;form.elements.dest.required=need;form.elements.dest.disabled=!need;
+ function sum(){var v=vals(),ag=agreed(v),wrap=form.querySelector('[data-mea-destwrap]'),need=ours!=null&&v.agreed_value!==''&&ag<ours;wrap.hidden=!need;
   form.querySelector('[data-mea-sum]').textContent=ours==null||v.agreed_value===''?'':'المتفق عليه '+money(ag)+' — '+(ag<ours?'خصم المراجعة '+money(ours-ag):ag>ours?'زيادة على رقمنا '+money(ag-ours)+' (بتتسجل مصروف)':'زي رقمنا بالظبط')+(v.theirs!==''?' · الفرق مع رقمهم '+money((+v.theirs||0)-ag):'');}
  function preview(){var r=per(vals());ours=null;root.querySelector('[data-mea-ours]').textContent='…';
   return rpc('audit_preview',{party:key,from:r[0]+'-01',to:r[1]+'-01'}).then(function(x){ours=+x.ours||0;root.querySelector('[data-mea-ours]').textContent=money(ours);
    root.querySelector('[data-mea-cases]').textContent='('+(x.cases||0)+' كشف × '+esc(x.percent==null?'—':+x.percent)+'%)'+(x.overlap?' — الفترة دي اتراجعت قبل كده':'');sum();},function(e){root.querySelector('[data-mea-status]').textContent=e.message||'تعذر الحساب';});}
  form.elements.span.onchange=preview;form.elements.month.onchange=preview;['agreed_mode','agreed_value','theirs'].forEach(function(n){form.elements[n].oninput=sum;form.elements[n].onchange=sum;});
- form.elements.dest.disabled=true;root._preview=preview();return root;}
+ root._preview=preview();return root;}
 function reviewAudit(id,ok,done){if(ok)return rpc('audit_review',{id:id,ok:true}).then(function(){toast('اتعتمدت واتسجل القيد');done();});
  modal('رفض المراجعة','<label data-wide>سبب الرفض<input name="note" required minlength="3" maxlength="300"></label>',async function(v){await rpc('audit_review',{id:id,ok:false,note:v.note});toast('اترفضت');done();},'رفض');return Promise.resolve();}
 function wireAudits(host,a,again){host.querySelectorAll('[data-mea-aok]').forEach(function(b){b.onclick=function(){b.disabled=true;reviewAudit(b.getAttribute('data-mea-aok'),true,again).catch(function(e){b.disabled=false;toast(e.message||'تعذر','error');});};});
