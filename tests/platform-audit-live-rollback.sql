@@ -328,7 +328,9 @@ begin
   --   maker = an accountant if live has one, else the financial manager; checker = another person (FM if the maker is the
   --   accountant, else GM, else a super admin — non-owner first); apr = a GM / super admin who is neither (for the FM-as-maker case)
   select a.user_id into acc from public.admins a where a.active and a.user_id is not null and coalesce(a.name, '') <> 'Admin Test'
-     and public.has_role_for(a.id, 'accountant') order by a.id limit 1;
+     and public.has_role_for(a.id, 'accountant')
+     -- a plain accountant: not also FM / super admin (extra roles), or the FM-only checks would not apply to them
+     and not public.has_role_for(a.id, 'financial_manager') and not public.has_role_for(a.id, 'super_admin') order by a.id limit 1;
   select a.user_id into fmu from public.admins a where a.active and a.user_id is not null and coalesce(a.name, '') <> 'Admin Test'
      and public.has_role_for(a.id, 'financial_manager') and a.user_id is distinct from acc order by a.id limit 1;
   select a.user_id into apr from public.admins a where a.active and a.user_id is not null and coalesce(a.name, '') <> 'Admin Test'
@@ -412,7 +414,7 @@ begin
           'agreed_value', 0, 'reason', 'dry-run', 'dest_kind', 'account', 'dest_account', '5233', 'token', gen_random_uuid())); raise exception 'accountant used a chart account!';
   exception when others then if sqlerrm not like '%للمدير المالي بس%' then raise; end if; end;
   execute 'reset role';
-  else raise notice 'skipped: accountant-only refusal (chart account) — live has no accountant login'; end if;
+  else raise notice 'skipped: accountant-only refusal (chart account) — live has no plain accountant login (not also FM / super admin)'; end if;
   perform set_config('request.jwt.claim.sub', fmu::text, true); execute 'set local role authenticated';
   o2 := (public.clinic_finance_month_end('audit_preview', jsonb_build_object('party', 'kafaret', 'from', ma))->>'ours')::numeric;
   a := public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'kafaret', 'from', ma, 'theirs', o2, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'percent',
