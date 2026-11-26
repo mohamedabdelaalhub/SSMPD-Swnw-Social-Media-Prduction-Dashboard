@@ -2,7 +2,7 @@
   "coverage": {
     "version": "20261117-1",
     "definitions": 2018,
-    "labels": 1466,
+    "labels": 1464,
     "files": 160,
     "groups": 1585
   },
@@ -3435,7 +3435,7 @@
     },
     {
       "file": "finance-account-statements.js",
-      "label": "الحساب المقابل",
+      "label": "الفلوس دي لإيه؟ (الحساب)",
       "name": "account",
       "kind": "helper",
       "forms": [
@@ -3443,8 +3443,8 @@
         "سند قبض حساب"
       ],
       "tab": "accounting",
-      "article": "ledger-guide",
-      "text_sha256": "a201751f70e73b41a772b59c56f75c466de014bf91d97a374c66d653fb2f04b6"
+      "article": "finance-today-plain",
+      "text_sha256": "11d7e045822d45fc37e124ceda3bdfd335b9f7639758ed6e9fa3da8bc896b653"
     },
     {
       "file": "finance-account-statements.js",
@@ -3461,7 +3461,7 @@
     },
     {
       "file": "finance-account-statements.js",
-      "label": "اسم مستلم النقد أو مسلّمه",
+      "label": "اسم اللي استلم أو سلّم الفلوس",
       "name": "recipient",
       "kind": "helper",
       "forms": [
@@ -3469,8 +3469,8 @@
         "سند قبض حساب"
       ],
       "tab": "accounting",
-      "article": "ledger-guide",
-      "text_sha256": "5a8f1f501b330165d54d71d3a11f8d4ea3b3f083e75022abc47656422cc62bcc"
+      "article": "finance-today-plain",
+      "text_sha256": "ec2f62862151c51a968e337e35a90cefcbfce66c71f3a1d212743e090f156909"
     },
     {
       "file": "finance-account-statements.js",
@@ -3487,7 +3487,7 @@
     },
     {
       "file": "finance-account-statements.js",
-      "label": "إجمالي السند قبل الاستقطاع",
+      "label": "المبلغ (قبل خصم الضريبة)",
       "name": "amount",
       "kind": "helper",
       "forms": [
@@ -3495,8 +3495,8 @@
         "سند قبض حساب"
       ],
       "tab": "accounting",
-      "article": "ledger-guide",
-      "text_sha256": "a218eb49dd281a241b5dbc120a60252e627c0fe02d742f1e5086390727f8777b"
+      "article": "finance-today-plain",
+      "text_sha256": "24e67217e950dec2226e99395d3f797da31698bf50bd51acff546c95df7e0a9d"
     },
     {
       "file": "finance-account-statements.js",
@@ -3513,7 +3513,7 @@
     },
     {
       "file": "finance-account-statements.js",
-      "label": "مرجع السند",
+      "label": "رقم الورقة أو الإيصال",
       "name": "reference",
       "kind": "helper",
       "forms": [
@@ -3521,12 +3521,12 @@
         "سند قبض حساب"
       ],
       "tab": "accounting",
-      "article": "ledger-guide",
-      "text_sha256": "1bf774133a6bfa064a8cd003607d94ae6bb194a9f47486d8988d3785af8f45bb"
+      "article": "finance-request-plain",
+      "text_sha256": "0770668a3d70128116eee58950b235a06fc7bdbcf4a425b79c8ad54e88a60d45"
     },
     {
       "file": "finance-account-statements.js",
-      "label": "بيان السند",
+      "label": "السبب",
       "name": "description",
       "kind": "helper",
       "forms": [
@@ -3534,8 +3534,8 @@
         "سند قبض حساب"
       ],
       "tab": "accounting",
-      "article": "ledger-guide",
-      "text_sha256": "36db37cf10de33fcde2e53dad39e21e0ea1086378f8ad47a86075de9d18cce63"
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
     {
       "file": "finance-account-statements.js",
