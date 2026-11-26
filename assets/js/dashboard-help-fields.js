@@ -3232,6 +3232,84 @@
       "reviewed": true
     },
     {
+      "title": "الموظف",
+      "labels": [
+        "الموظف"
+      ],
+      "text": "اختر الموظف الذي يخصه التكليف أو العقد أو الاستحقاق أو الفلترة. في مستحقات الرواتب طابق الاسم بالعقد والفترة ولا تستخدم اسم مسجل الطلب بدل المستفيد.",
+      "article": "payroll",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المورد / الصيدلية",
+      "labels": [
+        "المورد / الصيدلية"
+      ],
+      "text": "المورد أو الصيدلية اللي هتدفعلها. لازم يكون متسجل في الموردين — المحاسب بيسجل فاتورته بأصنافها قبل الموافقة.",
+      "article": "drawer-requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "📷 صورة فاتورة المورد (إجباري)",
+      "labels": [
+        "📷 صورة فاتورة المورد (إجباري)"
+      ],
+      "text": "صوّر فاتورة المورد. من غيرها الطلب مش هيتبعت، والمحاسب بيراجع عليها.",
+      "article": "drawer-requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ (جنيه)",
+      "labels": [
+        "المبلغ (جنيه)"
+      ],
+      "text": "المبلغ اللي محتاج يطلع من درجك. بعد الموافقة لازم الكاش اللي في الدرج يكفيه وقت «اتصرف».",
+      "article": "drawer-requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: سلفة شخصية — تتخصم من مرتب الشهر",
+      "labels": [
+        "مثلاً: سلفة شخصية — تتخصم من مرتب الشهر"
+      ],
+      "text": "اكتب الطلب ليه بالظبط — بيظهر للي هيوافق.",
+      "article": "drawer-requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "السبب",
+      "labels": [
+        "السبب"
+      ],
+      "text": "اكتب الحدث الذي يستدعي الطلب وسببه والمستند الذي يثبته، مثل رد دفعة عن موعد ملغي. لا تكتب سببًا عامًا لا يسمح للمراجع بفهم العملية.",
+      "article": "requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اكتب اللي مش عارف تعمله…",
       "labels": [
         "اكتب اللي مش عارف تعمله…"
@@ -13645,6 +13723,32 @@
       "reviewed": true
     },
     {
+      "title": "دوّر",
+      "labels": [
+        "دوّر"
+      ],
+      "text": "اختر دور الموظف الذي ستعرض أو تعدل مستهدفاته وأوزان مؤشراته، وليس حساب شخص منفرد أو منح صلاحية جديدة.",
+      "article": "indicators",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب اللي عايزه… مثلاً: مصروف",
+      "labels": [
+        "اكتب اللي عايزه… مثلاً: مصروف"
+      ],
+      "text": "اكتب كلمة من اللي عايز تعمله (مثلاً: مصروف، تحصيل، ورديتي) والقايمة هتوريك الجمل اللي فيها الكلمة دي بس.",
+      "article": "reception-drawer",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "من مواعيد النهارده (اختياري)",
       "labels": [
         "من مواعيد النهارده (اختياري)"
@@ -23393,9 +23497,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2019,
-    "labels": 1466,
-    "files": 160,
-    "groups": 1587
+    "definitions": 2027,
+    "labels": 1471,
+    "files": 162,
+    "groups": 1595
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
