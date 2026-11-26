@@ -42,7 +42,7 @@ window.SSMPD_CONFIG = {
 (function loadSystemDiagnosticsLauncher(){
   if(window.__SWNWSystemDiagnosticsLauncher || document.querySelector('script[data-system-diagnostics-launcher]')) return;
   var script=document.createElement('script');
-  script.src='assets/js/system-diagnostics-launcher.js?v=system-diagnostics-20261114-1';
+  script.src='assets/js/system-diagnostics-launcher.js?v=no-idle-loop-20261126-1';
   script.async=false;
   script.dataset.systemDiagnosticsLauncher='1';
   document.head.appendChild(script);
