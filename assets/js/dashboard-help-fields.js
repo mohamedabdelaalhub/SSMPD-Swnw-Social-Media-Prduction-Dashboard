@@ -5918,12 +5918,12 @@
       "reviewed": true
     },
     {
-      "title": "بحث باسم الدكتور أو كوده",
+      "title": "ابحث باسم الدكتور",
       "labels": [
-        "بحث باسم الدكتور أو كوده"
+        "ابحث باسم الدكتور"
       ],
-      "text": "اكتب اسم الطبيب أو كوده لتصفية القائمة. البحث مابيغيرش حاجة.",
-      "article": "payroll",
+      "text": "اكتب جزء من اسم الدكتور علشان القايمة تتصفّى عليه.",
+      "article": "doctor-accounts-plain",
       "tabs": [
         "accounting",
         "booking_cash"
@@ -6049,6 +6049,20 @@
         "المبلغ الثابت (جنيه) لكل خدمة تُنفَّذ"
       ],
       "text": "مبلغ ثابت للطبيب عن كل خدمة بيعملها، من غير نسبة. لو الفاتورة اتخفضت أو اتمرتجعت بيقل بنفس النسبة.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "بحث باسم الدكتور أو كوده",
+      "labels": [
+        "بحث باسم الدكتور أو كوده"
+      ],
+      "text": "اكتب اسم الطبيب أو كوده لتصفية القائمة. البحث مابيغيرش حاجة.",
       "article": "payroll",
       "tabs": [
         "accounting",
@@ -13624,6 +13638,32 @@
       ],
       "text": "للي بيعتمد بس: اكتب سبب تغيير المبلغ أو سبب الرفض (3 حروف على الأقل). الاعتماد بالمبلغ زي ما هو مش محتاج ملاحظة.",
       "article": "doctor-payout-approve",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دوّر",
+      "labels": [
+        "دوّر"
+      ],
+      "text": "اختر دور الموظف الذي ستعرض أو تعدل مستهدفاته وأوزان مؤشراته، وليس حساب شخص منفرد أو منح صلاحية جديدة.",
+      "article": "indicators",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب اللي عايزه… مثلاً: مصروف",
+      "labels": [
+        "اكتب اللي عايزه… مثلاً: مصروف"
+      ],
+      "text": "اكتب كلمة من اللي عايز تعمله (مثلاً: مصروف، تحصيل، ورديتي) والقايمة هتوريك الجمل اللي فيها الكلمة دي بس.",
+      "article": "reception-drawer",
       "tabs": [
         "reception_services"
       ],
@@ -23379,9 +23419,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2019,
-    "labels": 1465,
-    "files": 160,
-    "groups": 1586
+    "definitions": 2021,
+    "labels": 1468,
+    "files": 161,
+    "groups": 1589
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

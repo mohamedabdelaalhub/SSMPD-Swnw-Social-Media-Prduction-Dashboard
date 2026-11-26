@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2019,
-    "labels": 1465,
-    "files": 160,
-    "groups": 1586
+    "definitions": 2021,
+    "labels": 1468,
+    "files": 161,
+    "groups": 1589
   },
   "fields": [
     {
@@ -5161,13 +5161,13 @@
     },
     {
       "file": "finance-doctor-accounts.js",
-      "label": "بحث باسم الدكتور أو كوده",
+      "label": "ابحث باسم الدكتور",
       "name": "",
       "kind": "placeholder",
       "forms": [],
       "tab": "accounting",
-      "article": "payroll",
-      "text_sha256": "01797bdcd381d3f49ad886634bda28dafe94aa2b129ad59fe7a1aeb196f21e49"
+      "article": "doctor-accounts-plain",
+      "text_sha256": "3b2d87c09c8cb86df44a50704a8b9c70169a579c7c569237b115fed57bf4e08f"
     },
     {
       "file": "finance-doctor-accounts.js",
@@ -11909,6 +11909,26 @@
       "tab": "reception_services",
       "article": "doctor-payout-approve",
       "text_sha256": "16acf166859302c040bd994ba6b0461be39ccdfa4ef5c86b2307136d17db4d5f"
+    },
+    {
+      "file": "reception-drawer.js",
+      "label": "دوّر",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "indicators",
+      "text_sha256": "5c0d8bc6e7d747e6bf4c8af607e98ce79b9c33142c950bec2087672ed840c829"
+    },
+    {
+      "file": "reception-drawer.js",
+      "label": "اكتب اللي عايزه… مثلاً: مصروف",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-drawer",
+      "text_sha256": "5b49034ab79315a3c229085217aee88b15d2120a5545b2823968582971d3a9a9"
     },
     {
       "file": "reception-follow-ups.js",
