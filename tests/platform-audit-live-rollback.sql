@@ -4,7 +4,7 @@
 -- to vezeeta → counts 25%; marks it «فيزيتا شامل» → counts 0; audits vezeeta with a deduction to income 4122 (accountant asks, FM
 -- approves; accountant approve / overlap refused; accountant chart account refused on kafaret), clinidu with a deduction to payable 2111 (GM / SA approves),
 -- كفارة وسلامتك by the FM to chart account 5233 (FM self-approval refused), then settles vezeeta's audited balance by bank
--- (over-balance refused) → Dr 2112 / Cr 1112. Notices print amounts only — no patient data.
+-- (over-balance refused) → Dr 2112 / Cr 1112. Notices / errors print amounts and constraint names only — never rows or patient data.
 begin;
 do $$ begin
   if to_regprocedure('public.clinic_finance_month_end(text,jsonb)') is null or to_regclass('clinic_finance.month_end_parties') is null
@@ -321,7 +321,7 @@ grant execute on function public.clinic_finance_month_end(text, jsonb) to authen
 
 -- ===================== checks as real people (everything below is rolled back) =====================
 do $$
-declare acc uuid; mk uuid; chk uuid; fmu uuid; apr uuid; ap uuid; ap_src text; ap_dk text; v_id uuid; ma date; mx date; net numeric; r jsonb; a jsonb; o1 numeric; o2 numeric; n int; bal numeric;
+declare cn text; acc uuid; mk uuid; chk uuid; fmu uuid; apr uuid; ap uuid; ap_src text; ap_dk text; v_id uuid; ma date; mx date; net numeric; r jsonb; a jsonb; o1 numeric; o2 numeric; n int; bal numeric;
   ln text; want text;
 begin
   -- real people, the way live is staffed (roles from admins.role OR admin_extra_roles via has_role_for; never «Admin Test»):
@@ -355,13 +355,13 @@ begin
 
   -- 1) vezeeta 25% vs «فيزيتا شامل» 0 — the same real visit, moved between the two cases (triggers off only for these updates)
   set local session_replication_role = replica;
-  update clinic_reception.appointments set source = 'vezeeta', discount_kind = null where id = ap;
+  begin update clinic_reception.appointments set source = 'vezeeta', discount_kind = null where id = ap; exception when others then get stacked diagnostics cn = constraint_name; raise exception 'fixture update failed (% %)', sqlstate, cn; end;
   set local session_replication_role = origin;
   perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
   o1 := (public.clinic_finance_month_end('audit_preview', jsonb_build_object('party', 'vezeeta', 'from', ma))->>'ours')::numeric;
   execute 'reset role';
   set local session_replication_role = replica;
-  update clinic_reception.appointments set discount_kind = 'vezeeta' where id = ap;
+  begin update clinic_reception.appointments set discount_kind = 'vezeeta', discount_percent = 40, discount_card_no = 'DRY-RUN', discount_card_expiry = current_date + 30, discount_card_path = 'dry-run/none' where id = ap; exception when others then get stacked diagnostics cn = constraint_name; raise exception 'fixture update failed (% %)', sqlstate, cn; end;
   set local session_replication_role = origin;
   perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
   o2 := (public.clinic_finance_month_end('audit_preview', jsonb_build_object('party', 'vezeeta', 'from', ma))->>'ours')::numeric;
@@ -369,7 +369,7 @@ begin
   if o1 - o2 <> round(net * 25 / 100, 2) then raise exception 'vezeeta 25%% vs «فيزيتا شامل»: delta % ≠ 25%% of % ', o1 - o2, net; end if;
   raise notice 'OK 25%%: vezeeta visit counts % (25%% of %), «فيزيتا شامل» counts 0', o1 - o2, net;
   set local session_replication_role = replica;
-  update clinic_reception.appointments set discount_kind = null where id = ap;
+  begin update clinic_reception.appointments set discount_kind = null where id = ap; exception when others then get stacked diagnostics cn = constraint_name; raise exception 'fixture update failed (% %)', sqlstate, cn; end;
   set local session_replication_role = origin;
 
   -- 2) accountant: deduction → income 4122; accountant cannot approve, cannot pick a chart account; overlap refused; FM approves
@@ -391,7 +391,7 @@ begin
   raise notice 'OK income: %', ln;
 
   -- 3) clinidu: deduction → payable 2111, accountant asks, GM / SA approves
-  set local session_replication_role = replica; update clinic_reception.appointments set source = 'clinidu' where id = ap; set local session_replication_role = origin;
+  set local session_replication_role = replica; begin update clinic_reception.appointments set source = 'clinidu' where id = ap; exception when others then get stacked diagnostics cn = constraint_name; raise exception 'fixture update failed (% %)', sqlstate, cn; end; set local session_replication_role = origin;
   perform set_config('request.jwt.claim.sub', mk::text, true); execute 'set local role authenticated';
   o2 := (public.clinic_finance_month_end('audit_preview', jsonb_build_object('party', 'clinidu', 'from', ma))->>'ours')::numeric;
   a := public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'clinidu', 'from', ma, 'theirs', o2, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'amount',
@@ -405,7 +405,7 @@ begin
   raise notice 'OK payable: %', ln;
 
   -- 4) كفارة وسلامتك: FM picks a chart account (5233); FM cannot approve his own; GM / SA approves
-  set local session_replication_role = replica; update clinic_reception.appointments set source = 'kafaret' where id = ap; set local session_replication_role = origin;
+  set local session_replication_role = replica; begin update clinic_reception.appointments set source = 'kafaret' where id = ap; exception when others then get stacked diagnostics cn = constraint_name; raise exception 'fixture update failed (% %)', sqlstate, cn; end; set local session_replication_role = origin;
   if acc is not null then
   perform set_config('request.jwt.claim.sub', acc::text, true); execute 'set local role authenticated';
   begin perform public.clinic_finance_month_end('audit_request', jsonb_build_object('party', 'kafaret', 'from', ma, 'theirs', 1, 'theirs_ref', 'DRY-RUN', 'agreed_mode', 'amount',
@@ -442,5 +442,9 @@ begin
   if ln <> '2112:' || bal::numeric(14,2) || '/0.00 1112:0.00/' || bal::numeric(14,2) then raise exception 'settlement entries: %', ln; end if;
   if (select count(*) from jsonb_array_elements(r->'parties') x where x->>'key' = 'kafaret') <> 1 then raise exception 'statement lost kafaret'; end if;
   raise notice 'platform audit dry-run OK: real visit month %, vezeeta 25%% = % / «شامل» 0, income / payable 2111 / FM account 5233 deductions posted, maker≠checker and overlap refused, settlement %; nothing kept', to_char(ma, 'YYYY-MM'), o1, ln;
+exception when others then
+  -- message only: never the DETAIL line (a failing row) or any patient data
+  get stacked diagnostics cn = constraint_name;
+  raise exception '%', sqlerrm || coalesce(' [' || nullif(cn, '') || ']', '');
 end $$;
 rollback;
