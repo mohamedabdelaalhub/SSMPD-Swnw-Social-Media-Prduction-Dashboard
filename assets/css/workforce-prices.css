@@ -2,3 +2,7 @@
 
 @media screen{.wp fieldset{min-width:0}.wp .wp-actions{flex-wrap:wrap}.wp-detail input[type=checkbox],.wp-modal input[type=checkbox]{width:22px;min-height:22px;height:22px}.hrp-state{border-radius:9px;padding:6px 10px}.hrp-in{background:#e7f3ec;color:#2F7D5C}.hrp-out{background:#eef2f8;color:#6B7788}.hrp-unknown{background:#fff2e8;color:#8a441e}.wp-head h2{color:inherit}.wp-modal fieldset:disabled{opacity:.8}.wp .wp-card span,.wp .wp-card b{overflow-wrap:anywhere}}
 @media screen{.wp{grid-template-columns:minmax(0,1fr)}.wp>*,.wp-form>*,.wp-head>div,.wp-modal header>*{min-width:0}.wp-detail,.wp-modal{box-sizing:border-box}.wp .btn,.wp-modal .btn{white-space:normal;max-width:100%;overflow-wrap:anywhere}.wp-modal legend{max-width:100%;overflow-wrap:anywhere}.wp-table{min-width:0}.wp-modal .wp-wide{min-width:0}}
+/* help 300 (owner 2026-11-26): the modal ✕ is the standard close, not an unstyled grey square; the request summary line on top of the review */
+.wp-modal header [data-close]{flex:none;width:36px;height:36px;display:grid;place-items:center;padding:0;border:1px solid #D5DEEE;border-radius:10px;background:#fff;color:#16212E;font-size:23px;line-height:1;cursor:pointer}
+.wp-modal header [data-close]:hover{background:#F1F4F8}
+.wp-sum{margin:0;padding:10px 12px;border-radius:12px;background:#F1F4F8;font-size:14px;line-height:1.7;overflow-wrap:anywhere}.wp-sum span{color:#5b6b82;font-size:13px}
