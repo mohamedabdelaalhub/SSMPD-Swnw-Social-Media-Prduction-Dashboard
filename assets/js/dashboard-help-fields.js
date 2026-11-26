@@ -12193,6 +12193,32 @@
       "reviewed": true
     },
     {
+      "title": "كاش ولا بنك؟",
+      "labels": [
+        "كاش ولا بنك؟"
+      ],
+      "text": "كاش من الخزينة الرئيسية (لازم ورديتها تكون مفتوحة) أو البنك. الشريك بيتعامل مع الخزينة الرئيسية بس.",
+      "article": "partner-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: توريد لدفع إيجار المركز",
+      "labels": [
+        "مثلاً: توريد لدفع إيجار المركز"
+      ],
+      "text": "اكتب الفلوس دي ليه — بتظهر في كشف حساب الشريك.",
+      "article": "partner-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اكتب المعلومة، ولا تفترض سببًا غير مؤكد.",
       "labels": [
         "اكتب المعلومة، ولا تفترض سببًا غير مؤكد."
@@ -23536,9 +23562,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2030,
-    "labels": 1473,
-    "files": 164,
-    "groups": 1598
+    "definitions": 2033,
+    "labels": 1475,
+    "files": 165,
+    "groups": 1600
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
