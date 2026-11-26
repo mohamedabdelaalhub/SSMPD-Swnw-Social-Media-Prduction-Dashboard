@@ -33,6 +33,7 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
     '<label class="rbd-row"><span class="rbd-l" data-rbd-expl>الكارنيه ساري لحد</span><input name="discount_card_expiry" type="date" required></label></div>'+
     '<div class="rbd-row"><span class="rbd-l" data-rbd-filel>صورة الكارنيه</span><input type="file" accept="image/*,application/pdf" capture="environment" data-rbd-file><input type="hidden" name="discount_card_path" required><small class="rbd-up" data-rbd-up role="status"></small></div>'+
    '</div>'+
+   '<input type="hidden" name="discount_proof_text" data-rbd-proof disabled><p class="rbd-ok" data-rbd-proofnote hidden>الإثبات: رسالة فيزيتا الملصوقة ✓ (من غير كارت)</p>'+
    '<div class="rbd-fam" data-rbd-fam hidden></div>'+
    '<div class="rbd-staff" data-rbd-staff hidden><label class="rbd-row"><span class="rbd-l">الموظف (المريض نفسه أو قريبه من الدرجة الأولى)</span><select name="discount_staff_id" required data-rbd-staff-sel><option value="">جاري التحميل…</option></select></label><p class="rbd-note" data-rbd-staff-note></p></div>'+
    '<label class="rbd-row" data-rbd-reason hidden><span class="rbd-l">سبب الخصم</span><input name="discount_reason" maxlength="300" placeholder="مثلاً قريب موظف"></label>'+
@@ -108,7 +109,7 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
    rpc('link',{patient_id:pid,relative_id:rid,relation:rel,proof_path:proof}).then(function(){loadFam(true);}).catch(function(err){bt.disabled=false;upl.textContent=(err&&err.message)||'تعذر الربط';});};}
  function paint(){var pk=form.getAttribute('data-payer'),p=pkg()||(payer&&pk!=='cash');box.hidden=p;if(p&&on.checked)on.checked=false;body.hidden=!on.checked;body.disabled=!on.checked;
   var kind=val('discount_kind')||(payer?'vezeeta':'syndicate'),isSyn=kind==='syndicate',isVz=kind==='vezeeta',isFam=kind==='family',card=isSyn||isVz,mx=KMAX[kind]||MAX;
-  var isStaff=kind==='staff';syn.hidden=!card;reason.hidden=kind!=='special';famBox.hidden=!isFam;staffBox.hidden=!isStaff;staffSel.disabled=!on.checked||!isStaff;if(on.checked&&isStaff)loadStaff(false);
+  var isStaff=kind==='staff',proofEl=box.querySelector('[data-rbd-proof]'),proof=isVz&&!!(proofEl&&proofEl.value.trim());proofEl.disabled=!on.checked||!proof;box.querySelector('[data-rbd-proofnote]').hidden=!proof;if(proof)card=false;syn.hidden=!card;reason.hidden=kind!=='special';famBox.hidden=!isFam;staffBox.hidden=!isStaff;staffSel.disabled=!on.checked||!isStaff;if(on.checked&&isStaff)loadStaff(false);
   Array.prototype.forEach.call(syn.querySelectorAll('input'),function(i){i.disabled=!on.checked||!card;});
   ['[data-rbd-org]','[data-rbd-orgn]'].forEach(function(q){var el=box.querySelector(q);el.hidden=!isSyn;el.querySelectorAll('input').forEach(function(i){i.disabled=!on.checked||!isSyn;});});
   box.querySelector('[data-rbd-cardl]').textContent=isVz?'رقم كارت فيزيتا شامل':'رقم الكارنيه';
