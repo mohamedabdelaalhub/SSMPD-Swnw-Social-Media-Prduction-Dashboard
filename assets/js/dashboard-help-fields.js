@@ -3321,6 +3321,97 @@
       "reviewed": true
     },
     {
+      "title": "الموظف (المديونية عليه)",
+      "labels": [
+        "الموظف (المديونية عليه)"
+      ],
+      "text": "الموظف اللي المبلغ هيتسجل عليه ويتخصم من مرتبه. بيظهر بس الموظفين الشغالين اللي المريض هو نفسه أو قريبهم من الدرجة الأولى.",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مرة واحدة",
+      "labels": [
+        "مرة واحدة"
+      ],
+      "text": "المبلغ كله يتخصم من مرتب شهر واحد (الشهر اللي تختاره في «أول خصم من مرتب»).",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "أقساط",
+      "labels": [
+        "أقساط"
+      ],
+      "text": "المبلغ يتقسم على كذا شهر بالتساوي، وكل شهر القسط بيتخصم لوحده من المرتب.",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "عدد الشهور",
+      "labels": [
+        "عدد الشهور"
+      ],
+      "text": "عدد الأقساط من 2 لـ 12 شهر. القسط = المبلغ ÷ عدد الشهور (آخر قسط بياخد كسور القروش).",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "أول خصم من مرتب",
+      "labels": [
+        "أول خصم من مرتب"
+      ],
+      "text": "الشهر اللي هيبدأ فيه الخصم — الشهر ده أو الـ 3 شهور الجايين. الافتراضي الشهر الجاي.",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: كشف ابن الموظف — يتخصم من المرتب",
+      "labels": [
+        "مثلاً: كشف ابن الموظف — يتخصم من المرتب"
+      ],
+      "text": "اكتب السبب (3 حروف على الأقل) — بيظهر للمدير المالي أو المالك وقت الموافقة.",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الإيصال النقدي",
+      "labels": [
+        "الإيصال النقدي"
+      ],
+      "text": "الإيصال النقدي اللي اتسجل بالغلط ومادخلش فلوس (آخر 14 يوم، والمريض موظف أو قريبه). بيبان معاه الزيارة والمبلغ واسم اللي حصّل وحالة الوردية.",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "فترة المتابعة",
       "labels": [
         "فترة المتابعة"
@@ -23735,9 +23826,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2043,
-    "labels": 1482,
-    "files": 166,
-    "groups": 1613
+    "definitions": 2051,
+    "labels": 1489,
+    "files": 167,
+    "groups": 1620
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

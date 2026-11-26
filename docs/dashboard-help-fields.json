@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2043,
-    "labels": 1482,
-    "files": 166,
-    "groups": 1613
+    "definitions": 2051,
+    "labels": 1489,
+    "files": 167,
+    "groups": 1620
   },
   "fields": [
     {
@@ -3032,6 +3032,86 @@
       "tab": "home",
       "article": "digital-team",
       "text_sha256": "b9b5a4422cd034c88a121628568f0ec30c825d0c67785efa6f9980f52e4b2037"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "الموظف (المديونية عليه)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "dc5d2c5c87b2c202fd331d01a113e8682b471041e240e14f3642b596cab5bd6a"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "مرة واحدة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "33329f4ad44bfa07ce8a804cf03ee7cebce8084bca45d70d3072f277704cf028"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "أقساط",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "7e2233e4fc3ef4ba132502641e9373fdf8e6dbd9c0c2ce846a54bd4a3a974c13"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "عدد الشهور",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "a6f52d48577eca8a8379f2f18fd74b3f94384afcc5eff267f732304a9e2fe7eb"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "أول خصم من مرتب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "94c65e2378b4aa48753188516d0ad4a11e4e705a062d5ac1e6eccb811eb1332b"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "مثلاً: كشف ابن الموظف — يتخصم من المرتب",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "b1f6737d1b570187860c748354737c15cdadc0489b51575f290a6d82cf7e4ce1"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "السبب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "الإيصال النقدي",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "4f3ddff34be9c03addf8b556966e15385337d60b45335d95c5eb288cf6524969"
     },
     {
       "file": "employee-performance.js",
