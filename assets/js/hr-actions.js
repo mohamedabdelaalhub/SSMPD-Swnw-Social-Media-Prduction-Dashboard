@@ -33,7 +33,8 @@
       ['sched', 'تعديل جدول الورديات', 'الأيام ونوع الوردية', '🗓', function (p) { if (w.SSMPDHRShifts && w.SSMPDHRShifts.editPerson) w.SSMPDHRShifts.editPerson(p.id).catch(function (e) { toast((e && e.message) || 'تعذر فتح الجدول'); }); else toast('الورديات مش متاحة'); }],
       ['swap', 'تبديل وردية', 'طلبات التبديل في الورديات', '⇄', function () { if (!hrOpen('presence')) return; after(function () { var t = d.querySelector('[data-att-tab="shifts"]'); if (t) t.click(); }); }],
       ['attend', 'تسجيل وردية وحضور', 'يدوي بعد المراجعة', '⏱', function (p) { if (!hrOpen('attendance')) return; after(function () { var box = d.querySelector('[data-hr-section="attendance"]'), sel = box && box.querySelector('[name=person_for_attendance]'), b = box && box.querySelector('[data-wp="attendance"]'); if (sel) sel.value = p.id; if (b) { b.dataset.id = p.id; b.click(); } }); }],
-      ['overtime', 'ساعات إضافية', '', '＋', function () { withPerson('overtime', '[name=person_id]'); }]
+      ['overtime', 'ساعات إضافية', '', '＋', function () { withPerson('overtime', '[name=person_id]'); }],
+      ['workcal', 'مواعيد العمل والإجازات والراحات', 'كالندر الشهر للموظف', '📅', function (p) { if (w.SSMPDHRWorkSchedule) w.SSMPDHRWorkSchedule.open(p); else toast('الكالندر غير متاح'); }]
     ]],
     ['الإجازات والأذونات', [
       ['request', 'إجازة أو إذن جديد', 'بيفتح نموذج الطلب للموظف ده', '🌴', function (p) { if (!hrOpen('requests')) return; after(function () { var box = d.querySelector('[data-hr-section="requests"]'), sel = box && box.querySelector('[name=person_for_request]'), b = box && box.querySelector('[data-wp="request"]'); if (sel) sel.value = p.id; if (b) { b.dataset.id = p.id; b.click(); } }); }],
