@@ -1,0 +1,38 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: مهمة خارجية</title>
+<style>*{box-sizing:border-box}body{margin:0;padding:16px;background:#f4f7fc;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:1000px;margin:auto}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;align-content:start;min-width:0}.cap{font-size:12px;color:#5b6b82}h3,p{margin:0}
+.btn{border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:8px 12px;font:inherit;min-width:0}.pri{background:#0F369D;color:#fff;border-color:#0F369D}
+.head{display:flex;align-items:center;justify-content:space-between;gap:8px}.ic{width:36px;height:36px;border:1px solid #D5DEEE;background:#fff;border-radius:10px;font-size:19px;line-height:1;flex:none}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #D5DEEE;border-radius:12px;padding:10px;min-width:0}.row b{display:block}.row small{color:#5b6b82}
+.chip{border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;display:inline-block}.neg{background:#FDECE8;color:#D0402A}.mis{background:#EDE9FE;color:#5B3FB5}
+.act{display:flex;gap:10px;align-items:center;border:1px solid #D5DEEE;border-radius:12px;padding:10px;background:#fff;width:100%;text-align:start;font:inherit}.act small{display:block;color:#5b6b82;font-size:12px}.act.new{border-color:#F15A22;background:#FFF6F0}
+label{display:grid;gap:4px;font-size:12px;color:#5b6b82}input,textarea{font:inherit;padding:10px;border:1px solid #D5DEEE;border-radius:10px;width:100%;color:#16212E}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cov{display:flex;justify-content:space-between;align-items:center;background:#F1F4F8;border-radius:10px;padding:8px 10px;font-size:13px}
+.note{font-size:12px;color:#5b6b82;background:#F1F4F8;border-radius:8px;padding:6px 10px}
+@media(max-width:700px){.wrap{grid-template-columns:minmax(0,1fr)}.two{grid-template-columns:minmax(0,1fr)}}</style>
+<div class="wrap">
+<section class="card"><span class="cap">١) قبل — الموظف في مهمة بره وبيظهر «لم يصل» بالأحمر</span>
+<div class="cov"><b>الإدارة</b><span>الحد الأدنى 2 · موجود 1 ⚠</span></div>
+<div class="row"><span><b>محمود عبدالعال</b><small>وردية 09:00</small></span><span class="chip neg">لم يصل منذ 3 س 20 د</span><button class="ic" aria-label="إجراءات">⋯</button></div>
+<div class="row"><span><b>رنا سمير</b><small>وردية 09:00</small></span><span class="chip" style="background:#E6F3EC;color:#2F7D5C">دخل 08:55</span><button class="ic" aria-label="إجراءات">⋯</button></div></section>
+
+<section class="card"><span class="cap">٢) ⋯ ← «في مهمة خارجية» تحت «الورديات والحضور»</span>
+<div class="head"><b>محمود عبدالعال</b><button class="ic" aria-label="إغلاق">✕</button></div>
+<button class="act new"><span>🚗</span><span><b>في مهمة خارجية</b><small>من وإلى ووقت وملاحظة</small></span></button>
+<button class="act"><span>🗓</span><span>مواعيد العمل والإجازات والراحات</span></button>
+<button class="act"><span>⏱</span><span>تسجيل وردية وحضور<small>يدوي بعد المراجعة</small></span></button></section>
+
+<section class="card"><span class="cap">٣) النموذج</span>
+<div class="head"><b>مهمة خارجية — محمود عبدالعال</b><button class="ic" aria-label="إغلاق">✕</button></div>
+<div class="two"><label>من<input value="2026-11-26 09:00"></label><label>إلى<input value="2026-11-26 14:00"></label></div>
+<label>الملاحظة (المكان / السبب)<textarea rows="2">تسليم أوراق في شركة التأمين</textarea></label>
+<div class="note">في وقت المهمة بيظهر «مهمة خارجية» بدل «لم يصل»، ومش بيتحسب غياب ولا تأخير، وبيتحسب ضمن الحد الأدنى للقسم.</div>
+<div style="display:flex;gap:8px"><button class="btn pri">حفظ</button><button class="btn">إلغاء</button></div></section>
+
+<section class="card"><span class="cap">٤) بعد — نفس البطاقة</span>
+<div class="cov"><b>الإدارة</b><span>الحد الأدنى 2 · موجود 1 + مهمة خارجية 1 ✓</span></div>
+<div class="row"><span><b>محمود عبدالعال</b><small>وردية 09:00</small></span><span class="chip mis">مهمة خارجية — لحد 14:00</span><button class="ic" aria-label="إجراءات">⋯</button></div>
+<div class="row"><span><b>رنا سمير</b><small>وردية 09:00</small></span><span class="chip" style="background:#E6F3EC;color:#2F7D5C">دخل 08:55</span><button class="ic" aria-label="إجراءات">⋯</button></div>
+<div class="note">مش في «الغايبون الآن». لو الوقت عدّى وما رجعش يرجع يظهر زي أي موظف عادي.</div></section>
+</div>
