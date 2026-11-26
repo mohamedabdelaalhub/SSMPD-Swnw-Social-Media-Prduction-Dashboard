@@ -117,6 +117,21 @@ begin
      and coalesce((to_jsonb(s)->>'is_home')::boolean, false) = false
    where av.workspace_id = w and now() between av.starts_at and av.ends_at and pr2.active
    order by av.starts_at, s.price limit 1;
+  if prov is null then
+    -- nobody on shift right now (e.g. a night-time dry-run): take an active provider with a priced, non-home service of its
+    -- department and give it a temporary availability block around now (rolled back with everything else)
+    select pr2.id, s.id, (to_jsonb(s)->>'pricing_service_id')::uuid into prov, svc, psid
+      from clinic_reception.providers pr2
+      join clinic_reception.services s on s.workspace_id = w and s.department = pr2.department and s.active and to_jsonb(s)->>'pricing_service_id' is not null
+       and coalesce((to_jsonb(s)->>'is_home')::boolean, false) = false
+     where pr2.workspace_id = w and pr2.active
+     order by exists (select 1 from clinic_reception.availability av where av.provider_id = pr2.id) desc, s.price, pr2.name limit 1;
+    if prov is not null then
+      insert into clinic_reception.availability(workspace_id, provider_id, starts_at, ends_at)
+        values (w, prov, date_trunc('minute', now()) - interval '7 minutes', date_trunc('minute', now()) + interval '3 hours');
+      insert into esn_live(step, expected, actual, ok) values ('0a provider on shift', 'a provider working now, or a temp block', 'nobody on shift now → temp availability block for ' || (select name from clinic_reception.providers where id = prov) || ' (rolled back)', true);
+    end if;
+  end if;
   select p.id into pat from clinic_reception.patients p where p.workspace_id = w and p.patient_id is not null
      and not exists (select 1 from clinic_reception.appointments x where x.patient_id = p.id and (x.starts_at at time zone 'Africa/Cairo')::date = d)
    order by p.created_at desc limit 1;
@@ -206,6 +221,18 @@ begin
       (rw->>'price')::numeric is not distinct from (pr->>'price')::numeric);
   exception when others then execute 'reset role'; insert into esn_live(step, expected, actual, ok) values ('c payer_options', 'works', sqlerrm, false); end;
 
+  -- the (unrelated, already live) cash-shift guard: stub it inside this transaction if Mazen has no open shift now
+  if to_regprocedure('clinic_reception.shift_guard_check(uuid)') is not null then
+    declare g jsonb; begin
+      g := clinic_reception.shift_guard_state();
+      if coalesce((g->>'locked')::boolean, false) then
+        execute 'create or replace function clinic_reception.shift_guard_check(p_workspace uuid) returns void language plpgsql as $f$ begin return; end $f$';
+        insert into esn_live(step, expected, actual, ok) values ('0c shift guard (unrelated)', 'open shift, or stubbed in this txn', 'stubbed (Mazen had no open shift)', true);
+      end if;
+    exception when others then execute 'reset role';
+      insert into esn_live(step, expected, actual, ok) values ('0c shift guard (unrelated)', 'state readable', sqlerrm, true);
+    end;
+  end if;
   -- (d) save: walk-in (first free slot) with the contract → arrive → quote snapshot keys
   begin
     execute 'set local role authenticated';
