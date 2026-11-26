@@ -56,9 +56,12 @@ language sql stable security definer set search_path = pg_catalog, public as $$
   )
   select distinct on (pp.id) pp.id, pp.full_name, pp.code, f.rel
     from files f join clinic_reception.patients fp on fp.id = f.file_id
+    -- the archive phone is the source on live (sync_native_links copies public.patients.phone onto the reception file)
+    left join public.patients ar on ar.id = fp.patient_id
+    cross join lateral (select regexp_replace(coalesce(nullif(btrim(ar.phone), ''), fp.phone, ''), '\D', '', 'g') d) ph
     join clinic_people.people pp on length(regexp_replace(coalesce(pp.phone, ''), '\D', '', 'g')) >= 10
-     and right(regexp_replace(pp.phone, '\D', '', 'g'), 10) = right(regexp_replace(coalesce(fp.phone, ''), '\D', '', 'g'), 10)
-   where length(regexp_replace(coalesce(fp.phone, ''), '\D', '', 'g')) >= 10
+     and right(regexp_replace(pp.phone, '\D', '', 'g'), 10) = right(ph.d, 10)
+   where length(ph.d) >= 10
      and pp.status in ('active', 'on_leave') and (pp.end_date is null or pp.end_date >= p_day)
    order by pp.id, (f.rel = 'self') desc $$;
 revoke all on function clinic_reception.staff_for_patient(uuid, date) from public, anon, authenticated;

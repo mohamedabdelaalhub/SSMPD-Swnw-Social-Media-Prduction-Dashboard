@@ -1,7 +1,8 @@
 -- Live rollback test for 20261126170000_staff_discount.sql («خصم العاملين بالمركز»). Run the WHOLE file as postgres.
 -- ONE transaction, ends with ROLLBACK — nothing is kept (temp HR rows, phones, bookings, discounts are all rolled back).
 -- Acts as Mazen (reception, auth sub f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb). Fixture: 6 real live reception patients without a
--- booking today; inside the txn their phones are set to test numbers, 2 temp HR people are added (one active on P1's number,
+-- booking today; inside the txn their phones (archive public.patients AND the reception file — live mirrors the archive phone onto the
+-- file at every command) are set to test numbers, 2 temp HR people are added (one active on P1's number,
 -- one ENDED on P3's number) and 3 «أفراد العيلة» links (R1 child of P1, R3 spouse of P3, R2 sibling of R1 = 2nd degree). If nobody is on shift now, a temp availability block; the unrelated cash-shift guard is stubbed if
 -- Mazen has no open shift. Output: one table (step, expected, actual, ok) — no names or phone numbers.
 do $$ begin
@@ -53,9 +54,12 @@ language sql stable security definer set search_path = pg_catalog, public as $$
   )
   select distinct on (pp.id) pp.id, pp.full_name, pp.code, f.rel
     from files f join clinic_reception.patients fp on fp.id = f.file_id
+    -- the archive phone is the source on live (sync_native_links copies public.patients.phone onto the reception file)
+    left join public.patients ar on ar.id = fp.patient_id
+    cross join lateral (select regexp_replace(coalesce(nullif(btrim(ar.phone), ''), fp.phone, ''), '\D', '', 'g') d) ph
     join clinic_people.people pp on length(regexp_replace(coalesce(pp.phone, ''), '\D', '', 'g')) >= 10
-     and right(regexp_replace(pp.phone, '\D', '', 'g'), 10) = right(regexp_replace(coalesce(fp.phone, ''), '\D', '', 'g'), 10)
-   where length(regexp_replace(coalesce(fp.phone, ''), '\D', '', 'g')) >= 10
+     and right(regexp_replace(pp.phone, '\D', '', 'g'), 10) = right(ph.d, 10)
+   where length(ph.d) >= 10
      and pp.status in ('active', 'on_leave') and (pp.end_date is null or pp.end_date >= p_day)
    order by pp.id, (f.rel = 'self') desc $$;
 revoke all on function clinic_reception.staff_for_patient(uuid, date) from public, anon, authenticated;
@@ -207,11 +211,17 @@ begin
   perform set_config('request.jwt.claims', jsonb_build_object('sub', sub, 'role', 'authenticated')::text, true);
   perform set_config('request.jwt.claim.sub', sub::text, true);
   update clinic_reception.patients set phone = '01999000901' where id = p1;
+  update public.patients set phone = '01999000901' where id = (select patient_id from clinic_reception.patients where id = p1);
   update clinic_reception.patients set phone = '01999000902' where id = p2;
+  update public.patients set phone = '01999000902' where id = (select patient_id from clinic_reception.patients where id = p2);
   update clinic_reception.patients set phone = '01999000903' where id = p3;
+  update public.patients set phone = '01999000903' where id = (select patient_id from clinic_reception.patients where id = p3);
   update clinic_reception.patients set phone = '01999000904' where id = r1;
+  update public.patients set phone = '01999000904' where id = (select patient_id from clinic_reception.patients where id = r1);
   update clinic_reception.patients set phone = '01999000905' where id = r3;
+  update public.patients set phone = '01999000905' where id = (select patient_id from clinic_reception.patients where id = r3);
   update clinic_reception.patients set phone = '01999000906' where id = r2;
+  update public.patients set phone = '01999000906' where id = (select patient_id from clinic_reception.patients where id = r2);
   -- «أفراد العيلة» links (rolled back): r1 = child of the employee's file, r3 = spouse of the ENDED employee's file, r2 = sibling of r1 (2nd degree)
   update clinic_reception.patient_relatives set removed_at = now(), removed_by = me, removed_reason = 'rollback test' where removed_at is null and (patient_id = any(pids) or relative_id = any(pids));
   insert into clinic_reception.patient_relatives(workspace_id, patient_id, relative_id, relation, proof_path, created_by) values
