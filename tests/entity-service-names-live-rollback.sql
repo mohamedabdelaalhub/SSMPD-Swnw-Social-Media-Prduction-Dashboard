@@ -109,11 +109,14 @@ begin
   if w is null or me is null then raise exception 'live workspace % / admin for sub % missing', w, sub; end if;
   insert into storage.objects(bucket_id, name, owner) values ('booking-discount-cards', proof, sub);
   perform clinic_reception.sync_catalog(w);
+  perform clinic_reception.sync_catalog(w);  -- twice: only services that stay the same version are picked below
 
   -- a provider working now with a priced, non-home service of its department (the walk-in target)
   select av.provider_id, s.id, (to_jsonb(s)->>'pricing_service_id')::uuid into prov, svc, psid
     from clinic_reception.availability av join clinic_reception.providers pr2 on pr2.id = av.provider_id
     join clinic_reception.services s on s.workspace_id = w and s.department = pr2.department and s.active and to_jsonb(s)->>'pricing_service_id' is not null
+     and not exists (select 1 from public.pricing_services ps where ps.active and ps.booking_enabled and btrim(ps.booking_code) = s.code
+                       and ps.id <> (to_jsonb(s)->>'pricing_service_id')::uuid)  -- a booking code shared by 2 pricing services re-versions on every sync
      and coalesce((to_jsonb(s)->>'is_home')::boolean, false) = false
    where av.workspace_id = w and now() between av.starts_at and av.ends_at and pr2.active
    order by av.starts_at, s.price limit 1;
@@ -123,6 +126,8 @@ begin
     select pr2.id, s.id, (to_jsonb(s)->>'pricing_service_id')::uuid into prov, svc, psid
       from clinic_reception.providers pr2
       join clinic_reception.services s on s.workspace_id = w and s.department = pr2.department and s.active and to_jsonb(s)->>'pricing_service_id' is not null
+     and not exists (select 1 from public.pricing_services ps where ps.active and ps.booking_enabled and btrim(ps.booking_code) = s.code
+                       and ps.id <> (to_jsonb(s)->>'pricing_service_id')::uuid)  -- a booking code shared by 2 pricing services re-versions on every sync
        and coalesce((to_jsonb(s)->>'is_home')::boolean, false) = false
      where pr2.workspace_id = w and pr2.active
      order by exists (select 1 from clinic_reception.availability av where av.provider_id = pr2.id) desc, s.price, pr2.name limit 1;
@@ -233,6 +238,16 @@ begin
       insert into esn_live(step, expected, actual, ok) values ('0c shift guard (unrelated)', 'state readable', sqlerrm, true);
     end;
   end if;
+  -- the walk-in runs sync_catalog first: if that re-versions the picked service, follow it to the current version
+  perform clinic_reception.sync_catalog(w);
+  if not exists (select 1 from clinic_reception.services s where s.id = svc and s.active) then
+    insert into esn_live(step, expected, actual, ok) select '0d service version', 'same service after sync_catalog',
+      'service re-versioned by sync_catalog (code ' || coalesce((select code from clinic_reception.services where id = svc), '?') || ', '
+      || (select count(*) from public.pricing_services ps where ps.active and ps.booking_enabled
+            and btrim(ps.booking_code) = (select code from clinic_reception.services where id = svc)) || ' bookable pricing services) → current version', true;
+    select s.id into svc from clinic_reception.services s where s.workspace_id = w and s.active and (to_jsonb(s)->>'pricing_service_id')::uuid = psid
+     order by s.version desc limit 1;
+  end if;
   -- (d) save: walk-in (first free slot) with the contract → arrive → quote snapshot keys
   begin
     execute 'set local role authenticated';
@@ -252,7 +267,13 @@ begin
       q.snapshot ? 'entity_service_name' and q.snapshot ? 'entity_service_code'
         and (q.snapshot->>'entity_service_name') is not distinct from exp_name and (q.snapshot->>'entity_service_code') is not distinct from exp_code
         and o.price = (pr->>'price')::numeric and q.snapshot->>'entity_name' = ent);
-  exception when others then execute 'reset role'; insert into esn_live(step, expected, actual, ok) values ('d walk-in contract → arrive → quote', 'works', sqlerrm, false); end;
+  exception when others then execute 'reset role';
+    insert into esn_live(step, expected, actual, ok) select 'd walk-in contract → arrive → quote', 'works', sqlerrm
+      || ' · service ' || coalesce(sv.code, '?') || ' v' || coalesce(sv.version::text, '?') || (case when sv.active then ' active' else ' INACTIVE' end)
+      || ' · bookable pricing services with this code: ' || (select count(*) from public.pricing_services ps where ps.active and ps.booking_enabled and btrim(ps.booking_code) = sv.code)
+      || ' · its pricing service active/bookable: ' || coalesce((select ps.active || '/' || ps.booking_enabled from public.pricing_services ps where ps.id = psid), 'missing'), false
+      from (select 1) z left join clinic_reception.services sv on sv.id = svc;
+  end;
 end $$;
 
 -- >>> ROLLBACK BODY: supabase/rollbacks/20261126090000_entity_service_names.rollback.sql (between its begin; / commit;) >>>
