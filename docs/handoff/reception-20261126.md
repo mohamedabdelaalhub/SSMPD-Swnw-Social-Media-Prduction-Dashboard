@@ -189,3 +189,10 @@ Most of these were relayed by the hub.
   3. Until step 1, «تنفيذ» on «كشف منزلي» is refused. That is intended.
 - **#875:** CI check suite completed green at 00:55Z on 6da7d233. The hub merges.
 - **After #875 and #877 merge:** re-merge main into #880 (help versions 278 / 279 / 290 and `reception-workspace.js`).
+
+## Addendum 2 (01:05Z)
+- **#880:** the hub's first dry-run of `9c13d63e` at 00:57Z (03:00 Cairo) aborted in the fixture: nobody was on shift.
+  - **Fixed in head `82d7d0ec`.** If no provider is working now, the live script adds a temporary availability block for an active provider with a priced non-home service. It also stubs the unrelated cash-shift guard if Mazen has no open shift. Both are rolled back.
+  - New live script md5 `6853a07c782d1b4cc1fb47a2be12d46b`; the migration is unchanged (`7a3364c0…`).
+  - Verified on the PGlite harness with and without availability: all rows ok.
+  - Waiting: the hub's re-dry-run, then the owner's «انشر 880».
