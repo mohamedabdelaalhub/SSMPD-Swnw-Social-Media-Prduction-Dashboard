@@ -2,6 +2,8 @@
 -- ONE transaction ending in ROLLBACK, run as postgres; nothing is kept. The migration body (without its own begin / commit) and the
 -- ops APPLY blocks are pasted between the markers below — if the migration is already applied on live, delete the pasted migration
 -- block first; if the ops were already committed, delete the pasted ops blocks (both are written to be safe to re-run otherwise).
+-- Owner 2026-11-26 00:37Z: Mazen's «ممرض/ة لوحده» booking on the consult is refused; bookings with «وقت الطريق» 60 end 75 minutes
+-- after the start (15 visit + 60 road) and a booking inside that trip is refused.
 -- Steps: ops APPLY 1+2 (nursing fee 150, «كشف منزلي (شامل الانتقال)» 1500 + split row) → APPLY 3 (pending 50% contracts as the
 -- maker) → BEFORE approval Mazen's execute of a home consult is refused (no department-contract fallback) → the financial manager
 -- (another admin) approves the doctor's contract → fixture as postgres: two home-consult visits for that doctor (one «ممرض/ة مع طبيب»
@@ -27,12 +29,17 @@ do $$ begin
      or not exists (select 1 from information_schema.columns where table_schema = 'clinic_reception' and table_name = 'orders' and column_name = 'agreement_id') then
     raise exception 'أعمدة الاستقبال المتوقعة (credit_amount / agreement_id) غير موجودة';
   end if;
+  if to_regprocedure('public.clinic_reception_command(uuid,text,jsonb,uuid)') is null or to_regprocedure('public.clinic_reception_snapshot(uuid,date,date)') is null
+     or to_regprocedure('clinic_reception.booking_minutes(uuid,jsonb)') is null then
+    raise exception 'أوامر الحجز / لقطة الاستقبال / مدة الحجز غير موجودة';
+  end if;
 end $$;
 
 create table clinic_reception.home_visit_split (
   service_code text primary key check (length(btrim(service_code)) >= 2),
   nurse_fee numeric(12,2) not null check (nurse_fee > 0 and nurse_fee <= 100000),
   exact_contract boolean not null default true,
+  travel_minutes integer not null default 60 check (travel_minutes in (30, 60, 90, 120)),
   active boolean not null default true,
   note text not null default '',
   created_at timestamptz not null default now()
@@ -138,6 +145,12 @@ create function clinic_reception.home_split_contract_guard() returns trigger lan
 declare scope text;
 begin
   if new.status = 'completed' and old.status is distinct from 'completed'
+     and exists (select 1 from clinic_reception.home_visit_split s where s.service_code = new.snapshot->>'code' and s.active)
+     and exists (select 1 from clinic_reception.visits v join clinic_reception.appointments a on a.id = v.appointment_id
+                  where v.id = new.visit_id and a.performer_mode = 'nurse_alone') then
+    raise exception 'الكشف المنزلي لازم يكون معاه الطبيب — اختار «الطبيب» أو «ممرض/ة مع طبيب»' using hint = 'home_split_nurse_alone';
+  end if;
+  if new.status = 'completed' and old.status is distinct from 'completed'
      and exists (select 1 from clinic_reception.home_visit_split s where s.service_code = new.snapshot->>'code' and s.active and s.exact_contract)
      and exists (select 1 from clinic_reception.workspaces w where w.id = new.workspace_id and w.mode = 'live') then
     select c.service_scope into scope from clinic_reception.doctor_agreements g join clinic_finance.doctor_contracts c on c.id = g.finance_contract_id where g.id = new.agreement_id;
@@ -194,6 +207,93 @@ begin
 end $$;
 create trigger home_nurse_retry_provider after insert or update of doctor_key on clinic_reception.providers for each row execute function clinic_reception.home_nurse_retry_provider();
 
+
+-- (3)+(4) booking wrapper: refuse «ممرض/ة لوحده» on a split service; book visit + travel, keep travel on the appointment
+alter table clinic_reception.appointments add column if not exists travel_minutes integer;
+alter table clinic_reception.appointments drop constraint if exists appointments_travel_check;
+alter table clinic_reception.appointments add constraint appointments_travel_check check (travel_minutes is null or travel_minutes in (30, 60, 90, 120));
+
+alter function public.clinic_reception_command(uuid, text, jsonb, uuid) rename to command_before_home_split;
+alter function public.command_before_home_split(uuid, text, jsonb, uuid) set schema clinic_reception;
+
+create function public.clinic_reception_command(p_workspace uuid, p_action text, p_payload jsonb, p_token uuid)
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
+declare a clinic_reception.appointments%rowtype; s clinic_reception.services%rowtype; cfg clinic_reception.home_visit_split%rowtype;
+  mode text; travel integer; base integer; out jsonb; v uuid; x clinic_reception.appointments%rowtype; clash record;
+begin
+  if p_action not in ('book', 'walk_in', 'reschedule') or jsonb_typeof(p_payload) is distinct from 'object' then
+    return clinic_reception.command_before_home_split(p_workspace, p_action, p_payload, p_token);
+  end if;
+  if p_action = 'reschedule' then
+    select * into a from clinic_reception.appointments where workspace_id = p_workspace and id = nullif(p_payload->>'id', '')::uuid;
+  end if;
+  select * into s from clinic_reception.services where workspace_id = p_workspace and id = coalesce(nullif(p_payload->>'service_id', '')::uuid, a.service_id);
+  if s.id is not null then select * into cfg from clinic_reception.home_visit_split where service_code = s.code and active; end if;
+  if cfg.service_code is null or nullif(p_payload->>'package_id', '') is not null then
+    out := clinic_reception.command_before_home_split(p_workspace, p_action, p_payload - 'travel_minutes', p_token);
+    if a.id is not null and a.travel_minutes is not null and nullif(out->>'id', '') is not null then
+      update clinic_reception.appointments set travel_minutes = null where workspace_id = p_workspace and id = (out->>'id')::uuid;
+    end if;
+    return out;
+  end if;
+  mode := case when p_payload ? 'performer_mode' then coalesce(nullif(p_payload->>'performer_mode', ''), 'doctor') else coalesce(a.performer_mode, 'doctor') end;
+  if mode = 'nurse_alone' then
+    raise exception 'الكشف المنزلي لازم يكون معاه الطبيب — اختار «الطبيب» أو «ممرض/ة مع طبيب»' using hint = 'home_split_nurse_alone';
+  end if;
+  if nullif(p_payload->>'travel_minutes', '') is not null then
+    if p_payload->>'travel_minutes' not in ('30', '60', '90', '120') then raise exception 'وقت الطريق (رايح وجاي) لازم يكون 30 أو 60 أو 90 أو 120 دقيقة'; end if;
+    travel := (p_payload->>'travel_minutes')::integer;
+  else travel := coalesce(a.travel_minutes, cfg.travel_minutes); end if;
+  if nullif(p_payload->>'minutes', '') is not null then
+    if p_payload->>'minutes' !~ '^[0-9]{1,3}$' then raise exception 'مدة الجلسة غير صحيحة'; end if;
+    base := (p_payload->>'minutes')::integer;
+  else base := s.minutes; end if;
+  out := clinic_reception.command_before_home_split(p_workspace, p_action,
+           (p_payload - 'travel_minutes') || jsonb_build_object('minutes', (base + travel)::text), p_token);
+  v := nullif(out->>'id', '')::uuid;
+  if v is null then return out; end if;
+  update clinic_reception.appointments set travel_minutes = travel where workspace_id = p_workspace and id = v returning * into x;
+  -- the nurse is held for the whole trip too (the booking wrapper checks her only when the performer keys are sent)
+  if x.nurse_admin_id is not null then
+    select o.starts_at, coalesce(ad.name, 'الممرض/ة') who into clash
+      from clinic_reception.appointments o left join public.admins ad on ad.id = o.nurse_admin_id
+     where o.nurse_admin_id = x.nurse_admin_id and o.id <> x.id and o.status in ('booked', 'arrived')
+       and o.starts_at < x.ends_at and o.ends_at > x.starts_at
+     order by o.starts_at limit 1;
+    if found then
+      raise exception '% عنده/عندها زيارة تانية في نفس الوقت (الساعة %) — اختار وقت أو ممرض/ة تاني', clash.who,
+        to_char(clash.starts_at at time zone 'Africa/Cairo', 'HH24:MI') using hint = 'nurse_overlap';
+    end if;
+  end if;
+  return out;
+end $$;
+
+alter function public.clinic_reception_snapshot(uuid, date, date) rename to snapshot_before_home_split;
+alter function public.snapshot_before_home_split(uuid, date, date) set schema clinic_reception;
+create function public.clinic_reception_snapshot(p_workspace uuid, p_from date default current_date, p_to date default current_date)
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
+declare result jsonb;
+begin
+  result := clinic_reception.snapshot_before_home_split(p_workspace, p_from, p_to);   -- access check first
+  return result || jsonb_build_object('home_visit_split', coalesce((
+    select jsonb_agg(jsonb_build_object('service_id', s.id, 'code', s.code, 'travel_minutes', h.travel_minutes) order by s.code)
+      from clinic_reception.services s join clinic_reception.home_visit_split h on h.service_code = s.code and h.active
+     where s.workspace_id = p_workspace and s.active), '[]'::jsonb));
+end $$;
+
+-- the wrappers get exactly the privileges of the functions they wrap
+do $$ declare r record; pair text[]; begin
+  foreach pair slice 1 in array array[['clinic_reception.command_before_home_split(uuid,text,jsonb,uuid)', 'public.clinic_reception_command(uuid,text,jsonb,uuid)'],
+                                      ['clinic_reception.snapshot_before_home_split(uuid,date,date)', 'public.clinic_reception_snapshot(uuid,date,date)']] loop
+    execute format('revoke all on function %s from public, anon, authenticated', pair[2]);
+    for r in select a.grantee, a.privilege_type from pg_proc p, aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+              where p.oid = pair[1]::regprocedure and a.grantee <> p.proowner loop
+      execute format('grant %s on function %s to %s', r.privilege_type, pair[2], case when r.grantee = 0 then 'public' else quote_ident(pg_get_userbyid(r.grantee)) end);
+    end loop;
+    execute format('revoke all on function %s from public, anon, authenticated', pair[1]);
+  end loop;
+end $$;
+
 revoke all on function clinic_reception.home_nurse_provider(uuid, uuid), clinic_reception.home_nurse_booked(uuid), clinic_reception.home_nurse_sync(uuid),
   clinic_reception.home_nurse_try(uuid), clinic_reception.home_split_contract_guard(), clinic_reception.home_nurse_on_order(),
   clinic_reception.home_nurse_follow_cut(), clinic_reception.home_nurse_retry_provider() from public, anon, authenticated;
@@ -239,7 +339,7 @@ begin
   v_code := coalesce(nullif(btrim(hc.booking_code), ''), hc.canonical_code);
   if exists (select 1 from public.pricing_services where booking_code = v_code and id <> hc.id) then raise exception 'booking code % is used by another pricing row', v_code; end if;
   update public.pricing_services set name = 'كشف منزلي (شامل الانتقال)', active = true, booking_enabled = true, booking_code = v_code,
-         booking_department = 'خدمات الكشف', booking_minutes = coalesce(booking_minutes, 60)
+         booking_department = 'خدمات الكشف', booking_minutes = 15   -- the visit; the road there and back is the booking's «وقت الطريق» (migration)
    where id = hc.id;
 
   perform clinic_reception.sync_catalog(ws);
@@ -261,6 +361,9 @@ begin
   select id, code, price into svc from clinic_reception.services where workspace_id = ws and pricing_service_id = keep.id and active;
   if svc.price <> 150 then raise exception 'nursing fee reception price is % (expected 150) — check price lists / margin', svc.price; end if;
   update clinic_reception.services set is_home = true where id = svc.id;
+  if (select count(*) from clinic_reception.services where workspace_id = ws and code = svc.code and active) <> 1
+     or not (select is_home from clinic_reception.services where id = svc.id) then
+    raise exception 'nursing fee: the active version of % must be the only active one and «خدمة منزلية» (is_home)', svc.code; end if;
   if exists (select 1 from clinic_reception.services s join public.pricing_services x on x.id = s.pricing_service_id
               where s.workspace_id = ws and s.active and x.name like 'خدمة تمريض منزلي - رسوم الزيارة%' and x.id <> keep.id) then
     raise exception 'a 200 nursing fee service is still active in reception'; end if;
@@ -271,10 +374,11 @@ begin
     (select string_agg(detail, ' | ') from clinic_reception.catalog_issues where workspace_id = ws and source_id = hc.id); end if;
   select id, code, name, department, price into svc from clinic_reception.services where workspace_id = ws and pricing_service_id = hc.id and active;
   if svc.price <> 1500 then raise exception 'home consult reception price is % (expected 1500)', svc.price; end if;
+  if (select minutes from clinic_reception.services where id = svc.id) <> 15 then raise exception 'home consult visit length must be 15 minutes'; end if;
   if not clinic_reception.is_basic_service(svc.department, svc.name) then raise exception 'the home consult is not a basic service'; end if;
   update clinic_reception.services set is_home = true where id = svc.id;
-  insert into clinic_reception.home_visit_split(service_code, nurse_fee, note) values (svc.code, 100, 'قرار المالك 2026-11-26: كشف منزلي 1500 = الطبيب 750 + الممرض/ة 100 لو مع الطبيب + الباقي للمركز')
-    on conflict (service_code) do update set nurse_fee = 100, active = true, exact_contract = true, note = excluded.note;
+  insert into clinic_reception.home_visit_split(service_code, nurse_fee, travel_minutes, note) values (svc.code, 100, 60, 'قرار المالك 2026-11-26: كشف منزلي 1500 = الطبيب 750 + الممرض/ة 100 لو مع الطبيب + الباقي للمركز')
+    on conflict (service_code) do update set nurse_fee = 100, travel_minutes = 60, active = true, exact_contract = true, note = excluded.note;
   raise notice 'home consult bookable: % «%» at % (is_home, basic, nurse 100)', svc.code, svc.name, svc.price;
 end $$;
 -- <<< end of ops APPLY 1+2 <<<
@@ -288,19 +392,20 @@ begin
   end if;
   select id into ws from clinic_reception.workspaces where mode = 'live';
   select id into me from public.admins where user_id = mazen;
-  select s.id, s.code, s.name, s.department, s.price, s.is_home into svc from clinic_reception.services s
+  select s.id, s.code, s.name, s.department, s.price, s.is_home, s.minutes into svc from clinic_reception.services s
    where s.workspace_id = ws and s.active and s.pricing_service_id = (select id from public.pricing_services where canonical_code = 'SVC-0001396');
   insert into hc_live(step, expected, actual, ok) values ('home consult service', '«كشف منزلي (شامل الانتقال)» 1500, خدمات الكشف, is_home',
     coalesce(svc.code || ' «' || svc.name || '» ' || svc.price || ' ' || svc.department || ' home=' || svc.is_home, 'missing'),
     svc.price = 1500 and svc.department = 'خدمات الكشف' and svc.is_home and svc.name = 'كشف منزلي (شامل الانتقال)');
+  insert into hc_live(step, expected, actual, ok) values ('home consult visit length', '15 minutes (the road is added per booking)', coalesce(svc.minutes::text, '-'), svc.minutes = 15);
   select count(*) into n from clinic_reception.services s join public.pricing_services p on p.id = s.pricing_service_id
    where s.workspace_id = ws and s.active and p.name like 'خدمة تمريض منزلي - رسوم الزيارة%';
   select string_agg(s.code || ' ' || s.price, ', ') into err from clinic_reception.services s join public.pricing_services p on p.id = s.pricing_service_id
    where s.workspace_id = ws and s.active and p.name like 'خدمة تمريض منزلي - رسوم الزيارة%';
   insert into hc_live(step, expected, actual, ok) values ('nursing visit fee', 'exactly one active, 150', coalesce(err, 'none'), n = 1 and err like '% 150.00');
-  insert into hc_live(step, expected, actual, ok) values ('split row', 'nurse_fee 100 on the home consult code',
-    coalesce((select service_code || ' ' || nurse_fee from clinic_reception.home_visit_split where service_code = svc.code), 'missing'),
-    exists (select 1 from clinic_reception.home_visit_split where service_code = svc.code and nurse_fee = 100 and active));
+  insert into hc_live(step, expected, actual, ok) values ('split row', 'nurse 100, road 60 on the home consult code',
+    coalesce((select service_code || ' nurse ' || nurse_fee || ' road ' || travel_minutes from clinic_reception.home_visit_split where service_code = svc.code), 'missing'),
+    exists (select 1 from clinic_reception.home_visit_split where service_code = svc.code and nurse_fee = 100 and travel_minutes = 60 and active));
 end $$;
 -- >>> ops APPLY 3 >>>
 do $$
@@ -355,7 +460,9 @@ begin
   select p.id provider_id, p.doctor_key, p.name, k.id contract_id into doc from clinic_reception.providers p
     join clinic_finance.doctor_contracts k on k.doctor_key = p.doctor_key and k.service_scope = svc.code and k.status = 'pending'
    where p.workspace_id = ws and p.active
-   order by (select count(*) from clinic_reception.orders o where o.provider_id = p.id and o.status = 'completed' and o.completed_at > now() - interval '90 days') desc, p.name
+   order by exists (select 1 from clinic_reception.availability av where av.provider_id = p.id and av.ends_at > now() + interval '3 hours' and av.starts_at < now() + interval '8 days'
+                     and av.ends_at - greatest(av.starts_at, now() + interval '1 hour') >= interval '170 minutes') desc,
+            (select count(*) from clinic_reception.orders o where o.provider_id = p.id and o.status = 'completed' and o.completed_at > now() - interval '90 days') desc, p.name
    limit 1;
   insert into hc_live(step, expected, actual, ok) values ('fixture doctor', 'an active doctor provider with a pending contract', coalesce(doc.name || ' ' || doc.doctor_key, 'none'), doc.provider_id is not null);
   -- a nurse who has a reception provider
@@ -364,17 +471,59 @@ begin
    where clinic_reception.is_nurse(a.id) and np.provider_id is not null order by np.nurse_key limit 1;
   insert into hc_live(step, expected, actual, ok) values ('fixture nurse', 'a nursing admin with a reception provider (HR code = doctor_key)', coalesce(nurse.nurse_key, 'none — every nurse fee would wait in home_nurse_issues'), nurse.provider_id is not null);
   select id into pat from clinic_reception.patients where workspace_id = ws order by created_at desc limit 1;
-  -- two free 60-minute slots, ≥ 10 minutes from the doctor's other bookings, today/tomorrow
-  select t into slot from generate_series(date_trunc('hour', now()) + interval '1 hour', date_trunc('hour', now()) + interval '36 hours', interval '5 minutes') t
-   where not exists (select 1 from clinic_reception.appointments a where a.provider_id = doc.provider_id and a.status not in ('cancelled', 'no_show')
-                      and a.starts_at < t + interval '130 minutes' and a.ends_at > t - interval '10 minutes')
+  -- as Mazen (reception) from here; the fixture rows below are still written as postgres
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', mazen, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', mazen::text, true);
+  -- a free start inside the doctor's hours: [t, t + 15 + 60 road] covered by his availability, ≥ 10 min from his other bookings,
+  -- the nurse free, and room for a second trip 85 minutes later
+  select t into slot from clinic_reception.availability av
+   cross join lateral generate_series(greatest(av.starts_at, date_trunc('hour', now()) + interval '1 hour'), av.ends_at - interval '160 minutes', interval '5 minutes') t
+   where av.provider_id = doc.provider_id and av.ends_at > now() + interval '3 hours' and av.starts_at < now() + interval '8 days'
+     and not exists (select 1 from clinic_reception.appointments a where a.provider_id = doc.provider_id and a.status not in ('cancelled', 'no_show')
+                      and a.starts_at < t + interval '170 minutes' and a.ends_at > t - interval '10 minutes')
      and not exists (select 1 from clinic_reception.appointments a where a.nurse_admin_id = nurse.admin_id and a.status in ('booked', 'arrived')
-                      and a.starts_at < t + interval '60 minutes' and a.ends_at > t)
+                      and a.starts_at < t + interval '85 minutes' and a.ends_at > t - interval '10 minutes')
    order by t limit 1;
-  insert into clinic_reception.appointments(workspace_id, patient_id, provider_id, service_id, starts_at, ends_at, status, created_by, arrived_at, performer_mode, nurse_admin_id)
-    values (ws, pat, doc.provider_id, svc.id, slot, slot + interval '60 minutes', 'arrived', me, now(), 'nurse_with_doctor', nurse.admin_id) returning id into ap1;
-  insert into clinic_reception.appointments(workspace_id, patient_id, provider_id, service_id, starts_at, ends_at, status, created_by, arrived_at)
-    values (ws, pat, doc.provider_id, svc.id, slot + interval '70 minutes', slot + interval '130 minutes', 'arrived', me, now()) returning id into ap2;
+  insert into hc_live(step, expected, actual, ok) values ('fixture slot', 'a start in the doctor''s hours with room for 2 trips', coalesce(to_char(slot at time zone 'Africa/Cairo', 'YYYY-MM-DD HH24:MI'), 'none'), slot is not null);
+  -- 0) Mazen: «ممرض/ة لوحده» on the home consult is refused
+  begin r := public.clinic_reception_command(ws, 'book', jsonb_build_object('patient_id', pat, 'provider_id', doc.provider_id, 'service_id', svc.id, 'starts_at', slot,
+      'performer_mode', 'nurse_alone', 'nurse_admin_id', nurse.admin_id, 'payer_kind', 'cash', 'same_day_ok', true), gen_random_uuid()); err := 'accepted';
+  exception when others then err := sqlerrm; end;
+  insert into hc_live(step, expected, actual, ok) values ('Mazen book nurse alone on «كشف منزلي»', 'refused «الكشف المنزلي لازم يكون معاه الطبيب»', err, err like '%الكشف المنزلي لازم يكون معاه الطبيب%');
+  -- 0b) Mazen books both trips with «وقت الطريق» 60: ends 75 minutes after the start
+  begin r := public.clinic_reception_command(ws, 'book', jsonb_build_object('patient_id', pat, 'provider_id', doc.provider_id, 'service_id', svc.id, 'starts_at', slot,
+      'performer_mode', case when nurse.admin_id is null then 'doctor' else 'nurse_with_doctor' end, 'nurse_admin_id', nurse.admin_id, 'travel_minutes', '60', 'payer_kind', 'cash', 'same_day_ok', true), gen_random_uuid());
+    ap1 := (r->>'id')::uuid; err := 'ok';
+  exception when others then err := sqlerrm; end;
+  insert into hc_live(step, expected, actual, ok)
+  select 'Mazen book «كشف منزلي» + nurse, road 60', 'ok · 75 minutes · travel 60 · nurse_with_doctor',
+    err || coalesce(' · ' || (extract(epoch from a.ends_at - a.starts_at) / 60)::int || ' minutes · travel ' || a.travel_minutes || ' · ' || a.performer_mode, ''),
+    err = 'ok' and a.ends_at - a.starts_at = interval '75 minutes' and a.travel_minutes = 60 and a.performer_mode = 'nurse_with_doctor'
+  from (select 1) d left join clinic_reception.appointments a on a.id = ap1;
+  begin r := public.clinic_reception_command(ws, 'book', jsonb_build_object('patient_id', pat, 'provider_id', doc.provider_id, 'service_id', svc.id, 'starts_at', slot + interval '85 minutes',
+      'payer_kind', 'cash', 'same_day_ok', true), gen_random_uuid());
+    ap2 := (r->>'id')::uuid; err := 'ok';
+  exception when others then err := sqlerrm; end;
+  insert into hc_live(step, expected, actual, ok)
+  select 'Mazen book «كشف منزلي» doctor alone (road default)', 'ok · 75 minutes · travel 60',
+    err || coalesce(' · ' || (extract(epoch from a.ends_at - a.starts_at) / 60)::int || ' minutes · travel ' || a.travel_minutes, ''),
+    err = 'ok' and a.ends_at - a.starts_at = interval '75 minutes' and a.travel_minutes = 60
+  from (select 1) d left join clinic_reception.appointments a on a.id = ap2;
+  -- the trip holds the doctor: another booking 30 minutes after the first start is refused
+  begin r := public.clinic_reception_command(ws, 'book', jsonb_build_object('patient_id', pat, 'provider_id', doc.provider_id, 'service_id', svc.id, 'starts_at', slot + interval '30 minutes',
+      'payer_kind', 'cash', 'same_day_ok', true), gen_random_uuid()); err := 'accepted';
+  exception when others then err := sqlerrm; end;
+  insert into hc_live(step, expected, actual, ok) values ('Mazen book inside the first trip', 'refused (overlap / gap)', err, err <> 'accepted');
+  -- if a booking gate unrelated to this change refused (e.g. Masa grid), fall back to postgres rows so the money part still runs
+  if ap1 is null then
+    insert into clinic_reception.appointments(workspace_id, patient_id, provider_id, service_id, starts_at, ends_at, status, created_by, performer_mode, nurse_admin_id, travel_minutes)
+      values (ws, pat, doc.provider_id, svc.id, slot, slot + interval '75 minutes', 'booked', me, case when nurse.admin_id is null then 'doctor' else 'nurse_with_doctor' end, nurse.admin_id, 60) returning id into ap1;
+  end if;
+  if ap2 is null then
+    insert into clinic_reception.appointments(workspace_id, patient_id, provider_id, service_id, starts_at, ends_at, status, created_by, travel_minutes)
+      values (ws, pat, doc.provider_id, svc.id, slot + interval '85 minutes', slot + interval '160 minutes', 'booked', me, 60) returning id into ap2;
+  end if;
+  update clinic_reception.appointments set status = 'arrived', arrived_at = now() where id in (ap1, ap2);
   insert into clinic_reception.visits(workspace_id, appointment_id, patient_id, opened_by) values (ws, ap1, pat, me) returning id into v1;
   insert into clinic_reception.visits(workspace_id, appointment_id, patient_id, opened_by) values (ws, ap2, pat, me) returning id into v2;
   insert into clinic_reception.orders(workspace_id, visit_id, service_id, provider_id, quantity, price, snapshot, created_by)
@@ -383,9 +532,6 @@ begin
     select ws, v2, s.id, doc.provider_id, 1, s.price, to_jsonb(s), me from clinic_reception.services s where s.id = svc.id returning id into o2;
   insert into hc_live(step, expected, actual, ok) values ('fixture visits', '2 arrived visits (with nurse / doctor alone)', to_char(slot at time zone 'Africa/Cairo', 'YYYY-MM-DD HH24:MI'), o1 is not null and o2 is not null);
 
-  -- as Mazen (reception)
-  perform set_config('request.jwt.claims', jsonb_build_object('sub', mazen, 'role', 'authenticated')::text, true);
-  perform set_config('request.jwt.claim.sub', mazen::text, true);
   g := clinic_reception.shift_guard_state();
   if coalesce((g->>'locked')::boolean, false) then
     execute 'create or replace function clinic_reception.shift_guard_check(p_workspace uuid) returns void language plpgsql as $f$ begin return; end $f$';

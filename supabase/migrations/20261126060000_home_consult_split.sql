@@ -13,6 +13,14 @@
 --       Credit note / insurer contractual cut → the same share of the nurse fee is reversed (home_nurse_adjust); a voided
 --       («إلغاء خدمة») order → reversed in full. Never blocks the execution: a missing provider / invoice / error is kept in
 --       clinic_reception.home_nurse_issues and retried when the nurse's provider row appears.
+--   (3) ALWAYS WITH THE DOCTOR (owner 2026-11-26 00:37Z): a split service cannot be booked / walked in / rescheduled / executed
+--       with performer «ممرض/ة لوحده» (wrapper over public.clinic_reception_command + the execution guard below).
+--   (4) TRAVEL TIME (same answers): the visit itself is the service length (15 min) and the booking also holds the doctor (and the
+--       nurse) for the road there and back: appointments.travel_minutes (30 / 60 / 90 / 120, default home_visit_split.travel_minutes
+--       = 60). The wrapper books minutes = visit + travel through the existing «minutes» override (clinic_reception.booking_minutes),
+--       so availability, overlap and the booking gap cover the whole trip; a nurse on the booking is checked on the same span.
+--       Reschedule keeps the stored travel unless a new one is sent. clinic_reception_snapshot gains home_visit_split
+--       [{service_id, code, travel_minutes}] so the booking form hides «ممرض/ة لوحده» and offers «وقت الطريق (رايح وجاي)».
 --   (2) EXACT CONTRACT GUARD. A split service is executed only on an exact-code contract of the doctor: without it the doctor's
 --       department contract («قسم:خدمات الكشف», e.g. a consult %) would silently apply to the 1500. Live workspaces only.
 -- Rows of home_visit_split are data (written by the ops script, no grants). Rollback: supabase/rollbacks/20261126060000_home_consult_split.rollback.sql
@@ -35,12 +43,17 @@ do $$ begin
      or not exists (select 1 from information_schema.columns where table_schema = 'clinic_reception' and table_name = 'orders' and column_name = 'agreement_id') then
     raise exception 'أعمدة الاستقبال المتوقعة (credit_amount / agreement_id) غير موجودة';
   end if;
+  if to_regprocedure('public.clinic_reception_command(uuid,text,jsonb,uuid)') is null or to_regprocedure('public.clinic_reception_snapshot(uuid,date,date)') is null
+     or to_regprocedure('clinic_reception.booking_minutes(uuid,jsonb)') is null then
+    raise exception 'أوامر الحجز / لقطة الاستقبال / مدة الحجز غير موجودة';
+  end if;
 end $$;
 
 create table clinic_reception.home_visit_split (
   service_code text primary key check (length(btrim(service_code)) >= 2),
   nurse_fee numeric(12,2) not null check (nurse_fee > 0 and nurse_fee <= 100000),
   exact_contract boolean not null default true,
+  travel_minutes integer not null default 60 check (travel_minutes in (30, 60, 90, 120)),
   active boolean not null default true,
   note text not null default '',
   created_at timestamptz not null default now()
@@ -146,6 +159,12 @@ create function clinic_reception.home_split_contract_guard() returns trigger lan
 declare scope text;
 begin
   if new.status = 'completed' and old.status is distinct from 'completed'
+     and exists (select 1 from clinic_reception.home_visit_split s where s.service_code = new.snapshot->>'code' and s.active)
+     and exists (select 1 from clinic_reception.visits v join clinic_reception.appointments a on a.id = v.appointment_id
+                  where v.id = new.visit_id and a.performer_mode = 'nurse_alone') then
+    raise exception 'الكشف المنزلي لازم يكون معاه الطبيب — اختار «الطبيب» أو «ممرض/ة مع طبيب»' using hint = 'home_split_nurse_alone';
+  end if;
+  if new.status = 'completed' and old.status is distinct from 'completed'
      and exists (select 1 from clinic_reception.home_visit_split s where s.service_code = new.snapshot->>'code' and s.active and s.exact_contract)
      and exists (select 1 from clinic_reception.workspaces w where w.id = new.workspace_id and w.mode = 'live') then
     select c.service_scope into scope from clinic_reception.doctor_agreements g join clinic_finance.doctor_contracts c on c.id = g.finance_contract_id where g.id = new.agreement_id;
@@ -201,6 +220,93 @@ begin
   return new;
 end $$;
 create trigger home_nurse_retry_provider after insert or update of doctor_key on clinic_reception.providers for each row execute function clinic_reception.home_nurse_retry_provider();
+
+
+-- (3)+(4) booking wrapper: refuse «ممرض/ة لوحده» on a split service; book visit + travel, keep travel on the appointment
+alter table clinic_reception.appointments add column if not exists travel_minutes integer;
+alter table clinic_reception.appointments drop constraint if exists appointments_travel_check;
+alter table clinic_reception.appointments add constraint appointments_travel_check check (travel_minutes is null or travel_minutes in (30, 60, 90, 120));
+
+alter function public.clinic_reception_command(uuid, text, jsonb, uuid) rename to command_before_home_split;
+alter function public.command_before_home_split(uuid, text, jsonb, uuid) set schema clinic_reception;
+
+create function public.clinic_reception_command(p_workspace uuid, p_action text, p_payload jsonb, p_token uuid)
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
+declare a clinic_reception.appointments%rowtype; s clinic_reception.services%rowtype; cfg clinic_reception.home_visit_split%rowtype;
+  mode text; travel integer; base integer; out jsonb; v uuid; x clinic_reception.appointments%rowtype; clash record;
+begin
+  if p_action not in ('book', 'walk_in', 'reschedule') or jsonb_typeof(p_payload) is distinct from 'object' then
+    return clinic_reception.command_before_home_split(p_workspace, p_action, p_payload, p_token);
+  end if;
+  if p_action = 'reschedule' then
+    select * into a from clinic_reception.appointments where workspace_id = p_workspace and id = nullif(p_payload->>'id', '')::uuid;
+  end if;
+  select * into s from clinic_reception.services where workspace_id = p_workspace and id = coalesce(nullif(p_payload->>'service_id', '')::uuid, a.service_id);
+  if s.id is not null then select * into cfg from clinic_reception.home_visit_split where service_code = s.code and active; end if;
+  if cfg.service_code is null or nullif(p_payload->>'package_id', '') is not null then
+    out := clinic_reception.command_before_home_split(p_workspace, p_action, p_payload - 'travel_minutes', p_token);
+    if a.id is not null and a.travel_minutes is not null and nullif(out->>'id', '') is not null then
+      update clinic_reception.appointments set travel_minutes = null where workspace_id = p_workspace and id = (out->>'id')::uuid;
+    end if;
+    return out;
+  end if;
+  mode := case when p_payload ? 'performer_mode' then coalesce(nullif(p_payload->>'performer_mode', ''), 'doctor') else coalesce(a.performer_mode, 'doctor') end;
+  if mode = 'nurse_alone' then
+    raise exception 'الكشف المنزلي لازم يكون معاه الطبيب — اختار «الطبيب» أو «ممرض/ة مع طبيب»' using hint = 'home_split_nurse_alone';
+  end if;
+  if nullif(p_payload->>'travel_minutes', '') is not null then
+    if p_payload->>'travel_minutes' not in ('30', '60', '90', '120') then raise exception 'وقت الطريق (رايح وجاي) لازم يكون 30 أو 60 أو 90 أو 120 دقيقة'; end if;
+    travel := (p_payload->>'travel_minutes')::integer;
+  else travel := coalesce(a.travel_minutes, cfg.travel_minutes); end if;
+  if nullif(p_payload->>'minutes', '') is not null then
+    if p_payload->>'minutes' !~ '^[0-9]{1,3}$' then raise exception 'مدة الجلسة غير صحيحة'; end if;
+    base := (p_payload->>'minutes')::integer;
+  else base := s.minutes; end if;
+  out := clinic_reception.command_before_home_split(p_workspace, p_action,
+           (p_payload - 'travel_minutes') || jsonb_build_object('minutes', (base + travel)::text), p_token);
+  v := nullif(out->>'id', '')::uuid;
+  if v is null then return out; end if;
+  update clinic_reception.appointments set travel_minutes = travel where workspace_id = p_workspace and id = v returning * into x;
+  -- the nurse is held for the whole trip too (the booking wrapper checks her only when the performer keys are sent)
+  if x.nurse_admin_id is not null then
+    select o.starts_at, coalesce(ad.name, 'الممرض/ة') who into clash
+      from clinic_reception.appointments o left join public.admins ad on ad.id = o.nurse_admin_id
+     where o.nurse_admin_id = x.nurse_admin_id and o.id <> x.id and o.status in ('booked', 'arrived')
+       and o.starts_at < x.ends_at and o.ends_at > x.starts_at
+     order by o.starts_at limit 1;
+    if found then
+      raise exception '% عنده/عندها زيارة تانية في نفس الوقت (الساعة %) — اختار وقت أو ممرض/ة تاني', clash.who,
+        to_char(clash.starts_at at time zone 'Africa/Cairo', 'HH24:MI') using hint = 'nurse_overlap';
+    end if;
+  end if;
+  return out;
+end $$;
+
+alter function public.clinic_reception_snapshot(uuid, date, date) rename to snapshot_before_home_split;
+alter function public.snapshot_before_home_split(uuid, date, date) set schema clinic_reception;
+create function public.clinic_reception_snapshot(p_workspace uuid, p_from date default current_date, p_to date default current_date)
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
+declare result jsonb;
+begin
+  result := clinic_reception.snapshot_before_home_split(p_workspace, p_from, p_to);   -- access check first
+  return result || jsonb_build_object('home_visit_split', coalesce((
+    select jsonb_agg(jsonb_build_object('service_id', s.id, 'code', s.code, 'travel_minutes', h.travel_minutes) order by s.code)
+      from clinic_reception.services s join clinic_reception.home_visit_split h on h.service_code = s.code and h.active
+     where s.workspace_id = p_workspace and s.active), '[]'::jsonb));
+end $$;
+
+-- the wrappers get exactly the privileges of the functions they wrap
+do $$ declare r record; pair text[]; begin
+  foreach pair slice 1 in array array[['clinic_reception.command_before_home_split(uuid,text,jsonb,uuid)', 'public.clinic_reception_command(uuid,text,jsonb,uuid)'],
+                                      ['clinic_reception.snapshot_before_home_split(uuid,date,date)', 'public.clinic_reception_snapshot(uuid,date,date)']] loop
+    execute format('revoke all on function %s from public, anon, authenticated', pair[2]);
+    for r in select a.grantee, a.privilege_type from pg_proc p, aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+              where p.oid = pair[1]::regprocedure and a.grantee <> p.proowner loop
+      execute format('grant %s on function %s to %s', r.privilege_type, pair[2], case when r.grantee = 0 then 'public' else quote_ident(pg_get_userbyid(r.grantee)) end);
+    end loop;
+    execute format('revoke all on function %s from public, anon, authenticated', pair[1]);
+  end loop;
+end $$;
 
 revoke all on function clinic_reception.home_nurse_provider(uuid, uuid), clinic_reception.home_nurse_booked(uuid), clinic_reception.home_nurse_sync(uuid),
   clinic_reception.home_nurse_try(uuid), clinic_reception.home_split_contract_guard(), clinic_reception.home_nurse_on_order(),

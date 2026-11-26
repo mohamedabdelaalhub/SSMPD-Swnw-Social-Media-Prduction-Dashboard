@@ -1,7 +1,16 @@
 -- Rollback of 20261126060000_home_consult_split.sql. Posted home_nurse_fee / home_nurse_adjust journal entries STAY (they are money
 -- already owed to / paid to nurses); only the automatic posting, the exact-contract guard and the follow-ups stop. The two tables are
--- renamed (kept for audit), not dropped. The ops data (pricing rows, contracts) is not touched here.
+-- renamed (kept for audit), not dropped; appointments.travel_minutes is kept (booked trips keep their length). The booking /
+-- snapshot wrappers are removed and the previous functions put back with their privileges. The ops data is not touched here.
 begin;
+drop function if exists public.clinic_reception_command(uuid, text, jsonb, uuid);
+alter function clinic_reception.command_before_home_split(uuid, text, jsonb, uuid) set schema public;
+alter function public.command_before_home_split(uuid, text, jsonb, uuid) rename to clinic_reception_command;
+drop function if exists public.clinic_reception_snapshot(uuid, date, date);
+alter function clinic_reception.snapshot_before_home_split(uuid, date, date) set schema public;
+alter function public.snapshot_before_home_split(uuid, date, date) rename to clinic_reception_snapshot;
+revoke all on function public.clinic_reception_command(uuid, text, jsonb, uuid), public.clinic_reception_snapshot(uuid, date, date) from public, anon;
+grant execute on function public.clinic_reception_command(uuid, text, jsonb, uuid), public.clinic_reception_snapshot(uuid, date, date) to authenticated;
 drop trigger if exists home_split_contract_guard on clinic_reception.orders;
 drop trigger if exists home_nurse_on_order on clinic_reception.orders;
 drop trigger if exists home_nurse_follow_credit on clinic_reception.invoices;

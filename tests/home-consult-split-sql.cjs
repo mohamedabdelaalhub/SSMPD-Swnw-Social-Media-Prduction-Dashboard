@@ -13,8 +13,9 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   await db.exec(`create table if not exists clinic_reception.order_ext(order_id uuid primary key references clinic_reception.orders(id) on delete cascade,kind text not null,mode text not null default 'internal',billing_party text not null default 'center',referring_doctor_key text,performing_doctor_key text,external_provider_id uuid,status text not null default 'referred',status_at timestamptz not null default now(),report_file_ref text,priced jsonb,created_at timestamptz not null default now())`);
   await db.exec(mig('20261119010000'));
   // booking performer columns (#641, 20261120220000) + HR people as on live
-  await db.exec(`alter table clinic_reception.appointments add column if not exists performer_mode text not null default 'doctor', add column if not exists nurse_admin_id uuid references public.admins(id);
-   create schema if not exists clinic_people; create table if not exists clinic_people.people(id uuid primary key default gen_random_uuid(),admin_id uuid unique,full_name text,code text unique,doctor_key text unique);`);
+  await db.exec(`create schema if not exists clinic_people; create table if not exists clinic_people.people(id uuid primary key default gen_random_uuid(),admin_id uuid unique,full_name text,code text unique,doctor_key text unique);
+   create table if not exists public.admin_extra_roles(admin_id uuid,role text);`);
+  await db.exec(mig('20261115100000_reception_booking_confirm_duration'));await db.exec(mig('20261120220000_reception_booking_nurse_performer'));
   // the migration applies once; a second run is refused by the guard before begin
   const M=mig('20261126060000');
   await db.exec(M);await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
@@ -65,7 +66,8 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   // 2) doctor alone: no nurse fee, center 750
   x=await mk(pD,sHC,'doctor',null,1500);await exec(x,gH,50);assert.equal(await nurseSum(x.o),0);assert.equal(x.net-await cost5111(x.o),750,'center 750');
   // 3) nurse alone on the consult / nurse with doctor on another service: nothing
-  x=await mk(pD,sHC,'nurse_alone',N,1500);await exec(x,gH,50);assert.equal(await nurseSum(x.o),0,'nurse alone: none');
+  x=await mk(pD,sHC,'nurse_alone',N,1500);
+  await assert.rejects(()=>owner("update clinic_reception.orders set status='completed',agreement_id=$2 where id=$1",[x.o,gH]),/الكشف المنزلي لازم يكون معاه الطبيب/,'execute refuses nurse alone on the consult');
   const gK=await agree(pD,'K-1',cH,50);x=await mk(pD,sK,'nurse_with_doctor',N,400);await exec(x,gK,50);assert.equal(await nurseSum(x.o),0,'not a split service');
   // 4) exact-contract guard: a department contract (or no agreement) cannot execute the home consult
   x=await mk(pX,sHC,'doctor',null,1500);
@@ -88,13 +90,54 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   const pN2=await prov('ممرضة جديدة','EMP-000099','التمريض المنزلي');assert.equal(await nurseSum(x.o),100,'posted when the provider appears');
   assert.ok((await owner("select resolved_at from clinic_reception.home_nurse_issues where order_id=$1",[x.o]))[0].resolved_at);
   assert.equal((await owner("select j.dimensions->>'provider_id' p from clinic_reception.journal j where j.source='home_nurse_fee' and j.source_id=$1",[x.o]))[0].p,pN2);
+  // 8a) booking (owner 00:37Z): «ممرض/ة لوحده» refused on the split service (book / walk_in / reschedule), allowed elsewhere;
+  //     slot = visit (15) + travel (default 60; 30/60/90/120), overlap and the nurse are checked on the whole trip; snapshot lists the split service
+  await db.exec('reset role');
+  const tw2=(await owner("insert into clinic_reception.workspaces(name,mode,owner_id) values('trial-book','trial',$1) returning id",[id(2)]))[0].id;
+  await owner("insert into clinic_reception.members(workspace_id,admin_id,capabilities) values($1,$2,$3)",[tw2,id(4),['view','book']]);
+  const bp=async(n,k)=>(await owner("insert into clinic_reception.providers(workspace_id,name,doctor_key,department,branch) values($1,$2,$3,'خدمات الكشف','حدائق الأهرام') returning id",[tw2,n,k]))[0].id;
+  const bD=await bp('د. منزلي ت','DOC-T'),bD2=await bp('د. تاني ت','DOC-T2');
+  const day0=(await owner("select ((current_date+1)::timestamp at time zone 'Africa/Cairo') t"))[0].t;const at=h=>new Date(new Date(day0).getTime()+h*3600000).toISOString();
+  for(const p of [bD,bD2])await owner("insert into clinic_reception.availability(workspace_id,provider_id,starts_at,ends_at) values($1,$2,$3,$4)",[tw2,p,at(8),at(22)]);
+  const bs=async(code,name)=>(await owner("insert into clinic_reception.services(workspace_id,code,name,department,price,minutes) values($1,$2,$3,'خدمات الكشف',1500,15) returning id",[tw2,code,name]))[0].id;
+  const bHC=await bs('SVC-0001396','كشف منزلي (شامل الانتقال)'),bK=await bs('K-1','كشف باطنة');
+  const bpat=(await owner("insert into clinic_reception.patients(workspace_id,file_no,name,phone,created_by) values($1,'T1','مريض','0101',$2) returning id",[tw2,id(1)]))[0].id;
+  let bk=0;const cmd=async(a,p)=>{await as(4);try{return (await db.query("select public.clinic_reception_command($1,$2,$3,$4) r",[tw2,a,p,id(500+(++bk))])).rows[0].r;}finally{await db.exec('reset role');}};
+  const ap=async i=>(await owner("select starts_at,ends_at,travel_minutes,performer_mode,nurse_admin_id,service_id,extract(epoch from ends_at-starts_at)/60 m from clinic_reception.appointments where id=$1",[i]))[0];
+  const NA=/الكشف المنزلي لازم يكون معاه الطبيب/;
+  await assert.rejects(()=>cmd('book',{patient_id:bpat,provider_id:bD,service_id:bHC,starts_at:at(10),performer_mode:'nurse_alone',nurse_admin_id:N}),NA,'book nurse alone refused');
+  await assert.rejects(()=>cmd('walk_in',{patient_id:bpat,provider_id:bD,service_id:bHC,performer_mode:'nurse_alone',nurse_admin_id:N}),NA,'walk_in nurse alone refused');
+  let r1=await cmd('book',{patient_id:bpat,provider_id:bD,service_id:bK,starts_at:at(9),performer_mode:'nurse_alone',nurse_admin_id:N});
+  let a1=await ap(r1.id);assert.equal(a1.performer_mode,'nurse_alone','other services keep nurse alone');assert.equal(Number(a1.m),15);assert.equal(a1.travel_minutes,null);
+  let r2=await cmd('book',{patient_id:bpat,provider_id:bD,service_id:bHC,starts_at:at(10)});let a2=await ap(r2.id);
+  assert.equal(Number(a2.m),75,'15 + default travel 60');assert.equal(a2.travel_minutes,60);
+  await assert.rejects(()=>cmd('book',{patient_id:bpat,provider_id:bD,service_id:bK,starts_at:at(11)}),/يتداخل|دقايق بين كل حجز/,'the trip holds the doctor (11:00 is inside 10:00–11:15)');
+  await assert.rejects(()=>cmd('book',{patient_id:bpat,provider_id:bD2,service_id:bHC,starts_at:at(13),travel_minutes:'45'}),/وقت الطريق/);
+  let r3=await cmd('book',{patient_id:bpat,provider_id:bD2,service_id:bHC,starts_at:at(13),travel_minutes:'30',performer_mode:'nurse_with_doctor',nurse_admin_id:N});let a3=await ap(r3.id);
+  assert.equal(Number(a3.m),45);assert.equal(a3.travel_minutes,30);assert.equal(a3.performer_mode,'nurse_with_doctor');
+  // the nurse is held for the trip: another doctor's visit with her at 13:30 (inside 13:00–13:45) is refused
+  await assert.rejects(()=>cmd('book',{patient_id:bpat,provider_id:bD,service_id:bK,starts_at:at(13.5),performer_mode:'nurse_with_doctor',nurse_admin_id:N}),/زيارة تانية في نفس الوقت/);
+  // reschedule: keeps travel when not sent, takes a new one, refuses nurse alone (sent, or kept from the booking when the service changes)
+  await cmd('reschedule',{id:r2.id,patient_id:bpat,provider_id:bD,service_id:bHC,starts_at:at(15)});a2=await ap(r2.id);assert.equal(Number(a2.m),75,'travel kept');assert.equal(a2.travel_minutes,60);
+  await cmd('reschedule',{id:r2.id,patient_id:bpat,provider_id:bD,service_id:bHC,starts_at:at(15),travel_minutes:'120'});a2=await ap(r2.id);assert.equal(Number(a2.m),135);assert.equal(a2.travel_minutes,120);
+  await assert.rejects(()=>cmd('reschedule',{id:r2.id,patient_id:bpat,provider_id:bD,service_id:bHC,starts_at:at(15),performer_mode:'nurse_alone',nurse_admin_id:N}),NA);
+  await assert.rejects(()=>cmd('reschedule',{id:r1.id,patient_id:bpat,provider_id:bD,service_id:bHC,starts_at:at(19)}),NA,'nurse-alone booking cannot move onto the consult');
+  // nurse kept on reschedule without keys: her other visit inside the new trip is refused
+  await cmd('book',{patient_id:bpat,provider_id:bD,service_id:bK,starts_at:at(20),performer_mode:'nurse_with_doctor',nurse_admin_id:N});
+  await assert.rejects(()=>cmd('reschedule',{id:r3.id,patient_id:bpat,provider_id:bD2,service_id:bHC,starts_at:at(19.75)}),/زيارة تانية في نفس الوقت/,'19:45 + 15 + 30 overlaps her 20:00 visit');
+  // moving off the split service clears travel
+  await cmd('reschedule',{id:r2.id,patient_id:bpat,provider_id:bD,service_id:bK,starts_at:at(16)});a2=await ap(r2.id);assert.equal(Number(a2.m),15);assert.equal(a2.travel_minutes,null);
+  // snapshot exposes the split service to the booking form
+  await as(4);const snap=(await db.query("select public.clinic_reception_snapshot($1,current_date,current_date+2) s",[tw2])).rows[0].s;await db.exec('reset role');
+  assert.deepEqual(snap.home_visit_split,[{service_id:bHC,code:'SVC-0001396',travel_minutes:60}]);assert.ok(Array.isArray(snap.appointments));
+  assert.equal(snap.appointments.find(a=>a.id===r3.id).travel_minutes,30,'appointments carry travel_minutes');
   // 8) no grants to the app roles
-  assert.deepEqual((await owner("select has_function_privilege('authenticated','clinic_reception.home_nurse_try(uuid)','execute') a, has_table_privilege('authenticated','clinic_reception.home_visit_split','select') b"))[0],{a:false,b:false});
+  assert.deepEqual((await owner("select has_function_privilege('authenticated','clinic_reception.home_nurse_try(uuid)','execute') a, has_table_privilege('authenticated','clinic_reception.home_visit_split','select') b, has_function_privilege('authenticated','public.clinic_reception_command(uuid,text,jsonb,uuid)','execute') c, has_function_privilege('anon','public.clinic_reception_command(uuid,text,jsonb,uuid)','execute') d, has_function_privilege('authenticated','clinic_reception.command_before_home_split(uuid,text,jsonb,uuid)','execute') e, has_function_privilege('authenticated','public.clinic_reception_snapshot(uuid,date,date)','execute') f"))[0],{a:false,b:false,c:true,d:false,e:false,f:true});
   // 9) rollback: posting / guard stop, posted entries stay, re-apply works
   await db.exec('reset role');await db.exec(fs.readFileSync('supabase/rollbacks/20261126060000_home_consult_split.rollback.sql','utf8'));
   assert.equal((await owner("select to_regprocedure('clinic_reception.home_nurse_try(uuid)') f"))[0].f,null);
   assert.equal((await owner("select count(*)::int n from clinic_reception.journal where source='home_nurse_fee'"))[0].n,4,'posted entries kept');
   x=await mk(pX,sHC,'nurse_with_doctor',N,1500);await owner("update clinic_reception.orders set status='completed' where id=$1",[x.o]);assert.equal(await nurseSum(x.o),0,'no posting after rollback');
   await db.exec(M);assert.ok((await owner("select to_regclass('clinic_reception.home_visit_split') t"))[0].t,'re-apply after rollback');
-  console.log('PASS home consult split: 1500 → doctor 750 (exact 50% contract) + nurse 100 only when «ممرض/ة مع طبيب» (her provider, payable at «صرف الحساب» once paid) + center 650 / 750; idempotent; nurse alone / other services nothing; department contract refused (live only); discount = 50% of net for the doctor, nurse fixed; credit note proportional + restore, void reverses; missing provider retried; no grants; rollback keeps entries and re-applies.');
+  console.log('PASS home consult split: nurse alone refused on book/walk_in/reschedule/execute of the split service (allowed elsewhere); slot = 15 + travel (default 60, 30/60/90/120; kept / changed / cleared on reschedule), doctor and nurse held for the whole trip; snapshot lists it; 1500 → doctor 750 (exact 50% contract) + nurse 100 only when «ممرض/ة مع طبيب» (her provider, payable at «صرف الحساب» once paid) + center 650 / 750; idempotent; nurse alone / other services nothing; department contract refused (live only); discount = 50% of net for the doctor, nurse fixed; credit note proportional + restore, void reverses; missing provider retried; no grants; rollback keeps entries and re-applies.');
  }finally{await db.close();}})().catch(e=>{console.error(e);process.exit(1);});

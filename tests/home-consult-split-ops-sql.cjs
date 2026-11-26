@@ -58,14 +58,18 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   assert.deepEqual(P5.map(r=>r.doctor_key),['DOC-A','DOC-B'],'doctor list: active doctor providers, nurses / units / inactive excluded, one row per key');
   assert.equal(P5.find(r=>r.doctor_key==='DOC-A').current,'department contract قسم:خدمات الكشف 60.0000%','before the batch the department contract would apply — the migration guard refuses that');
   assert.equal(P3.length,1,'P3 lists the future booking on the 200 fee');assert.equal(P3[0].id,futureAp);
+  assert.deepEqual([Number(res[3].rows[0].future_on_200),res[3].rows[0].ok],[1,false],'P3b counts it (live expectation: 0 / ok)');
   const A12=sec('APPLY 1+2');await db.exec(A12);
   let s=await owner("select code,price::numeric p,is_home,active,pricing_service_id from clinic_reception.services where active and pricing_service_id in ($1,$2,$3) order by code",[p150,p200,pHC]);
   assert.deepEqual(s.map(r=>[r.code,Number(r.p),r.is_home,r.pricing_service_id]),[['NUR-F61284',150,true,p150],['SVC-0001396',1500,true,pHC]],'one 150 nursing fee on the SAME code + the home consult');
   const pr=(await owner("select id,name,active,booking_enabled,booking_code,booking_department,booking_minutes from public.pricing_services where id in ($1,$2,$3) order by base_price",[p150,pHC,p200]));
   assert.deepEqual(pr.map(r=>[r.active,r.booking_enabled,r.booking_code]),[[true,true,'NUR-F61284'],[false,false,null],[true,true,'SVC-0001396']]);
-  assert.equal(pr[2].name,'كشف منزلي (شامل الانتقال)');assert.equal(pr[2].booking_department,'خدمات الكشف');assert.equal(pr[0].booking_department,'التمريض المنزلي');
+  assert.equal(pr[2].name,'كشف منزلي (شامل الانتقال)');
+  assert.equal(pr[2].booking_minutes,15,'visit 15 minutes');
+  assert.deepEqual((await owner("select minutes,is_home from clinic_reception.services where active and pricing_service_id=$1",[pHC])).map(r=>[r.minutes,r.is_home]),[[15,true]]);
+  assert.deepEqual((await owner("select count(*)::int n,bool_and(is_home) h from clinic_reception.services where active and code='NUR-F61284'"))[0],{n:1,h:true},'the ONLY active NUR-F61284 version is the 150 one and is_home');assert.equal(pr[2].booking_department,'خدمات الكشف');assert.equal(pr[0].booking_department,'التمريض المنزلي');
   assert.equal((await owner("select service_id from clinic_reception.appointments where id=$1",[futureAp]))[0].service_id,old200,'existing booking untouched');
-  assert.deepEqual((await owner("select service_code,nurse_fee::numeric f from clinic_reception.home_visit_split")).map(r=>[r.service_code,Number(r.f)]),[['SVC-0001396',100]]);
+  assert.deepEqual((await owner("select service_code,nurse_fee::numeric f,travel_minutes t from clinic_reception.home_visit_split")).map(r=>[r.service_code,Number(r.f),r.t]),[['SVC-0001396',100,60]]);
   // the nurse contract still resolves for the 150 fee
   assert.equal((await owner("select count(*)::int n from clinic_finance.doctor_contract_for_service('EMP-000007','NUR-F61284',null,'التمريض المنزلي',current_date)"))[0].n,1);
   // idempotent re-run
@@ -86,5 +90,5 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   await as(3);await db.query("select public.clinic_finance_doctor_command('contract_review_batch',$1,gen_random_uuid())",[{ids,approve:true,note:'اعتماد المدير المالي'}]);await db.exec('reset role');
   const chkAll=await db.exec(sec('CHECK'));assert.ok(chkAll[0].rows.some(r=>r.nurse==='ممرضة'&&r.provider_id),'C0 lists the nurse with her provider');const chk=chkAll[1].rows;
   assert.deepEqual(chk.filter(r=>/^DOC-/.test(r.doctor_key)).map(r=>[r.doctor_key,r.resolves_to]),[['DOC-A','50.0000% exact'],['DOC-B','50.0000% exact']],'exact 50% wins over the department contract');
-  console.log('PASS home consult split ops: PREVIEW doctor list (nurses/units/inactive excluded) + future 200 bookings listed; APPLY 1+2 retires 200, 150 takes NUR-F61284 (nurse contract kept, booking untouched), «كشف منزلي (شامل الانتقال)» 1500 basic + is_home + split row; idempotent; duplicate 150 refused; APPLY 3 pending 50% contracts via contract_batch as the maker, re-run skips, maker cannot approve, FM approves → exact 50% resolves.');
+  console.log('PASS home consult split ops: P3b future_on_200 count, consult visit 15 min, active 150 version only + is_home, split travel 60; PREVIEW doctor list (nurses/units/inactive excluded) + future 200 bookings listed; APPLY 1+2 retires 200, 150 takes NUR-F61284 (nurse contract kept, booking untouched), «كشف منزلي (شامل الانتقال)» 1500 basic + is_home + split row; idempotent; duplicate 150 refused; APPLY 3 pending 50% contracts via contract_batch as the maker, re-run skips, maker cannot approve, FM approves → exact 50% resolves.');
  }finally{await db.close();}})().catch(e=>{console.error(e);process.exit(1);});

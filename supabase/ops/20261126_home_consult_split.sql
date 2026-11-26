@@ -8,7 +8,8 @@
 --       changed (their price snapshot stays 200 unless reception re-books them) — for the owner.
 --   (2) Home DOCTOR consult: pricing row SVC-0001396 (canonical_code) becomes «كشف منزلي (شامل الانتقال)» 1500, bookable in
 --       «خدمات الكشف» (basic = every doctor, clinic_reception.is_basic_service), is_home = true. Its booking code = the existing
---       booking_code or else SVC-0001396. Registered in clinic_reception.home_visit_split with nurse_fee 100.
+--       booking_code or else SVC-0001396. Visit length 15 minutes (booking_minutes); the booking adds «وقت الطريق (رايح وجاي)»
+--       (default 60, set in home_visit_split.travel_minutes). Registered in clinic_reception.home_visit_split with nurse_fee 100.
 --   (3) Doctor 750 = per-doctor EXACT-CODE contract at 50% (performed / service / no deduction) — PENDING, created through the
 --       same public.clinic_finance_doctor_command('contract_batch') the contracts screen uses, as the MAKER admin below. The
 --       financial manager (a different admin: maker ≠ checker) approves them on screen («اعتماد الكل»). Until a doctor's contract
@@ -32,15 +33,28 @@ select s.code, s.version, s.name, s.department, s.price, s.is_home, s.active, s.
 select 'appointment' kind, a.id, to_char(a.starts_at at time zone 'Africa/Cairo', 'YYYY-MM-DD HH24:MI') at_cairo, a.status, p.file_no, pr.name provider, s.code, s.price
   from clinic_reception.appointments a join clinic_reception.services s on s.id = a.service_id
   join clinic_reception.patients p on p.id = a.patient_id join clinic_reception.providers pr on pr.id = a.provider_id
- where s.pricing_service_id in (select id from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and base_price = 200)
+ where (s.pricing_service_id in (select id from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and base_price = 200)
+        or (s.code = 'NUR-F61284' and s.price = 200))
    and a.status in ('booked', 'arrived') and a.starts_at >= now() - interval '12 hours'
 union all
 select 'open order', o.id, to_char(o.created_at at time zone 'Africa/Cairo', 'YYYY-MM-DD HH24:MI'), o.status, p.file_no, pr.name, o.snapshot->>'code', o.price
   from clinic_reception.orders o join clinic_reception.services s on s.id = o.service_id join clinic_reception.visits v on v.id = o.visit_id
   join clinic_reception.patients p on p.id = v.patient_id left join clinic_reception.providers pr on pr.id = o.provider_id
- where s.pricing_service_id in (select id from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and base_price = 200)
+ where (s.pricing_service_id in (select id from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and base_price = 200)
+        or (s.code = 'NUR-F61284' and s.price = 200))
    and o.status = 'ordered'
  order by 3;
+-- P3b. the confirmation row: expect future_on_200 = 0 (ok = true). Not 0 → the rows above keep their 200 snapshot; tell the owner.
+select count(*) future_on_200, count(*) = 0 ok from (
+  select a.id from clinic_reception.appointments a join clinic_reception.services s on s.id = a.service_id
+   where (s.pricing_service_id in (select id from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and base_price = 200)
+           or (s.code = 'NUR-F61284' and s.price = 200))
+     and a.status in ('booked', 'arrived') and a.starts_at >= now() - interval '12 hours'
+  union all
+  select o.id from clinic_reception.orders o join clinic_reception.services s on s.id = o.service_id
+   where (s.pricing_service_id in (select id from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and base_price = 200)
+           or (s.code = 'NUR-F61284' and s.price = 200))
+     and o.status = 'ordered') x;
 -- P4. contracts on the nursing / home-consult codes (nurse per-service contracts must stay on the code that stays bookable)
 select c.doctor_key, c.doctor_name, c.service_scope, c.fee_kind, c.rate, c.fixed_amount, c.status, c.valid_from, c.valid_to
   from clinic_finance.doctor_contracts c
@@ -112,7 +126,7 @@ begin
   v_code := coalesce(nullif(btrim(hc.booking_code), ''), hc.canonical_code);
   if exists (select 1 from public.pricing_services where booking_code = v_code and id <> hc.id) then raise exception 'booking code % is used by another pricing row', v_code; end if;
   update public.pricing_services set name = 'كشف منزلي (شامل الانتقال)', active = true, booking_enabled = true, booking_code = v_code,
-         booking_department = 'خدمات الكشف', booking_minutes = coalesce(booking_minutes, 60)
+         booking_department = 'خدمات الكشف', booking_minutes = 15   -- the visit; the road there and back is the booking's «وقت الطريق» (migration)
    where id = hc.id;
 
   perform clinic_reception.sync_catalog(ws);
@@ -134,6 +148,9 @@ begin
   select id, code, price into svc from clinic_reception.services where workspace_id = ws and pricing_service_id = keep.id and active;
   if svc.price <> 150 then raise exception 'nursing fee reception price is % (expected 150) — check price lists / margin', svc.price; end if;
   update clinic_reception.services set is_home = true where id = svc.id;
+  if (select count(*) from clinic_reception.services where workspace_id = ws and code = svc.code and active) <> 1
+     or not (select is_home from clinic_reception.services where id = svc.id) then
+    raise exception 'nursing fee: the active version of % must be the only active one and «خدمة منزلية» (is_home)', svc.code; end if;
   if exists (select 1 from clinic_reception.services s join public.pricing_services x on x.id = s.pricing_service_id
               where s.workspace_id = ws and s.active and x.name like 'خدمة تمريض منزلي - رسوم الزيارة%' and x.id <> keep.id) then
     raise exception 'a 200 nursing fee service is still active in reception'; end if;
@@ -144,10 +161,11 @@ begin
     (select string_agg(detail, ' | ') from clinic_reception.catalog_issues where workspace_id = ws and source_id = hc.id); end if;
   select id, code, name, department, price into svc from clinic_reception.services where workspace_id = ws and pricing_service_id = hc.id and active;
   if svc.price <> 1500 then raise exception 'home consult reception price is % (expected 1500)', svc.price; end if;
+  if (select minutes from clinic_reception.services where id = svc.id) <> 15 then raise exception 'home consult visit length must be 15 minutes'; end if;
   if not clinic_reception.is_basic_service(svc.department, svc.name) then raise exception 'the home consult is not a basic service'; end if;
   update clinic_reception.services set is_home = true where id = svc.id;
-  insert into clinic_reception.home_visit_split(service_code, nurse_fee, note) values (svc.code, 100, 'قرار المالك 2026-11-26: كشف منزلي 1500 = الطبيب 750 + الممرض/ة 100 لو مع الطبيب + الباقي للمركز')
-    on conflict (service_code) do update set nurse_fee = 100, active = true, exact_contract = true, note = excluded.note;
+  insert into clinic_reception.home_visit_split(service_code, nurse_fee, travel_minutes, note) values (svc.code, 100, 60, 'قرار المالك 2026-11-26: كشف منزلي 1500 = الطبيب 750 + الممرض/ة 100 لو مع الطبيب + الباقي للمركز')
+    on conflict (service_code) do update set nurse_fee = 100, travel_minutes = 60, active = true, exact_contract = true, note = excluded.note;
   raise notice 'home consult bookable: % «%» at % (is_home, basic, nurse 100)', svc.code, svc.name, svc.price;
 end $$;
 -- after-state
