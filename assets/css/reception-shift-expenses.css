@@ -19,3 +19,14 @@
 .rse-tw{overflow-x:auto}.rse-t{width:100%;border-collapse:collapse;font-size:13px}.rse-t th,.rse-t td{padding:8px;border-bottom:1px solid #EEF1F6;text-align:start;vertical-align:top}
 .rse-t th{color:#3B4658;font-weight:700;background:#F7F8FB}
 @media(max-width:640px){.rse-k{grid-template-columns:1fr 1fr 1fr}.rse-list li{grid-template-columns:48px 1fr auto}.rse-list li em{grid-column:2/-1}}
+/* help 299 — finance «مصروفات الورديات» redesign */
+.rse-period{margin:0 0 8px;font-size:13px;background:#F1F4F8;border-radius:12px;padding:8px 10px}.rse-period b{color:#0F369D}
+.rse-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:8px}.rse-kpi{border:1px solid #D5DEEE;border-radius:12px;padding:8px;text-align:center;min-width:0}.rse-kpi span{display:block;font-size:11.5px;color:#5b6577}.rse-kpi b{font-size:17px}
+.rse-kpi.need{border-color:#F15A22;background:#FFF6F0}.rse-kpi.need b{color:#F15A22}
+.rse-chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.rse-chip{padding:6px 12px;border-radius:999px;background:#F1F4F8;border:0;font:inherit;font-size:13px;cursor:pointer}.rse-chip.on{background:#0F369D;color:#fff}
+.rse-cards{display:grid;gap:8px}.rse-ex{border:1px solid #D5DEEE;border-radius:12px;padding:10px;display:grid;gap:6px;min-width:0}.rse-ex-top{display:flex;justify-content:space-between;gap:8px}.rse-ex small{color:#5b6577}.rse-amt{font-weight:700;white-space:nowrap}
+.rse-st{border-radius:999px;padding:2px 10px;font-size:12px;justify-self:start}.rse-st.w{background:#FFF3E0;color:#8a4b00}.rse-st.ok{background:#E6F3EC;color:#2F7D5C}.rse-st.bad{background:#FDECE8;color:#D0402A}
+.rse-ex-act{display:flex;gap:8px;flex-wrap:wrap}
+.rse-empty{text-align:center;padding:18px 10px;background:#F8FAFD;border-radius:12px;color:#5b6577;display:grid;gap:6px}.rse-empty b{color:#16212E}
+.rse-ah{width:100%;display:flex;justify-content:space-between;align-items:center;border:1px solid #D5DEEE;background:#fff;border-radius:12px;padding:12px;font:inherit;text-align:start;cursor:pointer;margin-top:12px}.rse-ah.open{border-color:#0F369D;background:#F4F7FF}
+.rse-set{border:1px solid #D5DEEE;border-top:0;border-radius:0 0 12px 12px;padding:10px;display:grid;gap:8px}.rse-set[hidden]{display:none}.rse-srow{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid #EEF2F8;padding-bottom:8px}.rse-srow small{display:block;color:#5b6577}

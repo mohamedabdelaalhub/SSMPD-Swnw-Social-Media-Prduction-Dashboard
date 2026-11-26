@@ -7781,6 +7781,32 @@
       "reviewed": true
     },
     {
+      "title": "دوّر",
+      "labels": [
+        "دوّر"
+      ],
+      "text": "اختر دور الموظف الذي ستعرض أو تعدل مستهدفاته وأوزان مؤشراته، وليس حساب شخص منفرد أو منح صلاحية جديدة.",
+      "article": "indicators",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب اسم المريض أو التليفون أو رقم الملف",
+      "labels": [
+        "اكتب اسم المريض أو التليفون أو رقم الملف"
+      ],
+      "text": "دوّر على المريض باسمه أو تليفونه أو رقم ملفه علشان تفتح زيارته وتصلّح اللي فيها.",
+      "article": "fix-visit",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "القسم",
       "labels": [
         "القسم"
@@ -12089,6 +12115,19 @@
       "reviewed": true
     },
     {
+      "title": "شهر الحسابات",
+      "labels": [
+        "شهر الحسابات"
+      ],
+      "text": "الشهر اللي عايز تشوف حساباته. المستحق والسداد والطلبات كلها للشهر ده.",
+      "article": "month-end-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "المخزن اللي هيتخصم منه",
       "labels": [
         "المخزن اللي هيتخصم منه"
@@ -12147,6 +12186,32 @@
       ],
       "text": "اكتب بكلام المريض سبب الزيارة النهارده. بتظهر للدكتور بين علامتي تنصيص في شريط الفحص قبل الكشف.",
       "article": "nursing-triage",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "كاش ولا بنك؟",
+      "labels": [
+        "كاش ولا بنك؟"
+      ],
+      "text": "كاش من الخزينة الرئيسية (لازم ورديتها تكون مفتوحة) أو البنك. الشريك بيتعامل مع الخزينة الرئيسية بس.",
+      "article": "partner-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: توريد لدفع إيجار المركز",
+      "labels": [
+        "مثلاً: توريد لدفع إيجار المركز"
+      ],
+      "text": "اكتب الفلوس دي ليه — بتظهر في كشف حساب الشريك.",
+      "article": "partner-accounts",
       "tabs": [
         "production"
       ],
@@ -15571,12 +15636,38 @@
       "reviewed": true
     },
     {
-      "title": "الحالة",
+      "title": "سبب الرفض (٣ حروف على الأقل)",
       "labels": [
-        "الحالة"
+        "سبب الرفض (٣ حروف على الأقل)"
       ],
-      "text": "اختار الحالة الفعلية أو فلتر العرض حسب هذه الشاشة. تغيير الفلتر لا ينقل المستند لمرحلة جديدة، والحالة التنفيذية لها إجراء وصلاحية مستقلان.",
-      "article": "personal",
+      "text": "اكتب ليه رفضت المصروف (٣ حروف على الأقل). الرفض علامة للمتابعة بس ومش بيرجّع الفلوس ولا بيغيّر القيد.",
+      "article": "shift-expenses-review",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "هامش مصروفات الوردية (ج.م)",
+      "labels": [
+        "هامش مصروفات الوردية (ج.م)"
+      ],
+      "text": "أقصى إجمالي مصروفات الكاشير في الوردية الواحدة على الخزينة دي. صفر = كارت المصروفات مقفول.",
+      "article": "shift-expenses-review",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "حد المصروف الواحد (ج.م)",
+      "labels": [
+        "حد المصروف الواحد (ج.م)"
+      ],
+      "text": "أقصى مبلغ للمصروف الواحد. صفر = كارت المصروفات مقفول للخزينة دي.",
+      "article": "shift-expenses-review",
       "tabs": [
         "reception_services"
       ],
@@ -15644,6 +15735,19 @@
       ],
       "text": "اعرض حجوزات طبيب معين بس، أو كل الأطباء.",
       "article": "booking-flow",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الحالة",
+      "labels": [
+        "الحالة"
+      ],
+      "text": "اختار الحالة الفعلية أو فلتر العرض حسب هذه الشاشة. تغيير الفلتر لا ينقل المستند لمرحلة جديدة، والحالة التنفيذية لها إجراء وصلاحية مستقلان.",
+      "article": "personal",
       "tabs": [
         "reception_services"
       ],
@@ -23497,9 +23601,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2027,
-    "labels": 1471,
-    "files": 162,
-    "groups": 1595
+    "definitions": 2033,
+    "labels": 1478,
+    "files": 165,
+    "groups": 1603
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

@@ -7,7 +7,7 @@
 <title>لوحة إنتاج المحتوى — Swnw</title>
 <link rel="stylesheet" href="assets/css/i18n.css?v=operations-live-20261017-2">
 <link rel="icon" href="assets/img/mark.svg">
-<link rel="stylesheet" href="assets/css/styles.css?v=zero-handover-20261125-1">
+<link rel="stylesheet" href="assets/css/styles.css?v=overtime-layout-20261126-1">
 <link rel="stylesheet" href="assets/css/file-drop-paste.css?v=file-drop-paste-20261125-2">
 <link rel="stylesheet" href="assets/css/ui-motion.css?v=ui-motion-20261117-1">
 <link rel="stylesheet" href="assets/css/today-review-inbox.css?v=review-inbox-20261122-2">
@@ -37,13 +37,16 @@
 <link rel="stylesheet" href="assets/css/finance-doctor-dues.css?v=dues-fit-20261125-1">
 <link rel="stylesheet" href="assets/css/finance-reports.css?v=reports-plain-20261126-2">
 <link rel="stylesheet" href="assets/css/ledger-look.css?v=ledger-look-20261125-1">
-<link rel="stylesheet" href="assets/css/finance-today.css?v=payroll-plain-20261126-2">
+<link rel="stylesheet" href="assets/css/finance-today.css?v=treasury-accordion-20261126-1">
 <link rel="stylesheet" href="assets/css/booking-cash-view.css?v=booking-cash-plain-20261125-1">
 <link rel="stylesheet" href="assets/css/accounting-shell.css?v=masa-mobile-20261120-2">
+<link rel="stylesheet" href="assets/css/back-nav.css?v=back-arrow-20261126-2">
 <link rel="stylesheet" href="assets/css/reception-workspace.css?v=entity-names-20261126-1">
 <link rel="stylesheet" href="assets/css/reception-auto-book.css?v=auto-time-20261123-1">
-<link rel="stylesheet" href="assets/css/reception-shift-expenses.css?v=shift-exp-20261120-1">
+<link rel="stylesheet" href="assets/css/reception-shift-expenses.css?v=shift-expenses-redesign-20261126-1">
+<link rel="stylesheet" href="assets/css/partner-accounts.css?v=partners-20261126-1">
 <link rel="stylesheet" href="assets/css/drawer-requests.css?v=drawer-req-20261126-1">
+<link rel="stylesheet" href="assets/css/month-end-accounts.css?v=month-end-20261126-1">
 <link rel="stylesheet" href="assets/css/reception-follow-ups.css?v=follow-ups-20261121-1">
 <link rel="stylesheet" href="assets/css/reception-minicards.css?v=minicards-1">
 <link rel="stylesheet" href="assets/css/reception-reminders.css?v=tomorrow-reminders-20261121-1">
@@ -58,6 +61,7 @@
 <link rel="stylesheet" href="assets/css/reception-overbook.css?v=overbook-20261120-1">
 <link rel="stylesheet" href="assets/css/reception-booking-plus.css?v=home-collapse-20261123-1">
 <link rel="stylesheet" href="assets/css/reception-booking-discount.css?v=family-legacy-20261125-1">
+<link rel="stylesheet" href="assets/css/fix-visit.css?v=fix-visit-20261126-1">
 <link rel="stylesheet" href="assets/css/service-select-search.css?v=service-search-20261123-1">
 <link rel="stylesheet" href="assets/css/reception-legacy-package.css?v=legacy-package-20261123-1">
 <link rel="stylesheet" href="assets/css/reception-payer-kind.css?v=payer-kind-20261123-2">
@@ -246,8 +250,10 @@
 <script src="assets/js/finance-account-statements.js?v=finance-today-plain-20261126-2"></script>
 <script src="assets/js/account-breakdown.js?v=breakdown-20261125-3"></script>
 <script src="assets/js/count-check.js?v=count-repeat-20261126-1"></script>
-<script src="assets/js/reception-shift-expenses.js?v=shift-exp-20261120-1"></script>
+<script src="assets/js/reception-shift-expenses.js?v=shift-expenses-redesign-20261126-1"></script>
+<script src="assets/js/partner-accounts.js?v=partners-20261126-1"></script>
 <script src="assets/js/drawer-requests.js?v=drawer-req-20261126-2"></script>
+<script src="assets/js/month-end-accounts.js?v=month-end-20261126-1"></script>
 <script src="assets/js/reception-minicards.js?v=minicards-1"></script>
 <script src="assets/js/reception-follow-ups.js?v=center-name-20261122-2"></script>
 <script src="assets/js/reception-reminders.js?v=center-name-20261122-1"></script>
@@ -258,11 +264,12 @@
 <script src="assets/js/finance-shift-movements.js?v=breakdown-20261125-1"></script>
 <script src="assets/js/finance-labels.js?v=accnames-20261122-1"></script>
 <script src="assets/js/payment-proof.js?v=proof-photo-1"></script>
-<script src="assets/js/finance-cash.js?v=merge-drawer-requests-876-20261126-3"></script>
+<script src="assets/js/treasury-accordion.js?v=treasury-accordion-20261126-1"></script>
+<script src="assets/js/finance-cash.js?v=partners-on-889-20261126-1"></script>
 <script src="assets/js/tax-status.js?v=tax-20261122-1"></script>
 <script src="assets/js/main-treasury-count.js?v=count-repeat-20261126-1"></script>
 <script src="assets/js/today-review-inbox.js?v=integ-inbox-phone-20261123-1"></script>
-<script src="assets/js/accounting-shell.js?v=drawer-req-20261126-1"></script>
+<script src="assets/js/accounting-shell.js?v=partners-on-889-20261126-1"></script>
 <script src="assets/js/accounting-overview.js?v=multi-note-20261123-1"></script>
 <script src="assets/js/finance-today.js?v=finance-today-plain-20261126-1"></script>
 <script src="assets/js/render-accounting.js?v=package-fixed-price-20261125-1"></script>
@@ -302,6 +309,7 @@
 <script src="assets/js/reception-overbook.js?v=overbook-20261120-1"></script>
 <script src="assets/js/reception-booking-plus.js?v=home-consult-split-20261126-1"></script>
 <script src="assets/js/reception-booking-discount.js?v=family-legacy-20261125-1"></script>
+<script src="assets/js/fix-visit.js?v=fix-visit-20261126-1"></script>
 <script src="assets/js/reception-payer-kind.js?v=entity-names-20261126-1"></script>
 <script src="assets/js/reception-referrer.js?v=referrer-20261123-1"></script>
 <script src="assets/js/reception-service-later.js?v=restricted-scope-20261126-2"></script>
@@ -324,7 +332,7 @@
 <script src="assets/js/training-videos.js?v=tips-coach-20261122-1"></script>
 <script src="assets/js/tips-coach.js?v=handover-choice-20261124-1"></script>
 <script src="assets/js/usage-heatmap.js?v=heatmap-20261114-1"></script>
-<script src="assets/js/dashboard-help.js?v=help-300-hr-requests-20261126-2"></script>
+<script src="assets/js/dashboard-help.js?v=help-300-hr-requests-20261126-3"></script>
 <script src="assets/js/workforce-prices.js?v=hr-requests-polish-20261126-1"></script>
 <script src="assets/js/training-course-data.js?v=training-gahar-20261119-1"></script>
 <script src="assets/js/training-evaluation.js?v=training-center-20261119-8"></script>
@@ -359,7 +367,8 @@
 <script src="assets/js/entity-claims.js?v=claim-names-20261126-1"></script>
 <script src="assets/js/lab-link-review.js?v=lab-newsvc-20261109-1"></script>
 <script src="assets/js/instinct-assistant.js?v=instinct-20261125-2"></script>
-<script src="assets/js/app.js?v=instinct-20261124-1"></script>
+<script src="assets/js/back-nav.js?v=back-arrow-20261126-2"></script>
+<script src="assets/js/app.js?v=back-arrow-20261126-2"></script>
 <script src="assets/js/scroll-top.js?v=org-legal-20261117-1"></script>
 <script src="assets/js/file-drop-paste.js?v=file-drop-paste-20261125-2"></script>
 </body>
