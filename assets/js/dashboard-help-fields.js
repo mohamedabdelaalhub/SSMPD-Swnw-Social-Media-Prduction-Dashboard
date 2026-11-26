@@ -5996,6 +5996,20 @@
       "reviewed": true
     },
     {
+      "title": "دوّر باسم المريض أو رقم الملف أو الدكتور",
+      "labels": [
+        "دوّر باسم المريض أو رقم الملف أو الدكتور"
+      ],
+      "text": "بحث في التاب اللي انت فيه في «حركات اليوم»: اكتب جزء من اسم المريض أو رقم ملفه أو اسم الدكتور والقايمة بتتصفّى على طول.",
+      "article": "finance-day-movements",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "ابحث باسم الدكتور",
       "labels": [
         "ابحث باسم الدكتور"
@@ -23735,9 +23749,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2043,
-    "labels": 1482,
-    "files": 166,
-    "groups": 1613
+    "definitions": 2044,
+    "labels": 1483,
+    "files": 167,
+    "groups": 1614
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
