@@ -9,8 +9,9 @@
 --   WEAK (NOT applied, printed for the owner to confirm): جهاز | مثبت | توسيع | سلك | wire — and never a prosthetic name
 --     (طقم | تركيب(ه)? اسنان | كوبري | تاج | crown | bridge | زرع | implant). To add a confirmed weak / other code, put it in
 --     extra_codes in PART 2 (the only edit allowed) — codes are never guessed here.
--- Her laser rows in her home department: if they were automatic contract copies (clinic_reception.provider_scope_autofill),
--- PART 2 takes them out of that log so they count as owner-confirmed — under the new rule only deliberate rows restrict.
+-- PART 2 also lists her two departments in clinic_reception.provider_restricted_departments_set (the EXPLICIT restriction list —
+-- nothing is inferred from scope rows): her home dermatology department (she keeps exactly her existing laser scope rows) and
+-- her dental department (ortho rows added here). Basic services (كشف / استشارة / متابعة) stay open to her in both.
 
 -- ===================================================================== PART 1 — PREVIEW (read-only)
 -- 1a) the doctor, her departments
@@ -26,7 +27,7 @@ with dent as (
     from clinic_reception.providers p
     join clinic_reception.services s on s.workspace_id = p.workspace_id and s.active and not coalesce(s.placeholder, false)
    where p.doctor_key = 'EMP-000036' and p.active and clinic_reception.norm_ar(s.department) = 'الاسنان')
-select code, name, price, department,
+select code, name, price, department, clinic_reception.is_basic_service(department, name) basic,
        case when n ~ '(تقويم|ortho|براكت|براكيت|bracket|aligner|اليجنر|انفزلاين|invisalign|ريتينر|retainer)' then 'STRONG'
             when n ~ '(جهاز|مثبت|توسيع|سلك|wire)' and n !~ '(طقم|تركيبه? اسنان|كوبري|تاج|crown|bridge|زرع|implant)' then 'WEAK — confirm'
             else '' end ortho_match,
@@ -43,6 +44,10 @@ select s.department, count(*) rows_, count(af.provider_id) auto_copies, string_a
  where p.doctor_key = 'EMP-000036'
  group by s.department order by s.department;
 
+-- 1c2) the explicit restriction list (needs the migration; expect 0 rows before PART 2)
+select p.name, r.department, r.note, r.set_at from clinic_reception.provider_restricted_departments_set r
+  join clinic_reception.providers p on p.id = r.provider_id order by p.name, r.department;
+
 -- 1d) her open bookings from today (a non-ortho dental / non-laser derm booking will be refused at arrival/execution after PART 2)
 select a.starts_at at time zone 'Africa/Cairo' starts_cairo, s.code, s.name, s.department, a.status
   from clinic_reception.appointments a join clinic_reception.providers p on p.id = a.provider_id
@@ -55,7 +60,7 @@ begin;
 create temp table dalia_ops_codes(code text primary key, name text, price numeric, why text) on commit drop;
 do $$
 declare extra_codes text[] := array[]::text[];   -- ← owner-confirmed extra dental codes (e.g. WEAK matches), else leave empty
-  pid uuid; ws uuid; home text; dental text; n int; claimed int; added int; derm_scoped int; bad text;
+  pid uuid; ws uuid; home text; dental text; n int; restr_added int; added int; derm_scoped int; bad text;
 begin
   if to_regprocedure('clinic_reception.provider_serves_code(uuid,text,text,date)') is null then
     raise exception 'طبّق migration 20261126050000_restricted_doctor_scope.sql الأول'; end if;
@@ -83,12 +88,17 @@ begin
   select count(*) into n from dalia_ops_codes;
   if n = 0 then raise exception 'المطابقة مالقتش ولا خدمة تقويم في قسم % — مفيش حاجة اتكتبت', dental; end if;
 
-  -- her deliberate rows in her home department (the laser codes): no longer «automatic contract copies»
-  delete from clinic_reception.provider_scope_autofill af
-   where af.provider_id = pid and exists (select 1 from clinic_reception.services s where s.workspace_id = ws and s.code = af.service_code and s.department = home);
-  get diagnostics claimed = row_count;
   insert into clinic_reception.provider_service_scopes(provider_id, service_code) select pid, code from dalia_ops_codes on conflict do nothing;
   get diagnostics added = row_count;
+  -- the explicit restriction: her home (dermatology) department and her dental department
+  insert into clinic_reception.provider_restricted_departments_set(provider_id, department, note)
+  values (pid, home, 'المالك 2026-11-25: تقويم فقط / ليزر فقط'), (pid, dental, 'المالك 2026-11-25: تقويم فقط / ليزر فقط')
+  on conflict (provider_id, department) do nothing;
+  get diagnostics restr_added = row_count;
+  select count(*) into derm_scoped from clinic_reception.provider_service_scopes sc
+    join clinic_reception.services s on s.workspace_id = ws and s.code = sc.service_code and s.active and s.department = home
+   where sc.provider_id = pid and not clinic_reception.is_basic_service(s.department, s.name);
+  if derm_scoped = 0 then raise exception 'مالهاش ولا خدمة محددة في % — التقييد كان هيقفل القسم كله عليها', home; end if;
 
   -- checks: both departments restricted; dental (non-basic) = exactly the ortho codes; derm (non-basic) = her derm scope codes
   if not (home = any(clinic_reception.provider_restricted_departments(pid)) and dental = any(clinic_reception.provider_restricted_departments(pid))) then
@@ -105,8 +115,11 @@ begin
    where s.workspace_id = ws and s.active and not coalesce(s.placeholder, false) and s.department = home
      and not clinic_reception.is_basic_service(s.department, s.name) and clinic_reception.provider_serves_code(pid, s.department, s.code, null);
   if n <> derm_scoped then raise exception 'الجلدية: بتعمل % خدمة والمحدد % — راجع', n, derm_scoped; end if;
-  raise notice 'EMP-000036: ortho codes % (rows added %), laser rows claimed from the autofill log %, % non-basic services she serves in %',
-    (select count(*) from dalia_ops_codes), added, claimed, n, home;
+  raise notice 'EMP-000036: ortho codes % (non-basic %, scope rows added %), restriction rows added %, % non-basic services she serves in %',
+    (select count(*) from dalia_ops_codes), (select count(distinct o.code) from dalia_ops_codes o join clinic_reception.services s on s.workspace_id = ws and s.code = o.code and s.active
+      where not clinic_reception.is_basic_service(s.department, s.name)), added, restr_added, n, home;
+  if (select count(*) from clinic_reception.provider_restricted_departments_set) <> 2 then
+    raise exception 'المتوقع إن داليا بس اللي مقيّدة (صفين) — لقيت % صف', (select count(*) from clinic_reception.provider_restricted_departments_set); end if;
 end $$;
 
 -- after-state: every dental service and whether she serves it now; her home-department count

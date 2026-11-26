@@ -1,18 +1,19 @@
 -- Live rollback check for 20261126050000_restricted_doctor_scope.sql (+ the ops rows of supabase/ops/20261126050000_dalia_ortho_scopes.sql,
 -- inserted inside this transaction). ONE transaction ending in ROLLBACK, run as postgres. Nothing is kept: no function change, no scope
 -- row, no booking, no message.
--- (a) READ-ONLY, before the body: Dr Dalia (EMP-000036) — derm / dental services she serves today (expect all of both departments),
---     and every provider that has scope rows inside a department he belongs to (who becomes restricted: deliberate rows → YES under
---     this rule; automatic contract copies only → would be restricted only under the broad «any scope row» rule).
--- (b) The migration body (pasted between the markers, without its own begin / commit) runs inside this transaction; then: derm
---     served = her scoped laser codes + basics, dental = all (no dental rows yet) → ops claim + ortho rows → dental = ortho only;
---     a non-laser derm «book» as Mazen (reception) is refused with the new message, the same slot with a laser code is accepted
---     (rolled back); her open bookings that are no longer hers are listed. Summary table LAST.
+-- (a) READ-ONLY, before the body: Dr Dalia (EMP-000036) — derm / dental services she can be booked on today (all of both).
+-- (b) The migration body (pasted between the markers, without its own begin / commit) runs inside this transaction; then: the
+--     explicit restriction list is EMPTY (nobody changes on apply), she still serves every derm / dental service → the ops rows
+--     (STRONG ortho scope rows + her 2 rows in provider_restricted_departments_set) → dental non-basic = the STRONG matches that are
+--     not basic, derm non-basic = her laser scope codes, and ONLY she is restricted (2 rows); a non-laser derm «book» as Mazen
+--     (reception) is refused with the new message, the same slot with a laser code is accepted (rolled back); her open bookings
+--     that are no longer hers are listed. Summary table LAST.
 begin;
 -- transaction guard: SAVEPOINT fails outside an explicit begin … rollback block, and then nothing in this file runs
 savepoint rds_live_guard;
 select set_config('rds_live.in_txn', 'yes', true);
 create temp table rds_live(n serial, step text, expected text, actual text, ok boolean);
+create temp table rds_ortho(code text primary key, name text, price numeric, basic boolean);
 create temp table rds_dalia as
   select p.id, p.workspace_id, p.name, p.department home,
          (select pd.department from clinic_reception.provider_departments pd where pd.provider_id = p.id and clinic_reception.norm_ar(pd.department) = 'الاسنان' limit 1) dental
@@ -21,20 +22,6 @@ create temp table rds_before as
   select s.department, count(*) total, count(*) filter (where clinic_reception.is_basic_service(s.department, s.name)) basic
     from rds_dalia d join clinic_reception.services s on s.workspace_id = d.workspace_id and s.active and not coalesce(s.placeholder, false)
    where s.department in (d.home, d.dental) group by s.department;
-create temp table rds_candidates as
-  select p.id provider_id, p.name, p.department home, s.department dept,
-         count(distinct sc.service_code) scoped, count(distinct sc.service_code) filter (where af.provider_id is null) deliberate,
-         (select count(*) from clinic_reception.services x where x.workspace_id = p.workspace_id and x.active and not coalesce(x.placeholder, false)
-             and x.department = s.department and not clinic_reception.is_basic_service(x.department, x.name)) dept_services
-    from clinic_reception.providers p
-    join clinic_reception.workspaces w on w.id = p.workspace_id and w.mode = 'live'
-    join clinic_reception.provider_service_scopes sc on sc.provider_id = p.id
-    cross join lateral (select x.department, x.name from clinic_reception.services x where x.workspace_id = p.workspace_id and x.code = sc.service_code
-                         and not coalesce(x.placeholder, false) order by x.active desc, x.version desc limit 1) s
-    left join clinic_reception.provider_scope_autofill af on af.provider_id = sc.provider_id and af.service_code = sc.service_code
-   where p.active and not clinic_reception.is_basic_service(s.department, s.name)
-     and (s.department = p.department or exists (select 1 from clinic_reception.provider_departments pd where pd.provider_id = p.id and pd.department = s.department))
-   group by p.id, p.name, p.department, s.department;
 do $$ begin
   if current_setting('rds_live.in_txn', true) is distinct from 'yes' then
     raise exception 'NOT inside begin … rollback — nothing done; run the whole file as one transaction'; end if;
@@ -49,16 +36,15 @@ end $$;
 -- RULE (one helper: clinic_reception.provider_serves_code(provider, department, code, day)):
 --   * Basic services (clinic_reception.is_basic_service: «خدمات الكشف», names starting كشف / استشارة / متابعة) stay open to
 --     every active doctor — the owner's earlier rule «الكشف والمتابعة والاستشارة… متاحة لكل الأطباء بلا استثناء».
---   * A department D the provider belongs to (home or provider_departments) is RESTRICTED when the provider has at least one
---     scope row for a non-basic service of D that was set on purpose, i.e. NOT an automatic copy of a contract
---     (clinic_reception.provider_scope_autofill, 20261123150000). In a restricted department the provider serves ONLY the
---     scoped codes (+ basics + the «الخدمة تتحدد عند الحضور» placeholder of D). No contract is needed for a scoped code of a
---     member department (the fee contract is still checked at execution, unchanged).
---     Why automatic copies do not restrict: 20261123150000 copied every active service contract into a scope row (36 doctors,
---     262 contracts); counting those would silently shrink the booking list of every contracted doctor. The owner-confirmed rows
---     of a doctor (ops supabase/ops/20261126050000_dalia_ortho_scopes.sql) are taken out of that log, so they restrict.
---   * Any other department (no deliberate scope row there): unchanged — membership, or a scope row with a valid contract
---     (the previous has_provider_service_scope).
+--   * EXPLICIT opt-in: a department D is RESTRICTED for a provider only when management lists (provider, D) in the new table
+--     clinic_reception.provider_restricted_departments_set (note + who + when; no client access). Nothing is inferred from
+--     scope rows or the contract autofill log (a live dry-run showed inference would also restrict 6 home nurses of
+--     «التمريض المنزلي», whose one scope row is the visit fee set on purpose). In a restricted department the provider serves
+--     ONLY its scope rows there (+ basics + the «الخدمة تتحدد عند الحضور» placeholder of D). No contract is needed for a
+--     scoped code of a restricted department (the fee contract is still checked at execution, unchanged).
+--   * Every other department: unchanged — membership (home / provider_departments), or a scope row with a valid contract
+--     (the previous has_provider_service_scope). On apply the table is empty, so nobody changes until ops rows are added
+--     (Dr Dalia: supabase/ops/20261126050000_dalia_ortho_scopes.sql).
 -- ROUTED THROUGH THE HELPER (signatures kept):
 --   clinic_reception.has_provider_service_scope(uuid,text,date)  wrapped by rename (→ has_provider_service_scope_before_restricted)
 --   clinic_reception.serves_service(uuid,text,text)              auto-book candidates (auto_time_service v4) — body replaced
@@ -77,7 +63,6 @@ end $$;
 
 do $$ begin
   if to_regclass('clinic_reception.provider_service_scopes') is null or to_regclass('clinic_reception.provider_departments') is null
-     or to_regclass('clinic_reception.provider_scope_autofill') is null
      or to_regprocedure('clinic_reception.has_provider_service_scope(uuid,text,date)') is null
      or to_regprocedure('clinic_reception.serves_service(uuid,text,text)') is null
      or to_regprocedure('clinic_reception.is_basic_service(text,text)') is null
@@ -86,7 +71,7 @@ do $$ begin
      or to_regprocedure('clinic_reception.service_operation(uuid,text,jsonb,uuid)') is null
      or to_regprocedure('public.clinic_reception_snapshot(uuid,date,date)') is null
      or to_regprocedure('public.clinic_reception_booking_readiness(uuid)') is null then
-    raise exception 'مكونات نطاق الأطباء / الحجز ناقصة — طبّق 20261123150000 و 20261124210000 الأول';
+    raise exception 'مكونات نطاق الأطباء / الحجز ناقصة — طبّق 20261124210000 الأول';
   end if;
   if to_regprocedure('clinic_reception.has_provider_service_scope_before_restricted(uuid,text,date)') is not null then
     raise exception 'تم تطبيق هذا الملف من قبل'; end if;
@@ -96,18 +81,25 @@ create table clinic_reception.restricted_scope_saved_defs (sig text primary key,
 alter table clinic_reception.restricted_scope_saved_defs enable row level security;
 revoke all on clinic_reception.restricted_scope_saved_defs from public, anon, authenticated;
 
--- departments (home / extra) where the provider has a deliberate (non-automatic) scope row for a non-basic service
+-- the explicit list: which provider is restricted in which department (set by management, data only)
+create table clinic_reception.provider_restricted_departments_set (
+  provider_id uuid not null references clinic_reception.providers(id) on delete cascade,
+  department text not null check (length(btrim(department)) >= 2),
+  note text not null check (length(btrim(note)) >= 3),
+  set_by uuid references public.admins(id),
+  set_at timestamptz not null default now(),
+  primary key (provider_id, department)
+);
+alter table clinic_reception.provider_restricted_departments_set enable row level security;
+revoke all on clinic_reception.provider_restricted_departments_set from public, anon, authenticated;
+
+-- departments where the provider is restricted: ONLY what the table lists (active providers)
 create function clinic_reception.provider_restricted_departments(p_provider uuid) returns text[]
 language sql stable security definer set search_path = pg_catalog, public as $$
-  select coalesce(array_agg(distinct s.department order by s.department), array[]::text[])
-    from clinic_reception.providers p
-    join clinic_reception.provider_service_scopes sc on sc.provider_id = p.id
-    join clinic_reception.services s on s.workspace_id = p.workspace_id and s.code = sc.service_code and not coalesce(s.placeholder, false)
-   where p.id = p_provider and p.active
-     and (s.department = p.department
-          or exists (select 1 from clinic_reception.provider_departments pd where pd.provider_id = p.id and pd.department = s.department))
-     and not clinic_reception.is_basic_service(s.department, s.name)
-     and not exists (select 1 from clinic_reception.provider_scope_autofill af where af.provider_id = sc.provider_id and af.service_code = sc.service_code)
+  select coalesce(array_agg(r.department order by r.department), array[]::text[])
+    from clinic_reception.provider_restricted_departments_set r
+    join clinic_reception.providers p on p.id = r.provider_id and p.active
+   where r.provider_id = p_provider
 $$;
 
 alter function clinic_reception.has_provider_service_scope(uuid, text, date) rename to has_provider_service_scope_before_restricted;
@@ -278,18 +270,6 @@ end $$;
 revoke all on function public.clinic_reception_booking_readiness(uuid) from public, anon;
 grant execute on function public.clinic_reception_booking_readiness(uuid) to authenticated;
 
--- who is restricted right now (NOTICE only)
-do $$ declare r record; n int := 0; begin
-  for r in select p.name, p.department home, rd.dept, (select count(*) from clinic_reception.provider_service_scopes sc
-             join clinic_reception.services s on s.workspace_id = p.workspace_id and s.code = sc.service_code and s.active and s.department = rd.dept
-            where sc.provider_id = p.id) codes
-             from clinic_reception.providers p cross join lateral unnest(clinic_reception.provider_restricted_departments(p.id)) rd(dept)
-            where p.active order by p.name, rd.dept loop
-    raise notice 'restricted: % (home %) in «%»: % scoped services', r.name, r.home, r.dept, r.codes; n := n + 1;
-  end loop;
-  raise notice 'restricted provider-departments: %', n;
-end $$;
-
 notify pgrst, 'reload schema';
 -- >>> END migration body <<<
 do $$ declare d record; n int; m int; b int; err text; mazen uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb';
@@ -302,42 +282,44 @@ begin
   -- before (read-only, computed before the body)
   insert into rds_live(step, expected, actual, ok) select '(a) before: ' || department || ' services she can be booked on', 'all of the department (membership)',
     total || ' (basic ' || basic || ')', true from rds_before order by department;
-  -- after the body, before any ops row
-  select count(*) filter (where clinic_reception.provider_serves_code(d.id, s.department, s.code, null) and not clinic_reception.is_basic_service(s.department, s.name)),
-         count(*) filter (where clinic_reception.is_basic_service(s.department, s.name) and clinic_reception.provider_serves_code(d.id, s.department, s.code, null))
-    into n, b from clinic_reception.services s where s.workspace_id = d.workspace_id and s.active and not coalesce(s.placeholder, false) and s.department = d.home;
-  select count(*) into m from clinic_reception.provider_service_scopes sc join clinic_reception.provider_scope_autofill af using (provider_id, service_code) where sc.provider_id = d.id;
-  insert into rds_live(step, expected, actual, ok) values ('(b) after body: derm non-basic she serves', '64 laser if her rows are deliberate; all if they are automatic copies (' || m || ' copies)',
-    n || ' + basic ' || b, true);
+  -- after the body, before any ops row: nobody restricted, she still serves everything
+  select count(*) into n from clinic_reception.provider_restricted_departments_set;
+  insert into rds_live(step, expected, actual, ok) values ('(b) after body: rows in provider_restricted_departments_set', '0 (nobody restricted on apply)', n::text, n = 0);
+  select count(*) filter (where clinic_reception.provider_serves_code(d.id, s.department, s.code, null)), count(*) into n, m
+    from clinic_reception.services s where s.workspace_id = d.workspace_id and s.active and not coalesce(s.placeholder, false) and s.department = d.home;
+  insert into rds_live(step, expected, actual, ok) values ('(b) after body: derm she serves', 'all (unchanged until the ops rows)', n || ' of ' || m, n = m);
   select count(*) filter (where clinic_reception.provider_serves_code(d.id, s.department, s.code, null)), count(*) into n, m
     from clinic_reception.services s where s.workspace_id = d.workspace_id and s.active and not coalesce(s.placeholder, false) and s.department = d.dental;
-  insert into rds_live(step, expected, actual, ok) values ('(b) after body: dental she serves (no dental scope rows yet)', 'all (63)', n || ' of ' || m, n = m);
-  -- ops inside the txn: claim her home-department rows + ortho rows (same STRONG matcher as the ops script)
-  delete from clinic_reception.provider_scope_autofill af where af.provider_id = d.id
-     and exists (select 1 from clinic_reception.services s where s.workspace_id = d.workspace_id and s.code = af.service_code and s.department = d.home);
-  insert into clinic_reception.provider_service_scopes(provider_id, service_code)
-  select distinct d.id, s.code from clinic_reception.services s
+  insert into rds_live(step, expected, actual, ok) values ('(b) after body: dental she serves', 'all (63, unchanged until the ops rows)', n || ' of ' || m, n = m);
+  -- ops inside the txn (same as supabase/ops/20261126050000_dalia_ortho_scopes.sql PART 2): STRONG ortho rows + the 2 restriction rows
+  insert into rds_ortho
+  select s.code, min(s.name), min(s.price), bool_or(clinic_reception.is_basic_service(s.department, s.name))
+    from clinic_reception.services s
    where s.workspace_id = d.workspace_id and s.active and not coalesce(s.placeholder, false) and s.department = d.dental
      and clinic_reception.norm_ar(s.name) ~ '(تقويم|ortho|براكت|براكيت|bracket|aligner|اليجنر|انفزلاين|invisalign|ريتينر|retainer)'
-  on conflict do nothing;
+   group by s.code;
+  insert into clinic_reception.provider_service_scopes(provider_id, service_code) select d.id, code from rds_ortho on conflict do nothing;
   get diagnostics added = row_count;
-  select count(distinct s.code) into ortho from clinic_reception.services s
-   where s.workspace_id = d.workspace_id and s.active and s.department = d.dental
-     and clinic_reception.norm_ar(s.name) ~ '(تقويم|ortho|براكت|براكيت|bracket|aligner|اليجنر|انفزلاين|invisalign|ريتينر|retainer)';
+  insert into clinic_reception.provider_restricted_departments_set(provider_id, department, note)
+  values (d.id, d.home, 'المالك 2026-11-25: تقويم فقط / ليزر فقط'), (d.id, d.dental, 'المالك 2026-11-25: تقويم فقط / ليزر فقط');
+  select count(*) filter (where not basic), count(*) into ortho, m from rds_ortho;
   select count(*) filter (where clinic_reception.provider_serves_code(d.id, s.department, s.code, null) and not clinic_reception.is_basic_service(s.department, s.name)),
          count(*) filter (where clinic_reception.is_basic_service(s.department, s.name))
     into n, b from clinic_reception.services s where s.workspace_id = d.workspace_id and s.active and not coalesce(s.placeholder, false) and s.department = d.dental;
-  insert into rds_live(step, expected, actual, ok) values ('(b) after ortho rows: dental non-basic she serves', 'exactly the ortho matches (' || ortho || ', rows added ' || added || ')',
-    n || ' + basic ' || b, ortho > 0 and n = ortho);
+  insert into rds_live(step, expected, actual, ok) values ('(b) after ops: dental non-basic she serves',
+    'the STRONG matches that are not basic (' || ortho || ' of ' || m || ' matches, scope rows added ' || added || ')', n || ' + basic ' || b, ortho > 0 and n = ortho);
   select count(*) filter (where clinic_reception.provider_serves_code(d.id, s.department, s.code, null) and not clinic_reception.is_basic_service(s.department, s.name)),
          count(*) filter (where clinic_reception.is_basic_service(s.department, s.name))
     into n, b from clinic_reception.services s where s.workspace_id = d.workspace_id and s.active and not coalesce(s.placeholder, false) and s.department = d.home;
   select count(distinct s.code) into m from clinic_reception.provider_service_scopes sc
     join clinic_reception.services s on s.workspace_id = d.workspace_id and s.code = sc.service_code and s.active and s.department = d.home
    where sc.provider_id = d.id and not clinic_reception.is_basic_service(s.department, s.name);
-  insert into rds_live(step, expected, actual, ok) values ('(b) after claim: derm non-basic she serves', '= her derm scope codes (' || m || ', expect 64)', n || ' + basic ' || b, n = m);
+  insert into rds_live(step, expected, actual, ok) values ('(b) after ops: derm non-basic she serves', '= her derm scope codes (' || m || ', expect 64)', n || ' + basic ' || b, n = m);
   insert into rds_live(step, expected, actual, ok) values ('restricted departments of Dr Dalia', 'الاسنان + الجلدية والتجميل',
     array_to_string(clinic_reception.provider_restricted_departments(d.id), ' + '), cardinality(clinic_reception.provider_restricted_departments(d.id)) = 2);
+  select count(*), count(distinct provider_id) into n, m from clinic_reception.provider_restricted_departments_set;
+  insert into rds_live(step, expected, actual, ok) values ('after ops: provider_restricted_departments_set', '2 rows, 1 provider (only Dr Dalia)', n || ' rows, ' || m || ' provider(s)',
+    n = 2 and m = 1 and not exists (select 1 from clinic_reception.provider_restricted_departments_set where provider_id <> d.id));
   -- as Mazen: a non-laser derm book → refused; same slot, a laser code → accepted (rolled back)
   select s.id, s.code, s.name, s.minutes into peel from clinic_reception.services s
    where s.workspace_id = d.workspace_id and s.active and not coalesce(s.placeholder, false) and s.department = d.home
@@ -375,22 +357,14 @@ begin
    where a.provider_id = d.id and a.status = 'booked' and a.starts_at >= now() and not a.service_later
      and not clinic_reception.provider_serves_code(d.id, s.department, s.code, null);
   insert into rds_live(step, expected, actual, ok) values ('her open bookings no longer hers (listed below)', 'count (info — re-book / change service)', n::text, true);
-  select count(*), count(distinct provider_id) into n, m from rds_candidates where deliberate > 0;
-  insert into rds_live(step, expected, actual, ok) values ('provider-departments restricted by THIS rule (deliberate rows, before ops)', 'count (listed below)', n || ' (' || m || ' providers)', true);
-  select count(*), count(distinct provider_id) into n, m from rds_candidates;
-  insert into rds_live(step, expected, actual, ok) values ('… would be restricted under the broad «any scope row» rule', 'count (info)', n || ' (' || m || ' providers)', true);
 end $$;
--- who is restricted (deliberate > 0 → restricted now; deliberate = 0 → only automatic contract copies, NOT restricted by this rule)
-select name, home, dept, scoped, deliberate, dept_services, case when deliberate > 0 then 'RESTRICTED' else 'not (automatic copies only)' end status
-  from rds_candidates order by deliberate > 0 desc, name, dept;
+-- the STRONG ortho matches (basic = open to every doctor anyway, so not counted in the dental expectation)
+select code, name, price, basic from rds_ortho order by basic, name;
 -- her open bookings that the new rule refuses at arrival / execution
 select a.starts_at at time zone 'Africa/Cairo' starts_cairo, s.code, s.name, s.department
   from rds_dalia d join clinic_reception.appointments a on a.provider_id = d.id join clinic_reception.services s on s.id = a.service_id
  where a.status = 'booked' and a.starts_at >= now() and not a.service_later and not clinic_reception.provider_serves_code(d.id, s.department, s.code, null)
  order by a.starts_at;
--- the ortho services she now serves in dental
-select s.code, s.name, s.price from rds_dalia d join clinic_reception.services s on s.workspace_id = d.workspace_id and s.active and s.department = d.dental
- where clinic_reception.provider_serves_code(d.id, s.department, s.code, null) and not clinic_reception.is_basic_service(s.department, s.name) order by s.name;
 -- summary LAST
 select step, expected, actual, ok from rds_live order by n;
 rollback;

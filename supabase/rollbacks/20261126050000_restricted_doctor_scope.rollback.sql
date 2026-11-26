@@ -1,8 +1,9 @@
 -- Rollback of 20261126050000_restricted_doctor_scope.sql: restores the saved bodies (booking / order / execution / arrival gates,
 -- serves_service), unwraps the snapshot, the readiness report and has_provider_service_scope, drops the helper.
--- Scope rows are data and stay (the ops rows of supabase/ops/20261126050000_dalia_ortho_scopes.sql included): without the
+-- Drops clinic_reception.provider_restricted_departments_set (the explicit restriction list, e.g. Dr Dalia's 2 rows).
+-- Scope rows are data and stay (the ortho rows of supabase/ops/20261126050000_dalia_ortho_scopes.sql included): without the
 -- restriction a scope row inside a doctor's own / extra department changes nothing, so she is back to «all services of her
--- departments». Rows taken out of clinic_reception.provider_scope_autofill by that ops script are not put back.
+-- departments».
 begin;
 do $$ declare r record; n int := 0; begin
   if to_regclass('clinic_reception.restricted_scope_saved_defs') is null then raise exception 'الملف مش متطبق'; end if;
@@ -31,6 +32,7 @@ revoke all on function clinic_reception.has_provider_service_scope(uuid, text, d
 drop function clinic_reception.scope_refusal(uuid, text, text, text);
 drop function clinic_reception.provider_serves_code(uuid, text, text, date);
 drop function clinic_reception.provider_restricted_departments(uuid);
+drop table clinic_reception.provider_restricted_departments_set;
 drop table clinic_reception.restricted_scope_saved_defs;
 notify pgrst, 'reload schema';
 commit;

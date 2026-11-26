@@ -13,7 +13,7 @@ function money(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDig
 function purge(data){var l=data&&data.services;if(!l)return;for(var i=l.length-1;i>=0;i--)if(l[i]&&l[i]._sl)l.splice(i,1);}
 function provider(data,id){return (data.providers||[]).find(function(p){return p.id===id;})||null;}
 function serves(data,p,dept){return !!(p&&dept&&(p.department===dept||((data.provider_departments||{})[p.id]||[]).indexOf(dept)>=0));}
-// «طبيب مقيّد» (20261126050000): a department where the doctor has chosen services offers only those (basics stay open)
+// «طبيب مقيّد» (20261126050000): a department management restricted for the doctor offers only his scoped services (basics stay open)
 function restrictedOut(data,p,s){var r=(data.provider_restricted||{})[p.id],codes=r&&r[s.department];return !!(codes&&codes.indexOf(s.code)<0&&(data.basic_service_ids||[]).indexOf(s.id)<0);}
 function placeholder(data,dept){var x=(data.service_later||[]).find(function(s){return s.department===dept;});
  return {id:x?x.id:FAKE+dept,code:x?x.code:'',name:LABEL,department:dept,minutes:x?+x.minutes||30:30,price:0,placeholder:true,_sl:true};}

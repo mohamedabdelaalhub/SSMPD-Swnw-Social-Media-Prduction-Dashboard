@@ -1,9 +1,9 @@
 // 20261126050000 «طبيب مقيّد بخدمات محددة» (owner 2026-11-25, Dr Dalia EMP-000036: «الاسنان تقويم فقط … الجلدية ليزر فقط»)
-// on the real reception functions (reception-bridge boot + the live chain up to booking_service_later / provider_scope_from_contracts,
-// serves_service + auto_time_service v4 from their migrations). Proves: an unrestricted doctor is unchanged; a deliberate scope row in
-// a member department restricts THAT department (book / walk-in / reschedule / order_add / execution / arrival / auto-book / snapshot
+// (EXPLICIT opt-in per provider + department) on the real reception functions (reception-bridge boot + the live chain up to booking_service_later / provider_scope_from_contracts,
+// serves_service + auto_time_service v4 from their migrations). Proves: an unrestricted doctor is unchanged; a department listed for the
+// provider in provider_restricted_departments_set is restricted (book / walk-in / reschedule / order_add / execution / arrival / auto-book / snapshot
 // / readiness) to the scoped codes with a clear Arabic refusal; a member department without such rows keeps all its services; an
-// automatic contract copy (provider_scope_autofill) does not restrict; basic services stay open; second run refused; rollback restores.
+// provider with scope rows but NOT in clinic_reception.provider_restricted_departments_set (the home-nurse case) is unchanged; basic services stay open; second run refused; rollback restores.
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict');
 const src=fs.readFileSync(path.join(__dirname,'reception-bridge.cjs'),'utf8');const cut=src.indexOf('// A legacy inventory use');
 assert(cut>0&&src.includes('await boot()'),'reception-bridge.cjs setup markers moved; update this test');
@@ -23,11 +23,11 @@ await db.exec("alter table clinic_reception.services add column if not exists is
 for(const t of ${JSON.stringify(autoChain)})await db.exec(t.endsWith(';')?t:t+';');
 await db.exec(${JSON.stringify(v4)});
 await as(1);
-// fixture: dermatology (home) + dental (extra department) for Dalia; an unrestricted doctor; an autofill-only doctor
+// fixture: dermatology (home) + dental (extra department) for Dalia; an unrestricted doctor; a home-nurse-like provider (scope row, not listed)
 const mk=async(code,name,dept,min=15)=>{await cmd(live,'service',{code,name,department:dept,price:200,minutes:min,bom:[]});return (await snap(live)).services.find(x=>x.code===code).id;};
 const lz=await mk('LZ1','ليزر دايود 1000 نبضة','جلدية'),lz2=await mk('LZ2','كانديلا 1000 نبضة','جلدية'),peel=await mk('PEEL','تقشير بارد','جلدية'),
  peelF=await mk('PEELF','جلسة متابعة تقشير','جلدية'),kj=await mk('KJ','كشف جلدية','جلدية'),
- ortho=await mk('ORT1','تركيب تقويم ثابت','الاسنان'),fill=await mk('FIL1','حشو عصب','الاسنان');
+ ortho=await mk('ORT1','تركيب تقويم ثابت','الاسنان'),fill=await mk('FIL1','حشو عصب','الاسنان'),orthoK=await mk('ORTK','كشف تقويم','الاسنان');
 const dalia=(await cmd(live,'provider',{name:'د. داليا تجريبية',department:'جلدية',branch:'حدائق الأهرام'})).id,otherProvider=(await cmd(live,'provider',{name:'د. عقد تلقائي',department:'جلدية',branch:'حدائق الأهرام'})).id;
 await cmd(live,'availability',{provider_id:otherProvider,starts_at:date+'T06:00Z',ends_at:date+'T22:00Z'});
 await q("insert into clinic_reception.provider_departments(provider_id,department) values($1,'الاسنان')",[dalia]);
@@ -42,24 +42,28 @@ await q("insert into clinic_reception.provider_service_scopes(provider_id,servic
 const fillEarly=await book(dalia,fill);const peelEarly=await book(dalia,peel);
 assert.equal(await servesSvc(dalia,'جلدية','PEEL'),true,'before: membership serves PEEL');
 assert.equal(await pick(dalia,'جلسة متابعة تقشير'),peelF,'before: auto-book picks a non-laser derm service for her');
-// the autofill-only doctor: a contract copy in his own department must NOT restrict him
+// the home-nurse case: a scope row set on purpose in his own department, but he is NOT listed → never restricted
 await q("insert into clinic_reception.provider_service_scopes(provider_id,service_code) values($1,'LZ1')",[otherProvider]);
-await q("insert into clinic_reception.provider_scope_autofill(provider_id,service_code,source) values($1,'LZ1','backfill')",[otherProvider]);
 // the live rolled-back dry-run: its pasted body is the migration (minus begin / commit) and the whole file runs (syntax + flow) here
 const LIVE=require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'restricted-doctor-scope-live-rollback.sql'))},'utf8');
 {const i=LIVE.indexOf('<<<\\n')+4,j=LIVE.indexOf('\\n-- >>> END migration body <<<');assert(i>3&&j>i,'live markers');
  assert.equal(LIVE.slice(i,j),MIG.split('\\n').filter(l=>l!=='begin;'&&l!=='commit;').join('\\n').replace(/\\n+$/,''),'live body = migration');}
 await db.exec('reset role');await db.query("update clinic_reception.providers set doctor_key='EMP-000036' where id=$1",[dalia]);
 {const res=await db.exec(LIVE),sum=res[res.length-2].rows;if(process.env.SHOW_LIVE)console.log(sum);
- assert(sum.length>=10,'live summary rows');assert(sum.some(r=>/after ortho rows/.test(r.step)&&r.ok),'live: dental = ortho after rows');
+ assert(sum.length>=10,'live summary rows');const bad=sum.filter(r=>!r.ok);assert.deepEqual(bad,[],'every live step ok');
+ assert(sum.some(r=>/after ops: dental non-basic/.test(r.step)&&/\\(1 of 2 matches/.test(r.expected)),'live: the basic STRONG match is not counted');
  assert(sum.some(r=>/non-laser derm/.test(r.step)),'live: book step ran');}
 await db.query("update clinic_reception.providers set doctor_key=null where id=$1",[dalia]);
 assert.equal((await db.query("select count(*)::int n from pg_proc where proname='provider_serves_code'")).rows[0].n,0,'live script rolled back');
 // apply
 await db.exec('reset role');await db.exec(MIG);await as(1);
+// nobody is restricted on apply (the list is empty): Dalia still serves PEEL with her laser scope rows
+assert.equal((await q('select count(*)::int n from clinic_reception.provider_restricted_departments_set'))[0].n,0);
+assert.equal(await serves(dalia,'PEEL'),true,'scope rows alone never restrict');
+await q("insert into clinic_reception.provider_restricted_departments_set(provider_id,department,note) values($1,'جلدية','اختبار: ليزر فقط')",[dalia]);
 // unrestricted doctors unchanged
 assert(await book(provider,peel),'unrestricted doctor books any service of his department');
-assert(await book(otherProvider,peel),'autofill-only scope row does not restrict');
+assert(await book(otherProvider,peel),'scope row without a listed department does not restrict (home-nurse case)');
 assert.equal(await serves(otherProvider,'PEEL'),true);assert.equal(await serves(provider,'FIL1'),false,'other department still refused');
 // Dalia in dermatology: only the laser codes (+ basics)
 await assert.rejects(()=>book(dalia,peel),/الطبيب خارج تخصص الخدمة — د\\. داليا تجريبية في قسم «جلدية» بيعمل خدمات محددة بس \\(2 خدمة\\)/,'non-laser derm refused with a clear message');
@@ -69,12 +73,14 @@ assert.equal(await serves(dalia,'PEEL'),false);assert.equal(await serves(dalia,'
 assert.equal(await servesSvc(dalia,'جلدية','PEEL'),false,'serves_service (auto-book) follows the rule');
 assert.notEqual(await pick(dalia,'جلسة متابعة تقشير'),peelF,'auto-book no longer picks it');
 assert.equal(await pick(provider,'جلسة متابعة تقشير'),peelF,'unrestricted doctor: auto-book unchanged');
-// Dalia in dental with no dental scope rows: every dental service (today's behaviour)
-assert.equal(await serves(dalia,'FIL1'),true);assert(await book(dalia,fill),'dental: all services before ortho scopes');
+// Dalia in dental, not listed yet: every dental service (today's behaviour) — even with an ortho scope row
+await q("insert into clinic_reception.provider_service_scopes(provider_id,service_code) values($1,'ORT1')",[dalia]);
+assert.equal(await serves(dalia,'FIL1'),true);assert(await book(dalia,fill),'dental: all services until the department is listed');
 // reschedule onto a refused service
 await assert.rejects(()=>cmd(live,'reschedule',{id:fillEarly,service_id:peel,starts_at:at(),same_day_ok:true}),/خدمات محددة بس/,'reschedule refused');
-// ortho scope rows → dental restricted to ortho
-await q("insert into clinic_reception.provider_service_scopes(provider_id,service_code) values($1,'ORT1')",[dalia]);
+// dental listed → restricted to her ortho scope rows
+await q("insert into clinic_reception.provider_restricted_departments_set(provider_id,department,note) values($1,'الاسنان','اختبار: تقويم فقط')",[dalia]);
+assert(await book(dalia,orthoK),'basic «كشف تقويم» stays open');
 await assert.rejects(()=>book(dalia,fill),/في قسم «الاسنان» بيعمل خدمات محددة بس \\(1 خدمة\\)/,'non-ortho dental refused');
 assert(await book(dalia,ortho),'ortho booked');
 // order_add on her visit + execution gate on an order made before the restriction
@@ -101,15 +107,16 @@ await db.exec('reset role');
 await db.query("update clinic_reception.providers set doctor_key='EMP-000036' where id=$1",[d2]);
 await db.query("insert into clinic_reception.provider_departments(provider_id,department) values($1,'الاسنان')",[d2]);
 await db.query("insert into clinic_reception.provider_service_scopes(provider_id,service_code) values($1,'LZ1')",[d2]);
-await db.query("insert into clinic_reception.provider_scope_autofill(provider_id,service_code,source) values($1,'LZ1','backfill')",[d2]);
-assert.equal((await db.query("select clinic_reception.provider_serves_code($1,null,'PEEL',null) v",[d2])).rows[0].v,true,'automatic copy alone: not restricted');
+await db.query('delete from clinic_reception.provider_restricted_departments_set');  // the ops expects to be the only restriction
+assert.equal((await db.query("select clinic_reception.provider_serves_code($1,null,'PEEL',null) v",[d2])).rows[0].v,true,'scope row alone: not restricted');
 const OPS=require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','ops','20261126050000_dalia_ortho_scopes.sql'))},'utf8');
 await db.exec(OPS);
 const sv2=async c=>(await db.query("select clinic_reception.provider_serves_code($1,null,$2,null) v",[d2,c])).rows[0].v;
 assert.equal(await sv2('ORT1'),true);assert.equal(await sv2('FIL1'),false,'ops: dental = ortho only');
 assert.equal(await sv2('PEEL'),false,'ops: claimed laser row restricts derm');assert.equal(await sv2('LZ1'),true);assert.equal(await sv2('KJ'),true,'basic open');
-assert.equal((await db.query("select count(*)::int n from clinic_reception.provider_scope_autofill where provider_id=$1",[d2])).rows[0].n,0);
-await db.exec(OPS);assert.equal((await db.query("select count(*)::int n from clinic_reception.provider_service_scopes where provider_id=$1",[d2])).rows[0].n,2,'ops re-run idempotent');
+assert.deepEqual((await db.query("select department,note from clinic_reception.provider_restricted_departments_set where provider_id=$1 order by department",[d2])).rows,[{department:'الاسنان',note:'المالك 2026-11-25: تقويم فقط / ليزر فقط'},{department:'جلدية',note:'المالك 2026-11-25: تقويم فقط / ليزر فقط'}],'ops: her 2 restriction rows');
+await db.exec(OPS);assert.equal((await db.query("select count(*)::int n from clinic_reception.provider_service_scopes where provider_id=$1",[d2])).rows[0].n,3,'ops re-run idempotent (LZ1 + ORT1 + basic ORTK)');
+assert.equal((await db.query("select count(*)::int n from clinic_reception.provider_restricted_departments_set")).rows[0].n,2);
 await db.exec(OPS.slice(0,OPS.lastIndexOf('commit;'))+'rollback;');
 await as(1);
 // second run refused
@@ -118,9 +125,10 @@ await db.exec('reset role');await assert.rejects(()=>db.exec(MIG),/تم تطبي
 await db.exec(require('fs').readFileSync(${JSON.stringify(R+'20261126050000_restricted_doctor_scope.rollback.sql')},'utf8'));
 assert.equal((await db.query("select count(*)::int n from pg_proc where proname in ('provider_serves_code','scope_refusal','provider_restricted_departments','snapshot_before_restricted_scope','booking_readiness_before_restricted','has_provider_service_scope_before_restricted')")).rows[0].n,0,'rollback dropped the helper');
 assert.equal((await db.query("select count(*)::int n from pg_proc where proname='has_provider_service_scope'")).rows[0].n,1);
+assert.equal((await db.query("select to_regclass('clinic_reception.provider_restricted_departments_set') t")).rows[0].t,null,'rollback dropped the restriction table');
 assert.equal((await db.query("select clinic_reception.serves_service($1,'جلدية','PEEL') v",[dalia])).rows[0].v,true,'serves_service back');
 await as(1);assert(await book(dalia,peel),'after rollback: membership opens PEEL again');assert(await book(dalia,fill));
 assert.equal((await snap(live)).provider_restricted,undefined);
-await db.close();console.log('PASS restricted doctor scope: unrestricted + autofill-only doctors unchanged; deliberate scope rows in a member department restrict book / walk-in / reschedule / order_add / execution / arrival / auto-book / snapshot / readiness to the scoped codes with a clear Arabic refusal; dental open until ortho rows, then ortho only; basics open; ops script (claim + ortho rows, idempotent, dry-run) ok; second run refused; rollback restores.');}})().catch(e=>{console.error(e);process.exit(1);});`;
+await db.close();console.log('PASS restricted doctor scope: nobody restricted on apply; unrestricted + scope-row-but-not-listed (home-nurse case) providers unchanged; a department listed in provider_restricted_departments_set restricts book / walk-in / reschedule / order_add / execution / arrival / auto-book / snapshot / readiness to the scoped codes with a clear Arabic refusal; dental open until listed, then ortho only; basics open (incl. a basic ortho match); ops script (ortho rows + 2 restriction rows, idempotent, dry-run) ok; second run refused; rollback restores.');}})().catch(e=>{console.error(e);process.exit(1);});`;
 const file=path.join(__dirname,'.restricted-scope-run-'+process.pid+'.cjs');
 fs.writeFileSync(file,prefix+body);try{require(file);}finally{setTimeout(()=>{try{fs.unlinkSync(file);}catch(_){}},0);}

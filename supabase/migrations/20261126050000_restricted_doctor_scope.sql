@@ -7,16 +7,15 @@
 -- RULE (one helper: clinic_reception.provider_serves_code(provider, department, code, day)):
 --   * Basic services (clinic_reception.is_basic_service: «خدمات الكشف», names starting كشف / استشارة / متابعة) stay open to
 --     every active doctor — the owner's earlier rule «الكشف والمتابعة والاستشارة… متاحة لكل الأطباء بلا استثناء».
---   * A department D the provider belongs to (home or provider_departments) is RESTRICTED when the provider has at least one
---     scope row for a non-basic service of D that was set on purpose, i.e. NOT an automatic copy of a contract
---     (clinic_reception.provider_scope_autofill, 20261123150000). In a restricted department the provider serves ONLY the
---     scoped codes (+ basics + the «الخدمة تتحدد عند الحضور» placeholder of D). No contract is needed for a scoped code of a
---     member department (the fee contract is still checked at execution, unchanged).
---     Why automatic copies do not restrict: 20261123150000 copied every active service contract into a scope row (36 doctors,
---     262 contracts); counting those would silently shrink the booking list of every contracted doctor. The owner-confirmed rows
---     of a doctor (ops supabase/ops/20261126050000_dalia_ortho_scopes.sql) are taken out of that log, so they restrict.
---   * Any other department (no deliberate scope row there): unchanged — membership, or a scope row with a valid contract
---     (the previous has_provider_service_scope).
+--   * EXPLICIT opt-in: a department D is RESTRICTED for a provider only when management lists (provider, D) in the new table
+--     clinic_reception.provider_restricted_departments_set (note + who + when; no client access). Nothing is inferred from
+--     scope rows or the contract autofill log (a live dry-run showed inference would also restrict 6 home nurses of
+--     «التمريض المنزلي», whose one scope row is the visit fee set on purpose). In a restricted department the provider serves
+--     ONLY its scope rows there (+ basics + the «الخدمة تتحدد عند الحضور» placeholder of D). No contract is needed for a
+--     scoped code of a restricted department (the fee contract is still checked at execution, unchanged).
+--   * Every other department: unchanged — membership (home / provider_departments), or a scope row with a valid contract
+--     (the previous has_provider_service_scope). On apply the table is empty, so nobody changes until ops rows are added
+--     (Dr Dalia: supabase/ops/20261126050000_dalia_ortho_scopes.sql).
 -- ROUTED THROUGH THE HELPER (signatures kept):
 --   clinic_reception.has_provider_service_scope(uuid,text,date)  wrapped by rename (→ has_provider_service_scope_before_restricted)
 --   clinic_reception.serves_service(uuid,text,text)              auto-book candidates (auto_time_service v4) — body replaced
@@ -36,7 +35,6 @@ begin;
 
 do $$ begin
   if to_regclass('clinic_reception.provider_service_scopes') is null or to_regclass('clinic_reception.provider_departments') is null
-     or to_regclass('clinic_reception.provider_scope_autofill') is null
      or to_regprocedure('clinic_reception.has_provider_service_scope(uuid,text,date)') is null
      or to_regprocedure('clinic_reception.serves_service(uuid,text,text)') is null
      or to_regprocedure('clinic_reception.is_basic_service(text,text)') is null
@@ -45,7 +43,7 @@ do $$ begin
      or to_regprocedure('clinic_reception.service_operation(uuid,text,jsonb,uuid)') is null
      or to_regprocedure('public.clinic_reception_snapshot(uuid,date,date)') is null
      or to_regprocedure('public.clinic_reception_booking_readiness(uuid)') is null then
-    raise exception 'مكونات نطاق الأطباء / الحجز ناقصة — طبّق 20261123150000 و 20261124210000 الأول';
+    raise exception 'مكونات نطاق الأطباء / الحجز ناقصة — طبّق 20261124210000 الأول';
   end if;
   if to_regprocedure('clinic_reception.has_provider_service_scope_before_restricted(uuid,text,date)') is not null then
     raise exception 'تم تطبيق هذا الملف من قبل'; end if;
@@ -55,18 +53,25 @@ create table clinic_reception.restricted_scope_saved_defs (sig text primary key,
 alter table clinic_reception.restricted_scope_saved_defs enable row level security;
 revoke all on clinic_reception.restricted_scope_saved_defs from public, anon, authenticated;
 
--- departments (home / extra) where the provider has a deliberate (non-automatic) scope row for a non-basic service
+-- the explicit list: which provider is restricted in which department (set by management, data only)
+create table clinic_reception.provider_restricted_departments_set (
+  provider_id uuid not null references clinic_reception.providers(id) on delete cascade,
+  department text not null check (length(btrim(department)) >= 2),
+  note text not null check (length(btrim(note)) >= 3),
+  set_by uuid references public.admins(id),
+  set_at timestamptz not null default now(),
+  primary key (provider_id, department)
+);
+alter table clinic_reception.provider_restricted_departments_set enable row level security;
+revoke all on clinic_reception.provider_restricted_departments_set from public, anon, authenticated;
+
+-- departments where the provider is restricted: ONLY what the table lists (active providers)
 create function clinic_reception.provider_restricted_departments(p_provider uuid) returns text[]
 language sql stable security definer set search_path = pg_catalog, public as $$
-  select coalesce(array_agg(distinct s.department order by s.department), array[]::text[])
-    from clinic_reception.providers p
-    join clinic_reception.provider_service_scopes sc on sc.provider_id = p.id
-    join clinic_reception.services s on s.workspace_id = p.workspace_id and s.code = sc.service_code and not coalesce(s.placeholder, false)
-   where p.id = p_provider and p.active
-     and (s.department = p.department
-          or exists (select 1 from clinic_reception.provider_departments pd where pd.provider_id = p.id and pd.department = s.department))
-     and not clinic_reception.is_basic_service(s.department, s.name)
-     and not exists (select 1 from clinic_reception.provider_scope_autofill af where af.provider_id = sc.provider_id and af.service_code = sc.service_code)
+  select coalesce(array_agg(r.department order by r.department), array[]::text[])
+    from clinic_reception.provider_restricted_departments_set r
+    join clinic_reception.providers p on p.id = r.provider_id and p.active
+   where r.provider_id = p_provider
 $$;
 
 alter function clinic_reception.has_provider_service_scope(uuid, text, date) rename to has_provider_service_scope_before_restricted;
@@ -236,18 +241,6 @@ begin
 end $$;
 revoke all on function public.clinic_reception_booking_readiness(uuid) from public, anon;
 grant execute on function public.clinic_reception_booking_readiness(uuid) to authenticated;
-
--- who is restricted right now (NOTICE only)
-do $$ declare r record; n int := 0; begin
-  for r in select p.name, p.department home, rd.dept, (select count(*) from clinic_reception.provider_service_scopes sc
-             join clinic_reception.services s on s.workspace_id = p.workspace_id and s.code = sc.service_code and s.active and s.department = rd.dept
-            where sc.provider_id = p.id) codes
-             from clinic_reception.providers p cross join lateral unnest(clinic_reception.provider_restricted_departments(p.id)) rd(dept)
-            where p.active order by p.name, rd.dept loop
-    raise notice 'restricted: % (home %) in «%»: % scoped services', r.name, r.home, r.dept, r.codes; n := n + 1;
-  end loop;
-  raise notice 'restricted provider-departments: %', n;
-end $$;
 
 notify pgrst, 'reload schema';
 commit;
