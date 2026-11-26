@@ -25,7 +25,10 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   create table clinic_finance.requests(id uuid primary key default gen_random_uuid(),kind text not null,shift_id uuid,payment_id uuid,invoice_id uuid,amount numeric(14,2) not null check(amount>0),reason text not null check(length(trim(reason)) between 3 and 1000),evidence text not null check(length(trim(evidence)) between 2 and 200),payload jsonb not null,created_by uuid not null,token uuid not null,created_at timestamptz not null default now(),status text not null default 'pending',reviewed_by uuid,reviewed_at timestamptz,review_note text,unique(created_by,token));
   create table clinic_finance.entries(id uuid primary key default gen_random_uuid(),source text,source_id uuid,description text,shift_id uuid,created_by uuid);
   create table clinic_finance.lines(id uuid primary key default gen_random_uuid(),entry_id uuid,account text,debit numeric default 0,credit numeric default 0);
+  create function clinic_finance.register_direction(p_shift uuid,p_direction text) returns void language plpgsql as $$begin end$$;
   create function clinic_finance.post(p_source text,p_source_id uuid,p_description text,p_shift uuid,p_debit text,p_credit text,p_amount numeric) returns uuid language plpgsql security definer as $$declare v_id uuid;begin
+   if p_shift is not null then
+   if p_credit='1111' and p_source<>'deposit' and not (p_source='doctor_payment' and false) then perform clinic_finance.register_direction(p_shift,'pay');end if;end if;
    insert into clinic_finance.entries(source,source_id,description,shift_id,created_by) values(p_source,p_source_id,p_description,p_shift,my_admin_id()) returning id into v_id;
    insert into clinic_finance.lines(entry_id,account,debit,credit) values(v_id,p_debit,p_amount,0),(v_id,p_credit,0,p_amount);return v_id;end $$;
   create function clinic_finance.shift_cash(p uuid) returns numeric language sql stable as $$select s.opening_book+coalesce((select sum(l.debit-l.credit) from clinic_finance.entries e join clinic_finance.lines l on l.entry_id=e.id where e.shift_id=s.id and clinic_finance.is_cash_account(l.account)),0) from clinic_finance.shifts s where s.id=p$$;`);
@@ -83,5 +86,26 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   await db.exec(fs.readFileSync(R,'utf8'));
   assert.ok(!(await one("select pg_get_functiondef('clinic_finance.cash_line_guard()'::regprocedure) d")).d.includes('shift_expense'));
   await db.exec(fs.readFileSync(M,'utf8'));
+  // 20261126010000: صيانة / تليفونات (receipt required) + إكراميات (no receipt, reason ≥ 5) — as the cashier
+  const M2='supabase/migrations/20261126010000_shift_expense_more_items.sql',R2='supabase/rollbacks/20261126010000_shift_expense_more_items.rollback.sql';
+  await q("update clinic_finance.registers set shift_expense_allowance=2000,shift_expense_max=300 where id=$1",[RR]);
+  // live: collection registers are 'receive' only — before 20261126010000 every shift expense was refused by post()'s direction check
+  await db.exec(`create or replace function clinic_finance.register_direction(p_shift uuid,p_direction text) returns void language plpgsql as $f$begin
+    if p_direction='pay' and exists(select 1 from clinic_finance.shifts s join clinic_finance.registers r on r.id=s.register_id where s.id=p_shift and r.treasury_kind='collection') then raise exception 'الخزينة للاستلام فقط ولا تسمح بالصرف';end if;end $f$`);
+  await as(U1);await assert.rejects(()=>spend({item:'cleaning',amount:'10',reason:'مناديل للاستقبال'}),/للاستلام فقط/,'the live bug is reproduced before the fix');
+  await db.exec(fs.readFileSync(M2,'utf8'));await assert.rejects(()=>db.exec(fs.readFileSync(M2,'utf8')),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+  await as(U1);st=await call('status',{});assert.equal(st.items.length,12);
+  assert.deepEqual(st.items.filter(x=>['maintenance','phones','tips'].includes(x.key)).map(x=>[x.key,x.account,!!x.no_receipt]),[['maintenance','5224',false],['phones','5224',false],['tips','5216',true]]);
+  await assert.rejects(()=>spend({item:'maintenance',receipt_path:''}),/صوّر الإيصال/);
+  r=await spend({item:'maintenance',amount:'60',reason:'تصليح حنفية الحمام'});
+  assert.equal((await one("select l.account from clinic_finance.lines l join clinic_finance.entries e on e.id=l.entry_id where e.source_id=$1 and l.debit>0",[r.id])).account,'5224');
+  await assert.rejects(()=>spend({item:'tips',amount:'20',reason:'عامل',receipt_path:''}),/سبب الإكرامية/);
+  await assert.rejects(()=>spend({item:'tips',amount:'20',reason:'عامل النظافة — توصيل مياه'}),/من غير إيصال/,'a receipt is refused for tips');
+  r=await spend({item:'tips',amount:'20',reason:'عامل توصيل المياه',receipt_path:''});
+  const tip=await one("select * from clinic_finance.requests where id=$1",[r.id]);assert.equal(tip.evidence,'no-receipt');assert.equal(tip.payload.item,'tips');assert.equal(tip.post_review,'pending');
+  assert.equal((await one("select l.account from clinic_finance.lines l join clinic_finance.entries e on e.id=l.entry_id where e.source_id=$1 and l.debit>0",[r.id])).account,'5216');
+  assert.match((await one("select pg_get_functiondef('clinic_finance.post(text,uuid,text,uuid,text,text,numeric)'::regprocedure) d")).d,/p_source<>'shift_expense'/);
+  await db.exec(fs.readFileSync(R2,'utf8'));st=await call('status',{});assert.equal(st.items.length,9,'rollback restores the item list');
+  await assert.rejects(()=>spend({item:'tips',amount:'20',reason:'عامل توصيل المياه',receipt_path:''}),/البند/);
   console.log('PASS reception shift expenses');
  }catch(e){console.error('FAIL',e);process.exit(1);}})();
