@@ -8,7 +8,7 @@ function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){retur
 function canBack(){return !!((local&&local.canBack&&local.canBack())||stack.length);}
 function button(){var b=d.getElementById('back-nav-btn');if(b)return b;var tools=d.querySelector('.topbar-tools');if(!tools)return null;
  b=d.createElement('button');b.type='button';b.id='back-nav-btn';b.className='btn ghost sm header-icon back-nav-btn';b.setAttribute('aria-label','رجوع للصفحة السابقة');b.title='رجوع';
- b.innerHTML='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+ b.innerHTML='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>';
  b.onclick=function(){back();};tools.appendChild(b);return b;}
 function paint(){var b=button();if(b)b.disabled=!canBack();var s=d.querySelector('[data-acs-back]');if(s)s.disabled=!canBack();}
 function record(tab){if(!tab)return;d.body.classList.toggle('bn-in-acs',tab==='accounting');

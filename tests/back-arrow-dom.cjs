@@ -10,6 +10,11 @@ const html=`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"
 const browser=await chromium.launch({args:['--no-sandbox']});
 try{for(const width of [1280,390]){const page=await browser.newPage({viewport:{width,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://localhost:'+server.address().port);
  const top=()=>page.locator('#back-nav-btn');
+ // direction (owner): left in Arabic (rtl), right in English (ltr)
+ await page.evaluate(()=>{SSMPDBackNav.record('home');});
+ assert.equal(await top().evaluate(b=>getComputedStyle(b.querySelector('svg')).transform),'none','Arabic: arrow points left (no flip)');
+ await page.evaluate(()=>{document.documentElement.dir='ltr';});assert.notEqual(await top().evaluate(b=>getComputedStyle(b.querySelector('svg')).transform),'none','English: flipped to point right');
+ await page.evaluate(()=>{document.documentElement.dir='rtl';});
  // 1) main screens: no history → arrow present but disabled
  await page.evaluate(()=>{SSMPDBackNav.record('home');});assert.equal(await top().count(),1,'arrow is always in the top bar');assert.equal(await top().isDisabled(),true,'disabled with no history');
  await page.evaluate(()=>{SSMPDBackNav.record('patients');SSMPDBackNav.record('reception_services');});assert.equal(await top().isDisabled(),false);
