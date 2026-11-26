@@ -33,7 +33,7 @@ function html(v){
  return h+'<div class="mc-form" data-mc-form hidden></div><p class="mc-status" data-mc-status role="status"></p>';
 }
 function countForm(){
- return '<form data-mc-count-form><p>عدّ الفلوس اللي في الخزينة الرئيسية واكتب عدد الأوراق أو القطع لكل فئة.</p><div class="mc-den">'+DEN.map(function(c){return '<label>فئة '+c+' جنيه<input type="number" name="c_'+c.replace('.','_')+'" value="0" min="0" max="9999999" step="1" inputmode="numeric"></label>';}).join('')+'</div>'+
+ return '<form data-mc-count-form><p>عدّ الفلوس اللي في الخزينة الرئيسية واكتب عدد الأوراق أو القطع لكل فئة.</p><div class="mc-den">'+DEN.map(function(c){return '<label>فئة '+c+' جنيه<input type="number" name="c_'+c.replace('.','_')+'" value="0" min="0" max="9999999" step="1" autocomplete="off" inputmode="numeric"></label>';}).join('')+'</div>'+
   '<p class="mc-total">الإجمالي المعدود: <b data-mc-total>0.00</b> ج.م</p><label>ملاحظة (اختياري)<input name="note" maxlength="1000" placeholder="مثلاً: جرد آخر اليوم"></label>'+
   '<div class="mc-actions"><button type="submit" class="btn btn-primary">حفظ الجرد</button><button type="button" class="btn" data-mc-cancel>إلغاء</button></div></form>';
 }
