@@ -1,0 +1,20 @@
+/* «في غلط في زيارة أو حساب مريض» — help 295. Brand colours only; same look as the approved mockup. */
+.fv-sheet{position:fixed;inset:0;z-index:1200;background:rgba(22,33,46,.45);display:flex;align-items:flex-end;justify-content:center;padding:0}
+.fv-box{background:#fff;color:#16212E;width:min(560px,100%);max-height:90vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px;display:grid;gap:10px;align-content:start;box-sizing:border-box}
+@media(min-width:700px){.fv-sheet{align-items:center}.fv-box{border-radius:16px}}
+[data-fv-body]{display:grid;gap:10px;align-content:start;min-width:0}
+.fv-h{display:flex;justify-content:space-between;align-items:center;gap:8px}.fv-h b{font-size:17px;min-width:0}
+.fv-q{width:100%;box-sizing:border-box;padding:10px;border:1px solid #D5DEEE;border-radius:10px;font:inherit}
+.fv-list{display:grid;gap:8px}
+.fv-li{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid #D5DEEE;border-radius:12px;padding:10px 12px;background:#fff;font:inherit;text-align:start;cursor:pointer;min-width:0}
+.fv-li small{display:block;color:#5b6b82;font-size:12px}.fv-li.hi{border-color:#F15A22;background:#FFF6F0}
+.fv-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.fv-st{text-align:center;font-size:11.5px;padding:8px 2px;border-radius:10px;background:#F1F4F8;color:#5b6b82;min-width:0}
+.fv-st.ok{background:#E6F3EC;color:#2F7D5C}.fv-st.miss{background:#F15A22;color:#fff;font-weight:700}
+.fv-why{margin:0;font-size:13px;background:#FFF3E0;color:#8a4b00;border-radius:10px;padding:8px 10px}
+.fv-next{width:100%;padding:12px}
+.fv-acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fv-act{text-align:start;min-width:0}.fv-act small{display:block;color:#5b6b82;font-size:11px;font-weight:400}
+.fv-note{margin:0;font-size:12px;color:#5b6b82;background:#F1F4F8;border-radius:8px;padding:6px 10px}
+.fv-back{justify-self:start}
+@media(max-width:520px){.fv-acts{grid-template-columns:minmax(0,1fr)}}

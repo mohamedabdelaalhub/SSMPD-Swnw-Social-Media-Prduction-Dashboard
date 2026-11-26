@@ -7781,6 +7781,32 @@
       "reviewed": true
     },
     {
+      "title": "دوّر",
+      "labels": [
+        "دوّر"
+      ],
+      "text": "اختر دور الموظف الذي ستعرض أو تعدل مستهدفاته وأوزان مؤشراته، وليس حساب شخص منفرد أو منح صلاحية جديدة.",
+      "article": "indicators",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب اسم المريض أو التليفون أو رقم الملف",
+      "labels": [
+        "اكتب اسم المريض أو التليفون أو رقم الملف"
+      ],
+      "text": "دوّر على المريض باسمه أو تليفونه أو رقم ملفه علشان تفتح زيارته وتصلّح اللي فيها.",
+      "article": "fix-visit",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "القسم",
       "labels": [
         "القسم"
@@ -15703,12 +15729,12 @@
       "reviewed": true
     },
     {
-      "title": "اكتب حرفين من اسم الخدمة",
+      "title": "اكتب حرفين من اسم الخدمة أو كود سونو",
       "labels": [
-        "اكتب حرفين من اسم الخدمة"
+        "اكتب حرفين من اسم الخدمة أو كود سونو"
       ],
-      "text": "اكتب حرفين على الأقل من اسم الخدمة واختارها من النتايج.",
-      "article": "booking-flow",
+      "text": "اكتب حرفين على الأقل من اسم الخدمة أو كود سونو واختارها من النتايج. في «تأمين / تعاقد» اختار الجهة الأول، وبعدها دوّر باسم سونو أو اسم الجهة أو كودها.",
+      "article": "reception-entity-service-names",
       "tabs": [
         "reception_services"
       ],
@@ -23510,9 +23536,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2028,
-    "labels": 1472,
-    "files": 163,
-    "groups": 1596
+    "definitions": 2030,
+    "labels": 1473,
+    "files": 164,
+    "groups": 1598
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
