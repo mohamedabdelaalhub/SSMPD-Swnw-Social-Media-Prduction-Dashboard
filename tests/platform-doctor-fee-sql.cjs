@@ -25,6 +25,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   create table clinic_reception.orders(id uuid primary key default gen_random_uuid(),workspace_id uuid,visit_id uuid,service_id uuid,status text default 'ordered',price numeric,quantity numeric default 1,discount numeric default 0,
     net_revenue numeric,doctor_fee numeric default 0,agreement_id uuid,provider_id uuid,completed_at timestamptz,created_at timestamptz default now());
   create table clinic_reception.journal(id uuid primary key default gen_random_uuid(),workspace_id uuid,source text,source_id uuid,description text,dimensions jsonb,actor_id uuid,finance_entry_id uuid,unique(workspace_id,source,source_id));
+  create table clinic_reception.order_ext(order_id uuid primary key,kind text default 'service',referring_doctor_key text,performing_doctor_key text,priced jsonb);
   create table clinic_reception.journal_lines(entry_id uuid,account text,debit numeric,credit numeric);
   create function clinic_reception.event_post(p_workspace uuid,p_source text,p_id uuid,p_description text,p_debit text,p_credit text,p_amount numeric,p_dimensions jsonb default '{}') returns uuid language plpgsql as $f$declare v uuid;begin
    if nullif(current_setting('request.jwt.claim.sub',true),'') is null then raise exception 'اطلب صلاحية الاستقبال والخدمات من الإدارة';end if;
@@ -58,7 +59,10 @@ end $f$;
   const exec=async oid=>{await db.exec(`select set_config('request.jwt.claim.sub','${UID}',false)`);const r=(await one("select clinic_reception.service_operation($1,'execute',$2,$3) r",[W,{order_id:oid},ADM])).r;await db.exec("select set_config('request.jwt.claim.sub','',false)");return r;};
   // BEFORE: two completed live vezeeta کشف orders with the old fee (300), one already paid out with nothing left on 2120
   const old1=await order(W,'vezeeta',K,600),old2=await order(W,'kafaret',K,400),oldWalk=await order(W,'walk_in',K,600);
-  for(const o of [old1,old2,oldWalk])await exec(o);
+  const oldRef=await order(W,'phone',K,600);
+  for(const o of [old1,old2,oldWalk,oldRef])await exec(o);
+  await q("insert into clinic_reception.journal(workspace_id,source,source_id,description,dimensions) values($1,'referral_fee',$2,'نسبة إحالة طبيب','{}') ",[W,oldRef]);
+  await q("insert into clinic_reception.journal_lines select id,'5111',60,0 from clinic_reception.journal where source='referral_fee' and source_id=$1 union all select id,'2120',0,60 from clinic_reception.journal where source='referral_fee' and source_id=$1",[oldRef]);
   assert.equal(+(await one("select doctor_fee f from clinic_reception.orders where id=$1",[old1])).f,300,'the bug: fee on the full 600');
   const inv2=(await one("select dimensions->>'invoice_id' i from clinic_reception.journal where source='doctor_fee' and source_id=$1",[old2])).i;
   await q("insert into clinic_finance.desk_payout_rx values(gen_random_uuid(),$1)",[inv2]);
@@ -69,9 +73,10 @@ end $f$;
   // apply — like a real migration: NO JWT claims
   await db.exec("select set_config('request.jwt.claim.sub','',false)");
   await db.exec(fs.readFileSync(M,'utf8'));await assert.rejects(()=>db.exec(fs.readFileSync(M,'utf8')),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
-  const fix=(await q("select order_id,old_fee::float o,new_fee::float n,paid_out,receivable::float r,platform_cut::float c,service,performer from clinic_finance.platform_fee_fixes order by visit_no")).rows;
-  assert.deepEqual(fix.map(x=>[x.service,x.performer]),[['كشف الاستشاري','doctor'],['كشف الاستشاري','doctor']],'service name + performer kind recorded');
-  assert.deepEqual(fix.map(x=>[x.o,x.n,x.c,x.paid_out]),[[300,225,150,false],[200,150,100,true]],'vezeeta 600 and kafaret 400 corrected; walk-in untouched');
+  const fix=(await q("select order_id,referral::float rf,old_fee::float o,new_fee::float n,paid_out,receivable::float r,platform_cut::float c,service,performer from clinic_finance.platform_fee_fixes order by visit_no")).rows;
+  assert.deepEqual(fix.map(x=>[x.service,x.performer]),[['كشف الاستشاري','doctor'],['كشف الاستشاري','doctor'],['كشف الاستشاري','doctor']],'service name + performer kind recorded');
+  assert.deepEqual(fix.map(x=>[x.o,x.n,x.c,x.paid_out]),[[300,225,150,false],[200,150,100,true],[300,270,0,false]],'vezeeta 600, kafaret 400 and the referred 600 (−60) corrected; walk-in untouched');
+  assert.equal(+(await one("select referral r from clinic_finance.platform_fee_fixes where order_id=$1",[oldRef])).r,60);
   assert.equal(+(await one("select doctor_fee f from clinic_reception.orders where id=$1",[old1])).f,225);
   assert.equal(+(await one("select doctor_fee f from clinic_reception.orders where id=$1",[oldWalk])).f,300);
   const jl=async(src,oid)=>(await q("select l.account,l.debit::float d,l.credit::float c from clinic_reception.journal j join clinic_reception.journal_lines l on l.entry_id=j.id where j.source=$1 and j.source_id=$2 order by l.debit desc",[src,oid])).rows.map(x=>[x.account,x.d,x.c]);
@@ -90,13 +95,17 @@ end $f$;
   const cases=[['vezeeta كشف 600',await order(W,'vezeeta',K,600),225],['«فيزيتا شامل»',await order(W,'vezeeta',K,600,'vezeeta'),300],['walk-in',await order(W,'walk_in',K,600),300],
    ['vezeeta متابعة',await order(W,'vezeeta',F,600),300],['second service on a vezeeta visit',await order(W,'vezeeta',K,600,null,G),300],['clinidu كشف',await order(W,'clinidu',K,400),150],
    ['trial workspace',await order(WT,'vezeeta',K,600),300]];
+  const refNew=await order(W,'phone',K,600);await q("insert into clinic_reception.order_ext(order_id,referring_doctor_key,priced) values($1,'DR-REF','{\"referral_commission\":60}')",[refNew]);
+  const refSelf=await order(W,'phone',K,600);await q("insert into clinic_reception.order_ext(order_id,referring_doctor_key,priced) values($1,'dr1','{\"referral_commission\":60}')",[refSelf]);
+  const refPlat=await order(W,'vezeeta',K,600);await q("insert into clinic_reception.order_ext(order_id,referring_doctor_key,priced) values($1,'DR-REF','{\"referral_commission\":60}')",[refPlat]);
+  cases.push(['referral 60 on 600',refNew,270],['self-referral (no commission)',refSelf,300],['referral on a platform visit (ignored; platform cut only)',refPlat,225]);
   for(const [n,o,want] of cases){const r=await exec(o);assert.equal(+r.fee,want,n);}
   await q("update clinic_finance.month_end_parties set percent=null where key='akshef'");
   assert.equal(+(await exec(await order(W,'akshef',K,600))).fee,300,'no percent → no cut');
   assert.equal(+(await one("select net_revenue n from clinic_reception.orders where id=$1",[cases[0][1]])).n,600,'revenue stays at the patient net');
   // rollback: full base again, corrections kept
   await db.exec(fs.readFileSync(R,'utf8'));assert.equal(+(await exec(await order(W,'vezeeta',K,600))).fee,300);assert.equal((await one("select clinic_reception.referral_try($1) r",[old1])).r,'posted','rollback restores referral_try');
-  assert.equal((await one("select count(*)::int n from clinic_finance.platform_fee_fixes_rolled_back")).n,2);assert.equal(+(await one("select doctor_fee f from clinic_reception.orders where id=$1",[old1])).f,225);
-  console.log('PASS platform doctor fee SQL: (net − 25%) × rate on a booked كشف/استشارة from a platform (225 on 600 at 50%); «شامل», walk-in, متابعة, other services, trial, no-percent unchanged; revenue unchanged; one-time correction without a JWT (Dr 2120 / Cr 5111 up to the balance, Dr 1194 / Cr 5111 for the paid-out part, original dimensions, finance mirror, real super admin actor); no referral on platform visits; rollback');
+  assert.equal((await one("select count(*)::int n from clinic_finance.platform_fee_fixes_rolled_back")).n,3);assert.equal(+(await one("select doctor_fee f from clinic_reception.orders where id=$1",[old1])).f,225);
+  console.log('PASS platform doctor fee SQL: (net − 25% − referral) × rate on a booked كشف/استشارة from a platform (225 on 600 at 50%); «شامل», walk-in, متابعة, other services, trial, no-percent unchanged; revenue unchanged; one-time correction without a JWT (Dr 2120 / Cr 5111 up to the balance, Dr 1194 / Cr 5111 for the paid-out part, original dimensions, finance mirror, real super admin actor); no referral on platform visits; rollback');
  }catch(e){console.error(e.message,e.where||'');process.exitCode=1;}
 })();

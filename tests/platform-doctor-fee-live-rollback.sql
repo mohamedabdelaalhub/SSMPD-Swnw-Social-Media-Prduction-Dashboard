@@ -4,7 +4,8 @@
 -- paid out, owed back) with totals. Read-only check that the patient discount already comes off before the split (doctor + unit). Then a
 -- REAL reception user (Mazen if present, never «Admin Test») executes ONE real open live كشف order three times, each in a throwaway
 -- sub-transaction (appointment fields changed with triggers off for that update only): as vezeeta → fee = (net − 25%) × rate; as
--- «فيزيتا شامل» → same fee as walk-in (no platform cut); as walk-in → net × rate, unchanged. Notices print amounts only; errors print the
+-- «فيزيتا شامل» → same fee as walk-in (no platform cut); as walk-in → net × rate, unchanged; as a referred walk-in (another doctor,
+-- commission 10% of net) → (net − referral) × rate. Notices print amounts only; errors print the
 -- message and constraint name only.
 begin;
 do $$ declare d text; a constant text := $a$fee:=round(greatest(0,net-case when agreement.deduct_material_cost then included_cost else 0 end)*agreement.rate/100,2);$a$; begin
@@ -36,10 +37,28 @@ language sql stable security definer set search_path = pg_catalog, public as $$
 $$;
 revoke all on function clinic_reception.platform_cut(uuid, numeric) from public, anon, authenticated;
 
+create function clinic_reception.referral_cut(p_order uuid) returns numeric
+language plpgsql stable security definer set search_path = pg_catalog, public as $$
+declare o clinic_reception.orders%rowtype; ref text; perf text; amt numeric;
+begin
+  if to_regclass('clinic_reception.order_ext') is null then return 0; end if;
+  select * into o from clinic_reception.orders where id = p_order;
+  if not found then return 0; end if;
+  execute 'select nullif(trim(referring_doctor_key), ''''), nullif(trim(performing_doctor_key), ''''), round(coalesce((priced->>''referral_commission'')::numeric, 0), 2) from clinic_reception.order_ext where order_id = $1'
+    into ref, perf, amt using p_order;
+  if ref is null or coalesce(amt, 0) <= 0 then return 0; end if;
+  if ref = perf or ref = (select doctor_key from clinic_reception.providers where id = o.provider_id) then return 0; end if;
+  if exists (select 1 from clinic_reception.visits v join clinic_reception.appointments ap on ap.id = v.appointment_id
+             join clinic_finance.month_end_parties q on q.key = ap.source and q.key in ('vezeeta', 'clinidu', 'akshef', 'kafaret') and q.percent is not null
+             where v.id = o.visit_id) then return 0; end if;
+  return amt;
+end $$;
+revoke all on function clinic_reception.referral_cut(uuid) from public, anon, authenticated;
+
 do $$ begin
   execute replace(pg_get_functiondef('clinic_reception.service_operation(uuid,text,jsonb,uuid)'::regprocedure),
     $a$fee:=round(greatest(0,net-case when agreement.deduct_material_cost then included_cost else 0 end)*agreement.rate/100,2);$a$,
-    $b$fee:=round(greatest(0,net-clinic_reception.platform_cut(o.id,net)-case when agreement.deduct_material_cost then included_cost else 0 end)*agreement.rate/100,2);$b$);
+    $b$fee:=round(greatest(0,net-clinic_reception.platform_cut(o.id,net)-clinic_reception.referral_cut(o.id)-case when agreement.deduct_material_cost then included_cost else 0 end)*agreement.rate/100,2);$b$);
 end $$;
 
 -- referral: none when a platform brought the patient
@@ -74,13 +93,13 @@ revoke all on function clinic_finance.platform_fix_post(uuid, text, uuid, text, 
 -- one-time correction of ALL past live platform orders (any performer)
 create table clinic_finance.platform_fee_fixes (
   order_id uuid primary key references clinic_reception.orders(id), workspace_id uuid not null, visit_no bigint, source text not null, service text, performer text,
-  net numeric(14,2) not null, platform_cut numeric(14,2) not null, rate numeric not null, old_fee numeric(14,2) not null, new_fee numeric(14,2) not null,
+  net numeric(14,2) not null, platform_cut numeric(14,2) not null, referral numeric(14,2) not null default 0, rate numeric not null, old_fee numeric(14,2) not null, new_fee numeric(14,2) not null,
   paid_out boolean not null, receivable numeric(14,2) not null default 0, fixed_at timestamptz not null default now());
 alter table clinic_finance.platform_fee_fixes enable row level security;
 revoke all on clinic_finance.platform_fee_fixes from public, anon, authenticated;
 
 do $$
-declare actor uuid; r record; diff numeric; liability numeric; dims jsonb; paid boolean; recv numeric; n int := 0; t_old numeric := 0; t_new numeric := 0; t_recv numeric := 0; n_paid int := 0;
+declare actor uuid; r record; cut numeric; refc numeric; diff numeric; liability numeric; dims jsonb; paid boolean; recv numeric; n int := 0; t_old numeric := 0; t_new numeric := 0; t_recv numeric := 0; n_paid int := 0;
 begin
   select a.id into actor from public.admins a where a.active and coalesce(a.name, '') <> 'Admin Test' and a.role = 'super_admin'
    order by (a.name like '%عبدالعال%') desc, a.id limit 1;
@@ -98,24 +117,29 @@ begin
       join clinic_reception.services s on s.id = o.service_id
       left join clinic_reception.providers p on p.id = o.provider_id
      where o.status = 'completed' and o.doctor_fee > 0
-       and clinic_reception.platform_cut(o.id, 1) > 0
+       and (clinic_reception.platform_cut(o.id, 1) > 0
+            or exists (select 1 from clinic_reception.journal rj where rj.workspace_id = o.workspace_id and rj.source = 'referral_fee' and rj.source_id = o.id))
      order by v.visit_no
   loop
-    -- the fee the order should have had: (net − platform cut) × rate, never above the old fee (material deduction kept)
-    diff := least(r.old_fee, round(clinic_reception.platform_cut(r.id, r.net) * r.rate / 100, 2));
+    -- the fee the order should have had: (net − platform cut − posted referral) × rate, never above the old fee (material kept)
+    cut := clinic_reception.platform_cut(r.id, r.net);
+    select coalesce(sum(l.credit - l.debit), 0) into refc from clinic_reception.journal rj join clinic_reception.journal_lines l on l.entry_id = rj.id and l.account = '2120'
+     where rj.workspace_id = r.workspace_id and rj.source in ('referral_fee', 'referral_reversal', 'referral_restore') and rj.source_id = r.id;
+    refc := greatest(refc, 0);
+    diff := least(r.old_fee, round((cut + refc) * r.rate / 100, 2));
     if diff <= 0 then continue; end if;
     select j.dimensions into dims from clinic_reception.journal j where j.workspace_id = r.workspace_id and j.source = 'doctor_fee' and j.source_id = r.id;
     if dims is null then raise exception 'قيد أتعاب الطبيب للزيارة % مش موجود — راجعه قبل التطبيق', r.visit_no; end if;
     liability := -clinic_reception.balance(r.workspace_id, '2120', 'provider_id', dims->>'provider_id');
     paid := exists (select 1 from clinic_finance.desk_payout_rx x where x.rx_invoice_id = nullif(dims->>'invoice_id', '')::uuid);
     recv := greatest(0, diff - greatest(liability, 0));
-    perform clinic_finance.platform_fix_post(r.workspace_id, 'doctor_fee_platform', r.id, 'تصحيح أتعاب الطبيب — نسبة المنصة تتخصم الأول', '2120', '5111', diff - recv, dims, actor);
+    perform clinic_finance.platform_fix_post(r.workspace_id, 'doctor_fee_platform', r.id, 'تصحيح أتعاب المنفّذ — نسبة المنصة أو الإحالة تتخصم الأول', '2120', '5111', diff - recv, dims, actor);
     perform clinic_finance.platform_fix_post(r.workspace_id, 'doctor_receivable_platform', r.id, 'مبلغ مستحق من الطبيب بعد تصحيح أتعاب سبق صرفها', '1194', '5111', recv, dims, actor);
     update clinic_reception.orders set doctor_fee = r.old_fee - diff where id = r.id;
-    insert into clinic_finance.platform_fee_fixes(order_id, workspace_id, visit_no, source, service, performer, net, platform_cut, rate, old_fee, new_fee, paid_out, receivable)
-      values (r.id, r.workspace_id, r.visit_no, r.source, r.service, r.performer, r.net, clinic_reception.platform_cut(r.id, r.net), r.rate, r.old_fee, r.old_fee - diff, paid, recv);
-    raise notice 'fee fix: visit % — % (%, %): net %, platform cut %, rate %, fee % -> %, already paid out: %, owed back: %', r.visit_no, r.service, r.performer,
-      r.source, r.net, clinic_reception.platform_cut(r.id, r.net), r.rate, r.old_fee, r.old_fee - diff, paid, recv;
+    insert into clinic_finance.platform_fee_fixes(order_id, workspace_id, visit_no, source, service, performer, net, platform_cut, referral, rate, old_fee, new_fee, paid_out, receivable)
+      values (r.id, r.workspace_id, r.visit_no, r.source, r.service, r.performer, r.net, cut, refc, r.rate, r.old_fee, r.old_fee - diff, paid, recv);
+    raise notice 'fee fix: visit % — % (%, %): net %, platform cut %, referral %, rate %, fee % -> %, already paid out: %, owed back: %', r.visit_no, r.service, r.performer,
+      r.source, r.net, cut, refc, r.rate, r.old_fee, r.old_fee - diff, paid, recv;
     t_old := t_old + r.old_fee; t_new := t_new + r.old_fee - diff; t_recv := t_recv + recv; if paid then n_paid := n_paid + 1; end if;
     n := n + 1;
   end loop;
@@ -125,7 +149,7 @@ end $$;
 
 -- ===================== checks (everything below is rolled back) =====================
 do $$
-declare cn text; rec uuid; rec_name text; od record; ag record; net numeric; cut numeric; f_vez numeric; f_shamel numeric; f_walk numeric; want numeric;
+declare cn text; rec uuid; rec_name text; od record; ag record; net numeric; cut numeric; f_vez numeric; f_shamel numeric; f_walk numeric; f_ref numeric; refx numeric; refkey text; want numeric;
   n int; x record; tok uuid;
 begin
   -- 1) the patched execute path carries the platform cut
@@ -206,6 +230,31 @@ begin
     select doctor_fee into f_walk from clinic_reception.orders where id = od.id;
     raise exception 'SCENARIO_DONE';
   exception when others then if sqlerrm <> 'SCENARIO_DONE' then get stacked diagnostics cn = constraint_name; raise exception 'walk-in execute: % [%]', sqlerrm, cn; end if; end;
+  -- referral (owner: deducted first like a discount): walk-in with a referring doctor other than the performer, commission 10% of net
+  select p2.doctor_key into refkey from clinic_reception.providers p2 where p2.workspace_id = od.workspace_id and nullif(btrim(coalesce(p2.doctor_key, '')), '') is not null
+     and p2.doctor_key is distinct from (select doctor_key from clinic_reception.providers where id = od.provider_id) order by p2.id limit 1;
+  refx := round(net * 10 / 100, 2);
+  if refkey is null then raise notice 'skipped: referral scenario — no second doctor in the live workspace';
+  else
+    begin
+      set local session_replication_role = replica;
+      begin
+        update clinic_reception.appointments set source = 'walk_in', discount_kind = null where id = od.ap;
+        insert into clinic_reception.order_ext(order_id, kind, referring_doctor_key, priced) values (od.id, 'service', refkey, jsonb_build_object('referral_commission', refx))
+          on conflict (order_id) do update set referring_doctor_key = excluded.referring_doctor_key, performing_doctor_key = null,
+            priced = coalesce(clinic_reception.order_ext.priced, '{}'::jsonb) || excluded.priced;
+      exception when others then get stacked diagnostics cn = constraint_name; raise exception 'fixture update failed (% %)', sqlstate, cn; end;
+      set local session_replication_role = origin;
+      perform set_config('request.jwt.claim.sub', rec::text, true); execute 'set local role authenticated';
+      perform public.clinic_reception_command(od.workspace_id, 'execute', jsonb_build_object('id', od.id, 'provider_id', coalesce(od.provider_id::text, '')), gen_random_uuid());
+      execute 'reset role';
+      select doctor_fee into f_ref from clinic_reception.orders where id = od.id;
+      raise exception 'SCENARIO_DONE';
+    exception when others then if sqlerrm <> 'SCENARIO_DONE' then get stacked diagnostics cn = constraint_name; raise exception 'referral execute: % [%]', sqlerrm, cn; end if; end;
+    if coalesce(ag.deduct_material_cost, false) = false and f_ref <> round(greatest(0, net - refx) * ag.rate / 100, 2) then
+      raise exception 'referral fee % ≠ (net % − referral %) × % = %', f_ref, net, refx, ag.rate, round(greatest(0, net - refx) * ag.rate / 100, 2); end if;
+    raise notice 'OK referral: net %, referral %, fee % = (net − referral) × rate', net, refx, f_ref;
+  end if;
   raise notice 'fees: vezeeta %, «شامل» % (patient −40%%), walk-in % (doctor rate %, deducts material: %)', f_vez, f_shamel, f_walk, ag.rate, ag.deduct_material_cost;
   if coalesce(ag.deduct_material_cost, false) = false then
     want := round(greatest(0, net - cut) * ag.rate / 100, 2);

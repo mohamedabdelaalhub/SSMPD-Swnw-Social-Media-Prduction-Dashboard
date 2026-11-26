@@ -7,6 +7,7 @@ do $$ begin execute (select def from clinic_finance.platform_fee_saved_defs wher
 do $$ begin if exists (select 1 from clinic_finance.platform_fee_saved_defs where name = 'referral_try') then
   execute (select def from clinic_finance.platform_fee_saved_defs where name = 'referral_try'); end if; end $$;
 drop function clinic_reception.platform_cut(uuid, numeric);
+drop function clinic_reception.referral_cut(uuid);
 alter table clinic_finance.platform_fee_fixes rename to platform_fee_fixes_rolled_back;
 drop table clinic_finance.platform_fee_saved_defs;
 commit;
