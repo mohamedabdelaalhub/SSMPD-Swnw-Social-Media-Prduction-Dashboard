@@ -1,6 +1,6 @@
 /* Reviewed operational help; no patient records, network calls or generated AI answers. */
 window.SSMPDHelpData={
-  "version": "20261126-279",
+  "version": "20261126-285b",
   "articles": [
     {
       "id": "doctor-accounts-plain",
