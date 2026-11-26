@@ -1,0 +1,110 @@
+<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: حركات الاستقبال اليومية</title><style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;line-height:1.8}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:22px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:18px;min-width:0}
+.card h2{margin:0 0 6px;font-size:18px}.card h3{margin:0 0 8px;font-size:15px}
+.sub{font-size:12px;color:var(--muted);line-height:1.7}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font-weight:600}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn{min-height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:#16212E;border-color:#16212E;color:#fff}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;background:var(--tint);color:var(--brand);white-space:nowrap}
+.chip.warn{background:#FFF1E0;color:#9A4E00}.chip.bad{background:#FCEDEB;color:var(--neg)}.chip.ok{background:#E7F3EC;color:var(--pos)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.before{border:2px dashed #F3C6BB;background:#FFF8F6}.after{border:2px solid #CFE6D8}
+.lbl{font-size:12px;font-weight:700;margin-bottom:8px;display:block}.before .lbl{color:var(--neg)}.after .lbl{color:var(--pos)}
+@media(max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:18px}}
+
+.hero{border-inline-start:5px solid var(--brand)}
+.hero h2{color:var(--brand)}
+.kp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}.kp div{background:var(--tint);border-radius:14px;padding:12px;display:grid;gap:2px}.kp b{font-size:22px;color:var(--brand)}.kp small{font-size:12px;color:#475467}.kp .hot{background:#FFF1E8}.kp .hot b{color:#C2410C}
+.acts{display:flex;gap:8px;flex-wrap:wrap}.acts .btn.or{background:var(--accent);border-color:var(--accent);color:#fff}.acts .btn.gh{background:var(--soft);border-color:var(--soft);color:var(--ink)}
+.drawer{margin-top:14px;border:1px solid var(--line);border-radius:18px;padding:14px;background:#FBFCFE}
+.dh{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.dh b{font-size:15px}.dh .st{font-size:12.5px;color:#475467}
+.da{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.da button{border:1px solid var(--line);background:#fff;border-radius:14px;min-height:72px;padding:10px 8px;display:grid;gap:4px;justify-items:center;align-content:center;font-weight:600;font-size:13px;color:var(--ink);text-align:center;line-height:1.4}
+.da button i{font-style:normal;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--tint);color:var(--brand);font-size:15px}
+.da button.end{background:#16212E;border-color:#16212E;color:#fff}.da button.end i{background:#2B3A4F;color:#fff}
+.da button small{font-size:10.5px;font-weight:400;color:var(--muted)}.da button.end small{color:#C9D2DE}
+.soon{font-size:10px;background:#FFF1E0;color:#9A4E00;border-radius:999px;padding:1px 7px}
+.closed{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;background:#FFF6EC;border:1px solid #FBD9B4;border-radius:14px;padding:12px 14px;font-size:13px;color:#7A4A00}
+.jbar{position:sticky;top:0;z-index:2;display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:16px;padding:8px 10px;box-shadow:0 4px 14px rgba(15,54,157,.06)}
+.jbar b{font-size:13px;margin-inline-end:4px}.jbar .chip{font-size:11.5px}.jbar .btn{min-height:36px;font-size:12.5px;padding:0 10px}
+.jl{display:grid;gap:8px;margin-top:12px}.pc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:10px 12px}.pc small{display:block;color:var(--muted);font-size:12px}
+.want{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.want button{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);background:#fff;border-radius:14px;min-height:56px;padding:10px 14px;text-align:start;font-weight:600}
+.want button span small{display:block;font-weight:400;color:var(--muted);font-size:12px}.want button em{font-style:normal;color:var(--brand);font-size:12px;white-space:nowrap}
+.taps{width:100%;border-collapse:collapse;font-size:13px}.taps th,.taps td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:start;vertical-align:top}.taps th{color:var(--muted);font-weight:600;font-size:12px}
+.taps .b{color:var(--neg);font-weight:700}.taps .a{color:var(--pos);font-weight:700}
+.rule{font-size:12.5px;color:#475467;line-height:1.9;margin:0;padding-inline-start:18px}
+@media(max-width:760px){.kp{grid-template-columns:repeat(2,minmax(0,1fr))}.da{grid-template-columns:repeat(3,minmax(0,1fr))}.want{grid-template-columns:minmax(0,1fr)}.taps .hide{display:none}}
+</style></head><body><p class="note"><b>تصور — حركات موظف الاستقبال اليومية في ضغطة أو اتنين</b> (بيانات تجريبية · مفيش حاجة بتتحفظ). نفس الشاشات والإجراءات الموجودة — بس الزراير بقت قدامه في أول شاشة وفي «تشغيل اليوم» بدل ما يدوّر عليها في 4 و5 ضغطات. <b>مفيش رصيد الدرج على الشاشة</b> (العد أعمى زي ما اتفقنا).</p>
+<div class="wrap">
+
+<div class="card hero"><h2>تشغيل اليوم — الخميس 26 نوفمبر</h2><p class="sub">أرقام النهارده من شاشة تشغيل اليوم.</p>
+<div class="kp"><div><b>34</b><small>حجز النهارده</small></div><div class="hot"><b>5</b><small>مستنيين دلوقتي</small></div><div class="hot"><b>2</b><small>متأخرين عن ميعادهم</small></div><div><b>17</b><small>خلّصوا الكشف</small></div></div>
+<div class="acts"><button class="btn or">افتح تشغيل اليوم</button><button class="btn">الحجز والاستقبال</button><button class="btn gh">ملفات المرضى</button><button class="btn gh">عايز تعمل كذا؟</button></div>
+<div class="drawer"><div class="dh"><b>درجي</b><span class="st">ورديتك مفتوحة من 9:05 ص · خزينة الاستقبال 1</span></div>
+<div class="da">
+<button><i>＋</i>حصّل من مريض<small>كشف أو خدمة</small></button>
+<button><i>−</i>مصروف من الوردية<small>اشتريت حاجة للعيادة</small></button>
+<button><i>↩</i>طلب صرف من الدرج <small><span class="soon">قريب</span></small></button>
+<button><i>◷</i>مقدم حجز<small>مريض دافع عربون</small></button>
+<button><i>⇄</i>سلّم كاش لزميل<small>من غير ما تقفل</small></button>
+<button class="end"><i>✓</i>اقفل ورديتي وسلّم<small>العد بيتعمل هنا</small></button>
+</div></div>
+<p class="sub" style="margin:10px 0 0">① أول شاشة بعد الدخول: «درجي» تحت أرقام النهارده — كل زرار بيفتح نفس الشاشة الموجودة على طول.</p>
+</div>
+
+<div class="grid2">
+<div class="card"><h3>② لو مفيش وردية مفتوحة</h3>
+<div class="closed"><span><b>مفيش وردية مفتوحة ليك</b><br>لازم تفتح ورديتك قبل أي تحصيل أو مصروف.</span><button class="btn main">افتح ورديتي</button></div>
+<p class="sub" style="margin:10px 0 0">الزراير التانية بتستخبى لحد ما الوردية تتفتح — زرار واحد بس قدامه.</p></div>
+
+<div class="card"><h3>③ جوه «تشغيل اليوم»</h3>
+<div class="jbar"><b>درجي</b><span class="chip ok">مفتوحة من 9:05 ص</span><button class="btn">＋ حصّل</button><button class="btn">− مصروف</button><button class="btn">◷ مقدم</button><button class="btn">⋯</button><button class="btn main">اقفل وسلّم</button></div>
+<div class="jl"><div class="pc"><span><b>سارة محمود</b><small>كشف باطنة · خلّصت 11:40 ص</small></span><button class="btn">حصّل 350 ج</button></div>
+<div class="pc"><span><b>أحمد علي</b><small>أشعة · مستني</small></span><button class="btn">⋯</button></div></div>
+<p class="sub" style="margin:10px 0 0">شريط ثابت فوق الطابور — «⋯» فيها: طلب صرف من الدرج، سلّم كاش لزميل، «عايز تعمل كذا؟».</p></div>
+</div>
+
+<div class="card"><h3>④ «عايز تعمل كذا؟» — اكتب أو اختار، والزرار يفتح الحاجة على طول</h3>
+<div class="want">
+<button><span>مريض عايز يدفع<small>كشف، خدمة، أو باقي فاتورة</small></span><em>حصّل ←</em></button>
+<button><span>اشتريت حاجة للعيادة من الدرج<small>مياه، أدوات نظافة، صيانة، إكراميات…</small></span><em>مصروف ←</em></button>
+<button><span>مريض بيحجز ودافع عربون<small>مقدم حجز</small></span><em>مقدم حجز ←</em></button>
+<button><span>مريض عايز فلوسه ترجع<small>استرداد مقدم أو مرتجع</small></span><em>استرداد ←</em></button>
+<button><span>حد طالب فلوس من الدرج<small>دكتور أو مورد أو سلفة</small></span><em>طلب صرف ←</em></button>
+<button><span>هسلّم كاش لزميل<small>والوردية تفضل مفتوحة</small></span><em>تسليم ←</em></button>
+<button><span>خلصت ورديتي<small>العد والتسليم في خطوة واحدة</small></span><em>اقفل وسلّم ←</em></button>
+<button><span>الدرج فاضي وعايز أقفل<small>بصفر وبسبب مكتوب</small></span><em>اقفل وسلّم ←</em></button>
+</div></div>
+
+<div class="card"><h3>كام ضغطة — قبل وبعد</h3>
+<table class="taps"><thead><tr><th>الحركة</th><th class="hide">دلوقتي من فين</th><th>قبل</th><th>بعد</th></tr></thead><tbody>
+<tr><td>تحصيل من مريض</td><td class="hide">تشغيل اليوم ← كارت المريض</td><td class="b">2</td><td class="a">1–2</td></tr>
+<tr><td>مصروف من الوردية</td><td class="hide">الحجز والاستقبال ← الكارت · مش موجود في تشغيل اليوم</td><td class="b">2 (4 من تشغيل اليوم)</td><td class="a">1</td></tr>
+<tr><td>طلب صرف / استرداد</td><td class="hide">الاستقبال ← التحصيل والمستلزمات ← التعاقدات والتصحيحات ← طلب مالي</td><td class="b">4</td><td class="a">1–2</td></tr>
+<tr><td>مقدم حجز</td><td class="hide">خزينة الاستقبال والحجوزات (من القايمة)</td><td class="b">2</td><td class="a">1</td></tr>
+<tr><td>جرد وقفل الوردية</td><td class="hide">خزينة الاستقبال ← اقفل ورديتي · من تشغيل اليوم 5 ضغطات</td><td class="b">2–5</td><td class="a">1</td></tr>
+<tr><td>فتح الوردية</td><td class="hide">تنبيه كل 5 دقايق أو خزينة الاستقبال</td><td class="b">1–2</td><td class="a">1</td></tr>
+<tr><td>«عايز تعمل كذا؟»</td><td class="hide">مش موجودة للاستقبال</td><td class="b">—</td><td class="a">1</td></tr>
+</tbody></table></div>
+
+<div class="card"><h3>القواعد</h3><ul class="rule">
+<li>كل زرار بيفتح <b>نفس الشاشة الموجودة</b> بنفس الصلاحيات — مفيش إجراء جديد ولا تغيير في الحسابات.</li>
+<li>«درجي» بيظهر لموظف الاستقبال بس (خدمة العملاء مالهاش درج).</li>
+<li>مفيش رقم رصيد الدرج في أي مكان — بيتعد وقت القفل بس.</li>
+<li>«طلب صرف من الدرج» يظهر أول ما شات الحسابات يخلّصه؛ لحد ساعتها الزرار مش ظاهر.</li>
+<li>على الموبايل: الزراير 3 في الصف، والشريط فوق الطابور بيلف لسطرين.</li>
+</ul></div>
+
+</div></body></html>
