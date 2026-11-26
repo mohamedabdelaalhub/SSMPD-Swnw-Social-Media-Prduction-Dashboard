@@ -173,3 +173,19 @@ Most of these were relayed by the hub.
 4. Follow-ups: the reports-centre margin should subtract the nurse fee (small PR, needs a number).
 5. **Supplies PR3** (mig 20261125220000, help 270): «استهلاك أمس» 48h correction with manager approval, reason categories, daily reconciliation. Not started; ask the owner before building.
 6. The safety-net check-in trigger `trig_011S7s4HKkKU8WbHipyNgBZR` (01:20Z) belongs to the old chat; the new chat may delete it and re-arm its own.
+
+---
+
+## Addendum (00:57Z)
+- **#877:** dry-run `514e2c95` passed 00:54Z. **APPLIED 00:55Z:**
+  - mig 20261126060000 (`baa4dd69`);
+  - ops (`c9f45fb7`) APPLY 1+2: NUR-F61284 v5 at 150 is the only active version, is_home true; SVC-0001396 is «كشف منزلي (شامل الانتقال)» 1500, nurse 100, road 60;
+  - APPLY 3: 42 pending 50% contracts.
+
+  The hub merges on CI green.
+- **#877 post-merge steps:**
+  1. The FM approves the 42 pending contracts on screen.
+  2. The hub runs the ops CHECK section (C0 nurse→provider list; each doctor should resolve to «50% exact»). Nurses without a provider get their 100 later via `home_nurse_issues`.
+  3. Until step 1, «تنفيذ» on «كشف منزلي» is refused. That is intended.
+- **#875:** CI check suite completed green at 00:55Z on 6da7d233. The hub merges.
+- **After #875 and #877 merge:** re-merge main into #880 (help versions 278 / 279 / 290 and `reception-workspace.js`).
