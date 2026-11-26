@@ -69,3 +69,4 @@
 .fc-da-more[open]>:not(summary){position:absolute;inset-inline-end:0;top:40px;z-index:5;background:#fff;border:1px solid #E6EBF3;border-radius:12px;box-shadow:0 10px 26px rgba(15,54,157,.12);padding:8px;display:grid;gap:4px;min-width:220px}
 .fc-da-more[open]{display:grid}
 .fc-st-eq{background:#F3F6FB;border-radius:12px;padding:8px 12px}
+.fc-st-warn{background:#FFF6EC;border:1px solid #FBD9B4;color:#9A4E00;border-radius:12px;padding:10px 14px;font-size:13.5px;font-weight:600;margin:10px 0}
