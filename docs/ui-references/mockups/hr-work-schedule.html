@@ -1,51 +1,57 @@
-<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: مواعيد العمل والإجازات والراحات</title>
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: مواعيد العمل والإجازات والراحات — كالندر</title>
 <style>*{box-sizing:border-box}body{margin:0;padding:16px;background:#f4f7fc;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
-.wrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;max-width:1240px;margin:auto}
-.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;align-content:start;min-width:0}.cap{font-size:12px;color:#5b6b82}h3,p{margin:0}h3{font-size:17px}
-.btn{border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:8px 12px;font:inherit;min-width:0}.pri{background:#0F369D;color:#fff;border-color:#0F369D}
+.wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:1100px;margin:auto}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;align-content:start;min-width:0}.cap{font-size:12px;color:#5b6b82}h3,p{margin:0}
+.btn{border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:8px 12px;font:inherit;min-width:0}
 .head{display:flex;align-items:center;justify-content:space-between;gap:8px}.hl{display:flex;align-items:center;gap:8px;min-width:0}.ic{width:36px;height:36px;border:1px solid #D5DEEE;background:#fff;border-radius:10px;font-size:19px;line-height:1;flex:none}
-.sheetg h4{margin:6px 0 2px;font-size:13px;color:#5b6b82}.act{display:flex;gap:10px;align-items:center;border:1px solid #D5DEEE;border-radius:12px;padding:10px;background:#fff;width:100%;text-align:start;font:inherit}.act small{display:block;color:#5b6b82;font-size:12px}.act.new{border-color:#F15A22;background:#FFF6F0}
 .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:#F1F4F8;border-radius:12px;padding:4px}.seg span{text-align:center;padding:8px 4px;border-radius:9px;font-size:13px}.seg .on{background:#0F369D;color:#fff;font-weight:700}
-.today{border:2px solid #0F369D;border-radius:14px;padding:12px;display:grid;gap:8px;background:#F4F7FF}.today .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.chip{border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;display:inline-block}.c-work{background:#E8EFFD;color:#0F369D}.c-off{background:#EEF1F6;color:#5b6b82}.c-leave{background:#E6F3EC;color:#2F7D5C}.c-pend{background:#fff;border:1px dashed #F15A22;color:#B54708}.c-late{background:#FFF3E0;color:#8a4b00}.c-abs{background:#FDECE8;color:#D0402A}
-.punch{display:grid;grid-template-columns:1fr 1fr;gap:8px}.punch div{background:#fff;border:1px solid #D5DEEE;border-radius:10px;padding:8px}.punch small{display:block;color:#5b6b82;font-size:11.5px}.punch b.l{color:#B54708}.punch b.n{color:#D0402A}
-.day{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;border:1px solid #D5DEEE;border-radius:12px;padding:8px 10px;align-items:center}.day .d{text-align:center;line-height:1.3}.day .d b{font-size:17px;display:block}.day .d small{color:#5b6b82;font-size:11px}
-.day.t{border-color:#0F369D;background:#F4F7FF}.day.off{background:#F8FAFD}.day.lv{border-inline-start:5px solid #2F7D5C}.day.pd{border:1px dashed #F15A22;background:#FFF9F5}.day.wk{border-inline-start:5px solid #0F369D}.day.ab{border-inline-start:5px solid #D0402A}.day.lt{border-inline-start:5px solid #F15A22}
-.day small.m{display:block;color:#5b6b82;font-size:12px;margin-top:2px}
-.mon{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;font-size:12px}.mon .h{color:#5b6b82;font-size:11px}.mon .c{border:1px solid #EEF2F8;border-radius:8px;padding:6px 0;min-height:42px}.mon .c i{display:block;width:8px;height:8px;border-radius:50%;margin:3px auto 0}
-.legend{display:flex;flex-wrap:wrap;gap:8px;font-size:11.5px;color:#5b6b82}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:4px;vertical-align:middle}
+.nav{display:flex;align-items:center;justify-content:space-between}.nav b{font-size:16px}.nav .ic{width:34px;height:34px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.cal .h{text-align:center;font-size:11px;color:#5b6b82;padding:2px 0}
+.c{position:relative;aspect-ratio:1/1;border-radius:10px;border:1px solid transparent;display:grid;place-items:center;font-size:14px;font-weight:700;min-width:0;background:#fff}
+.c.empty{background:none}.c.w{background:#E8EFFD;color:#0F369D}.c.f{background:#F4F7FF;color:#6b82b8;border:1px dashed #C9D6F2;font-weight:600}.c.off{background:#EEF1F6;color:#5b6b82}.c.lv{background:#E6F3EC;color:#2F7D5C}
+.c.pd{background:#fff;border:2px dashed #F15A22;color:#B54708}.c.t{border:2px solid #0F369D;box-shadow:0 0 0 2px #fff inset}.c.sel{outline:3px solid #F15A22;outline-offset:1px}
+.c i{position:absolute;top:4px;inset-inline-end:4px;width:7px;height:7px;border-radius:50%}.c i.l{background:#F15A22}.c i.a{background:#D0402A}
+.legend{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:11.5px;color:#5b6b82}.legend span{display:inline-flex;align-items:center;gap:4px}.legend b{width:12px;height:12px;border-radius:4px;display:inline-block}
+.sum{display:flex;gap:6px;flex-wrap:wrap}.sum button{border:1px solid #D5DEEE;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:12.5px}
+.sheet{border:1px solid #0F369D;border-radius:14px;padding:12px;display:grid;gap:10px;background:#fff;box-shadow:0 6px 18px rgba(15,54,157,.12)}
+.chip{border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;display:inline-block}.c-work{background:#E8EFFD;color:#0F369D}.c-off{background:#EEF1F6;color:#5b6b82}.c-leave{background:#E6F3EC;color:#2F7D5C}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}.kv div{border:1px solid #D5DEEE;border-radius:10px;padding:8px}.kv small{display:block;color:#5b6b82;font-size:11.5px}.kv b.l{color:#B54708}.kv b.n{color:#D0402A}
+.li{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #EEF2F8;padding:6px 0;font-size:13.5px}.li:last-child{border:0}.li small{color:#5b6b82}
+.big{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}.big div{border:1px solid #D5DEEE;border-radius:10px;padding:8px}.big b{display:block;font-size:20px}.big small{color:#5b6b82;font-size:11.5px}
 .note{font-size:12px;color:#5b6b82;background:#F1F4F8;border-radius:8px;padding:6px 10px}
 @media(max-width:700px){.wrap{grid-template-columns:minmax(0,1fr)}}</style>
 <div class="wrap">
-<section class="card"><span class="cap">١) الزرار الجديد في ⋯ بتاع الموظف — تحت «الورديات والحضور»</span>
-<div class="head"><b>شروق علاء الدين</b><button class="ic" aria-label="إغلاق">✕</button></div><small class="cap">EMP-12 · الاستقبال</small>
-<div class="sheetg"><h4>الورديات والحضور</h4>
-<button class="act new"><span>🗓</span><span><b>مواعيد العمل والإجازات والراحات</b><small>النهارده والأسبوع والشهر</small></span></button>
-<button class="act"><span>🗓</span><span>تعديل جدول الورديات<small>الأيام ونوع الوردية</small></span></button>
-<button class="act"><span>⏱</span><span>تسجيل وردية وحضور<small>يدوي بعد المراجعة</small></span></button>
-<h4>الإجازات والأذونات</h4><button class="act"><span>🌴</span><span>إجازة أو إذن جديد</span></button></div></section>
-
-<section class="card"><span class="cap">٢) الشاشة — عرض «أسبوع» (الافتراضي) + كارت «النهارده» فوق</span>
+<section class="card"><span class="cap">١) الكالندر — شهر (افتراضي على الموبايل: أسبوع بنفس الشكل 7 خانات)</span>
 <div class="head"><span class="hl"><button class="ic" aria-label="رجوع">←</button><b>شروق علاء الدين</b></span><button class="ic" aria-label="إغلاق">✕</button></div>
-<div class="today"><div class="top"><b>النهارده — الخميس 26 نوفمبر</b><span class="chip c-work">شغل</span></div>
-<small class="cap">وردية الصباح · المفروض من <bdi dir="ltr">09:00</bdi> إلى <bdi dir="ltr">17:00</bdi></small>
-<div class="punch"><div><small>بصمة الدخول</small><b class="l">09:14 — متأخر 14 دقيقة</b></div><div><small>بصمة الخروج</small><b>لسه — الانصراف 17:00</b></div></div></div>
-<div class="seg"><span class="on">أسبوع</span><span>شهر</span><span>فترة</span></div>
-<div class="day wk"><div class="d"><b>21</b><small>السبت</small></div><div><span class="chip c-work">يوم عمل</span> من <bdi dir="ltr">09:00</bdi> إلى <bdi dir="ltr">17:00</bdi><small class="m">بصم 08:58 · خرج 17:05</small></div></div>
-<div class="day off"><div class="d"><b>22</b><small>الأحد</small></div><div><span class="chip c-off">راحة أسبوعية</span></div></div>
-<div class="day lt"><div class="d"><b>23</b><small>الاثنين</small></div><div><span class="chip c-late">يوم عمل — متأخر 25 د</span> من <bdi dir="ltr">09:00</bdi> إلى <bdi dir="ltr">17:00</bdi><small class="m">بصم 09:25 · خرج 17:01</small></div></div>
-<div class="day lv"><div class="d"><b>24</b><small>الثلاثاء</small></div><div><span class="chip c-leave">إجازة سنوية — معتمدة</span></div></div>
-<div class="day ab"><div class="d"><b>25</b><small>الأربعاء</small></div><div><span class="chip c-abs">يوم عمل — لم يبصم</span> من <bdi dir="ltr">09:00</bdi> إلى <bdi dir="ltr">17:00</bdi><small class="m">مفيش بصمة دخول ولا خروج</small></div></div>
-<div class="day t"><div class="d"><b>26</b><small>النهارده</small></div><div><span class="chip c-work">يوم عمل</span> من <bdi dir="ltr">09:00</bdi> إلى <bdi dir="ltr">17:00</bdi><small class="m">فوق ↑</small></div></div>
-<div class="day pd"><div class="d"><b>27</b><small>الجمعة</small></div><div><span class="chip c-pend">إجازة عارضة — مستني موافقة</span></div></div></section>
-
-<section class="card"><span class="cap">٣) «شهر» و«فترة»</span>
 <div class="seg"><span>أسبوع</span><span class="on">شهر</span><span>فترة</span></div>
-<b>نوفمبر 2026</b>
-<div class="mon"><span class="h">سبت</span><span class="h">أحد</span><span class="h">اثنين</span><span class="h">ثلاثاء</span><span class="h">أربعاء</span><span class="h">خميس</span><span class="h">جمعة</span>
-<div class="c">21<i style="background:#0F369D"></i></div><div class="c">22<i style="background:#9AA5B5"></i></div><div class="c">23<i style="background:#F15A22"></i></div><div class="c">24<i style="background:#2F7D5C"></i></div><div class="c">25<i style="background:#D0402A"></i></div><div class="c" style="border-color:#0F369D">26<i style="background:#0F369D"></i></div><div class="c" style="border-style:dashed;border-color:#F15A22">27<i style="background:#fff;border:2px solid #F15A22"></i></div></div>
-<div class="legend"><span><i style="background:#0F369D"></i>يوم عمل</span><span><i style="background:#9AA5B5"></i>راحة أسبوعية</span><span><i style="background:#2F7D5C"></i>إجازة معتمدة</span><span><i style="background:#fff;border:2px solid #F15A22"></i>طلب مستني</span><span><i style="background:#F15A22"></i>متأخر</span><span><i style="background:#D0402A"></i>لم يبصم</span></div>
-<div class="seg"><span>أسبوع</span><span>شهر</span><span class="on">فترة</span></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="cap">من<input class="btn" style="width:100%" value="2026-11-01"></label><label class="cap">إلى<input class="btn" style="width:100%" value="2026-11-26"></label></div>
-<div class="note">نفس القايمة اليومية للفترة المختارة، وأعلاها ملخص: أيام العمل · الإجازات · الراحات · مرات التأخير · أيام بدون بصمة.</div></section>
+<div class="nav"><button class="ic" aria-label="الشهر السابق">›</button><b>نوفمبر 2026</b><button class="ic" aria-label="الشهر التالي">‹</button></div>
+<div class="cal"><span class="h">سبت</span><span class="h">أحد</span><span class="h">اثنين</span><span class="h">ثلاثاء</span><span class="h">أربعاء</span><span class="h">خميس</span><span class="h">جمعة</span>
+<div class="c empty"></div><div class="c off">1</div><div class="c w">2</div><div class="c w">3</div><div class="c w">4</div><div class="c w">5</div><div class="c w">6</div>
+<div class="c w">7</div><div class="c off">8</div><div class="c w">9</div><div class="c w">10</div><div class="c w">11</div><div class="c w">12</div><div class="c w">13</div>
+<div class="c w">14</div><div class="c off">15</div><div class="c w">16</div><div class="c w">17</div><div class="c w">18</div><div class="c w">19</div><div class="c w">20</div>
+<div class="c w">21</div><div class="c off">22</div><div class="c w sel">23<i class="l"></i></div><div class="c lv">24</div><div class="c w">25<i class="a"></i></div><div class="c t w">26</div><div class="c pd">27</div>
+<div class="c f">28</div><div class="c off">29</div><div class="c f">30</div></div>
+<div class="legend"><span><b style="background:#E8EFFD"></b>يوم عمل</span><span><b style="background:#EEF1F6"></b>راحة أسبوعية</span><span><b style="background:#E6F3EC"></b>إجازة</span><span><b style="border:2px dashed #F15A22"></b>طلب مستني</span><span><b style="background:#F4F7FF;border:1px dashed #C9D6F2"></b>جاي (حسب الجدول الحالي)</span><span><b style="background:#F15A22;border-radius:50%"></b>متأخر</span><span><b style="background:#D0402A;border-radius:50%"></b>لم يبصم</span></div>
+<div class="sum"><button>20 يوم عمل</button><button>5 راحات وغياب</button><button>3 إجازات</button></div>
+<div class="note">اضغط على يوم، أو على «الراحات والغياب»، أو «الإجازات» تحت: بيفتح تفاصيله.</div></section>
+
+<section class="card"><span class="cap">٢) ضغطت على يوم عمل — الاثنين 23 نوفمبر</span>
+<div class="sheet"><div class="head"><b>الاثنين 23 نوفمبر 2026</b><button class="ic" aria-label="إغلاق">✕</button></div>
+<span class="chip c-work">يوم عمل — وردية الصباح</span>
+<div class="kv"><div><small>الموعد المفروض</small><b>من <bdi dir="ltr">09:00</bdi> إلى <bdi dir="ltr">17:00</bdi></b></div><div><small>التأخير</small><b class="l">25 دقيقة</b></div>
+<div><small>بصمة الدخول</small><b>09:25</b></div><div><small>بصمة الانصراف</small><b>17:01</b></div></div>
+<div class="note">لو اليوم من غير بصمة بيتكتب «لم يبصم» بالأحمر. الأيام الجاية بتظهر «حسب الجدول الحالي» من غير بصمات.</div></div></section>
+
+<section class="card"><span class="cap">٣) ضغطت على «الراحات والغياب» — خلال الفترة المختارة</span>
+<div class="sheet"><div class="head"><b>الراحات والغيابات — 1 إلى 26 نوفمبر</b><button class="ic" aria-label="إغلاق">✕</button></div>
+<div class="big"><div><b>4</b><small>راحة أسبوعية</small></div><div><b>1</b><small>غياب</small></div><div><b>1</b><small>تأخير</small></div></div>
+<div><div class="li"><span>الأحد 1 نوفمبر</span><small>راحة أسبوعية</small></div><div class="li"><span>الأحد 8 نوفمبر</span><small>راحة أسبوعية</small></div><div class="li"><span>الأحد 15 نوفمبر</span><small>راحة أسبوعية</small></div><div class="li"><span>الأحد 22 نوفمبر</span><small>راحة أسبوعية</small></div>
+<div class="li" style="color:#D0402A"><span>الأربعاء 25 نوفمبر</span><small>غياب — لم يبصم</small></div></div></div></section>
+
+<section class="card"><span class="cap">٤) ضغطت على «الإجازات» — الإجازة السنوية</span>
+<div class="sheet"><div class="head"><b>الإجازات السنوية — 2026</b><button class="ic" aria-label="إغلاق">✕</button></div>
+<div class="big"><div><b>3</b><small>أيام في الفترة</small></div><div><b>12</b><small>المتبقي</small></div><div><b>21</b><small>رصيد السنة</small></div></div>
+<div class="li"><span><b>24 نوفمبر</b> — يوم واحد<br><small>قدّم الطلب 18 نوفمبر 2026</small></span><span class="chip c-leave">معتمدة<br><small>اعتمدها: أ. هبة سمير · 20 نوفمبر</small></span></div>
+<div class="li"><span><b>27 نوفمبر</b> — إجازة عارضة<br><small>قدّم الطلب 26 نوفمبر 2026</small></span><span class="chip" style="border:1px dashed #F15A22;color:#B54708">مستني موافقة</span></div>
+<div class="note">الرصيد بيتحسب من رصيد السنة (قاعدة الإجازات الحالية). الأسماء والتواريخ هنا أمثلة.</div></div></section>
 </div>
