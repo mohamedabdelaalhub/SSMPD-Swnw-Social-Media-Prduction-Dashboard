@@ -1,10 +1,11 @@
 -- «خصم العاملين بالمركز» (owner decision 2026-11-26 via main chat 6): a new booking / visit discount kind 'staff', max 30%.
 --   * Percent typed by reception, 1–30 (cap = booking_discount_max_for('staff') = 30), auto-approved like the other kinds ≤ their cap.
---   * Eligibility proven on the server: the patient must BE an employee — reception picks the employee from
---     public.clinic_reception_staff_discount(ws, patient), which lists only ACTIVE HR people (clinic_people.people status active /
---     on_leave, end_date null or ≥ the visit day) whose phone matches the patient file's phone (last 10 digits). The chosen person
---     is saved on the appointment (discount_staff_id) and re-checked at arrival. Defaults until the owner answers: employees only
---     (not relatives), all services, no monthly cap.
+--   * Eligibility proven on the server (owner answers 2026-11-26): the employee AND first-degree relatives, no monthly / yearly
+--     cap, all services. Reception picks the employee from public.clinic_reception_staff_discount(ws, patient), which lists only
+--     ACTIVE HR people (clinic_people.people status active / on_leave, end_date null or ≥ the visit day) whose phone matches the
+--     patient file's phone (last 10 digits) — or the phone of a file DIRECTLY linked to the patient in «أفراد العيلة» (spouse /
+--     child / parent / sibling, proof required, not transitive). The chosen person is saved on the appointment
+--     (discount_staff_id) and re-checked at arrival.
 --   * Same exclusions as the other kinds: package / entitlement / offer services, one discount per visit.
 -- Implementation: wrappers on set_booking_discount (book / walk-in / reschedule / «خصم على الحجز») and order_discount
 -- («خصم على الزيارة») run the existing «خاص» path with a fixed reason and then mark the appointment 'staff'; a trigger on
@@ -40,16 +41,26 @@ create or replace function clinic_reception.booking_discount_max_for(p_kind text
   select case p_kind when 'vezeeta' then 40 when 'family' then 50 when 'staff' then 30 else clinic_reception.booking_discount_max() end::numeric $$;
 revoke all on function clinic_reception.booking_discount_max_for(text) from public, anon, authenticated;
 
--- active HR people whose phone is the patient file's phone (the patient IS the employee)
-create function clinic_reception.staff_for_patient(p_patient uuid, p_day date) returns table(person_id uuid, name text, code text)
+-- who can give this patient the staff discount: (a) the patient IS the employee — the file's phone = the HR person's phone; or
+-- (b) a FIRST-DEGREE relative — the file is linked DIRECTLY in «أفراد العيلة» (spouse / child / parent / sibling, with the proof
+-- document, not removed) to a file whose phone = the HR person's phone. Not transitive: a relative's relative does not qualify.
+-- The HR person must be active / on leave and not ended by the visit day.
+create function clinic_reception.staff_for_patient(p_patient uuid, p_day date) returns table(person_id uuid, name text, code text, relation text)
 language sql stable security definer set search_path = pg_catalog, public as $$
-  select pp.id, pp.full_name, pp.code
-    from clinic_reception.patients rp
+  with files as (
+    select rp.id file_id, 'self'::text rel from clinic_reception.patients rp where rp.id = p_patient
+    union all
+    select case when r.patient_id = p_patient then r.relative_id else r.patient_id end, r.relation
+      from clinic_reception.patient_relatives r
+     where r.removed_at is null and (r.patient_id = p_patient or r.relative_id = p_patient)
+  )
+  select distinct on (pp.id) pp.id, pp.full_name, pp.code, f.rel
+    from files f join clinic_reception.patients fp on fp.id = f.file_id
     join clinic_people.people pp on length(regexp_replace(coalesce(pp.phone, ''), '\D', '', 'g')) >= 10
-     and right(regexp_replace(pp.phone, '\D', '', 'g'), 10) = right(regexp_replace(coalesce(rp.phone, ''), '\D', '', 'g'), 10)
-   where rp.id = p_patient and length(regexp_replace(coalesce(rp.phone, ''), '\D', '', 'g')) >= 10
+     and right(regexp_replace(pp.phone, '\D', '', 'g'), 10) = right(regexp_replace(coalesce(fp.phone, ''), '\D', '', 'g'), 10)
+   where length(regexp_replace(coalesce(fp.phone, ''), '\D', '', 'g')) >= 10
      and pp.status in ('active', 'on_leave') and (pp.end_date is null or pp.end_date >= p_day)
-   order by pp.full_name $$;
+   order by pp.id, (f.rel = 'self') desc $$;
 revoke all on function clinic_reception.staff_for_patient(uuid, date) from public, anon, authenticated;
 
 create function clinic_reception.staff_check(p_patient uuid, p_person uuid, p_day date) returns text
@@ -59,9 +70,11 @@ begin
   if p_person is null then raise exception 'اختار الموظف'; end if;
   select * into r from clinic_reception.staff_for_patient(p_patient, p_day) s where s.person_id = p_person;
   if not found then
-    raise exception 'خصم العاملين للموظفين الشغالين بس — المريض لازم يكون نفس الموظف (نفس رقم التليفون في الموارد البشرية) وشغال لحد يوم الزيارة';
+    raise exception 'خصم العاملين للموظفين الشغالين وقرايبهم من الدرجة الأولى بس — المريض لازم يكون الموظف نفسه (نفس رقم التليفون في الموارد البشرية) أو مربوط بيه في «أفراد العيلة» (زوج/زوجة، ابن/بنت، أب/أم، أخ/أخت) والموظف شغال لحد يوم الزيارة';
   end if;
-  return 'خصم العاملين بالمركز — ' || r.name || ' (' || r.code || ')';
+  return 'خصم العاملين بالمركز — ' || case r.relation when 'self' then '' else 'قريب درجة أولى ('
+    || case r.relation when 'spouse' then 'زوج / زوجة' when 'child' then 'ابن / بنت' when 'parent' then 'أب / أم' else 'أخ / أخت' end || ') لـ ' end
+    || r.name || ' (' || r.code || ')';
 end $$;
 revoke all on function clinic_reception.staff_check(uuid, uuid, date) from public, anon, authenticated;
 
@@ -72,7 +85,7 @@ declare d date := coalesce(p_day, (now() at time zone 'Africa/Cairo')::date);
 begin
   perform clinic_reception.access(p_workspace, 'book');
   if not exists (select 1 from clinic_reception.patients where id = p_patient and workspace_id = p_workspace) then raise exception 'اختار المريض الأول'; end if;
-  return jsonb_build_object('max', 30, 'staff', coalesce((select jsonb_agg(jsonb_build_object('id', s.person_id, 'name', s.name, 'code', s.code))
+  return jsonb_build_object('max', 30, 'staff', coalesce((select jsonb_agg(jsonb_build_object('id', s.person_id, 'name', s.name, 'code', s.code, 'relation', s.relation))
     from clinic_reception.staff_for_patient(p_patient, d) s), '[]'::jsonb));
 end $$;
 revoke all on function public.clinic_reception_staff_discount(uuid, uuid, date) from public, anon;

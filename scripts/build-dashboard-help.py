@@ -1111,7 +1111,7 @@ frule('reception-booking-discount.js','اسم النقابة|مثلاً نقاب
 frule('reception-booking-discount.js','رقم الكارنيه','رقم كارنيه النقابة أو النادي — إجباري.','reception-booking-discount')
 frule('reception-booking-discount.js','الكارنيه ساري لحد','آخر يوم الكارنيه ساري فيه. لازم يكون يوم الزيارة أو بعده، ولو خلص قبل الحضور تسجيل الحضور بيقف.','reception-booking-discount')
 frule('reception-booking-discount.js','سبب الخصم|مثلاً قريب موظف','سبب الخصم الخاص — إجباري.','reception-booking-discount')
-frule('reception-booking-discount.js',r'الموظف \(لازم يكون المريض نفسه\)','«خصم العاملين بالمركز»: الموظف المتسجّل في الموارد البشرية بنفس رقم تليفون المريض وشغال — لو مفيش، الخصم ده مش متاح للمريض.','reception-staff-discount')
+frule('reception-booking-discount.js',r'الموظف \(المريض نفسه أو قريبه من الدرجة الأولى\)','«خصم العاملين بالمركز»: الموظف الشغال في الموارد البشرية — المريض نفسه (نفس رقم التليفون) أو قريبه من الدرجة الأولى المربوط في «أفراد العيلة». لو مفيش، الخصم ده مش متاح للمريض.','reception-staff-discount')
 frule('reception-booking-discount.js','القريب','اختار ملف القريب اللي هيتربط بالمريض في «كارت العيلة». الربط بيتعمل مرة واحدة بمستند إثبات القرابة.','reception-booking-discount')
 frule('reception-booking-discount.js','عدد زيارات كارت العيلة اللي العيلة خدتها على السيستم القديم','عدد زيارات كارت العيلة اللي العيلة كلها خدتها قبل الداشبورد (رقم صحيح ٠ أو أكتر). بيتحسب في خطوة الخصم بعد اعتماد السوبر أدمن أو المدير المالي بس.','reception-family-legacy-visits')
 frule('reception-booking-discount.js','مثلاً: العيلة كانت ماشية بكارت العيلة قبل الداشبورد','السبب اللي بيوضح للي هيعتمد ليه العيلة ليها زيارات قديمة.','reception-family-legacy-visits')

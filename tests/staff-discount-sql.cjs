@@ -26,7 +26,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  const mk=async n=>(await q("insert into clinic_reception.patients(workspace_id,file_no,name,phone,created_by) values($1,$2,$3,$4,$5) returning id",[w,'F'+n,'مريض '+n,'0100000000'+n,id(1)]))[0].id;
  const P1=await mk(1),P2=await mk(2),P3=await mk(3),P4=await mk(4),P5=await mk(5);
  const staff=(pid)=>rpc('clinic_reception_staff_discount',{p_workspace:w,p_patient:pid});
- const NOT=/خصم العاملين للموظفين الشغالين بس/;
+ const NOT=/خصم العاملين للموظفين الشغالين وقرايبهم من الدرجة الأولى بس/;
  // picker: only the matching active employee
  assert.deepEqual(JSON.parse(JSON.stringify((await staff(P1)).staff)).map(x=>x.code),['EMP-000101']);
  assert.equal((await staff(P2)).staff.length,0);assert.equal((await staff(P3)).staff.length,0,'ended employee not offered');
@@ -62,11 +62,28 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  const b6=(await cmd('book',{patient_id:P1,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(10,E1)})).id;
  await cmd('booking_discount',{id:b6,discount_kind:'special',discount_percent:'10',discount_reason:'سبب تاني'});
  a=(await q("select discount_kind,discount_staff_id from clinic_reception.appointments where id=$1",[b6]))[0];assert.equal(a.discount_kind,'special');assert.equal(a.discount_staff_id,null);
+ // first-degree relatives (owner 2026-11-26): linked DIRECTLY in «أفراد العيلة» to the employee's file → ok; relative of an
+ // ENDED employee → refused; a relative's relative (2nd degree) → refused
+ const R1=await mk(6),R3=await mk(7),R2=await mk(8);
+ await q("update clinic_reception.patients set phone=$2 where id=$1",[R1,'01055500006']);await q("update clinic_reception.patients set phone=$2 where id=$1",[R3,'01055500007']);await q("update clinic_reception.patients set phone=$2 where id=$1",[R2,'01055500008']);
+ const link=(a,b,rel)=>q("insert into clinic_reception.patient_relatives(workspace_id,patient_id,relative_id,relation,proof_path,created_by) values($1,$2,$3,$4,'u/proof.jpg',$5)",[w,a,b,rel,id(1)]);
+ await link(P1,R1,'child');await link(P3,R3,'spouse');await link(R1,R2,'sibling');
+ const pr1=JSON.parse(JSON.stringify((await staff(R1)).staff));assert.deepEqual(pr1.map(x=>[x.code,x.relation]),[['EMP-000101','child']]);
+ assert.equal((await staff(R3)).staff.length,0,'relative of an ended employee not offered');assert.equal((await staff(R2)).staff.length,0,'2nd degree not offered');
+ const br=(await cmd('book',{patient_id:R1,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(30,E1)})).id;
+ a=(await q("select discount_kind,discount_reason from clinic_reception.appointments where id=$1",[br]))[0];assert.equal(a.discount_kind,'staff');assert.match(a.discount_reason,/قريب درجة أولى \(ابن \/ بنت\) لـ هدى موظفة \(EMP-000101\)/);
+ await cmd('arrive',{id:br});
+ assert.match((await q("select dr.reason from clinic_reception.discount_requests dr join clinic_reception.orders o on o.id=dr.order_id join clinic_reception.visits v on v.id=o.visit_id where v.appointment_id=$1",[br]))[0].reason,/^خصم الحجز: خصم العاملين بالمركز — قريب درجة أولى/);
+ await assert.rejects(()=>cmd('book',{patient_id:R3,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(20,E3)}),NOT);
+ await assert.rejects(()=>cmd('book',{patient_id:R2,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(20,E1)}),NOT);
+ // an unlinked relation (removed link) no longer qualifies
+ await q("update clinic_reception.patient_relatives set removed_at=now(),removed_by=$2,removed_reason='test' where patient_id=$1",[P1,id(1)]);
+ assert.equal((await staff(R1)).staff.length,0,'removed link no longer qualifies');
  // anon cannot call the picker
  await db.exec('reset role');assert.equal((await db.query("select has_function_privilege('anon','public.clinic_reception_staff_discount(uuid,uuid,date)','execute') x")).rows[0].x,false);
  // rollback
  await db.exec(fs.readFileSync('supabase/rollbacks/20261126170000_staff_discount.rollback.sql','utf8'));
  assert.equal((await db.query("select count(*)::int n from clinic_reception.appointments where discount_kind='staff'")).rows[0].n,0);
  assert.equal((await db.query("select to_regprocedure('clinic_reception.set_booking_discount_before_staff(uuid,uuid,jsonb,uuid)') x")).rows[0].x,null);
- console.log('PASS staff discount: picker lists only the matching active employee; book 30 ok (staff link + reason), 31 / non-employee / ended / no pick refused; arrival auto-approves 30% «خصم العاملين بالمركز»; second discount refused; ended before arrival → arrival refused; «خصم على الزيارة» staff 25 ok, 31 / wrong employee refused; edit to خاص clears the link; anon no; re-apply refused; rollback converts to خاص.');
+ console.log('PASS staff discount (employee + first-degree relatives): picker lists only the matching active employee; book 30 ok (staff link + reason), 31 / non-employee / ended / no pick refused; arrival auto-approves 30% «خصم العاملين بالمركز»; second discount refused; ended before arrival → arrival refused; «خصم على الزيارة» staff 25 ok, 31 / wrong employee refused; edit to خاص clears the link; relative linked in «أفراد العيلة» (child) ok + labelled, relative of ended / 2nd degree / removed link refused; anon no; re-apply refused; rollback converts to خاص.');
 })().catch(e=>{console.error(e);process.exit(1);});

@@ -11220,13 +11220,13 @@
     },
     {
       "file": "reception-booking-discount.js",
-      "label": "الموظف (لازم يكون المريض نفسه)",
+      "label": "الموظف (المريض نفسه أو قريبه من الدرجة الأولى)",
       "name": "",
       "kind": "label",
       "forms": [],
       "tab": "reception_services",
       "article": "reception-staff-discount",
-      "text_sha256": "2d8044419c2b64d8a1f50dc9cd4b0724af0d23e0c30663fe81268ef3b6d09c33"
+      "text_sha256": "7f510bfca693b6007887e6d9464d704f99b4519c551bf8a341096e87e3ac361e"
     },
     {
       "file": "reception-booking-discount.js",

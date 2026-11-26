@@ -1,8 +1,8 @@
 -- Live rollback test for 20261126170000_staff_discount.sql («خصم العاملين بالمركز»). Run the WHOLE file as postgres.
 -- ONE transaction, ends with ROLLBACK — nothing is kept (temp HR rows, phones, bookings, discounts are all rolled back).
--- Acts as Mazen (reception, auth sub f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb). Fixture: 3 real live reception patients without a
--- booking today; inside the txn their phones are set to test numbers and 2 temp HR people are added (one active on P1's number,
--- one ENDED on P3's number). If nobody is on shift now, a temp availability block; the unrelated cash-shift guard is stubbed if
+-- Acts as Mazen (reception, auth sub f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb). Fixture: 6 real live reception patients without a
+-- booking today; inside the txn their phones are set to test numbers, 2 temp HR people are added (one active on P1's number,
+-- one ENDED on P3's number) and 3 «أفراد العيلة» links (R1 child of P1, R3 spouse of P3, R2 sibling of R1 = 2nd degree). If nobody is on shift now, a temp availability block; the unrelated cash-shift guard is stubbed if
 -- Mazen has no open shift. Output: one table (step, expected, actual, ok) — no names or phone numbers.
 do $$ begin
   if to_regprocedure('clinic_reception.set_booking_discount_before_staff(uuid,uuid,jsonb,uuid)') is not null then
@@ -12,7 +12,7 @@ end $$;
 begin;
 savepoint stf_guard;
 create temp table stf_live(n serial, step text, expected text, actual text, ok boolean);
-create temp table stf_fx(w uuid, me uuid, sub uuid, prov uuid, svc uuid, p1 uuid, p2 uuid, p3 uuid, e1 uuid, e3 uuid);
+create temp table stf_fx(w uuid, me uuid, sub uuid, prov uuid, svc uuid, p1 uuid, p2 uuid, p3 uuid, e1 uuid, e3 uuid, r1 uuid, r3 uuid, r2 uuid);
 
 -- >>> MIGRATION BODY: supabase/migrations/20261126170000_staff_discount.sql (between its begin; / commit;) >>>
 
@@ -38,16 +38,26 @@ create or replace function clinic_reception.booking_discount_max_for(p_kind text
   select case p_kind when 'vezeeta' then 40 when 'family' then 50 when 'staff' then 30 else clinic_reception.booking_discount_max() end::numeric $$;
 revoke all on function clinic_reception.booking_discount_max_for(text) from public, anon, authenticated;
 
--- active HR people whose phone is the patient file's phone (the patient IS the employee)
-create function clinic_reception.staff_for_patient(p_patient uuid, p_day date) returns table(person_id uuid, name text, code text)
+-- who can give this patient the staff discount: (a) the patient IS the employee — the file's phone = the HR person's phone; or
+-- (b) a FIRST-DEGREE relative — the file is linked DIRECTLY in «أفراد العيلة» (spouse / child / parent / sibling, with the proof
+-- document, not removed) to a file whose phone = the HR person's phone. Not transitive: a relative's relative does not qualify.
+-- The HR person must be active / on leave and not ended by the visit day.
+create function clinic_reception.staff_for_patient(p_patient uuid, p_day date) returns table(person_id uuid, name text, code text, relation text)
 language sql stable security definer set search_path = pg_catalog, public as $$
-  select pp.id, pp.full_name, pp.code
-    from clinic_reception.patients rp
+  with files as (
+    select rp.id file_id, 'self'::text rel from clinic_reception.patients rp where rp.id = p_patient
+    union all
+    select case when r.patient_id = p_patient then r.relative_id else r.patient_id end, r.relation
+      from clinic_reception.patient_relatives r
+     where r.removed_at is null and (r.patient_id = p_patient or r.relative_id = p_patient)
+  )
+  select distinct on (pp.id) pp.id, pp.full_name, pp.code, f.rel
+    from files f join clinic_reception.patients fp on fp.id = f.file_id
     join clinic_people.people pp on length(regexp_replace(coalesce(pp.phone, ''), '\D', '', 'g')) >= 10
-     and right(regexp_replace(pp.phone, '\D', '', 'g'), 10) = right(regexp_replace(coalesce(rp.phone, ''), '\D', '', 'g'), 10)
-   where rp.id = p_patient and length(regexp_replace(coalesce(rp.phone, ''), '\D', '', 'g')) >= 10
+     and right(regexp_replace(pp.phone, '\D', '', 'g'), 10) = right(regexp_replace(coalesce(fp.phone, ''), '\D', '', 'g'), 10)
+   where length(regexp_replace(coalesce(fp.phone, ''), '\D', '', 'g')) >= 10
      and pp.status in ('active', 'on_leave') and (pp.end_date is null or pp.end_date >= p_day)
-   order by pp.full_name $$;
+   order by pp.id, (f.rel = 'self') desc $$;
 revoke all on function clinic_reception.staff_for_patient(uuid, date) from public, anon, authenticated;
 
 create function clinic_reception.staff_check(p_patient uuid, p_person uuid, p_day date) returns text
@@ -57,9 +67,11 @@ begin
   if p_person is null then raise exception 'اختار الموظف'; end if;
   select * into r from clinic_reception.staff_for_patient(p_patient, p_day) s where s.person_id = p_person;
   if not found then
-    raise exception 'خصم العاملين للموظفين الشغالين بس — المريض لازم يكون نفس الموظف (نفس رقم التليفون في الموارد البشرية) وشغال لحد يوم الزيارة';
+    raise exception 'خصم العاملين للموظفين الشغالين وقرايبهم من الدرجة الأولى بس — المريض لازم يكون الموظف نفسه (نفس رقم التليفون في الموارد البشرية) أو مربوط بيه في «أفراد العيلة» (زوج/زوجة، ابن/بنت، أب/أم، أخ/أخت) والموظف شغال لحد يوم الزيارة';
   end if;
-  return 'خصم العاملين بالمركز — ' || r.name || ' (' || r.code || ')';
+  return 'خصم العاملين بالمركز — ' || case r.relation when 'self' then '' else 'قريب درجة أولى ('
+    || case r.relation when 'spouse' then 'زوج / زوجة' when 'child' then 'ابن / بنت' when 'parent' then 'أب / أم' else 'أخ / أخت' end || ') لـ ' end
+    || r.name || ' (' || r.code || ')';
 end $$;
 revoke all on function clinic_reception.staff_check(uuid, uuid, date) from public, anon, authenticated;
 
@@ -70,7 +82,7 @@ declare d date := coalesce(p_day, (now() at time zone 'Africa/Cairo')::date);
 begin
   perform clinic_reception.access(p_workspace, 'book');
   if not exists (select 1 from clinic_reception.patients where id = p_patient and workspace_id = p_workspace) then raise exception 'اختار المريض الأول'; end if;
-  return jsonb_build_object('max', 30, 'staff', coalesce((select jsonb_agg(jsonb_build_object('id', s.person_id, 'name', s.name, 'code', s.code))
+  return jsonb_build_object('max', 30, 'staff', coalesce((select jsonb_agg(jsonb_build_object('id', s.person_id, 'name', s.name, 'code', s.code, 'relation', s.relation))
     from clinic_reception.staff_for_patient(p_patient, d) s), '[]'::jsonb));
 end $$;
 revoke all on function public.clinic_reception_staff_discount(uuid, uuid, date) from public, anon;
@@ -157,7 +169,7 @@ notify pgrst, 'reload schema';
 -- <<< END MIGRATION BODY <<<
 
 do $$
-declare sub uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; me uuid; w uuid; prov uuid; svc uuid; p1 uuid; p2 uuid; p3 uuid; e1 uuid; e3 uuid;
+declare sub uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; me uuid; w uuid; prov uuid; svc uuid; p1 uuid; p2 uuid; p3 uuid; e1 uuid; e3 uuid; r1 uuid; r3 uuid; r2 uuid;
   d date := (now() at time zone 'Africa/Cairo')::date; g jsonb; pids uuid[];
 begin
   select id into w from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
@@ -190,19 +202,26 @@ begin
   -- 3 real patients without a booking today; test phones inside the txn
   select array_agg(id order by created_at desc) into pids from (select p.id, p.created_at from clinic_reception.patients p where p.workspace_id = w and p.patient_id is not null
      and not exists (select 1 from clinic_reception.appointments x where x.patient_id = p.id and (x.starts_at at time zone 'Africa/Cairo')::date = d)
-   order by p.created_at desc limit 3) z;
-  p1 := pids[1]; p2 := pids[2]; p3 := pids[3];
+   order by p.created_at desc limit 6) z;
+  p1 := pids[1]; p2 := pids[2]; p3 := pids[3]; r1 := pids[4]; r3 := pids[5]; r2 := pids[6];
   perform set_config('request.jwt.claims', jsonb_build_object('sub', sub, 'role', 'authenticated')::text, true);
   perform set_config('request.jwt.claim.sub', sub::text, true);
   update clinic_reception.patients set phone = '01999000901' where id = p1;
   update clinic_reception.patients set phone = '01999000902' where id = p2;
   update clinic_reception.patients set phone = '01999000903' where id = p3;
+  update clinic_reception.patients set phone = '01999000904' where id = r1;
+  update clinic_reception.patients set phone = '01999000905' where id = r3;
+  update clinic_reception.patients set phone = '01999000906' where id = r2;
+  -- «أفراد العيلة» links (rolled back): r1 = child of the employee's file, r3 = spouse of the ENDED employee's file, r2 = sibling of r1 (2nd degree)
+  update clinic_reception.patient_relatives set removed_at = now(), removed_by = me, removed_reason = 'rollback test' where removed_at is null and (patient_id = any(pids) or relative_id = any(pids));
+  insert into clinic_reception.patient_relatives(workspace_id, patient_id, relative_id, relation, proof_path, created_by) values
+    (w, p1, r1, 'child', 'rollback/proof.jpg', me), (w, p3, r3, 'spouse', 'rollback/proof.jpg', me), (w, r1, r2, 'sibling', 'rollback/proof.jpg', me);
   insert into clinic_people.people(full_name, phone, status, created_by) values ('ROLLBACK STAFF ONE', '+20 1999000901', 'active', me) returning id into e1;
   insert into clinic_people.people(full_name, phone, status, end_date, created_by) values ('ROLLBACK STAFF ENDED', '01999000903', 'ended', d - 1, me) returning id into e3;
-  insert into stf_fx values (w, me, sub, prov, svc, p1, p2, p3, e1, e3);
-  insert into stf_live(step, expected, actual, ok) values ('fixture', '3 patients + provider/service + 2 temp HR rows',
-    'nobody else on the test numbers: ' || ((select count(*) from clinic_people.people where right(regexp_replace(phone,'\D','','g'),10) in ('1999000901','1999000902','1999000903')) = 2),
-    p3 is not null and svc is not null);
+  insert into stf_fx values (w, me, sub, prov, svc, p1, p2, p3, e1, e3, r1, r3, r2);
+  insert into stf_live(step, expected, actual, ok) values ('fixture', '6 patients + provider/service + 2 temp HR rows + 3 family links',
+    'nobody else on the test numbers: ' || ((select count(*) from clinic_people.people where right(regexp_replace(phone,'\D','','g'),10) in ('1999000901','1999000902','1999000903','1999000904','1999000905','1999000906')) = 2),
+    r2 is not null and svc is not null);
   perform set_config('request.jwt.claims', jsonb_build_object('sub', sub, 'role', 'authenticated')::text, true);
   perform set_config('request.jwt.claim.sub', sub::text, true);
   if to_regprocedure('clinic_reception.shift_guard_check(uuid)') is not null then
@@ -238,13 +257,13 @@ begin select * into f from stf_fx;
     perform public.clinic_reception_command(f.w, 'walk_in', jsonb_build_object('patient_id', f.p2, 'provider_id', f.prov, 'service_id', f.svc, 'same_day_ok', true,
       'discount_kind', 'staff', 'discount_percent', '20', 'discount_staff_id', f.e1), gen_random_uuid()); execute 'reset role'; err := 'accepted';
   exception when others then execute 'reset role'; err := sqlerrm; end;
-  insert into stf_live(step, expected, actual, ok) values ('3 Mazen staff for a non-employee', 'refused «للموظفين الشغالين بس»', err, err like '%للموظفين الشغالين بس%');
+  insert into stf_live(step, expected, actual, ok) values ('3 Mazen staff for a non-employee', 'refused «للموظفين الشغالين وقرايبهم…»', err, err like '%للموظفين الشغالين وقرايبهم%');
   -- 4) P3 with the ENDED employee → refused
   begin execute 'set local role authenticated';
     perform public.clinic_reception_command(f.w, 'walk_in', jsonb_build_object('patient_id', f.p3, 'provider_id', f.prov, 'service_id', f.svc, 'same_day_ok', true,
       'discount_kind', 'staff', 'discount_percent', '20', 'discount_staff_id', f.e3), gen_random_uuid()); execute 'reset role'; err := 'accepted';
   exception when others then execute 'reset role'; err := sqlerrm; end;
-  insert into stf_live(step, expected, actual, ok) values ('4 Mazen staff for an ended employee', 'refused «للموظفين الشغالين بس»', err, err like '%للموظفين الشغالين بس%');
+  insert into stf_live(step, expected, actual, ok) values ('4 Mazen staff for an ended employee', 'refused «للموظفين الشغالين وقرايبهم…»', err, err like '%للموظفين الشغالين وقرايبهم%');
   -- 5) P1 staff 30 → saved; arrive → approved 30%, labelled
   begin execute 'set local role authenticated';
     r := public.clinic_reception_command(f.w, 'walk_in', jsonb_build_object('patient_id', f.p1, 'provider_id', f.prov, 'service_id', f.svc, 'same_day_ok', true,
@@ -264,6 +283,31 @@ begin select * into f from stf_fx;
       err || ' · ' || coalesce(o.discount::text, '-') || ' · ' || coalesce(o.status, '-') || ' · ' || coalesce(left(o.reason, 40), '-'),
       err = 'ok' and o.discount = 30 and o.status = 'approved' and o.reason like 'خصم الحجز: خصم العاملين بالمركز%');
   end if;
+  -- 7) first-degree relative of the ACTIVE employee (linked child) → offered + saved; relative of the ENDED employee → refused;
+  --    a relative's relative (2nd degree) → refused
+  begin execute 'set local role authenticated'; r := public.clinic_reception_staff_discount(f.w, f.r1); execute 'reset role';
+    insert into stf_live(step, expected, actual, ok) values ('7 picker relative of active employee', '1 · relation child', jsonb_array_length(r->'staff') || ' · ' || coalesce(r->'staff'->0->>'relation', '-'),
+      jsonb_array_length(r->'staff') = 1 and r->'staff'->0->>'relation' = 'child');
+  exception when others then execute 'reset role'; insert into stf_live(step, expected, actual, ok) values ('7 picker relative', 'works', sqlerrm, false); end;
+  wk := null;
+  begin execute 'set local role authenticated';
+    r := public.clinic_reception_command(f.w, 'walk_in', jsonb_build_object('patient_id', f.r1, 'provider_id', f.prov, 'service_id', f.svc, 'same_day_ok', true,
+      'discount_kind', 'staff', 'discount_percent', '30', 'discount_staff_id', f.e1), gen_random_uuid()); execute 'reset role'; err := 'ok'; wk := (r->>'id')::uuid;
+  exception when others then execute 'reset role'; err := sqlerrm; end;
+  select * into ap from clinic_reception.appointments where id = wk;
+  insert into stf_live(step, expected, actual, ok) values ('7b Mazen staff 30% for the relative', 'saved · staff · «قريب درجة أولى (ابن / بنت)»',
+    err || ' · ' || coalesce(ap.discount_kind, '-') || ' · ' || (coalesce(ap.discount_reason, '') like '%قريب درجة أولى (ابن / بنت)%'),
+    err = 'ok' and ap.discount_kind = 'staff' and ap.discount_reason like '%قريب درجة أولى (ابن / بنت)%');
+  begin execute 'set local role authenticated';
+    perform public.clinic_reception_command(f.w, 'walk_in', jsonb_build_object('patient_id', f.r3, 'provider_id', f.prov, 'service_id', f.svc, 'same_day_ok', true,
+      'discount_kind', 'staff', 'discount_percent', '20', 'discount_staff_id', f.e3), gen_random_uuid()); execute 'reset role'; err := 'accepted';
+  exception when others then execute 'reset role'; err := sqlerrm; end;
+  insert into stf_live(step, expected, actual, ok) values ('8 Mazen staff for a relative of an ended employee', 'refused «للموظفين الشغالين وقرايبهم…»', err, err like '%للموظفين الشغالين وقرايبهم%');
+  begin execute 'set local role authenticated';
+    perform public.clinic_reception_command(f.w, 'walk_in', jsonb_build_object('patient_id', f.r2, 'provider_id', f.prov, 'service_id', f.svc, 'same_day_ok', true,
+      'discount_kind', 'staff', 'discount_percent', '20', 'discount_staff_id', f.e1), gen_random_uuid()); execute 'reset role'; err := 'accepted';
+  exception when others then execute 'reset role'; err := sqlerrm; end;
+  insert into stf_live(step, expected, actual, ok) values ('9 Mazen staff for a 2nd-degree relative', 'refused «للموظفين الشغالين وقرايبهم…»', err, err like '%للموظفين الشغالين وقرايبهم%');
 end $$;
 
 -- >>> ROLLBACK BODY: supabase/rollbacks/20261126170000_staff_discount.rollback.sql >>>
