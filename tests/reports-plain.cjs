@@ -11,7 +11,7 @@ const assert=require('assert'),fs=require('fs'),path=require('path');const {chro
   {created_at:'2026-11-24T15:17:00Z',actor_name:'أحمد فتحي',action:'cash_voucher_reject',detail:{}},{created_at:'2026-11-24T15:00:00Z',actor_name:'x',action:'something_unknown_xyz',detail:{}}];
  await page.evaluate(r=>{document.getElementById('host').innerHTML=SSMPDFinanceCash.helpers.auditList(r);},rows);
  const t=await page.locator('#host').innerText();
- assert.match(t,/مراجعة تحويل خزينة/);assert.match(t,/خزينة الاستقبال 1 · 4,350\.00 ج/);assert.match(t,/وردية اتقفلت للتسليم/);assert.match(t,/رفض — سند/);assert.match(t,/عملية مالية/);
+ assert.match(t,/مراجعة تحويل خزينة/);assert.match(t,/خزينة الاستقبال 1 · 4,350\.00 ج/);assert.match(t,/وردية اتقفلت للتسليم/);assert.match(t,/رفض سند/);assert.match(t,/25 نوفمبر · 8:56 م/,'time in words');assert.match(t,/عملية مالية/);
  assert.doesNotMatch(t,/[a-z]+_[a-z]+|SHIFT-|[0-9a-f]{8}-[0-9a-f]{4}/,'no English codes / ids');assert(!/[٠-٩]/.test(t),'English digits');
  assert.equal(await page.evaluate(()=>SSMPDFinanceCash.helpers.auditList([])),'<p class="fc-empty">مفيش عمليات في الفترة دي.</p>');
  const ov=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ov<=1,'overflow '+width+': '+ov);
