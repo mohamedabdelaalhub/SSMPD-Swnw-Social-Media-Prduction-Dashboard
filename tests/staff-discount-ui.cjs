@@ -41,7 +41,7 @@ const cairoDay=t=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:
  await page.waitForFunction(()=>/موظفة الاستقبال — EMP-000201/.test((document.querySelector('.rx-modal [data-rbd-staff-sel]')||{}).textContent||''));
  assert.match(await page.locator('.rx-modal [data-rbd-staff-note]').textContent(),/شغال/);
  assert.equal(await page.locator('.rx-modal [data-rbd-reason]').isHidden(),true,'no reason field for staff');
- assert.equal(await page.getAttribute('.rx-modal input[name="discount_percent"]','max'),'30');
+ assert.equal(await page.getAttribute('.rx-modal input[name="discount_percent"]','max'),'40');
  await page.fill('.rx-modal input[name="discount_percent"]','30');
  assert.match(await page.locator('.rx-modal [data-rbd-sum]').textContent(),/العاملين بالمركز/);
  await page.locator('.rx-modal button[type="submit"]').click();await page.waitForSelector('.rx-modal',{state:'detached'});

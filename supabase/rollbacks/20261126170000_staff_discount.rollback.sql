@@ -5,6 +5,8 @@ do $$ begin
   if to_regprocedure('clinic_reception.set_booking_discount_before_staff(uuid,uuid,jsonb,uuid)') is null then raise exception 'not applied'; end if;
 end $$;
 drop trigger staff_discount_request on clinic_reception.discount_requests;
+drop trigger staff_order_discount on clinic_reception.orders;
+drop function clinic_reception.staff_order_discount();
 drop function clinic_reception.staff_discount_request();
 drop function clinic_reception.order_discount(uuid, uuid, jsonb, uuid);
 alter function clinic_reception.order_discount_before_staff(uuid, uuid, jsonb, uuid) rename to order_discount;
@@ -12,6 +14,9 @@ drop function clinic_reception.set_booking_discount(uuid, uuid, jsonb, uuid);
 alter function clinic_reception.set_booking_discount_before_staff(uuid, uuid, jsonb, uuid) rename to set_booking_discount;
 drop function public.clinic_reception_staff_discount(uuid, uuid, date);
 drop function clinic_reception.staff_check(uuid, uuid, date);
+drop function clinic_reception.staff_percent_ok(jsonb);
+drop function clinic_reception.staff_order_percent(uuid, numeric);
+drop function clinic_reception.staff_supply_share(uuid);
 drop function clinic_reception.staff_for_patient(uuid, date);
 update clinic_reception.appointments set discount_kind = 'special', discount_reason = coalesce(discount_reason, 'خصم العاملين بالمركز')
  where discount_kind = 'staff';

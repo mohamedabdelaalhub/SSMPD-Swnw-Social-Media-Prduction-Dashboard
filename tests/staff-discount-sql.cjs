@@ -32,17 +32,17 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  assert.equal((await staff(P2)).staff.length,0);assert.equal((await staff(P3)).staff.length,0,'ended employee not offered');
  const st=(pct,sid)=>({discount_kind:'staff',discount_percent:String(pct),discount_staff_id:sid});
  // book: 31 refused, non-employee refused, ended refused, missing pick refused; 30 ok
- await assert.rejects(()=>cmd('book',{patient_id:P1,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(31,E1)}),/أقصى خصم/);
+ await assert.rejects(()=>cmd('book',{patient_id:P1,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(41,E1)}),/أقصى خصم للعاملين بالمركز 40/);
  await assert.rejects(()=>cmd('book',{patient_id:P2,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(20,E1)}),NOT);
  await assert.rejects(()=>cmd('book',{patient_id:P3,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(20,E3)}),NOT);
  await assert.rejects(()=>cmd('book',{patient_id:P1,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,discount_kind:'staff',discount_percent:'20'}),/اختار الموظف/);
- const b1=(await cmd('book',{patient_id:P1,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(30,E1)})).id;
+ const b1=(await cmd('book',{patient_id:P1,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(40,E1)})).id;
  let a=(await q("select discount_kind,discount_percent,discount_staff_id,discount_reason from clinic_reception.appointments where id=$1",[b1]))[0];
- assert.equal(a.discount_kind,'staff');assert.equal(+a.discount_percent,30);assert.equal(a.discount_staff_id,E1);assert.match(a.discount_reason,/خصم العاملين بالمركز — هدى موظفة \(EMP-000101\)/);
+ assert.equal(a.discount_kind,'staff');assert.equal(+a.discount_percent,40);assert.equal(a.discount_staff_id,E1);assert.match(a.discount_reason,/خصم العاملين بالمركز — هدى موظفة \(EMP-000101\)/);
  // arrival: auto-approved 30%, labelled
  await cmd('arrive',{id:b1});
  let o=(await q("select o.id,o.discount,dr.status,dr.reason from clinic_reception.orders o join clinic_reception.visits v on v.id=o.visit_id join clinic_reception.discount_requests dr on dr.order_id=o.id where v.appointment_id=$1",[b1]))[0];
- assert.equal(+o.discount,30);assert.equal(o.status,'approved');assert.match(o.reason,/^خصم الحجز: خصم العاملين بالمركز — هدى موظفة/);
+ assert.equal(+o.discount,40);assert.equal(o.status,'approved');assert.match(o.reason,/^خصم الحجز: خصم العاملين بالمركز — هدى موظفة/);
  // a second discount on that visit is refused, naming the staff kind
  await assert.rejects(()=>cmd('order_discount',{order_id:o.id,discount_kind:'special',discount_percent:'10',discount_reason:'تجربة'}),/عليها خصم بالفعل|عليه خصم/);
  // employee ended between booking and arrival → arrival refused
@@ -53,11 +53,11 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  await q("update clinic_people.people set phone='01000000005' where id=$1",[E4]);await q("update clinic_people.people set status='active',end_date=null where id=$1",[E4]);
  const b5=(await cmd('book',{patient_id:P5,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true})).id;await cmd('arrive',{id:b5});
  const o5=(await q("select o.id from clinic_reception.orders o join clinic_reception.visits v on v.id=o.visit_id where v.appointment_id=$1",[b5]))[0].id;
- await assert.rejects(()=>cmd('order_discount',{order_id:o5,...st(31,E4)}),/أقصى خصم/);
+ await assert.rejects(()=>cmd('order_discount',{order_id:o5,...st(41,E4)}),/أقصى خصم للعاملين بالمركز 40/);
  await assert.rejects(()=>cmd('order_discount',{order_id:o5,...st(25,E1)}),NOT);
- const r5=await cmd('order_discount',{order_id:o5,...st(25,E4)});assert.equal(r5.status,'approved');assert.equal(+r5.percent,25);
+ const r5=await cmd('order_discount',{order_id:o5,...st(35,E4)});assert.equal(r5.status,'approved');assert.equal(+r5.percent,35);
  const d5=(await q("select dr.reason,o.discount,a.discount_kind,a.discount_staff_id from clinic_reception.discount_requests dr join clinic_reception.orders o on o.id=dr.order_id join clinic_reception.visits v on v.id=o.visit_id join clinic_reception.appointments a on a.id=v.appointment_id where dr.order_id=$1",[o5]))[0];
- assert.match(d5.reason,/^خصم الحجز: خصم العاملين بالمركز — موظف هيمشي \(EMP-000104\) \(بعد الوصول\)/);assert.equal(+d5.discount,25);assert.equal(d5.discount_kind,'staff');assert.equal(d5.discount_staff_id,E4);
+ assert.match(d5.reason,/^خصم الحجز: خصم العاملين بالمركز — موظف هيمشي \(EMP-000104\) \(بعد الوصول\)/);assert.equal(+d5.discount,35);assert.equal(d5.discount_kind,'staff');assert.equal(d5.discount_staff_id,E4);
  // edit a booked staff discount to «خاص» clears the staff link; other kinds unchanged
  const b6=(await cmd('book',{patient_id:P1,provider_id:provider,service_id:ksf,starts_at:next(),same_day_ok:true,...st(10,E1)})).id;
  await cmd('booking_discount',{id:b6,discount_kind:'special',discount_percent:'10',discount_reason:'سبب تاني'});
@@ -83,11 +83,30 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  const arc=(await q("insert into public.patients(id,phone) values(gen_random_uuid(),'01000000001') returning id"))[0].id,PA=await mk(9);
  await q("update clinic_reception.patients set phone='01234567899',patient_id=$2 where id=$1",[PA,arc]);
  assert.deepEqual(JSON.parse(JSON.stringify((await staff(PA)).staff)).map(x=>x.code),['EMP-000101'],'archive phone wins');
+ // supplies at FULL price: a service whose catalogue price includes supplies (base 300 + supplies 200 → share 0.4) — staff 40%
+ // discounts the service part only: order discount 24% = 120 on 500 (= 40% of 300); booking-arrival path and visit path
+ await db.exec('reset role');await db.exec(`create table if not exists public.pricing_services(id uuid primary key default gen_random_uuid(),base_price numeric,supplies_used jsonb,profit_margin_percent numeric default 0);
+   create table if not exists public.pricing_supplies(id uuid primary key default gen_random_uuid(),package_price numeric,units_per_package numeric);
+   alter table clinic_reception.services add column if not exists pricing_service_id uuid;`);await as(3);
+ const sup=(await q("insert into public.pricing_supplies(package_price,units_per_package) values(200,1) returning id"))[0].id;
+ const psv=(await q("insert into public.pricing_services(base_price,supplies_used) values(300,$1) returning id",[JSON.stringify([{supply_id:sup,quantity:'1'}])]))[0].id;
+ await as(1);const inj=(await cmd('service',{code:'INJ',name:'حقنة (شاملة المستلزمات)',department:dept,price:500,minutes:15,bom:[]})).id;await as(3);
+ await q("update clinic_reception.services set pricing_service_id=$2 where id=$1",[inj,psv]);
+ await q("update clinic_reception.patient_relatives set removed_at=null where patient_id=$1",[P1]);
+ const PS=await mk(10);await q("update clinic_reception.patients set phone='01000000001' where id=$1",[PS]);
+ const bs=(await cmd('book',{patient_id:PS,provider_id:provider,service_id:inj,starts_at:next(),same_day_ok:true,...st(40,E1)})).id;await cmd('arrive',{id:bs});
+ const os=(await q("select o.discount,o.price,dr.percent from clinic_reception.orders o join clinic_reception.visits v on v.id=o.visit_id join clinic_reception.discount_requests dr on dr.order_id=o.id where v.appointment_id=$1",[bs]))[0];
+ assert.equal(+os.discount,24);assert.equal(+os.percent,24);assert.equal(Math.round(os.price*os.discount)/100,120,'discount = 40% of the 300 service part; the 200 supplies stay full');
+ const PS2=await mk(11);await q("update clinic_reception.patients set phone='01000000001' where id=$1",[PS2]);
+ const bs2=(await cmd('book',{patient_id:PS2,provider_id:provider,service_id:inj,starts_at:next(),same_day_ok:true})).id;await cmd('arrive',{id:bs2});
+ const os2=(await q("select o.id from clinic_reception.orders o join clinic_reception.visits v on v.id=o.visit_id where v.appointment_id=$1",[bs2]))[0].id;
+ const rs2=await cmd('order_discount',{order_id:os2,...st(40,E1)});assert.equal(+rs2.percent,24);assert.equal(+rs2.net,380);
+ assert.equal(+(await q("select discount from clinic_reception.orders where id=$1",[os2]))[0].discount,24);
  // anon cannot call the picker
  await db.exec('reset role');assert.equal((await db.query("select has_function_privilege('anon','public.clinic_reception_staff_discount(uuid,uuid,date)','execute') x")).rows[0].x,false);
  // rollback
  await db.exec(fs.readFileSync('supabase/rollbacks/20261126170000_staff_discount.rollback.sql','utf8'));
  assert.equal((await db.query("select count(*)::int n from clinic_reception.appointments where discount_kind='staff'")).rows[0].n,0);
  assert.equal((await db.query("select to_regprocedure('clinic_reception.set_booking_discount_before_staff(uuid,uuid,jsonb,uuid)') x")).rows[0].x,null);
- console.log('PASS staff discount (employee + first-degree relatives): picker lists only the matching active employee; book 30 ok (staff link + reason), 31 / non-employee / ended / no pick refused; arrival auto-approves 30% «خصم العاملين بالمركز»; second discount refused; ended before arrival → arrival refused; «خصم على الزيارة» staff 25 ok, 31 / wrong employee refused; edit to خاص clears the link; relative linked in «أفراد العيلة» (child) ok + labelled, relative of ended / 2nd degree / removed link refused; anon no; re-apply refused; rollback converts to خاص.');
+ console.log('PASS staff discount (employee + first-degree relatives, ≤40%, supplies at full price): picker lists only the matching active employee; book 40 ok (staff link + reason), 41 / non-employee / ended / no pick refused; arrival auto-approves 40% «خصم العاملين بالمركز»; second discount refused; ended before arrival → arrival refused; «خصم على الزيارة» staff 35 ok, 41 / wrong employee refused; service with built-in supplies (share 0.4): 40% → 24% on the order (supplies full price) on both paths; edit to خاص clears the link; relative linked in «أفراد العيلة» (child) ok + labelled, relative of ended / 2nd degree / removed link refused; anon no; re-apply refused; rollback converts to خاص.');
 })().catch(e=>{console.error(e);process.exit(1);});
