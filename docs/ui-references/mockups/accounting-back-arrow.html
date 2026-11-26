@@ -1,0 +1,18 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: سهم رجوع في شريط أقسام الحسابات</title>
+<style>*{box-sizing:border-box}body{margin:0;padding:16px;background:#eef2fa;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:900px;margin:auto}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;align-content:start;min-width:0}.cap{font-size:12px;color:#5b6b82}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid #D5DEEE;border-radius:14px;padding:10px 12px}
+.menu{display:flex;align-items:center;gap:8px;color:#0F369D;font-weight:700;min-width:0}.cur{font-weight:700}
+.bk{border:1px solid #D5DEEE;background:#fff;border-radius:10px;width:38px;height:38px;font-size:20px;line-height:1;flex:none}
+.bk[disabled]{opacity:.35}.left{display:flex;align-items:center;gap:10px;min-width:0}
+.note{font-size:12px;color:#5b6b82;background:#F1F4F8;border-radius:8px;padding:6px 10px}
+@media(max-width:700px){.wrap{grid-template-columns:minmax(0,1fr)}}</style>
+<div class="wrap">
+<div class="card"><span class="cap">١) في «الخزائن والورديات» — جيت من «نظرة عامة»</span>
+<div class="bar"><span class="menu">≡ أقسام الحسابات</span><span class="left"><span class="cur">الخزائن والورديات</span><button class="bk" aria-label="رجوع إلى نظرة عامة">→</button></span></div>
+<div class="note">السهم على الشمال بجنب اسم القسم. بيرجّعك للقسم اللي كنت فيه قبل كده («نظرة عامة»).</div></div>
+<div class="card"><span class="cap">٢) أول قسم فتحته — مفيش قسم قبله</span>
+<div class="bar"><span class="menu">≡ أقسام الحسابات</span><span class="left"><span class="cur">نظرة عامة</span><button class="bk" disabled aria-label="رجوع">→</button></span></div>
+<div class="note">السهم موجود دايماً لكن بيبقى رمادي ومقفول لما مفيش قسم قبله.</div></div>
+</div>
