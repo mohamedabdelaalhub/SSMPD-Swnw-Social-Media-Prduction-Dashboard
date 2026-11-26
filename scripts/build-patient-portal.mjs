@@ -31,7 +31,7 @@ export function buildPortal(source,output){
  fs.copyFileSync(path.join(source,'deploy/patient-portal.web.config'),path.join(output,'web.config'));
  // Check local HTML assets from both entry points, including their base href.
  for(const entry of ['index.html','patient-portal/index.html']){
-  const html=fs.readFileSync(path.join(output,entry),'utf8');const base=new URL(/<base href="([^"]+)"/.exec(html)?.[1]||entry,'https://portal.swnwclinics.com/');
+  const html=fs.readFileSync(path.join(output,entry),'utf8');const base=new URL(/<base href="([^"]+)"/.exec(html)?.[1]||entry,'https://patientportal.swnwclinics.com/');
   for(const match of html.matchAll(/(?:src|href)="([^"]+)"/g)){
    const url=new URL(match[1],base);if(url.origin!==base.origin||url.pathname.endsWith('/'))continue;
    if(!fs.existsSync(path.join(output,decodeURIComponent(url.pathname))))throw Error('Missing portal asset '+url.pathname);
