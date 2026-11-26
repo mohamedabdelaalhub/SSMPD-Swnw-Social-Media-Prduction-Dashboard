@@ -12062,6 +12062,45 @@
       "reviewed": true
     },
     {
+      "title": "كاش ولا بنك؟",
+      "labels": [
+        "كاش ولا بنك؟"
+      ],
+      "text": "كاش من الخزينة الرئيسية (لازم ورديتها تكون مفتوحة) أو البنك. الشريك بيتعامل مع الخزينة الرئيسية بس.",
+      "article": "partner-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: توريد لدفع إيجار المركز",
+      "labels": [
+        "مثلاً: توريد لدفع إيجار المركز"
+      ],
+      "text": "اكتب الفلوس دي ليه — بتظهر في كشف حساب الشريك.",
+      "article": "partner-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "السبب",
+      "labels": [
+        "السبب"
+      ],
+      "text": "اكتب الحدث الذي يستدعي الطلب وسببه والمستند الذي يثبته، مثل رد دفعة عن موعد ملغي. لا تكتب سببًا عامًا لا يسمح للمراجع بفهم العملية.",
+      "article": "requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اكتب المعلومة، ولا تفترض سببًا غير مؤكد.",
       "labels": [
         "اكتب المعلومة، ولا تفترض سببًا غير مؤكد."
@@ -23366,9 +23405,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2018,
-    "labels": 1464,
-    "files": 160,
-    "groups": 1585
+    "definitions": 2021,
+    "labels": 1466,
+    "files": 161,
+    "groups": 1588
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
