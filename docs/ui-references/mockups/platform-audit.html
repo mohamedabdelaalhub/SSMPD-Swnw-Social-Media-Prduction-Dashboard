@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — منصات الحجز: النسبة والمراجعة والخصم</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}.sub{color:#5B6676;margin:0}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
+.card h2{margin:0;font-size:17px}.card h2 small{display:block;color:#5B6676;font-weight:400;font-size:12px}
+.steps{display:flex;gap:8px;flex-wrap:wrap;font-size:13px}.steps b{border-radius:999px;padding:4px 12px;background:#EEF1F6;color:#3B4658}.steps b.on{background:#0F369D;color:#fff}.steps b.new{background:#FFF1E8;color:#F15A22;border:1px dashed #F15A22}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:10px 8px;border-bottom:1px solid #EEF1F6;white-space:nowrap}th{color:#5B6676;font-weight:400}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}.st.ok{background:#E6F4EC;color:#2F7D5C}.st.wait{background:#FFF1E8;color:#F15A22}.st.blue{background:#E8EEFB;color:#0F369D}
+.btn{border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;background:#0F369D;color:#fff}.btn.ghost{background:#fff;color:#0F369D;border:1px solid #0F369D}.btn.orange{background:#F15A22}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.modal{border:1px solid #E3E8F2;border-radius:16px;overflow:hidden;background:#fff}.mh{background:linear-gradient(135deg,#0F369D,#1E4FC7);color:#fff;padding:14px 18px;font-weight:700;font-size:16px}
+.mb{padding:16px 18px;display:grid;gap:12px}
+.fact{display:grid;grid-template-columns:140px 1fr;gap:6px 12px;font-size:13px}.fact span:nth-child(odd){color:#5B6676}
+.opt{border:2px solid #E3E8F2;border-radius:12px;padding:10px 12px;display:grid;gap:4px}.opt.on{border-color:#0F369D;background:#F5F8FF}.opt b{font-size:14px}.opt small{color:#5B6676}
+.entry{border:1px dashed #C5CDDB;border-radius:12px;padding:10px 12px;font-size:13px;display:grid;gap:4px;background:#FBFCFE}.entry .ln{display:flex;justify-content:space-between;gap:12px}
+.note{font-size:12px;color:#5B6676;margin:0}.warn{background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px}
+.field{display:grid;gap:4px;font-size:13px}.field i{display:block;border:1px solid #D7DDEA;border-radius:10px;height:38px;background:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pos{color:#2F7D5C;font-weight:700}.neg{color:#D0402A;font-weight:700}
+@media (max-width:760px){.grid{grid-template-columns:1fr}.wrap{padding:14px}table{display:block;overflow-x:auto}.fact{grid-template-columns:110px 1fr}}
+.x{float:left;border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:8px;width:30px;height:30px;font:inherit;font-weight:700}
+.badge{border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;background:#EFE5FF;color:#6600FF}
+.big{font-size:20px;font-weight:700}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.three>div{border:1px solid #E3E8F2;border-radius:12px;padding:10px 12px;display:grid;gap:2px}.three small{color:#5B6676}
+@media (max-width:760px){.three{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<div><span class="tag">تصور — مش متنفذ</span><h1>منصات الحجز: النسبة، المراجعة، والخصم</h1>
+<p class="sub">فيزيتا · كلينيدو · اكشف · كفارة وسلامتك — 25% من الكشف بس، وتظهر في «مستحقات الموردين» جنب باقي الشركات. المراجعة والخصم والتصحيح كلها بطلب + موافقة من شخص تاني، وكل خطوة بقيدها.</p></div>
+
+<section class="card">
+ <h2>1) نسب المنصات<small>الحسابات ← الصرف والمستحقات ← حسابات آخر الشهر — يحددها المدير المالي أو السوبر أدمن</small></h2>
+ <table><thead><tr><th>المنصة</th><th>النسبة</th><th>بتتحسب على</th><th>حجوزات الشهر</th><th>كشوف اتنفذت</th><th>المستحق بحسابنا</th><th></th></tr></thead><tbody>
+  <tr><td>فيزيتا</td><td dir="ltr">25%</td><td>الكشف بس (بعد الخصم)</td><td>6</td><td>5</td><td><bdi dir="ltr">1,250.00</bdi></td><td><button class="btn ghost">تعديل النسبة</button></td></tr>
+  <tr><td>كلينيدو</td><td dir="ltr">25%</td><td>الكشف بس (بعد الخصم)</td><td>1</td><td>0</td><td><bdi dir="ltr">0.00</bdi></td><td><button class="btn ghost">تعديل النسبة</button></td></tr>
+  <tr><td>اكشف</td><td dir="ltr">25%</td><td>الكشف بس (بعد الخصم)</td><td>0</td><td>0</td><td><bdi dir="ltr">0.00</bdi></td><td><button class="btn ghost">تعديل النسبة</button></td></tr>
+  <tr><td>كفارة وسلامتك <span class="badge">جديدة</span></td><td dir="ltr">25%</td><td>الكشف بس (بعد الخصم)</td><td>0</td><td>0</td><td><bdi dir="ltr">0.00</bdi></td><td><button class="btn ghost">تعديل النسبة</button></td></tr>
+ </tbody></table>
+ <p class="note">«الكشف بس» = الخدمة اللي اتحجزت من المنصة لو اسمها كشف أو استشارة، واتنفذت في نفس الزيارة. أي خدمة تانية اتعملت في الزيارة (سونار، تحاليل، جلسة…) مالهاش نسبة. المتابعة مالهاش نسبة.</p>
+ <div class="warn">«فيزيتا شامل» (خصم 40% للمريض) مالوش أي نسبة لفيزيتا — الحجز ده مش بيتحسب خالص حتى لو المصدر فيزيتا. «كفارة وسلامتك»: المريض بيدفع سعر الكشف العادي من غير خصم، والـ25% للمنصة.</div>
+</section>
+
+<section class="card">
+ <h2>2) «مستحقات الموردين» — المنصات جنب باقي الشركات<small>نفس الشاشة الموجودة، بس المنصات بتظهر كصفوف بعلامة «منصة حجز»</small></h2>
+ <table><thead><tr><th>الجهة</th><th>النوع</th><th>المستحق (تراكمي)</th><th>خصومات المراجعة</th><th>اتسدد</th><th>الباقي علينا</th><th></th></tr></thead><tbody>
+  <tr><td>شركة المستلزمات الطبية</td><td>مورد</td><td><bdi dir="ltr">12,400.00</bdi></td><td>—</td><td><bdi dir="ltr">8,000.00</bdi></td><td class="neg"><bdi dir="ltr">4,400.00</bdi></td><td><button class="btn ghost">كشف الحساب</button></td></tr>
+  <tr><td>فيزيتا</td><td><span class="badge">منصة حجز</span></td><td><bdi dir="ltr">1,250.00</bdi></td><td class="pos"><bdi dir="ltr">−150.00</bdi></td><td><bdi dir="ltr">600.00</bdi></td><td class="neg"><bdi dir="ltr">500.00</bdi></td><td><button class="btn ghost">كشف الحساب</button> <button class="btn">مراجعة الفترة</button></td></tr>
+  <tr><td>كلينيدو</td><td><span class="badge">منصة حجز</span></td><td><bdi dir="ltr">300.00</bdi></td><td>—</td><td><bdi dir="ltr">0.00</bdi></td><td class="neg"><bdi dir="ltr">300.00</bdi></td><td><button class="btn ghost">كشف الحساب</button> <button class="btn">مراجعة الفترة</button></td></tr>
+ </tbody></table>
+ <p class="note">المستحق بيتسجل في حساب جديد «مستحقات منصات الحجز» (مقترح 2112) لكل منصة لوحدها، أول ما مراجعة الشهر تتعتمد. السداد زي ما هو: طلب ← موافقة شخص تاني ← قيد.</p>
+</section>
+
+<div class="grid">
+<section class="modal" aria-label="مراجعة الفترة">
+ <div class="mh"><button class="x" aria-label="إغلاق">✕</button>مراجعة الفترة — فيزيتا</div>
+ <div class="mb">
+  <div class="row"><b style="flex:0 0 auto">الفترة</b><span class="opt on" style="flex:1"><b>شهر</b><small>نوفمبر 2026</small></span><span class="opt" style="flex:1"><b>شهرين</b><small>أكتوبر + نوفمبر</small></span></div>
+  <div class="three">
+   <div><small>رقمنا (من السجلات)</small><span class="big" dir="ltr">1,250.00</span><small>5 كشوف × 25%</small></div>
+   <div><small>رقمهم (مطالبة المنصة)</small><span class="big" dir="ltr">1,400.00</span><small>اكتبه من فاتورتهم + صورة</small></div>
+   <div><small>الفرق</small><span class="big neg" dir="ltr">+150.00</span><small>هما طالبين أكتر</small></div>
+  </div>
+  <div class="fact"><span>المتفق عليه</span><span><b>مبلغ</b> <bdi dir="ltr">1,100.00</bdi> &nbsp;أو&nbsp; <b>نسبة</b> من رقمنا <bdi dir="ltr">88%</bdi></span>
+   <span>خصم المراجعة</span><span class="pos"><bdi dir="ltr">150.00</bdi> (رقمنا − المتفق عليه)</span>
+   <span>السبب</span><span>حجزين اتلغوا ومتحسبين عندهم + كشف متابعة اتحسب كشف</span></div>
+  <p class="note">الأرقام التلاتة بتتحفظ مع بعض (رقمنا، رقمهم، المتفق عليه) ومعاهم السبب واسم اللي طلب واللي وافق.</p>
+  <div class="row"><button class="btn">ابعت للموافقة</button><button class="btn ghost">رجوع</button></div>
+ </div>
+</section>
+
+<section class="modal" aria-label="مكان خصم المراجعة">
+ <div class="mh"><button class="x" aria-label="إغلاق">✕</button>خصم المراجعة <bdi dir="ltr">150.00</bdi> — يروح فين؟</div>
+ <div class="mb">
+  <div class="opt on"><b>إيراد للشركة</b><small>«إيراد تسويات منصات الحجز» (مقترح 4122)</small></div>
+  <div class="opt"><b>جهة دائنة تانية</b><small>يتخصم من اللي علينا لمورد أو منصة أو معمل تاني (اختار الجهة)</small></div>
+  <div class="opt"><b>حساب تاني من الشجرة</b><small>للمدير المالي بس — مع سبب</small></div>
+  <div class="entry"><b>القيود اللي هتتسجل بعد الموافقة</b>
+   <div class="ln"><span>أ) اعتماد الشهر — مدين: عمولات منصات الحجز (5233)</span><bdi dir="ltr">1,250.00</bdi></div>
+   <div class="ln"><span>&nbsp;&nbsp;&nbsp;دائن: مستحقات منصات الحجز — فيزيتا (2112)</span><bdi dir="ltr">1,250.00</bdi></div>
+   <div class="ln"><span>ب) خصم المراجعة — مدين: مستحقات منصات الحجز — فيزيتا (2112)</span><bdi dir="ltr">150.00</bdi></div>
+   <div class="ln"><span>&nbsp;&nbsp;&nbsp;دائن: إيراد تسويات منصات الحجز (4122)</span><bdi dir="ltr">150.00</bdi></div>
+   <div class="ln"><span>الباقي علينا لفيزيتا عن الفترة</span><b dir="ltr">1,100.00</b></div>
+  </div>
+  <div class="warn">اللي يطلب مايقدرش يوافق. الموافقة: المدير المالي أو المدير العام أو السوبر أدمن (شخص غير اللي طلب).</div>
+  <div class="row"><button class="btn">ابعت للموافقة</button><button class="btn ghost">رجوع</button></div>
+ </div>
+</section>
+</div>
+
+<section class="card">
+ <h2>3) سجل المراجعات والخصومات<small>كل مراجعة بأرقامها التلاتة وقرارها وقيدها</small></h2>
+ <table><thead><tr><th>الفترة</th><th>المنصة</th><th>رقمنا</th><th>رقمهم</th><th>المتفق</th><th>الخصم</th><th>راح فين</th><th>الحالة</th><th></th></tr></thead><tbody>
+  <tr><td>أكتوبر</td><td>فيزيتا</td><td><bdi dir="ltr">900.00</bdi></td><td><bdi dir="ltr">900.00</bdi></td><td><bdi dir="ltr">900.00</bdi></td><td>—</td><td>—</td><td><span class="st ok">اتعتمد</span></td><td><button class="btn ghost">القيد</button></td></tr>
+  <tr><td>نوفمبر</td><td>فيزيتا</td><td><bdi dir="ltr">1,250.00</bdi></td><td><bdi dir="ltr">1,400.00</bdi></td><td><bdi dir="ltr">1,100.00</bdi></td><td class="pos"><bdi dir="ltr">150.00</bdi></td><td>إيراد للشركة</td><td><span class="st wait">مستني موافقة</span></td><td><button class="btn">موافقة</button> <button class="btn ghost">رفض</button></td></tr>
+ </tbody></table>
+ <p class="note">لو المتفق عليه أكبر من رقمنا، الفرق بيتسجل مصروف زيادة (مدين 5233 / دائن 2112) بنفس الطلب والموافقة. مفيش حاجة بتتمسح — أي غلط بيتصحح بقيد عكسي.</p>
+</section>
+</div></body></html>
