@@ -20,7 +20,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   insert into clinic_finance.accounts values('1111','الخزينة','asset'),('1112','البنك','asset'),('1115','المحافظ','asset'),('2111','مستحقات الموردين','liability'),('2120','مستحقات الأطباء','liability'),('4110','الإيرادات','income');
   create table clinic_finance.registers(id uuid primary key,treasury_kind text);
   create table clinic_finance.shifts(id uuid primary key,register_id uuid,status text default 'open',ended_at timestamptz,opened_at timestamptz default now());
-  create table clinic_finance.entries(id uuid primary key default gen_random_uuid(),source text,source_id uuid,description text,shift_id uuid);
+  create table clinic_finance.entries(id uuid primary key default gen_random_uuid(),source text not null,source_id uuid not null,description text,shift_id uuid,unique(source,source_id));
   create table clinic_finance.lines(entry_id uuid,account text,debit numeric default 0,credit numeric default 0);
   create function clinic_finance.post(p_source text,p_source_id uuid,p_description text,p_shift uuid,p_debit text,p_credit text,p_amount numeric) returns uuid language plpgsql security definer as $f$declare v uuid;begin
    if (p_debit='1111' or p_credit='1111') and p_shift is null then raise exception 'cash needs a shift';end if;

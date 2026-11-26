@@ -259,9 +259,9 @@ begin
           case when au.to_month > au.from_month then ' / ' || to_char(au.to_month, 'YYYY-MM') else '' end, null, '5233', '2112', au.ours);
       end if;
       if au.agreed > au.ours then
-        e2 := clinic_finance.post('platform_audit', au.id, 'زيادة متفق عليها — ' || pt.name || ' — ' || au.theirs_ref, null, '5233', '2112', au.agreed - au.ours);
+        e2 := clinic_finance.post('platform_audit_extra', au.id, 'زيادة متفق عليها — ' || pt.name || ' — ' || au.theirs_ref, null, '5233', '2112', au.agreed - au.ours);
       elsif au.agreed < au.ours then
-        e2 := clinic_finance.post('platform_audit', au.id, 'خصم مراجعة ' || pt.name || ' — ' || au.reason, null, '2112', au.dest_account, au.ours - au.agreed);
+        e2 := clinic_finance.post('platform_audit_deduction', au.id, 'خصم مراجعة ' || pt.name || ' — ' || au.reason, null, '2112', au.dest_account, au.ours - au.agreed);
       end if;
       update clinic_finance.platform_audits set status = 'approved', reviewed_by = me, reviewed_at = now(), review_note = nullif(btrim(coalesce(p->>'note', '')), ''),
         entry_ids = array_remove(array[e1, e2], null) where id = au.id returning * into au;
@@ -385,7 +385,7 @@ begin
   r := public.clinic_finance_month_end('audit_review', jsonb_build_object('id', a->>'id', 'ok', true));
   execute 'reset role';
   select string_agg(l.account || ':' || l.debit::numeric(14,2) || '/' || l.credit::numeric(14,2), ' ' order by l.account, l.debit) into ln
-    from clinic_finance.lines l join clinic_finance.entries e on e.id = l.entry_id where e.source = 'platform_audit' and e.source_id = (a->>'id')::uuid;
+    from clinic_finance.lines l join clinic_finance.entries e on e.id = l.entry_id where e.source like 'platform\_audit%' and e.source_id = (a->>'id')::uuid;
   want := '2112:0.00/' || o1::numeric(14,2) || ' 2112:1.00/0.00 4122:0.00/1.00 5233:' || o1::numeric(14,2) || '/0.00';
   if ln <> want then raise exception 'income entries: % (want %)', ln, want; end if;
   raise notice 'OK income: %', ln;
@@ -400,7 +400,7 @@ begin
   perform public.clinic_finance_month_end('audit_review', jsonb_build_object('id', a->>'id', 'ok', true));
   execute 'reset role';
   select string_agg(l.account || ':' || l.debit::numeric(14,2) || '/' || l.credit::numeric(14,2), ' ' order by l.account, l.debit) into ln
-    from clinic_finance.lines l join clinic_finance.entries e on e.id = l.entry_id where e.source = 'platform_audit' and e.source_id = (a->>'id')::uuid;
+    from clinic_finance.lines l join clinic_finance.entries e on e.id = l.entry_id where e.source like 'platform\_audit%' and e.source_id = (a->>'id')::uuid;
   if ln not like '2111:0.00/2.00 %' then raise exception 'payable entries: %', ln; end if;
   raise notice 'OK payable: %', ln;
 
@@ -423,7 +423,7 @@ begin
   perform public.clinic_finance_month_end('audit_review', jsonb_build_object('id', a->>'id', 'ok', true));
   execute 'reset role';
   select count(*) into n from clinic_finance.lines l join clinic_finance.entries e on e.id = l.entry_id
-   where e.source = 'platform_audit' and e.source_id = (a->>'id')::uuid and l.account = '5233' and l.credit = o2 - round(o2 * 50 / 100, 2);
+   where e.source like 'platform\_audit%' and e.source_id = (a->>'id')::uuid and l.account = '5233' and l.credit = o2 - round(o2 * 50 / 100, 2);
   if n <> 1 then raise exception 'chart-account deduction not posted to 5233'; end if;
   raise notice 'OK account: kafaret ours % agreed 50%% → Cr 5233 %', o2, o2 - round(o2 * 50 / 100, 2);
 

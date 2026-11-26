@@ -13,6 +13,8 @@
 --        agreed < ours  Dr 2112 / Cr <destination>                            = ours − agreed  (the «خصم المراجعة»)
 --     destination: 'income' → 4122 إيراد تسويات منصات الحجز; 'payable' → another liability account (2xxx, not 2112); 'account' →
 --     any other non-asset account (financial manager / super admin requester only). No period of a platform may be audited twice.
+--     Entry sources (entries are unique per source + source_id): 'platform_audit' (accrual), 'platform_audit_extra',
+--     'platform_audit_deduction' — all with the audit id.
 --   * A platform's balance (shown in «مستحقات الموردين» and «حسابات آخر الشهر») = Σ approved agreed − Σ approved/pending settlements.
 --     Platform settlement now pays the balance: Dr 2112 / Cr main cash / bank / wallet (other parties are unchanged).
 -- The previous public function is kept (renamed, not granted) and still serves every other action; the previous month_end_lines
@@ -272,9 +274,9 @@ begin
           case when au.to_month > au.from_month then ' / ' || to_char(au.to_month, 'YYYY-MM') else '' end, null, '5233', '2112', au.ours);
       end if;
       if au.agreed > au.ours then
-        e2 := clinic_finance.post('platform_audit', au.id, 'زيادة متفق عليها — ' || pt.name || ' — ' || au.theirs_ref, null, '5233', '2112', au.agreed - au.ours);
+        e2 := clinic_finance.post('platform_audit_extra', au.id, 'زيادة متفق عليها — ' || pt.name || ' — ' || au.theirs_ref, null, '5233', '2112', au.agreed - au.ours);
       elsif au.agreed < au.ours then
-        e2 := clinic_finance.post('platform_audit', au.id, 'خصم مراجعة ' || pt.name || ' — ' || au.reason, null, '2112', au.dest_account, au.ours - au.agreed);
+        e2 := clinic_finance.post('platform_audit_deduction', au.id, 'خصم مراجعة ' || pt.name || ' — ' || au.reason, null, '2112', au.dest_account, au.ours - au.agreed);
       end if;
       update clinic_finance.platform_audits set status = 'approved', reviewed_by = me, reviewed_at = now(), review_note = nullif(btrim(coalesce(p->>'note', '')), ''),
         entry_ids = array_remove(array[e1, e2], null) where id = au.id returning * into au;
