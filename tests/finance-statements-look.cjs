@@ -16,7 +16,7 @@ const bs=[['1111','الخزنة','asset',30000],['2120','مستحقات الأط
 const data={financial_reports:{from:'2026-11-01',to:'2026-11-25',opening_approved:false,profit_loss:pl,balance_sheet:bs,cumulative_result:11600,cash_opening:10000,cash_closing:30000,cash_flows:[{category:'operating',amount:20000}]},finance_accounts:accounts};
 (async()=>{const browser=await chromium.launch({args:['--no-sandbox']});try{for(const width of [1280,390]){
  const page=await browser.newPage({viewport:{width,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.route('https://fr.test/',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><html dir="rtl" lang="ar"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body><main id="view-container" style="padding:16px"><form class="fc-filters"><input name="from" type="date" value="2026-11-01"><input name="to" type="date" value="2026-11-25"><button type="submit">عرض الفترة</button></form><div id="host"></div></main></body></html>'}));
+ await page.route('https://fr.test/',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><html dir="rtl" lang="ar"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body><main id="view-container" style="padding:16px"><section class="fc-workspace"><form class="fc-filters"><label class="fc-field">من<input name="from" type="date" value="2026-11-01"></label><label class="fc-field">إلى<input name="to" type="date" value="2026-11-25"></label><button class="btn" type="submit">عرض الفترة</button></form><div id="host"></div></section></main></body></html>'}));
  await page.route('**/*.woff2',r=>{const f='assets/fonts/'+path.basename(new URL(r.request().url()).pathname);return fs.existsSync(f)?r.fulfill({path:f,contentType:'font/woff2'}):r.abort();});
  await page.goto('https://fr.test/');for(const f of ['styles','finance-cash','finance-reports','dashboard-theme','dashboard-glass'])await page.addStyleTag({content:fs.readFileSync('assets/css/'+f+'.css','utf8')});
  await page.addScriptTag({content:"window.SSMPDAuth={currentAdmin:{id:'fm',role:'financial_manager'}};window.SSMPDDb={};window.__submits=0;document.querySelector('.fc-filters').addEventListener('submit',function(e){e.preventDefault();window.__submits++;});"});
@@ -25,17 +25,23 @@ const data={financial_reports:{from:'2026-11-01',to:'2026-11-25',opening_approve
  const txt=s=>page.locator(s).first().innerText();
  // answer cards = the old formulas (revenue = Σ income, expenses = −Σ expense, net = revenue − expenses)
  const cards=await page.locator('[data-fr-pane="pl"] .fr-kpi b').allInnerTexts();assert.deepEqual(cards,['48,250.00','18,400.00','29,850.00']);
- assert.equal(await txt('[data-fr-pane="pl"] .fr-foot'),'صافي الإيراد 48,250.00 — المصروفات 18,400.00 — صافي النتيجة 29,850.00','old summary line unchanged');
- assert((await txt('.fr-alert')).includes('الأرصدة الافتتاحية لم تُعتمد؛ القوائم تشمل الحركات المسجلة فقط ولا تمثل أرصدة تاريخية مكتملة.'),'opening warning text kept');
+ assert.equal(await page.locator('[data-fr-pane="pl"] .fr-foot').count(),0,'repeated summary line removed');
+ assert.equal(await txt('.fr-alert b'),'أرصدة الافتتاح لسه ما اتعتمدتش — الأرقام دي من الحركات المتسجلة بس.','one-line opening alert');
+ assert.equal(await txt('.fr-head .fr-range'),'من 1 لـ 25 نوفمبر 2026','period in words');assert.doesNotMatch(await page.locator('.fr-look').innerText(),/2026-11-/,'no ISO dates on screen');
+ // codes hidden until the toggle; one level (lone «الإيرادات» root not drawn twice)
+ assert.equal(await page.locator('.fr-node[data-fr-code="040101"]>.fr-row code').isVisible(),false,'codes hidden');
+ assert.equal(await page.locator('.fr-node[data-fr-code="04"]>.fr-row').count(),0,'same-name root not drawn twice');assert.equal(await page.locator('.fr-node[data-fr-code="04"] .fr-node[data-fr-code="0401"]').count(),1);
+ await page.locator('[data-fr-pane="pl"] .fr-ct').click();assert(await page.locator('.fr-node[data-fr-code="040101"]>.fr-row code').isVisible(),'codes shown');assert.equal(await txt('[data-fr-pane="pl"] .fr-ct'),'خبّي أرقام الحسابات');
+ await page.locator('[data-fr-pane="pl"] .fr-ct').click();assert.equal(await page.locator('.fr-node[data-fr-code="040101"]>.fr-row code').isVisible(),false);
  // tree by parent_code: system 4110 is nested under 040101, its branch total rolls up; archived account absent
  assert.equal(await page.locator('.fr-node[data-fr-code="040101"] .fr-node[data-fr-code="4110"]').count(),1,'4110 sits under 040101 (parent link, not prefix)');
  assert.equal(await page.locator('.fr-node[data-fr-code="0505"] .fr-node[data-fr-code="5227"]').count(),1,'5227 under 0505');
  assert.equal(await page.locator('[data-fr-code="040199"]').count(),0,'archived skipped');
  assert.equal(await page.locator('.fr-node[data-fr-code="040101"]>.fr-row .fr-v').innerText(),'51,000.00','branch rollup');
- assert.equal(await page.locator('.fr-node[data-fr-code="04"]>.fr-row .fr-v').innerText(),'48,250.00');
+ assert.equal(await txt('[data-fr-pane="pl"] .fr-sec h5 b'),'48,250.00','section total');
  assert.equal(await page.locator('.fr-node[data-fr-code="0505"]>.fr-row .fr-v').innerText(),'18,400.00','expenses shown positive');
  // zero rows hidden, toggle shows them
- const z=page.locator('.fr-node[data-fr-code="040103"]');assert.equal(await z.isVisible(),false);await page.locator('[data-fr-pane="pl"] .fr-zt').click();assert.equal(await z.isVisible(),true);await page.locator('[data-fr-pane="pl"] .fr-zt').click();assert.equal(await z.isVisible(),false);
+ const z=page.locator('.fr-node[data-fr-code="040103"]');assert.equal(await z.isVisible(),false);await page.locator('[data-fr-pane="pl"] .fr-zt[data-fin-action="report-zero"]').click();assert.equal(await z.isVisible(),true);await page.locator('[data-fr-pane="pl"] .fr-zt[data-fin-action="report-zero"]').click();assert.equal(await z.isVisible(),false);
  // fold
  const kid=page.locator('.fr-node[data-fr-code="04010101"]');assert(await kid.isVisible());await page.locator('.fr-fold[data-id="040101"]').click();assert.equal(await kid.isVisible(),false);await page.locator('.fr-fold[data-id="040101"]').click();assert(await kid.isVisible());
  // no overflow
@@ -44,9 +50,11 @@ const data={financial_reports:{from:'2026-11-01',to:'2026-11-25',opening_approve
  // tabs
  await page.locator('.fr-tab[data-id="bs"]').click();assert(await page.locator('[data-fr-pane="bs"]').isVisible());assert.equal(await page.locator('[data-fr-pane="pl"]').isVisible(),false);
  assert.deepEqual(await page.locator('[data-fr-pane="bs"] .fr-kpi b').allInnerTexts(),['30,000.00','18,400.00','0.00']);assert((await txt('[data-fr-pane="bs"] .fr-kpi.gain')).includes('متوازنة'));
- await page.locator('.fr-tab[data-id="cf"]').click();assert.deepEqual(await page.locator('[data-fr-pane="cf"] .fr-kpi b').allInnerTexts(),['10,000.00','20,000.00','30,000.00']);assert((await txt('[data-fr-pane="cf"] .fr-total')).includes('0.00'));
+ await page.locator('.fr-tab[data-id="cf"]').click();assert.deepEqual(await page.locator('[data-fr-pane="cf"] .fr-kpi b').allInnerTexts(),['10,000.00','20,000.00','30,000.00']);assert((await txt('[data-fr-pane="cf"] .fr-total')).includes('0.00'));assert((await txt('[data-fr-pane="cf"]')).includes('من الشغل اليومي'));assert.doesNotMatch(await txt('[data-fr-pane="cf"]'),/تشغيلية/);
  if(process.env.FR_QA&&width===1280){await page.locator('.fr-tab[data-id="bs"]').click();await page.screenshot({path:process.env.FR_QA+'/fr-bs.png'});}
- // period chip drives the existing period form
+ // one period control: the form's dates hidden until «فترة تانية…»
+ assert.equal(await page.locator('.fc-filters [name=from]').isVisible(),false,'dates hidden while a preset is used');
+ await page.locator('.fr-chip[data-fin-action="report-custom"]').click();assert(await page.locator('.fc-filters [name=from]').isVisible(),'«فترة تانية…» shows the dates');assert(await page.locator('.fc-filters button[type=submit]').isVisible());
  await page.locator('.fr-chip[data-id="last"]').click();const v=await page.evaluate(()=>[document.querySelector('.fc-filters [name=from]').value,document.querySelector('.fc-filters [name=to]').value,window.__submits]);assert(/^\d{4}-\d{2}-01$/.test(v[0])&&v[2]===1,'chip fills + submits '+v);
  // print: same report node, buttons stripped
  const printed=await page.evaluate(()=>{var html='';window.open=function(){return {document:{write:function(x){html+=x;},close:function(){}},print:function(){},opener:1};};SSMPDFinanceControls.act('report-print','',{financial_reports:{opening_approved:false}},SSMPDFinanceCash.helpers);return html;});
