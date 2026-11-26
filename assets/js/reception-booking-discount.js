@@ -5,7 +5,7 @@
    (clinic_reception_command, 20261121180000) validates, applies it at arrival (maximum 30%) and
    refuses any other discount on that visit. Hook: SSMPDReceptionBookingDiscount.enhance(form, {data, workspace}). */
 (function(w){'use strict';
-var MAX=30,KMAX={syndicate:30,special:30,vezeeta:40,family:50},REL=[['spouse','زوج / زوجة'],['child','ابن / بنت'],['parent','أب / أم'],['sibling','أخ / أخت']];   /* owner «خليه ٣٠٪» — the maximum; server: clinic_reception.booking_discount_max() */
+var MAX=30,KMAX={syndicate:30,special:30,vezeeta:40,family:50,staff:40},REL=[['spouse','زوج / زوجة'],['child','ابن / بنت'],['parent','أب / أم'],['sibling','أخ / أخت']];   /* owner «خليه ٣٠٪» — the maximum; server: clinic_reception.booking_discount_max() */
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function money(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م';}
 function chips(name,opts,val){return '<div class="rbd-chips" role="radiogroup">'+opts.map(function(o){return '<label class="rbd-chip"><input type="radio" name="'+name+'" value="'+o[0]+'"'+(o[0]===val?' checked':'')+'><span>'+esc(o[1])+'</span></label>';}).join('')+'</div>';}
@@ -23,9 +23,9 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
  var data=(ctx&&ctx.data)||{},ws=ctx&&ctx.workspace;
  var box=document.createElement('section');box.className='rbd';box.setAttribute('data-rbd','');box.setAttribute('data-wide','');
  var payer=!!form.querySelector('[data-rpk]');
- box.innerHTML='<label class="rbd-sw"><input type="checkbox" data-rbd-on><span>'+(payer?'خصم إضافي (فيزيتا شامل / كارت العيلة / خاص)':'خصم (نقابة / نادي / فيزيتا / كارت العيلة / خاص)')+' <small>(اختياري)</small></span></label>'+(ctx&&ctx.appointment&&!ctx.order?'<input type="hidden" name="discount_kind" value="" data-rbd-clear disabled>':'')+
+ box.innerHTML='<label class="rbd-sw"><input type="checkbox" data-rbd-on><span>'+(payer?'خصم إضافي (فيزيتا شامل / كارت العيلة / العاملين / خاص)':'خصم (نقابة / نادي / فيزيتا / كارت العيلة / العاملين / خاص)')+' <small>(اختياري)</small></span></label>'+(ctx&&ctx.appointment&&!ctx.order?'<input type="hidden" name="discount_kind" value="" data-rbd-clear disabled>':'')+
   '<fieldset class="rbd-body" data-rbd-body hidden disabled>'+
-   '<div class="rbd-row"><span class="rbd-l">نوع الخصم</span>'+chips('discount_kind',(payer?[]:[['syndicate','خصم نقابة / نادي']]).concat([['vezeeta','فيزيتا شامل'],['family','كارت العيلة'],['special','خصم خاص']]),payer?'vezeeta':'syndicate')+'</div>'+
+   '<div class="rbd-row"><span class="rbd-l">نوع الخصم</span>'+chips('discount_kind',(payer?[]:[['syndicate','خصم نقابة / نادي']]).concat([['vezeeta','فيزيتا شامل'],['family','كارت العيلة'],['staff','خصم العاملين بالمركز'],['special','خصم خاص']]),payer?'vezeeta':'syndicate')+'</div>'+
    '<div data-rbd-syn>'+
     '<div class="rbd-row" data-rbd-org><span class="rbd-l">الجهة</span>'+chips('discount_org_type',[['syndicate','نقابة'],['club','نادي'],['other','أخرى']],'syndicate')+'</div>'+
     '<label class="rbd-row" data-rbd-orgn><span class="rbd-l" data-rbd-orgl>اسم النقابة</span><input name="discount_org_name" maxlength="120" required placeholder="مثلاً نقابة المهندسين"></label>'+
@@ -34,6 +34,7 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
     '<div class="rbd-row"><span class="rbd-l" data-rbd-filel>صورة الكارنيه</span><input type="file" accept="image/*,application/pdf" capture="environment" data-rbd-file><input type="hidden" name="discount_card_path" required><small class="rbd-up" data-rbd-up role="status"></small></div>'+
    '</div>'+
    '<div class="rbd-fam" data-rbd-fam hidden></div>'+
+   '<div class="rbd-staff" data-rbd-staff hidden><label class="rbd-row"><span class="rbd-l">الموظف (المريض نفسه أو قريبه من الدرجة الأولى)</span><select name="discount_staff_id" required data-rbd-staff-sel><option value="">جاري التحميل…</option></select></label><p class="rbd-note" data-rbd-staff-note></p></div>'+
    '<label class="rbd-row" data-rbd-reason hidden><span class="rbd-l">سبب الخصم</span><input name="discount_reason" maxlength="300" placeholder="مثلاً قريب موظف"></label>'+
    '<label class="rbd-row rbd-pct"><span class="rbd-l">نسبة الخصم</span><span class="rbd-pctin"><input name="discount_percent" type="number" min="1" max="'+MAX+'" step="0.5" inputmode="decimal" required dir="ltr"> ٪</span></label>'+
    '<div class="rbd-sum" data-rbd-sum hidden></div><p class="rbd-warn" data-rbd-warn hidden></p>'+
@@ -50,6 +51,15 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
  var famBox=box.querySelector('[data-rbd-fam]'),note=box.querySelector('[data-rbd-note]'),famFor='',famData=null;
  function rpc(a,p){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c)return Promise.reject(new Error('تعذر الاتصال'));return Promise.resolve(c.rpc('clinic_reception_family',{p_workspace:ws,p_action:a,p_payload:p||{}})).then(function(r){if(r&&r.error)throw r.error;return r?r.data:null;});}
  function patientId(){return form.elements.patient_id&&form.elements.patient_id.value||'';}
+ /* 20261126170000 «خصم العاملين بالمركز»: only an ACTIVE employee whose HR phone is the patient's phone (server clinic_reception_staff_discount) */
+ var staffBox=box.querySelector('[data-rbd-staff]'),staffSel=box.querySelector('[data-rbd-staff-sel]'),staffNote=box.querySelector('[data-rbd-staff-note]'),staffFor='';
+ function loadStaff(force){var pid=patientId();if(!pid){staffFor='';staffSel.innerHTML='<option value="">اختار المريض الأول</option>';staffNote.textContent='';return;}if(!force&&staffFor===pid)return;staffFor=pid;
+  staffSel.innerHTML='<option value="">جاري التحميل…</option>';var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c){staffNote.textContent='تعذر الاتصال';return;}
+  var keep=(ctx&&ctx.appointment&&ctx.appointment.discount_staff_id)||'';
+  Promise.resolve(c.rpc('clinic_reception_staff_discount',{p_workspace:ws,p_patient:pid,p_day:(form.elements.day&&form.elements.day.value)||null})).then(function(r){if(r&&r.error)throw r.error;if(staffFor!==pid)return;var l=(r&&r.data&&r.data.staff)||[];
+   staffSel.innerHTML=l.length?l.map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===keep||l.length===1?' selected':'')+'>'+esc(x.name+' — '+x.code+(x.relation&&x.relation!=='self'?' (المريض '+relName(x.relation)+' الموظف)':' (المريض نفسه)'))+'</option>';}).join(''):'<option value="">مفيش موظف مطابق</option>';
+   staffNote.textContent=l.length?'الموظف شغال في الموارد البشرية — والمريض هو نفسه (نفس رقم التليفون) أو قريبه من الدرجة الأولى مربوط في «أفراد العيلة».':'المريض مش متسجّل كموظف شغال بنفس رقم التليفون، ومش مربوط في «أفراد العيلة» بموظف شغال — خصم العاملين للموظف وقرايبه من الدرجة الأولى بس. لو قريب موظف: اربطه من «كارت العيلة» ← «+ اربطه بقريب».';staffNote.className=l.length?'rbd-ok':'rbd-warn';paint();})
+   .catch(function(e){staffSel.innerHTML='<option value="">—</option>';staffNote.className='rbd-warn';staffNote.textContent=(e&&e.message)||'تعذر تحميل الموظفين';});}
  function loadFam(force){var pid=patientId();if(!pid){famData=null;famFor='';drawFam();return;}if(!force&&famFor===pid)return;famFor=pid;famData=null;famBox.innerHTML='<p class="rbd-note">جاري حساب خصم العيلة…</p>';
   rpc('list',{patient_id:pid}).then(function(d){if(famFor!==pid)return;famData=d;drawFam();paint();loadLegacy(pid);}).catch(function(e){famBox.innerHTML='<p class="rbd-warn">'+esc((e&&e.message)||'تعذر تحميل العيلة')+'</p>';});}
  /* 20261125140000: family-card visits from the OLD system — counted only after approval (clinic_reception_family_legacy) */
@@ -98,7 +108,7 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
    rpc('link',{patient_id:pid,relative_id:rid,relation:rel,proof_path:proof}).then(function(){loadFam(true);}).catch(function(err){bt.disabled=false;upl.textContent=(err&&err.message)||'تعذر الربط';});};}
  function paint(){var pk=form.getAttribute('data-payer'),p=pkg()||(payer&&pk!=='cash');box.hidden=p;if(p&&on.checked)on.checked=false;body.hidden=!on.checked;body.disabled=!on.checked;
   var kind=val('discount_kind')||(payer?'vezeeta':'syndicate'),isSyn=kind==='syndicate',isVz=kind==='vezeeta',isFam=kind==='family',card=isSyn||isVz,mx=KMAX[kind]||MAX;
-  syn.hidden=!card;reason.hidden=kind!=='special';famBox.hidden=!isFam;
+  var isStaff=kind==='staff';syn.hidden=!card;reason.hidden=kind!=='special';famBox.hidden=!isFam;staffBox.hidden=!isStaff;staffSel.disabled=!on.checked||!isStaff;if(on.checked&&isStaff)loadStaff(false);
   Array.prototype.forEach.call(syn.querySelectorAll('input'),function(i){i.disabled=!on.checked||!card;});
   ['[data-rbd-org]','[data-rbd-orgn]'].forEach(function(q){var el=box.querySelector(q);el.hidden=!isSyn;el.querySelectorAll('input').forEach(function(i){i.disabled=!on.checked||!isSyn;});});
   box.querySelector('[data-rbd-cardl]').textContent=isVz?'رقم كارت فيزيتا شامل':'رقم الكارنيه';
@@ -110,11 +120,11 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
   orgl.textContent=ORG_LABEL[val('discount_org_type')]||'اسم الجهة';
   var day=form.elements.day&&form.elements.day.value;if(day)exp.min=day;
   var s=svc(),q=Math.max(1,+(form.elements.quantity&&form.elements.quantity.value)||1),pr=preview(s&&s.price*q,pct.value);
-  sum.hidden=!(on.checked&&pr);if(pr){var who=isSyn?(form.elements.discount_org_name.value.trim()||''):isVz?'فيزيتا شامل':isFam?'كارت العيلة'+(famData?' — الزيارة '+famData.visit_no:''):'خصم خاص';
-   sum.innerHTML='<span>السعر</span><s>'+money(pr.price)+'</s><span>الخصم ('+esc(+pct.value)+'٪'+(who?' — '+esc(who):'')+')</span><span>− '+money(pr.off)+'</span><span>المريض يدفع</span><b>'+money(pr.net)+'</b>';}
-  note.textContent=isVz?'نسبة فيزيتا شامل ثابتة ٤٠٪، بتتطبّق لما المريض يوصل. مفيش خصم تاني على نفس الزيارة.':isFam?'السيستم بيحسب النسبة: ١٠٪ أول زيارة وتزيد ١٠٪ كل زيارة للمريض أو أي حد من عيلته لحد ٥٠٪، وبعدها ترجع ١٠٪. بتتحسب لما المريض يوصل.':'الخصم بيتطبّق على الخدمة لما المريض يوصل. أقصى خصم ٣٠٪. الحجز اللي عليه الخصم ده مايتعملوش أي خصم تاني ولا سعر تعاقد.';
-  var big=on.checked&&!isVz&&!isFam&&+pct.value>mx;warn.hidden=!big;if(big)warn.textContent='أقصى خصم على الحجز ٣٠٪ — قلّل النسبة.';if(clear)syncClear();}
- if(form.elements.patient_id)form.elements.patient_id.addEventListener('change',function(){famFor='';if(val('discount_kind')==='family'&&on.checked)loadFam(true);});
+  sum.hidden=!(on.checked&&pr);if(pr){var who=isSyn?(form.elements.discount_org_name.value.trim()||''):isVz?'فيزيتا شامل':isFam?'كارت العيلة'+(famData?' — الزيارة '+famData.visit_no:''):isStaff?'العاملين بالمركز':'خصم خاص';
+   sum.innerHTML='<span>السعر</span><s>'+money(pr.price)+'</s><span>الخصم ('+esc(+pct.value)+'٪'+(who?' — '+esc(who):'')+')</span><span>− '+money(pr.off)+'</span><span>المريض يدفع</span><b>'+money(pr.net)+'</b>'+(isStaff?'<small data-rbd-staff-sup>لو في سعر الخدمة مستلزمات، الخصم على جزء الخدمة بس — المبلغ النهائي بيظهر بعد الحفظ.</small>':'');}
+  note.textContent=isStaff?'خصم العاملين بالمركز للموظف الشغال وقرايبه من الدرجة الأولى (زوج/زوجة، ابن/بنت، أب/أم، أخ/أخت) المربوطين في «أفراد العيلة». اكتب النسبة لحد ٤٠٪، وبتتطبّق من غير مراجعة على سعر الخدمة بس — المستلزمات اللي في سعر الخدمة بسعرها الكامل. مفيش خصم تاني على نفس الزيارة.':isVz?'نسبة فيزيتا شامل ثابتة ٤٠٪، بتتطبّق لما المريض يوصل. مفيش خصم تاني على نفس الزيارة.':isFam?'السيستم بيحسب النسبة: ١٠٪ أول زيارة وتزيد ١٠٪ كل زيارة للمريض أو أي حد من عيلته لحد ٥٠٪، وبعدها ترجع ١٠٪. بتتحسب لما المريض يوصل.':'الخصم بيتطبّق على الخدمة لما المريض يوصل. أقصى خصم ٣٠٪. الحجز اللي عليه الخصم ده مايتعملوش أي خصم تاني ولا سعر تعاقد.';
+  var big=on.checked&&!isVz&&!isFam&&+pct.value>mx;warn.hidden=!big;if(big)warn.textContent=isStaff?'أقصى خصم للعاملين بالمركز ٤٠٪ — قلّل النسبة.':'أقصى خصم على الحجز ٣٠٪ — قلّل النسبة.';if(clear)syncClear();}
+ if(form.elements.patient_id)form.elements.patient_id.addEventListener('change',function(){famFor='';staffFor='';if(val('discount_kind')==='staff'&&on.checked)loadStaff(true);if(val('discount_kind')==='family'&&on.checked)loadFam(true);});
  file.addEventListener('change',function(){var f=file.files&&file.files[0];path.value='';if(!f)return;if(f.size>8*1024*1024){up.textContent='الصورة أكبر من ٨ ميجا — صوّرها تاني';file.value='';return;}
   up.textContent='جاري رفع الصورة…';uploadCard(ws,f).then(function(p){path.value=p;up.textContent='اترفعت ✓';}).catch(function(e){up.textContent='الرفع ما نجحش: '+((e&&e.message)||'حاول تاني');file.value='';});});
  path.addEventListener('invalid',function(){up.textContent='ارفع صورة الكارنيه';});
