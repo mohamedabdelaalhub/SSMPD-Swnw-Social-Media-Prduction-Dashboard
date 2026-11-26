@@ -12,9 +12,13 @@
 --   * Applies to EVERY performer (doctor, nursing / unit provider, any agreement) — the one fee line serves them all; the patient
 --     discount (خاص / staff / family / نقابة / «فيزيتا شامل») already comes off before the split (verified live: 195, 179).
 --   * Correction of ALL past LIVE completed orders in that scope (owner «صلح كل القديم بهذا المنطق», one time, at apply): the difference is reversed in the
---     reception journal with the original fee's dimensions — Dr 2120 / Cr 5111 (source doctor_fee_platform, the order id); if the doctor
---     was already paid more than his remaining balance, the excess becomes a receivable from the doctor exactly like doctor_credit_note
---     (Dr 1194 / Cr 2120, source doctor_receivable_platform). orders.doctor_fee is set to the corrected fee; every row is kept in
+--     reception journal with the original fee's dimensions — up to the performer's remaining 2120 balance: Dr 2120 / Cr 5111 (source
+--     doctor_fee_platform, the order id); the part already paid out: Dr 1194 / Cr 5111 (source doctor_receivable_platform) — a debt the
+--     existing post() wrapper nets off the performer's NEXT doctor_fee. The payout itself is never touched. The migration runs with no
+--     JWT, so these lines are written by clinic_finance.platform_fix_post (journal + the clinic_finance mirror exactly like the live
+--     clinic_reception posting, actor = a real super admin, never «Admin Test»), dropped at the end; no access check is disabled.
+--   * Referrals (owner: a patient comes from ONE source): no referral commission is created for an order whose appointment source is a
+--     platform with a percent — clinic_reception.referral_try returns 'platform' (ignored, nothing posted). orders.doctor_fee is set to the corrected fee; every row is kept in
 --     clinic_finance.platform_fee_fixes (order, visit_no, old fee, new fee, paid-out flag) and printed as a notice.
 -- Requires #899 (20261126180000). Rollback: supabase/rollbacks/20261126200000_platform_doctor_fee.rollback.sql
 begin;
@@ -54,6 +58,35 @@ do $$ begin
     $b$fee:=round(greatest(0,net-clinic_reception.platform_cut(o.id,net)-case when agreement.deduct_material_cost then included_cost else 0 end)*agreement.rate/100,2);$b$);
 end $$;
 
+-- referral: none when a platform brought the patient
+do $$ declare d text; a constant text := $a$    if ref = perf or ref = (select doctor_key from clinic_reception.providers where id = o.provider_id) then return 'self'; end if;$a$; begin
+  if to_regprocedure('clinic_reception.referral_try(uuid)') is null then return; end if;
+  d := pg_get_functiondef('clinic_reception.referral_try(uuid)'::regprocedure);
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'نقطة الربط في referral_try اتغيّرت (md5 %)', md5(d); end if;
+  insert into clinic_finance.platform_fee_saved_defs values ('referral_try', d);
+  execute replace(d, a, a || $b$
+    if exists (select 1 from clinic_reception.visits v join clinic_reception.appointments ap on ap.id = v.appointment_id
+               join clinic_finance.month_end_parties q on q.key = ap.source and q.key in ('vezeeta', 'clinidu', 'akshef', 'kafaret') and q.percent is not null
+               where v.id = o.visit_id) then return 'platform'; end if;  -- مريض جه من منصة: مفيش نسبة إحالة (المالك)$b$);
+end $$;
+
+-- writer for the one-time correction (no JWT in a migration): same journal + finance mirror as the live reception posting
+create function clinic_finance.platform_fix_post(p_workspace uuid, p_source text, p_id uuid, p_description text, p_debit text, p_credit text,
+  p_amount numeric, p_dims jsonb, p_actor uuid) returns uuid
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare v uuid; e uuid;
+begin
+  if p_amount <= 0 then return null; end if;
+  insert into clinic_reception.journal(workspace_id, source, source_id, description, dimensions, actor_id)
+    values (p_workspace, p_source, p_id, p_description, p_dims, p_actor) returning id into v;
+  insert into clinic_reception.journal_lines values (v, p_debit, p_amount, 0), (v, p_credit, 0, p_amount);
+  insert into clinic_finance.entries(source, source_id, description, shift_id, created_by) values ('reception_' || p_source, v, p_description, null, p_actor) returning id into e;
+  insert into clinic_finance.lines(entry_id, account, debit, credit) values (e, clinic_reception.account(p_debit), p_amount, 0), (e, clinic_reception.account(p_credit), 0, p_amount);
+  update clinic_reception.journal set finance_entry_id = e where id = v;
+  return v;
+end $$;
+revoke all on function clinic_finance.platform_fix_post(uuid, text, uuid, text, text, text, numeric, jsonb, uuid) from public, anon, authenticated;
+
 -- one-time correction of ALL past live platform orders (any performer)
 create table clinic_finance.platform_fee_fixes (
   order_id uuid primary key references clinic_reception.orders(id), workspace_id uuid not null, visit_no bigint, source text not null, service text, performer text,
@@ -63,8 +96,12 @@ alter table clinic_finance.platform_fee_fixes enable row level security;
 revoke all on clinic_finance.platform_fee_fixes from public, anon, authenticated;
 
 do $$
-declare r record; diff numeric; liability numeric; dims jsonb; paid boolean; recv numeric; n int := 0; t_old numeric := 0; t_new numeric := 0; t_recv numeric := 0; n_paid int := 0;
+declare actor uuid; r record; diff numeric; liability numeric; dims jsonb; paid boolean; recv numeric; n int := 0; t_old numeric := 0; t_new numeric := 0; t_recv numeric := 0; n_paid int := 0;
 begin
+  select a.id into actor from public.admins a where a.active and coalesce(a.name, '') <> 'Admin Test' and a.role = 'super_admin'
+   order by (a.name like '%عبدالعال%') desc, a.id limit 1;
+  if actor is null then raise exception 'مفيش سوبر أدمن حقيقي يتسجل باسمه التصحيح'; end if;
+  perform clinic_finance.lock_day();
   for r in
     select o.id, o.workspace_id, v.visit_no, a.source, o.doctor_fee old_fee, ag.rate, o.net_revenue, s.name service,
            case when nullif(btrim(coalesce(p.doctor_key, '')), '') is null then 'unit' else 'doctor' end performer,
@@ -87,11 +124,9 @@ begin
     if dims is null then raise exception 'قيد أتعاب الطبيب للزيارة % مش موجود — راجعه قبل التطبيق', r.visit_no; end if;
     liability := -clinic_reception.balance(r.workspace_id, '2120', 'provider_id', dims->>'provider_id');
     paid := exists (select 1 from clinic_finance.desk_payout_rx x where x.rx_invoice_id = nullif(dims->>'invoice_id', '')::uuid);
-    perform clinic_reception.event_post(r.workspace_id, 'doctor_fee_platform', r.id, 'تصحيح أتعاب الطبيب — نسبة المنصة تتخصم الأول', '2120', '5111', diff, dims);
     recv := greatest(0, diff - greatest(liability, 0));
-    if recv > 0 then
-      perform clinic_reception.event_post(r.workspace_id, 'doctor_receivable_platform', r.id, 'مبلغ مستحق من الطبيب بعد تصحيح أتعاب سبق صرفها', '1194', '2120', recv, dims);
-    end if;
+    perform clinic_finance.platform_fix_post(r.workspace_id, 'doctor_fee_platform', r.id, 'تصحيح أتعاب الطبيب — نسبة المنصة تتخصم الأول', '2120', '5111', diff - recv, dims, actor);
+    perform clinic_finance.platform_fix_post(r.workspace_id, 'doctor_receivable_platform', r.id, 'مبلغ مستحق من الطبيب بعد تصحيح أتعاب سبق صرفها', '1194', '5111', recv, dims, actor);
     update clinic_reception.orders set doctor_fee = r.old_fee - diff where id = r.id;
     insert into clinic_finance.platform_fee_fixes(order_id, workspace_id, visit_no, source, service, performer, net, platform_cut, rate, old_fee, new_fee, paid_out, receivable)
       values (r.id, r.workspace_id, r.visit_no, r.source, r.service, r.performer, r.net, clinic_reception.platform_cut(r.id, r.net), r.rate, r.old_fee, r.old_fee - diff, paid, recv);
@@ -100,6 +135,7 @@ begin
     t_old := t_old + r.old_fee; t_new := t_new + r.old_fee - diff; t_recv := t_recv + recv; if paid then n_paid := n_paid + 1; end if;
     n := n + 1;
   end loop;
+  drop function clinic_finance.platform_fix_post(uuid, text, uuid, text, text, text, numeric, jsonb, uuid);
   raise notice 'platform fee fixes: % order(s), fees % -> % (returned %), % already paid out, owed back by performers %', n, t_old, t_new, t_old - t_new, n_paid, t_recv;
 end $$;
 
