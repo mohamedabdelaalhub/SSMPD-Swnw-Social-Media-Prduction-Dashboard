@@ -12115,6 +12115,19 @@
       "reviewed": true
     },
     {
+      "title": "شهر الحسابات",
+      "labels": [
+        "شهر الحسابات"
+      ],
+      "text": "الشهر اللي عايز تشوف حساباته. المستحق والسداد والطلبات كلها للشهر ده.",
+      "article": "month-end-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "المخزن اللي هيتخصم منه",
       "labels": [
         "المخزن اللي هيتخصم منه"
@@ -23523,9 +23536,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2029,
-    "labels": 1472,
-    "files": 163,
-    "groups": 1597
+    "definitions": 2030,
+    "labels": 1473,
+    "files": 164,
+    "groups": 1598
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
