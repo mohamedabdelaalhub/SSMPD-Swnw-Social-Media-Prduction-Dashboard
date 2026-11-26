@@ -1,0 +1,100 @@
+-- Doctor fee on booking-platform visits: the platform's share comes off FIRST (owner 2026-11-26 ~22:03Z: «فيزيتا / اكشف / كلينيدو —
+-- نشيل نسبة المنصة الأول وبعدين الباقي يتقسم بين الدكتور والمركز حسب العقد»). Reception reported (and main chat 6 verified on live)
+-- that visit 196 (vezeeta, كشف الاستشاري 600, 50%) got a doctor fee of 300 instead of (600 − 150) × 50% = 225.
+--   * clinic_reception.platform_cut(order, net): the platform's share of that order = round(net × percent / 100, 2) when — exactly the
+--     scope of clinic_finance.month_end_lines (#899) — the order is the appointment's BOOKED service, that service is a كشف / استشارة
+--     (consult_kind K / S; not متابعة), the appointment's source is a platform with a percent in clinic_finance.month_end_parties, the
+--     appointment is not «فيزيتا شامل» (discount_kind 'vezeeta'), in a LIVE workspace. Otherwise 0.
+--   * clinic_reception.service_operation 'execute' (patched in place, anchor checked once; previous definition saved):
+--       fee := (net − platform_cut − included material if the agreement deducts it) × agreement rate.
+--     Revenue is unchanged: the invoice / 4110 stay at the patient's net (600), the platform's 25% is the 5233 expense posted when the
+--     period audit is approved (#899), so the centre keeps net − platform − doctor (600 − 150 − 225 = 225). Nothing is counted twice.
+--   * Correction of LIVE orders completed since 2026-11-01 that fall in that scope (one time, at apply): the difference is reversed in the
+--     reception journal with the original fee's dimensions — Dr 2120 / Cr 5111 (source doctor_fee_platform, the order id); if the doctor
+--     was already paid more than his remaining balance, the excess becomes a receivable from the doctor exactly like doctor_credit_note
+--     (Dr 1194 / Cr 2120, source doctor_receivable_platform). orders.doctor_fee is set to the corrected fee; every row is kept in
+--     clinic_finance.platform_fee_fixes (order, visit_no, old fee, new fee, paid-out flag) and printed as a notice.
+-- Requires #899 (20261126180000). Rollback: supabase/rollbacks/20261126200000_platform_doctor_fee.rollback.sql
+begin;
+
+do $$ declare d text; a constant text := $a$fee:=round(greatest(0,net-case when agreement.deduct_material_cost then included_cost else 0 end)*agreement.rate/100,2);$a$; begin
+  if to_regclass('clinic_finance.platform_audits') is null then raise exception 'طبّق مراجعة المنصات (20261126180000) أولًا'; end if;
+  if to_regprocedure('clinic_reception.service_operation(uuid,text,jsonb,uuid)') is null or to_regprocedure('clinic_reception.consult_kind(text)') is null
+     or to_regprocedure('clinic_reception.post(uuid,text,uuid,text,text,text,numeric,jsonb)') is null then raise exception 'مكونات الاستقبال غير موجودة'; end if;
+  if to_regclass('clinic_finance.platform_fee_fixes') is not null then raise exception 'تم تطبيق هذا الملف من قبل'; end if;
+  d := pg_get_functiondef('clinic_reception.service_operation(uuid,text,jsonb,uuid)'::regprocedure);
+  if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'سطر أتعاب الطبيب في service_operation اتغيّر (md5 %)', md5(d); end if;
+end $$;
+
+create table clinic_finance.platform_fee_saved_defs(name text primary key, def text not null);
+alter table clinic_finance.platform_fee_saved_defs enable row level security;
+revoke all on clinic_finance.platform_fee_saved_defs from public, anon, authenticated;
+insert into clinic_finance.platform_fee_saved_defs values
+  ('service_operation', pg_get_functiondef('clinic_reception.service_operation(uuid,text,jsonb,uuid)'::regprocedure));
+
+create function clinic_reception.platform_cut(p_order uuid, p_net numeric) returns numeric
+language sql stable security definer set search_path = pg_catalog, public as $$
+  select coalesce((
+    select round(greatest(coalesce(p_net, 0), 0) * q.percent / 100, 2)
+      from clinic_reception.orders o
+      join clinic_reception.workspaces w on w.id = o.workspace_id and w.mode = 'live'
+      join clinic_reception.visits v on v.id = o.visit_id
+      join clinic_reception.appointments a on a.id = v.appointment_id and a.service_id = o.service_id
+      join clinic_reception.services s on s.id = o.service_id
+      join clinic_finance.month_end_parties q on q.key = a.source and q.key in ('vezeeta', 'clinidu', 'akshef', 'kafaret') and q.percent is not null
+     where o.id = p_order and coalesce(a.discount_kind, '') <> 'vezeeta' and coalesce(clinic_reception.consult_kind(s.name), '') in ('K', 'S')), 0)
+$$;
+revoke all on function clinic_reception.platform_cut(uuid, numeric) from public, anon, authenticated;
+
+do $$ begin
+  execute replace(pg_get_functiondef('clinic_reception.service_operation(uuid,text,jsonb,uuid)'::regprocedure),
+    $a$fee:=round(greatest(0,net-case when agreement.deduct_material_cost then included_cost else 0 end)*agreement.rate/100,2);$a$,
+    $b$fee:=round(greatest(0,net-clinic_reception.platform_cut(o.id,net)-case when agreement.deduct_material_cost then included_cost else 0 end)*agreement.rate/100,2);$b$);
+end $$;
+
+-- one-time correction of live platform visits completed since 2026-11-01
+create table clinic_finance.platform_fee_fixes (
+  order_id uuid primary key references clinic_reception.orders(id), workspace_id uuid not null, visit_no bigint, source text not null,
+  net numeric(14,2) not null, platform_cut numeric(14,2) not null, rate numeric not null, old_fee numeric(14,2) not null, new_fee numeric(14,2) not null,
+  paid_out boolean not null, receivable numeric(14,2) not null default 0, fixed_at timestamptz not null default now());
+alter table clinic_finance.platform_fee_fixes enable row level security;
+revoke all on clinic_finance.platform_fee_fixes from public, anon, authenticated;
+
+do $$
+declare r record; diff numeric; liability numeric; dims jsonb; paid boolean; recv numeric; n int := 0;
+begin
+  for r in
+    select o.id, o.workspace_id, v.visit_no, a.source, o.doctor_fee old_fee, ag.rate, o.net_revenue,
+           coalesce(o.net_revenue, round(o.price * o.quantity * (1 - o.discount / 100), 2)) net
+      from clinic_reception.orders o
+      join clinic_reception.workspaces w on w.id = o.workspace_id and w.mode = 'live'
+      join clinic_reception.visits v on v.id = o.visit_id
+      join clinic_reception.appointments a on a.id = v.appointment_id
+      join clinic_reception.doctor_agreements ag on ag.id = o.agreement_id
+     where o.status = 'completed' and o.doctor_fee > 0 and coalesce(o.completed_at, o.created_at) >= timestamptz '2026-11-01 00:00 Africa/Cairo'
+       and clinic_reception.platform_cut(o.id, 1) > 0
+     order by v.visit_no
+  loop
+    -- the fee the order should have had: (net − platform cut) × rate, never above the old fee (material deduction kept)
+    diff := least(r.old_fee, round(clinic_reception.platform_cut(r.id, r.net) * r.rate / 100, 2));
+    if diff <= 0 then continue; end if;
+    select j.dimensions into dims from clinic_reception.journal j where j.workspace_id = r.workspace_id and j.source = 'doctor_fee' and j.source_id = r.id;
+    if dims is null then raise exception 'قيد أتعاب الطبيب للزيارة % مش موجود — راجعه قبل التطبيق', r.visit_no; end if;
+    liability := -clinic_reception.balance(r.workspace_id, '2120', 'provider_id', dims->>'provider_id');
+    paid := exists (select 1 from clinic_finance.desk_payout_rx x where x.rx_invoice_id = nullif(dims->>'invoice_id', '')::uuid);
+    perform clinic_reception.event_post(r.workspace_id, 'doctor_fee_platform', r.id, 'تصحيح أتعاب الطبيب — نسبة المنصة تتخصم الأول', '2120', '5111', diff, dims);
+    recv := greatest(0, diff - greatest(liability, 0));
+    if recv > 0 then
+      perform clinic_reception.event_post(r.workspace_id, 'doctor_receivable_platform', r.id, 'مبلغ مستحق من الطبيب بعد تصحيح أتعاب سبق صرفها', '1194', '2120', recv, dims);
+    end if;
+    update clinic_reception.orders set doctor_fee = r.old_fee - diff where id = r.id;
+    insert into clinic_finance.platform_fee_fixes(order_id, workspace_id, visit_no, source, net, platform_cut, rate, old_fee, new_fee, paid_out, receivable)
+      values (r.id, r.workspace_id, r.visit_no, r.source, r.net, clinic_reception.platform_cut(r.id, r.net), r.rate, r.old_fee, r.old_fee - diff, paid, recv);
+    raise notice 'fee fix: visit % (%): net %, platform cut %, doctor rate %, fee % -> %, already paid out: %', r.visit_no, r.source, r.net,
+      clinic_reception.platform_cut(r.id, r.net), r.rate, r.old_fee, r.old_fee - diff, paid;
+    n := n + 1;
+  end loop;
+  raise notice 'platform doctor-fee fixes: % order(s)', n;
+end $$;
+
+commit;
