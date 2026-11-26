@@ -8465,6 +8465,60 @@
       "reviewed": true
     },
     {
+      "title": "المدة",
+      "labels": [
+        "المدة"
+      ],
+      "text": "اكتب مدة الجلسة أو الاستخدام المقصود بوحدة الحقل، مع التمييز بينها وبين فترة العلاج الكاملة أو فاصل تكرار الجرعة.",
+      "article": "patient-records",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "من الساعة",
+      "labels": [
+        "من الساعة"
+      ],
+      "text": "حدد بداية أو نهاية الفترة وفق المواعيد المقصودة. عند تجهيز تصميم مواعيد راجعها مع الجدول، فهي لا تعدل جدول الحجز تلقائيًا.",
+      "article": "design-guide",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المكان",
+      "labels": [
+        "المكان"
+      ],
+      "text": "اختر مكان حفظ الكمية المقصودة، أو اكتب اسمًا يميز المخزن عند إنشائه. الأرصدة والجرد والحركات تُراجع على المكان المحدد.",
+      "article": "inventory-count",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة (اختياري)",
+      "labels": [
+        "ملاحظة (اختياري)"
+      ],
+      "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
+      "article": "personal",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [
+        "ساعات الطريق"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "الموظف",
       "labels": [
         "الموظف"
@@ -23497,9 +23551,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2027,
-    "labels": 1471,
-    "files": 162,
-    "groups": 1595
+    "definitions": 2036,
+    "labels": 1474,
+    "files": 163,
+    "groups": 1599
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
