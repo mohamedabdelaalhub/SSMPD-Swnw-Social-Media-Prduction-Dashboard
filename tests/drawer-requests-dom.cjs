@@ -66,6 +66,8 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  // ---- cashier: «اتصرف» on the approved advance
  role='cashier';card().remove();se.decorate(ctx,'operations');await tick();const pay=card().querySelector('[data-rdr-pay="q1"]');assert.ok(pay,'approved → «اتصرف»');
  pay.click();await tick();await tick();assert.equal(reqs[0].status,'paid');assert.match(card().textContent,/اتصرف/);assert.ok(!card().querySelector('[data-rdr-pay]'));
+ // ---- one-tap opener for UX #881
+ assert.equal(typeof w.SSMPDDrawerPayout.open,'function');d.querySelectorAll('.rx-modal').forEach(x=>x.remove());assert.equal(w.SSMPDDrawerPayout.open(),true);await tick();assert.ok(d.querySelector('.rx-modal'),'opens the form');
  // ---- wiring
  const fc=fs.readFileSync('assets/js/finance-cash.js','utf8');assert.match(fc,/\['drawer-requests','طلبات صرف من الدرج'\]/);assert.match(fc,/items:\['requests','drawer-requests',/);
  assert.match(fs.readFileSync('assets/js/accounting-shell.js','utf8'),/\['drawer-requests','طلبات صرف من الدرج'\]/);

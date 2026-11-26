@@ -85,4 +85,6 @@ function fill(){var box=d.querySelector('[data-drawer-requests]');if(box)load(bo
 var prior=w.SSMPDFinanceControls;
 if(prior&&prior.panel){w.SSMPDFinanceControls=Object.assign({},prior,{panel:function(tab,dd,h){if(tab!=='drawer-requests')return prior.panel(tab,dd,h);setTimeout(fill,0);return '<div class="rse rdr" data-drawer-requests><p class="rse-note">جاري التحميل…</p></div>';}});}
 w.SSMPDDrawerRequests={decorate:decorate,load:load,state:state,_t:{cardHtml:cardHtml,inboxHtml:inboxHtml,listHtml:listHtml}};
+/* one-tap opener for the reception «درجي» strip (UX #881 feature-detects this name): clicks the card's «+ طلب صرف من الدرج» */
+w.SSMPDDrawerPayout={open:function(){var b=d.querySelector('[data-rdr-new]');if(b&&!b.disabled){b.click();return true;}return false;}};
 })(window,document);
