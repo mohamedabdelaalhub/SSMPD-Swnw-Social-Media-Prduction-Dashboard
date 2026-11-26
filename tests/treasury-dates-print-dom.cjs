@@ -6,8 +6,8 @@ const w=new JSDOM('',{runScripts:'outside-only',url:'https://x.test/'}).window;
 w.eval(fs.readFileSync('assets/js/swnw-print.js','utf8'));w.eval(fs.readFileSync('assets/js/finance-shift-movements.js','utf8'));
 // (1) transfers table
 const aw=fs.readFileSync('assets/js/accountant-workspace.js','utf8');
-assert(aw.includes("h.table(['تاريخ الطلب','من','إلى','المبلغ','فرق الجرد للمراجعة','المستند','الحالة','تاريخ الاستلام / القرار','الإجراء']"));
-assert(aw.includes("[h.esc(tStamp(t.created_at)),")&&aw.includes("h.esc(t.status==='pending'?'—':tStamp(t.reviewed_at))"));
+// help 278 (treasury plain): handovers are readable rows; request date and received/decision date in words (see tests/treasury-plain.cjs)
+assert(aw.includes("h.esc(hoWhen(t.created_at))")&&aw.includes("(t.status==='rejected'?'اترفض ':'اتستلم ')+h.esc(hoWhen(t.reviewed_at))"));
 const m=aw.match(/function tStamp\(v\)\{[\s\S]*?\n/);w.eval(m[0]);
 assert.equal(w.tStamp('2026-11-23T20:57:00Z'),'23-11-2026 10:57 م');assert.equal(w.tStamp('2026-11-24T06:05:00Z'),'24-11-2026 08:05 ص');assert.equal(w.tStamp(null),'—');
 // (2) PDF
