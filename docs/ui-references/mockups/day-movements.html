@@ -1,0 +1,115 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: حركات اليوم — المرضى · الأطباء · الخصومات</title>
+<!-- MOCKUP ONLY (owner «اعمل شكل حركات اليوم», 2026-11-26). Extends «حركات الوردية بالتفصيل» (assets/js/finance-shift-movements.js):
+     the existing tab «كل الحركات» stays exactly as today (rule 11); three tabs are added. All names, files and numbers are FAKE. -->
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:#f4f7fc;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;font-variant-numeric:tabular-nums}
+.wrap{max-width:1100px;margin:auto;display:grid;gap:16px}
+.mv-section{padding:16px;border-radius:16px;background:#fff;border:1px solid rgba(15,54,157,.10);box-shadow:0 10px 30px rgba(15,54,157,.07);display:grid;gap:12px}
+.hd{display:flex;align-items:center;gap:10px}.hd h2{margin:0;font-size:19px;flex:1}.hd p{margin:2px 0 0;font-size:12px;color:#667085}
+.x{width:38px;height:38px;border-radius:10px;border:1px solid #D5DEEE;background:#fff;font:inherit;font-size:18px;cursor:pointer;color:#16212E}
+.who{font-size:12px;font-weight:700;color:#0F369D;background:#EEF4FF;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #e6ebf3;padding-bottom:10px}
+.tabs button{font:inherit;font-size:14px;font-weight:700;padding:7px 14px;border-radius:10px;border:1px solid transparent;background:transparent;color:#475467;cursor:pointer}
+.tabs button[aria-selected=true]{background:#0F369D;color:#fff}.tabs button .n{font-size:12px;opacity:.75;margin-inline-start:4px}
+.tabs .new{font-size:10.5px;background:#F15A22;color:#fff;border-radius:6px;padding:1px 5px;margin-inline-start:4px;vertical-align:2px}
+.filters{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,2fr);gap:10px;align-items:end}
+.seg{display:flex;border:1px solid #D5DEEE;border-radius:10px;overflow:hidden}.seg button{font:inherit;font-size:13px;padding:9px 12px;border:0;background:#fff;color:#344054;cursor:pointer}.seg button+button{border-inline-start:1px solid #D5DEEE}.seg .on{background:#16212E;color:#fff}
+label{display:grid;gap:3px;font-size:12px;color:#667085;min-width:0}input,select{font:inherit;font-size:14px;padding:9px 10px;border:1px solid #D5DEEE;border-radius:10px;background:#fff;color:#16212E;min-width:0;width:100%}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tools .sp{flex:1}
+.btn{font:inherit;font-size:13px;font-weight:700;padding:8px 14px;border-radius:10px;border:1px solid #D5DEEE;background:#fff;color:#0F369D;cursor:pointer}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{font-size:12.5px;padding:5px 11px;border-radius:999px;background:#F1F4F8;color:#344054;cursor:pointer;border:0;font-family:inherit}.chip.on{background:#0F369D;color:#fff}.chip.red{background:#FEF3F2;color:#B42318}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.kpi{border-radius:14px;border:1px solid #e6ebf3;background:#fff;padding:12px}.kpi small{display:block;font-size:12px;color:#667085}.kpi b{display:block;font-size:19px;margin-top:4px}
+.kpi.hero{background:linear-gradient(135deg,#F15A22,#f37b4c);border-color:#F15A22;color:#fff}.kpi.hero small{color:#fff;opacity:.9}
+.list{display:grid;gap:12px}
+.card{border-radius:14px;border:1px solid #e6ebf3;border-inline-start:5px solid var(--k,#0F369D);background:#fff;padding:12px 14px;display:grid;gap:10px}
+.card.flag{--k:#D0402A}
+.ch{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}.ch strong{font-size:15.5px}.ch .meta{font-size:12.5px;color:#667085}.ch .sp{flex:1}
+.src{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:#EEF4FF;color:#0F369D}.src.vz{background:#E9F7FB;color:#0B6E8A}.src.rf{background:#F4F0FF;color:#5B3CC4}.src.wk{background:#F1F4F8;color:#344054}
+.flagtag{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:#FEF3F2;color:#B42318}.oktag{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:#ECF8F2;color:#2F7D5C}
+.svc{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(4,minmax(0,1fr));gap:0;border:1px solid #eef1f6;border-radius:10px;overflow:hidden}
+.svc>div{padding:8px 10px;font-size:13px;border-inline-start:1px solid #eef1f6;min-width:0}.svc>div:first-child{border-inline-start:0}
+.svc small{display:block;font-size:11.5px;color:#667085;margin-bottom:2px}.svc .v{font-weight:700}.svc .sub{display:block;font-size:11.5px;color:#667085;margin-top:2px;line-height:1.45}
+.neg{color:#D0402A}.pos{color:#2F7D5C}.warn{color:#B4400F}
+.shares{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:#475467;padding-top:2px}.shares b{color:#16212E}
+.doc{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(6,minmax(0,1fr)) auto;gap:10px;align-items:center;border-radius:14px;border:1px solid #e6ebf3;background:#fff;padding:12px 14px}
+.doc strong{font-size:15px}.doc .c small{display:block;font-size:11.5px;color:#667085}.doc .c b{font-size:14.5px}
+.doc.open{border-color:#0F369D;box-shadow:0 0 0 2px rgba(15,54,157,.12)}
+.cases{display:grid;gap:12px;padding:12px;border-radius:14px;background:#F7F9FD;border:1px dashed #c7d0e6}
+.cases .ch2{display:flex;align-items:center;gap:8px;font-size:13px;color:#475467}.cases .ch2 b{color:#16212E}.cases .ch2 .sp{flex:1}
+.dtable{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border:1px solid #e6ebf3;border-radius:12px;overflow:hidden}
+.dtable th{background:#F1F4F8;color:#475467;font-weight:700;text-align:right;padding:9px 10px;font-size:12px}.dtable td{padding:9px 10px;border-top:1px solid #eef1f6;vertical-align:top}
+.dtable td small{display:block;color:#667085;font-size:11.5px}
+.kind{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:#EEF4FF;color:#0F369D;white-space:nowrap}.kind.st{background:#ECF8F2;color:#2F7D5C}.kind.vz{background:#E9F7FB;color:#0B6E8A}.kind.sp{background:#FFF4EE;color:#B4400F}
+.dcards{display:none;gap:12px}.dcard{border-radius:14px;border:1px solid #e6ebf3;background:#fff;padding:12px;display:grid;gap:6px;font-size:13px}.dcard .r{display:flex;justify-content:space-between;gap:8px}.dcard .r span{color:#667085}
+.note{font-size:12px;color:#8a4b00;background:#FFF3E0;border-radius:10px;padding:8px 12px;line-height:1.6}
+.mv-row{display:grid;grid-template-columns:64px minmax(0,1.6fr) minmax(0,1.3fr) minmax(0,1fr) 130px;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid #e6ebf3;border-inline-start:5px solid var(--k,#0F369D)}
+.mv-row .t{font-size:13px;font-weight:700;color:#344054}.mv-row strong{display:block;font-size:14px}.mv-row small{display:block;font-size:12px;color:#667085}
+.mv-tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:#EEF4FF;color:#0F369D}
+.mv-amt{text-align:left;font-size:16px;font-weight:700;color:#2F7D5C;white-space:nowrap}
+.foot{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:10px;border-top:1px dashed #d5dbe6;font-size:13px}.foot b{color:#0F369D}
+[hidden]{display:none!important}
+@media(max-width:760px){body{padding:12px}.mv-section{padding:12px}
+ .filters{grid-template-columns:minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.kpis .kpi.hero{grid-column:1/-1}
+ .svc{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.svc>div{border-inline-start:0;border-top:1px solid #eef1f6}.svc>div:first-child{grid-column:1/-1;border-top:0}
+ .doc{grid-template-columns:repeat(3,minmax(0,1fr))}.doc .nm{grid-column:1/-1}.doc .go{grid-column:1/-1}
+ .dtable{display:none}.dcards{display:grid}
+ .mv-row{grid-template-columns:1fr auto}.mv-row .t{grid-column:1/-1}.mv-row .k,.mv-row .m{grid-column:1/-1}
+ .hd h2{font-size:17px}.who{white-space:normal}}
+</style>
+<div class="wrap"><section class="mv-section" aria-label="حركات الوردية">
+ <div class="hd"><button class="x" aria-label="قفل" title="قفل">✕</button><div style="flex:1"><h2>حركات الوردية بالتفصيل</h2><p>خزينة الاستقبال 1 — وردية صباحي — الخميس 26 نوفمبر</p></div><span class="who" id="who">الاستقبال: ورديتك بس</span></div>
+ <div class="tabs" role="tablist">
+  <button role="tab" data-tab="all">كل الحركات<span class="n">14</span></button>
+  <button role="tab" data-tab="patients">المرضى<span class="n">4</span><span class="new">جديد</span></button>
+  <button role="tab" data-tab="doctors">الأطباء<span class="n">3</span><span class="new">جديد</span></button>
+  <button role="tab" data-tab="discounts">الخصومات<span class="n">2</span><span class="new">جديد</span></button>
+ </div>
+ <div class="filters">
+  <div class="seg" role="group" aria-label="الفترة"><button class="on">الوردية</button><button>الخزينة</button><button>اليوم</button></div>
+  <label>الوردية<select><option>صباحي 08:00 — 16:00 (مفتوحة)</option></select></label>
+  <label>بحث<input type="search" placeholder="اسم المريض أو رقم الملف أو الدكتور"></label>
+ </div>
+ <div class="tools"><div class="chips" id="chips"></div><span class="sp"></span><button class="btn">🖨 طباعة</button><button class="btn">⬇ تصدير Excel</button></div>
+ <div class="kpis" id="kpis"></div>
+ <div id="pane-all" hidden></div><div id="pane-patients" hidden></div><div id="pane-doctors" hidden></div><div id="pane-discounts" hidden></div>
+</section></div>
+<script>
+var V=[
+ {t:'10:15',name:'منى عادل',file:'P-2026-900101',doc:'د. سامح فؤاد',dept:'جلدية',src:['vz','فيزيتا'],svc:[{n:'كشف جلدية',price:600,disc:null,due:600,paid:600,how:'نقدي · إيصال R-5521'}],shares:{doctor:225,platform:150},flag:null},
+ {t:'11:40',name:'كريم ناصر',file:'P-2026-900214',doc:'د. هالة منصور',dept:'باطنة',src:['wk','مباشر'],svc:[{n:'كشف باطنة',price:600,disc:{k:'st',kind:'خصم العاملين بالمركز',pct:40,by:'نهى (استقبال)',ok:'تلقائي — موظف نشط (HR)',rel:'ابن موظف'},due:360,paid:360,how:'فيزا · إيصال R-5527'}],shares:{doctor:180},flag:null},
+ {t:'12:05',name:'سارة يوسف',file:'P-2026-900330',doc:'د. سامح فؤاد',dept:'جلدية',src:['wk','مباشر — حضور بدون حجز'],svc:[{n:'كشف جلدية',price:600,disc:null,due:600,paid:400,how:'نقدي 400 · الباقي 200 «على حساب الموظف»'},{n:'جلسة تقشير',price:900,disc:{k:'sp',kind:'خاص',pct:10,by:'نهى (استقبال)',ok:'اعتمده: أ. وليد (مدير مالي) 12:01'},due:810,paid:810,how:'إنستا باي · عملية 7781'}],shares:{doctor:705},flag:'متحصّل جزئي — باقي 200'},
+ {t:'13:30',name:'أحمد رجب',file:'P-2026-900417',doc:'د. طارق لطفي',dept:'عظام',src:['rf','ترشيح — د. خارجي'],svc:[{n:'كشف عظام',price:500,disc:null,due:500,paid:500,how:'فيزا ← نقدي (اتصحّحت 13:42)'}],shares:{doctor:250,ref:50},flag:'فيه تصحيح طريقة دفع'}];
+function m(v){return Number(v).toLocaleString('en-US')+' ج.م';}
+function svcHtml(s){var d=s.disc;return '<div class="svc"><div><small>الخدمة</small><span class="v">'+s.n+'</span></div>'+
+ '<div><small>السعر</small><span class="v">'+m(s.price)+'</span></div>'+
+ '<div><small>الخصم</small>'+(d?'<span class="v neg"><bdi dir="ltr">−'+(s.price-s.due).toLocaleString('en-US')+'</bdi> ج.م</span><span class="sub"><span class="kind '+d.k+'">'+d.kind+' '+d.pct+'٪</span><br>عمله: '+d.by+(d.rel?' · '+d.rel:'')+'<br>'+d.ok+'</span>':'<span class="v">—</span>')+'</div>'+
+ '<div><small>المستحق</small><span class="v">'+m(s.due)+'</span></div>'+
+ '<div><small>المتحصّل</small><span class="v '+(s.paid<s.due?'neg':'pos')+'">'+m(s.paid)+'</span><span class="sub">'+s.how+'</span></div></div>';}
+function card(v){var sh=v.shares;return '<article class="card'+(v.flag?' flag':'')+'"><div class="ch"><strong>'+v.name+'</strong><span class="meta">ملف '+v.file+' · '+v.t+' · '+v.doc+' ('+v.dept+')</span><span class="src '+v.src[0]+'">'+v.src[1]+'</span><span class="sp"></span>'+(v.flag?'<span class="flagtag">⚠ '+v.flag+'</span>':'<span class="oktag">✓ متحصّل بالكامل</span>')+'</div>'+
+ v.svc.map(svcHtml).join('')+'<div class="shares"><span>نصيب الطبيب: <b>'+m(sh.doctor)+'</b></span>'+(sh.platform?'<span>نصيب المنصة (فيزيتا): <b>'+m(sh.platform)+'</b></span>':'')+(sh.ref?'<span>عمولة الترشيح: <b>'+m(sh.ref)+'</b></span>':'')+'</div></article>';}
+var D=[{n:'د. سامح فؤاد',dept:'جلدية',cases:2,col:1810,disc:90,share:930,paid:0,ids:[0,2]},{n:'د. هالة منصور',dept:'باطنة',cases:1,col:360,disc:240,share:180,paid:180,ids:[1]},{n:'د. طارق لطفي',dept:'عظام',cases:1,col:500,disc:0,share:250,paid:0,ids:[3]}];
+var DS=[{t:'11:38',p:'كريم ناصر · P-2026-900214',k:'st',kind:'خصم العاملين بالمركز',pct:40,amt:240,by:'نهى (استقبال)',ok:'تلقائي — موظف نشط (HR) · ابن موظف'},{t:'12:01',p:'سارة يوسف · P-2026-900330',k:'sp',kind:'خاص',pct:10,amt:90,by:'نهى (استقبال)',ok:'أ. وليد (مدير مالي)'}];
+var MV=[['10:16','منى عادل','كشف جلدية · ملف P-2026-900101','خاص — المريض بيدفع كامل','نقدي · إيصال R-5521','+600.00'],['11:42','كريم ناصر','كشف باطنة · ملف P-2026-900214','خاص — المريض بيدفع كامل','فيزا · إيصال R-5527','+360.00'],['12:07','سارة يوسف','كشف جلدية · ملف P-2026-900330','خاص — المريض بيدفع كامل','نقدي','+400.00']];
+var P={
+ all:{chips:['الكل','نقدي','فيزا','إنستا باي','تأمين','صرف ومرتجع'],kpis:null,html:function(){return '<div class="note">التاب ده هو «حركات الوردية بالتفصيل» زي ما هو النهارده بالظبط — مفيش حاجة فيه اتشالت ولا اتغيّرت.</div><div class="list" style="margin-top:12px">'+MV.map(function(r){return '<article class="mv-row"><div class="t">'+r[0]+'</div><div><strong>'+r[1]+'</strong><small>'+r[2]+'</small></div><div class="k"><span class="mv-tag">'+r[3]+'</span></div><div class="m">'+r[4]+'</div><div class="mv-amt"><bdi dir="ltr">'+r[5]+'</bdi> ج.م</div></article>';}).join('')+'</div><div class="foot" style="margin-top:12px"><span>نقدي داخل: <b>1,000.00 ج.م</b></span><span>فيزا: <b>860.00 ج.م</b></span><span>إنستا باي: <b>810.00 ج.م</b></span></div>';}},
+ patients:{chips:['الكل 4','فيزيتا 1','ترشيح 1','مباشر 2','⚠ محتاج مراجعة 2'],kpis:[['المتحصّل',m(2670),1],['الخصومات',m(330)],['باقي على المرضى',m(200)],['نصيب الأطباء',m(1360)],['المنصات والترشيح',m(200)]],html:function(){return '<div class="list">'+V.map(card).join('')+'</div>';}},
+ doctors:{chips:['كل الأطباء 3','ليهم باقي 2'],kpis:[['نصيب الأطباء',m(1360),1],['اتصرف',m(180)],['باقي للأطباء',m(1180)],['عدد الحالات','4'],['المتحصّل من حالاتهم',m(2670)]],html:function(){return '<div class="list">'+D.map(function(d,i){var c=function(l,v,cl){return '<div class="c"><small>'+l+'</small><b'+(cl?' class="'+cl+'"':'')+'>'+v+'</b></div>';};
+  return '<div class="doc'+(i===0?' open':'')+'"><div class="nm"><strong>'+d.n+'</strong><div style="font-size:12px;color:#667085">'+d.dept+'</div></div>'+c('الحالات',d.cases)+c('المتحصّل',m(d.col))+c('الخصومات',m(d.disc),'neg')+c('نصيب الطبيب',m(d.share))+c('اتصرف',m(d.paid))+c('الباقي',m(d.share-d.paid),d.share-d.paid?'warn':'pos')+'<button class="btn go">'+(i===0?'▲ قفل الحالات':'▼ الحالات')+'</button></div>'+
+  (i===0?'<div class="cases"><div class="ch2"><b>حالات '+d.n+' في الوردية دي</b><span class="sp"></span><button class="x" aria-label="قفل الحالات">✕</button></div>'+d.ids.map(function(k){return card(V[k]);}).join('')+'</div>':'');}).join('')+'</div>';}},
+ discounts:{chips:['الكل 2','العاملين 1','خاص 1','فيزيتا 0'],kpis:[['إجمالي الخصومات',m(330),1],['عدد الخصومات','2'],['مستني اعتماد','0'],['أعلى نسبة','40٪'],['متوسط الخصم',m(165)]],html:function(){
+  return '<table class="dtable"><thead><tr><th>الوقت</th><th>المريض</th><th>نوع الخصم</th><th>النسبة</th><th>القيمة</th><th>عمله</th><th>اعتمده</th></tr></thead><tbody>'+DS.map(function(x){return '<tr><td>'+x.t+'</td><td>'+x.p+'</td><td><span class="kind '+x.k+'">'+x.kind+'</span></td><td>'+x.pct+'٪</td><td class="neg"><bdi dir="ltr">−'+x.amt+'</bdi> ج.م</td><td>'+x.by+'</td><td>'+x.ok+'</td></tr>';}).join('')+'</tbody></table>'+
+  '<div class="dcards">'+DS.map(function(x){return '<div class="dcard"><div class="r"><b>'+x.p+'</b><span>'+x.t+'</span></div><div class="r"><span class="kind '+x.k+'">'+x.kind+' '+x.pct+'٪</span><b class="neg"><bdi dir="ltr">−'+x.amt+'</bdi> ج.م</b></div><div class="r"><span>عمله</span>'+x.by+'</div><div class="r"><span>اعتمده</span>'+x.ok+'</div></div>';}).join('')+'</div>';}}};
+function show(t){document.querySelectorAll('.tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.tab===t);});
+ ['all','patients','doctors','discounts'].forEach(function(k){var el=document.getElementById('pane-'+k);el.hidden=k!==t;if(k===t)el.innerHTML=P[k].html();});
+ document.getElementById('chips').innerHTML=P[t].chips.map(function(c,i){return '<button class="chip'+(i===0?' on':'')+(/⚠/.test(c)?' red':'')+'">'+c+'</button>';}).join('');
+ var k=document.getElementById('kpis');k.hidden=!P[t].kpis;k.innerHTML=(P[t].kpis||[]).map(function(x){return '<div class="kpi'+(x[2]?' hero':'')+'"><small>'+x[0]+'</small><b>'+x[1]+'</b></div>';}).join('');}
+document.querySelector('.tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(b){location.hash=b.dataset.tab;}});
+window.addEventListener('hashchange',function(){show(location.hash.slice(1)||'patients');});
+if(/mgr/.test(location.search))document.getElementById('who').textContent='المدير المالي: كل الورديات';
+show(location.hash.slice(1)||'patients');
+</script></html>
