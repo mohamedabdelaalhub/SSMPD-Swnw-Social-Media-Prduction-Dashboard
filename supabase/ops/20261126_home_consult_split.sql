@@ -68,11 +68,7 @@ select d.doctor_key, d.doctor_name, d.departments,
                    from clinic_finance.doctor_contract_for_service(d.doctor_key, (select hc_code from code), null, 'خدمات الكشف', (now() at time zone 'Africa/Cairo')::date) c limit 1), 'none') current,
        exists (select 1 from clinic_finance.doctor_contracts k where k.doctor_key = d.doctor_key and k.service_scope = (select hc_code from code) and k.status = 'pending') pending_exact
   from docs d order by d.doctor_name;
--- P6. nurses (booking «مين اللي هينفّذ؟» list) → their reception provider (a nurse without one gets her 100 later: home_nurse_issues)
-select a.id admin_id, coalesce(a.name, a.email) nurse, pp.code, pp.doctor_key, np.provider_id, (select name from clinic_reception.providers where id = np.provider_id) provider
-  from public.admins a left join clinic_people.people pp on pp.admin_id = a.id
-  cross join lateral clinic_reception.home_nurse_provider((select id from clinic_reception.workspaces where mode = 'live'), a.id) np
- where clinic_reception.is_nurse(a.id) order by 2;
+-- P6 moved to the CHECK section (C0): it needs the migration's clinic_reception.home_nurse_provider.
 
 -- ===================== APPLY 1+2: nursing fee 150 + «كشف منزلي (شامل الانتقال)» 1500 (one transaction) =====================
 begin;
@@ -85,9 +81,9 @@ begin
   select id into ws from clinic_reception.workspaces where mode = 'live';
 
   -- (1) nursing visit fee: exactly one active 150 row; every other row of that name must be a 200 row (retired here)
-  select count(*) into n from public.pricing_services where btrim(name) = 'خدمة تمريض منزلي - رسوم الزيارة' and active and base_price = 150;
-  if n <> 1 then raise exception 'expected exactly 1 active «خدمة تمريض منزلي - رسوم الزيارة» row at 150, found %', n; end if;
-  select * into keep from public.pricing_services where btrim(name) = 'خدمة تمريض منزلي - رسوم الزيارة' and active and base_price = 150;
+  select count(*) into n from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and active and base_price = 150;
+  if n <> 1 then raise exception 'expected exactly 1 active «خدمة تمريض منزلي - رسوم الزيارة…» row at 150, found %', n; end if;
+  select * into keep from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and active and base_price = 150;
   if exists (select 1 from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and id <> keep.id and base_price <> 200) then
     raise exception 'another «خدمة تمريض منزلي - رسوم الزيارة…» row is neither 150 nor 200 — review P1 first'; end if;
   select array_agg(distinct btrim(booking_code)) filter (where nullif(btrim(booking_code), '') is not null) into old_codes
@@ -120,6 +116,16 @@ begin
    where id = hc.id;
 
   perform clinic_reception.sync_catalog(ws);
+  -- the nursing code may still carry an older active reception version (e.g. 200 and 150 both active on NUR-F61284):
+  -- keep only the newest version that belongs to the 150 row, as sync_catalog does when it re-versions a code
+  select id into sid from clinic_reception.services where workspace_id = ws and pricing_service_id = keep.id and active order by version desc limit 1;
+  if sid is not null then
+    update clinic_reception.services set active = false
+     where workspace_id = ws and active and id <> sid
+       and (pricing_service_id = keep.id or code = (select code from clinic_reception.services where id = sid));
+    get diagnostics n = row_count;
+    raise notice 'nursing fee: deactivated % older active reception version(s) of the same code', n;
+  end if;
 
   -- after-state checks (reception side)
   select count(*) into n from clinic_reception.services where workspace_id = ws and pricing_service_id = keep.id and active;
@@ -197,7 +203,12 @@ select c.doctor_key, c.doctor_name, c.rate, c.status, c.valid_from, c.valid_to f
 commit;   -- dry-run: replace with ROLLBACK
 
 -- ===================== CHECK after the financial manager approved (read-only) =====================
--- expect every doctor of P5: «exact 50%»; nurses with a provider in P6
+-- C0 (was P6; needs the migration, so it runs after it). nurses (booking «مين اللي هينفّذ؟» list) → their reception provider (a nurse without one gets her 100 later: home_nurse_issues)
+select a.id admin_id, coalesce(a.name, a.email) nurse, pp.code, pp.doctor_key, np.provider_id, (select name from clinic_reception.providers where id = np.provider_id) provider
+  from public.admins a left join clinic_people.people pp on pp.admin_id = a.id
+  cross join lateral clinic_reception.home_nurse_provider((select id from clinic_reception.workspaces where mode = 'live'), a.id) np
+ where clinic_reception.is_nurse(a.id) order by 2;
+-- expect every doctor of P5: «exact 50%»; nurses with a provider in C0
 select p.doctor_key, min(p.name) doctor,
        (select c.rate || '% ' || case when c.service_scope like 'قسم:%' then c.service_scope else 'exact' end
           from clinic_finance.doctor_contract_for_service(p.doctor_key, (select booking_code from public.pricing_services where canonical_code = 'SVC-0001396'), null, 'خدمات الكشف', (now() at time zone 'Africa/Cairo')::date) c limit 1) resolves_to

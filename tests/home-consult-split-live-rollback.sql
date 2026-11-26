@@ -208,9 +208,9 @@ begin
   select id into ws from clinic_reception.workspaces where mode = 'live';
 
   -- (1) nursing visit fee: exactly one active 150 row; every other row of that name must be a 200 row (retired here)
-  select count(*) into n from public.pricing_services where btrim(name) = 'خدمة تمريض منزلي - رسوم الزيارة' and active and base_price = 150;
-  if n <> 1 then raise exception 'expected exactly 1 active «خدمة تمريض منزلي - رسوم الزيارة» row at 150, found %', n; end if;
-  select * into keep from public.pricing_services where btrim(name) = 'خدمة تمريض منزلي - رسوم الزيارة' and active and base_price = 150;
+  select count(*) into n from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and active and base_price = 150;
+  if n <> 1 then raise exception 'expected exactly 1 active «خدمة تمريض منزلي - رسوم الزيارة…» row at 150, found %', n; end if;
+  select * into keep from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and active and base_price = 150;
   if exists (select 1 from public.pricing_services where name like 'خدمة تمريض منزلي - رسوم الزيارة%' and id <> keep.id and base_price <> 200) then
     raise exception 'another «خدمة تمريض منزلي - رسوم الزيارة…» row is neither 150 nor 200 — review P1 first'; end if;
   select array_agg(distinct btrim(booking_code)) filter (where nullif(btrim(booking_code), '') is not null) into old_codes
@@ -243,6 +243,16 @@ begin
    where id = hc.id;
 
   perform clinic_reception.sync_catalog(ws);
+  -- the nursing code may still carry an older active reception version (e.g. 200 and 150 both active on NUR-F61284):
+  -- keep only the newest version that belongs to the 150 row, as sync_catalog does when it re-versions a code
+  select id into sid from clinic_reception.services where workspace_id = ws and pricing_service_id = keep.id and active order by version desc limit 1;
+  if sid is not null then
+    update clinic_reception.services set active = false
+     where workspace_id = ws and active and id <> sid
+       and (pricing_service_id = keep.id or code = (select code from clinic_reception.services where id = sid));
+    get diagnostics n = row_count;
+    raise notice 'nursing fee: deactivated % older active reception version(s) of the same code', n;
+  end if;
 
   -- after-state checks (reception side)
   select count(*) into n from clinic_reception.services where workspace_id = ws and pricing_service_id = keep.id and active;

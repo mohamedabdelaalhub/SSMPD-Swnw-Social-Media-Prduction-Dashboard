@@ -41,7 +41,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   await owner("insert into clinic_finance.doctor_contracts(doctor_key,doctor_name,service_scope,valid_from,valid_to,rate,basis,base_scope,deduction,refund_policy,reference,status,payload,created_by,token) values('DOC-A','د. أحمد','قسم:خدمات الكشف',current_date-30,current_date+365,60,'performed','service','none','proportional_revenue','r','active','{}',$1,gen_random_uuid())",[id(2)]);
   // pricing as on live: nursing fee 150 (no code) + 200 (NUR-F61284, booked), home doctor fee SVC-0001396 (booking off)
   const ps=async(code,name,price,cat,extra)=>(await owner("insert into public.pricing_services(name,category,base_price,supplies_used,profit_margin_percent,active,canonical_code) values($1,$2,$3,'[]',0,true,$4) returning id",[name,cat,price,code]))[0].id;
-  const p150=await ps('SVC-0000150','خدمة تمريض منزلي - رسوم الزيارة',150,'الخدمات المنزلية'),p200=await ps('SVC-0000200','خدمة تمريض منزلي - رسوم الزيارة',200,'الخدمات المنزلية');
+  const p150=await ps('SVC-0000150','خدمة تمريض منزلي - رسوم الزيارة (يضاف لها سعر الخدمة المطلوبة)',150,'الخدمات المنزلية'),p200=await ps('SVC-0000200','خدمة تمريض منزلي - رسوم الزيارة',200,'الخدمات المنزلية');
   const pHC=await ps('SVC-0001396','خدمة طبيب منزلي - رسوم الزيارة (يضاف لها سعر الكشف العادي حسب التخصص)',1500,'الخدمات المنزلية');
   await owner("update public.pricing_services set booking_enabled=true,booking_code='NUR-F61284',booking_department='التمريض المنزلي',booking_minutes=30 where id=$1",[p200]);
   await owner("select clinic_reception.sync_catalog($1)",[ws]);await owner("update clinic_reception.services set is_home=true where code='NUR-F61284'");
@@ -54,7 +54,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   const OPS=fs.readFileSync('supabase/ops/20261126_home_consult_split.sql','utf8');
   const sec=h=>{const i=OPS.indexOf('-- ===================== '+h);assert.ok(i>=0,h);const j=OPS.indexOf('-- ===================== ',i+10);return OPS.slice(i,j<0?undefined:j);};
   const preview=sec('PREVIEW');
-  const res=await db.exec(preview);const P5=res[res.length-2].rows,P3=res[2].rows;
+  const res=await db.exec(preview);const P5=res[res.length-1].rows,P3=res[2].rows;
   assert.deepEqual(P5.map(r=>r.doctor_key),['DOC-A','DOC-B'],'doctor list: active doctor providers, nurses / units / inactive excluded, one row per key');
   assert.equal(P5.find(r=>r.doctor_key==='DOC-A').current,'department contract قسم:خدمات الكشف 60.0000%','before the batch the department contract would apply — the migration guard refuses that');
   assert.equal(P3.length,1,'P3 lists the future booking on the 200 fee');assert.equal(P3[0].id,futureAp);
@@ -84,7 +84,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   await assert.rejects(()=>owner("select set_config('request.jwt.claim.sub',$1,false); ",[MKU]).then(()=>owner("select public.clinic_finance_doctor_command('contract_review_batch',$1,gen_random_uuid())",[{ids,approve:true,note:'اعتماد'}])));
   await owner("select set_config('request.jwt.claim.sub','',false)");
   await as(3);await db.query("select public.clinic_finance_doctor_command('contract_review_batch',$1,gen_random_uuid())",[{ids,approve:true,note:'اعتماد المدير المالي'}]);await db.exec('reset role');
-  const chk=(await db.exec(sec('CHECK')))[0].rows;
+  const chkAll=await db.exec(sec('CHECK'));assert.ok(chkAll[0].rows.some(r=>r.nurse==='ممرضة'&&r.provider_id),'C0 lists the nurse with her provider');const chk=chkAll[1].rows;
   assert.deepEqual(chk.filter(r=>/^DOC-/.test(r.doctor_key)).map(r=>[r.doctor_key,r.resolves_to]),[['DOC-A','50.0000% exact'],['DOC-B','50.0000% exact']],'exact 50% wins over the department contract');
   console.log('PASS home consult split ops: PREVIEW doctor list (nurses/units/inactive excluded) + future 200 bookings listed; APPLY 1+2 retires 200, 150 takes NUR-F61284 (nurse contract kept, booking untouched), «كشف منزلي (شامل الانتقال)» 1500 basic + is_home + split row; idempotent; duplicate 150 refused; APPLY 3 pending 50% contracts via contract_batch as the maker, re-run skips, maker cannot approve, FM approves → exact 50% resolves.');
  }finally{await db.close();}})().catch(e=>{console.error(e);process.exit(1);});
