@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — على حساب الموظف (يتخصم من المرتب)</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}.sub{color:#5B6676;margin:0}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
+.card h2{margin:0;font-size:17px}.card h2 small{display:block;color:#5B6676;font-weight:400;font-size:12px}
+.steps{display:flex;gap:8px;flex-wrap:wrap;font-size:13px}.steps b{border-radius:999px;padding:4px 12px;background:#EEF1F6;color:#3B4658}.steps b.on{background:#0F369D;color:#fff}.steps b.new{background:#FFF1E8;color:#F15A22;border:1px dashed #F15A22}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:10px 8px;border-bottom:1px solid #EEF1F6;white-space:nowrap}th{color:#5B6676;font-weight:400}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}.st.ok{background:#E6F4EC;color:#2F7D5C}.st.wait{background:#FFF1E8;color:#F15A22}.st.blue{background:#E8EEFB;color:#0F369D}
+.btn{border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;background:#0F369D;color:#fff}.btn.ghost{background:#fff;color:#0F369D;border:1px solid #0F369D}.btn.orange{background:#F15A22}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.modal{border:1px solid #E3E8F2;border-radius:16px;overflow:hidden;background:#fff}.mh{background:linear-gradient(135deg,#0F369D,#1E4FC7);color:#fff;padding:14px 18px;font-weight:700;font-size:16px}
+.mb{padding:16px 18px;display:grid;gap:12px}
+.fact{display:grid;grid-template-columns:140px 1fr;gap:6px 12px;font-size:13px}.fact span:nth-child(odd){color:#5B6676}
+.opt{border:2px solid #E3E8F2;border-radius:12px;padding:10px 12px;display:grid;gap:4px}.opt.on{border-color:#0F369D;background:#F5F8FF}.opt b{font-size:14px}.opt small{color:#5B6676}
+.entry{border:1px dashed #C5CDDB;border-radius:12px;padding:10px 12px;font-size:13px;display:grid;gap:4px;background:#FBFCFE}.entry .ln{display:flex;justify-content:space-between;gap:12px}
+.note{font-size:12px;color:#5B6676;margin:0}.warn{background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px}
+.field{display:grid;gap:4px;font-size:13px}.field i{display:block;border:1px solid #D7DDEA;border-radius:10px;height:38px;background:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pos{color:#2F7D5C;font-weight:700}.neg{color:#D0402A;font-weight:700}
+@media (max-width:760px){.grid{grid-template-columns:1fr}.wrap{padding:14px}table{display:block;overflow-x:auto}.fact{grid-template-columns:110px 1fr}}
+.x{float:left;border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:8px;width:30px;height:30px;font:inherit;font-weight:700}
+.badge{border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;background:#EFE5FF;color:#6600FF}
+.big{font-size:20px;font-weight:700}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.three>div{border:1px solid #E3E8F2;border-radius:12px;padding:10px 12px;display:grid;gap:2px}.three small{color:#5B6676}
+@media (max-width:760px){.three{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<div><span class="tag">تصور — مش متنفذ</span><h1>على حساب الموظف — يتخصم من المرتب</h1>
+<p class="sub">لما الموظف (أو قريب درجة أولى) ياخد خدمة ومايدفعش كاش: المبلغ يتسجل مديونية على الموظف ويتخصم من مرتبه — شهر واحد أو أقساط. مفيش فلوس بتدخل الدرج. بطلب + موافقة المدير المالي أو المالك (شخص غير اللي طلب).</p></div>
+
+<div class="grid">
+<section class="modal" aria-label="تحصيل">
+ <div class="mh"><button class="x" aria-label="إغلاق">✕</button>تحصيل — زيارة 195</div>
+ <div class="mb">
+  <div class="fact"><span>الخدمة</span><span>كشف الاستشاري <bdi dir="ltr">600.00</bdi> — خصم العاملين 40%</span><span>المطلوب</span><span class="big" dir="ltr">360.00</span><span>الموظف</span><span>هدى — من «خصم العاملين بالمركز»</span></div>
+  <b>طريقة الدفع</b>
+  <div class="row"><span class="opt" style="flex:1"><b>نقدي</b></span><span class="opt" style="flex:1"><b>فيزا / محفظة</b></span></div>
+  <div class="opt on"><b>على حساب الموظف (يتخصم من المرتب)</b><small>بيظهر بس لو المريض هو الموظف أو قريب درجة أولى (نفس شرط خصم العاملين). المديونية على الموظف نفسه.</small></div>
+  <b>الخصم من المرتب</b>
+  <div class="row"><span class="opt" style="flex:1"><b>مرة واحدة</b><small>من مرتب ديسمبر</small></span><span class="opt on" style="flex:1"><b>أقساط</b><small>3 شهور × <bdi dir="ltr">120.00</bdi></small></span></div>
+  <div class="entry"><b>بعد الموافقة</b>
+   <div class="ln"><span>مدين: سلف ومديونيات العاملين — هدى (1142)</span><bdi dir="ltr">360.00</bdi></div>
+   <div class="ln"><span>دائن: مستحقات المرضى / تحصيل الخدمة (1122)</span><bdi dir="ltr">360.00</bdi></div>
+   <div class="ln"><span>درج الكاش</span><b>مفيش فلوس دخلت</b></div>
+  </div>
+  <div class="warn">لحد الموافقة الفاتورة بتبان «مستنية اعتماد الخصم من المرتب» — مش مدفوعة.</div>
+  <div class="row"><button class="btn">ابعت للموافقة</button><button class="btn ghost">رجوع</button></div>
+ </div>
+</section>
+
+<section class="modal" aria-label="تحويل تحصيل">
+ <div class="mh"><button class="x" aria-label="إغلاق">✕</button>تحويل التحصيل لمديونية على الموظف</div>
+ <div class="mb">
+  <p class="note">للحالات اللي اتسجلت «نقدي» بالغلط ومادخلش فلوس (زي زيارة 195 في وردية مازن).</p>
+  <div class="fact"><span>الإيصال</span><span>نقدي <bdi dir="ltr">360.00</bdi> — وردية مازن (مفتوحة)</span><span>الموظف</span><span>هدى</span><span>الخصم</span><span>مرة واحدة من مرتب ديسمبر</span><span>السبب</span><span>اتسجل كاش بالغلط — هيتخصم من المرتب</span></div>
+  <div class="entry"><b>بعد الموافقة</b>
+   <div class="ln"><span>الوردية مفتوحة: الكاش المتوقع في الدرج يقل</span><bdi dir="ltr">−360.00</bdi></div>
+   <div class="ln"><span>مدين: سلف ومديونيات العاملين — هدى (1142) / دائن: الخزنة (1111)</span><bdi dir="ltr">360.00</bdi></div>
+   <div class="ln"><span>لو الوردية اتقفلت: تسوية متراجعة على فرق الخزينة بتاعها</span><span>بنفس المبلغ</span></div>
+  </div>
+  <div class="warn">الموافقة: المدير المالي أو المالك — مش نفس اللي طلب.</div>
+  <div class="row"><button class="btn">ابعت للموافقة</button><button class="btn ghost">رجوع</button></div>
+ </div>
+</section>
+</div>
+
+<section class="card">
+ <h2>الموافقة — في الحسابات ← طلبات الصرف<small>المدير المالي أو السوبر أدمن (المالك) — أي واحد فيهم، بشرط مايكونش اللي طلب</small></h2>
+ <table><thead><tr><th>النوع</th><th>الموظف</th><th>المبلغ</th><th>الخصم</th><th>طلبه</th><th>الحالة</th><th></th></tr></thead><tbody>
+  <tr><td>خدمة على حساب الموظف</td><td>هدى</td><td><bdi dir="ltr">360.00</bdi></td><td>3 × <bdi dir="ltr">120.00</bdi></td><td>مازن</td><td><span class="st wait">مستني موافقة</span></td><td><button class="btn">موافقة</button> <button class="btn ghost">رفض</button></td></tr>
+  <tr><td>تحويل تحصيل لمديونية</td><td>هدى</td><td><bdi dir="ltr">360.00</bdi></td><td>مرة واحدة</td><td>مازن</td><td><span class="st ok">اتعتمد</span></td><td><button class="btn ghost">القيد</button></td></tr>
+ </tbody></table>
+</section>
+
+<section class="card">
+ <h2>في المرتبات — الخصم بيتعمل لوحده<small>نفس خصم السلف الموجود: كل شهر القسط بيتخصم من صافي المرتب</small></h2>
+ <table><thead><tr><th>الموظف</th><th>المديونية</th><th>اتخصم</th><th>الباقي</th><th>قسط الشهر ده</th><th>آخر قسط</th></tr></thead><tbody>
+  <tr><td>هدى</td><td><bdi dir="ltr">360.00</bdi></td><td><bdi dir="ltr">0.00</bdi></td><td><bdi dir="ltr">360.00</bdi></td><td><bdi dir="ltr">120.00</bdi></td><td>فبراير 2027</td></tr>
+ </tbody></table>
+ <p class="note">المحاسب يقدر يأجل قسط أو يغيّر عدد الأقساط بطلب + موافقة. مفيش حاجة بتتمسح — أي غلط بيتصحح بقيد عكسي.</p>
+</section>
+</div></body></html>
