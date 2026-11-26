@@ -57,6 +57,17 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   w.SSMPDDb.financeDoctorStatementDetail = async () => { throw new Error('404'); }; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
   assert(d.querySelector('.fc-modal form').textContent.includes('INV-1') && !d.querySelector('.fc-modal form').textContent.includes('بدون عقد ساري'), 'fallback to the base statement');
   delete w.SSMPDDb.financeDoctorStatementDetail; d.querySelectorAll('.fc-modal').forEach(x => x.remove());
+  // finance chat 2026-11-26: clinic_finance_doctor_dues preferred (reception invoices RX-…), dues_status mapped; falls back when it fails
+  let duesCalls = 0; w.SSMPDDb.financeDoctorDues = async (k, f, t) => { duesCalls++; return { summary: { balance: 900, paid_out: 200, other_credits: 0 }, dues: { payable_total: 300, waiting_total: 400, available_now: 300 }, invoices: [
+    { invoice_id: 'r1', reference: 'RX-11', patient_ref: 'P-1', patient_name: 'سارة', date: '2026-11-20', fee: 300, net: 600, collected: 600, dues_status: 'payable', lines: [{ service_name: 'كشف', amount: 600, rate: 50 }] },
+    { invoice_id: 'r2', reference: 'RX-12', date: '2026-11-21', fee: 400, net: 800, collected: 0, patient_open: 800, dues_status: 'waiting_patient', lines: [{ service_name: 'أشعة', amount: 800, rate: 50 }] },
+    { invoice_id: 'r3', reference: 'RX-13', date: '2026-11-22', fee: 200, net: 400, collected: 400, dues_status: 'paid_out', lines: [] }, { invoice_id: 'r4', reference: 'RX-14', date: '2026-11-23', fee: 50, net: 100, collected: 100, dues_status: 'requested', lines: [] }] }; };
+  w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); { const t2 = d.querySelector('.fc-modal form').textContent; assert.equal(duesCalls, 1, 'dues RPC preferred');
+    for (const s3 of ['يتصرف دلوقتي (1)', 'سارة', 'مستني فلوس (1)', 'في طلب صرف أو اتصرفت (2)', 'اتصرف', 'في طلب صرف', '300.00']) assert(t2.includes(s3), 'dues view shows ' + s3); }
+  d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDDb.financeDoctorDues = async () => ({ summary: {}, dues: {}, invoices: [] }); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
+  assert(d.querySelector('.fc-modal form').textContent.includes('لازم تتسجل إنها «اتنفذت» في الاستقبال'), 'empty: executed hint');
+  d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDDb.financeDoctorDues = async () => { throw new Error('denied'); }; w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
+  assert(d.querySelector('.fc-modal form').textContent.includes('INV-1'), 'dues failure falls back to the statement'); delete w.SSMPDDb.financeDoctorDues; d.querySelectorAll('.fc-modal').forEach(x => x.remove());
   // ---- contracts status filter
   d.body.append(box);
   const fd = Object.assign({}, data, { doctor_contracts: [mk('f1', 'active'), mk('f2', 'pending'), Object.assign(mk('f3', 'rejected'), { doctor_key: 'EMP-2', doctor_name: 'د. ب' })] });
