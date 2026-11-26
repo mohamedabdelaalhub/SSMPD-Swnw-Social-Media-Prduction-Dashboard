@@ -77,3 +77,10 @@
 .fc-pr-need .fc-ho{border-bottom-color:#F6DCCF}
 .fc-pr-more{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#F3F6FB;border-radius:12px;padding:8px 12px;font-size:13px;color:#475467;margin:-6px 0 14px}
 @media(max-width:760px){.fc-pr{grid-template-columns:repeat(2,minmax(0,1fr))}.fc-pr .fc-ho-w,.fc-pr .fc-ho-s{grid-column:1/-1}}
+/* «الخزائن والورديات» accordion — help 297 */
+.ta{display:grid;gap:8px;margin:12px 0}.ta-item[hidden]{display:none}
+.ta-h{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid #D5DEEE;background:#fff;border-radius:12px;padding:12px;font:inherit;color:#16212E;text-align:start;cursor:pointer;min-width:0}
+.ta-h b{font-size:15px}.ta-h small{display:block;color:#5b6b82;font-size:12px;font-weight:400}.ta-r{display:flex;align-items:center;gap:8px;flex:none}
+.ta-badge{background:#F1F4F8;border-radius:999px;padding:2px 10px;font-size:12px}.ta-badge[hidden]{display:none}.ta-badge.is-need{background:#F15A22;color:#fff}
+.ta-chev{color:#5b6b82;transition:transform .15s}.ta-item.open>.ta-h{border-color:#0F369D;background:#F4F7FF}.ta-item.open>.ta-h .ta-chev{transform:rotate(180deg)}
+.ta-b{border:1px solid #D5DEEE;border-top:0;border-radius:0 0 12px 12px;padding:10px;display:grid;gap:8px;margin-top:-6px;min-width:0}.ta-b[hidden]{display:none}
