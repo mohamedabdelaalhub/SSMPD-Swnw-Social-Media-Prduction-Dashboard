@@ -1,0 +1,49 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: مصروفات الورديات</title>
+<style>*{box-sizing:border-box}body{margin:0;padding:16px;background:#f4f7fc;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.wrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;max-width:1240px;margin:auto}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;align-content:start;min-width:0}.cap{font-size:12px;color:#5b6b82}h3,p{margin:0}h3{font-size:17px}
+.btn{border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:8px 12px;font:inherit;min-width:0}.pri{background:#0F369D;color:#fff;border-color:#0F369D}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid #D5DEEE;border-radius:14px;padding:10px 12px}.menu{color:#0F369D;font-weight:700}.left{display:flex;align-items:center;gap:10px}.bk{width:38px;height:38px;border:1px solid #D5DEEE;background:#fff;border-radius:10px;font-size:20px;line-height:1}
+.period{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#F1F4F8;border-radius:12px;padding:8px 10px;font-size:13px}.period b{color:#0F369D}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.k{border:1px solid #D5DEEE;border-radius:12px;padding:8px;text-align:center}.k span{display:block;font-size:11.5px;color:#5b6b82}.k b{font-size:17px}.k.need{border-color:#F15A22;background:#FFF6F0}.k.need b{color:#F15A22}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{padding:6px 12px;border-radius:999px;background:#F1F4F8;font-size:13px}.chip.on{background:#0F369D;color:#fff}
+.ex{border:1px solid #D5DEEE;border-radius:12px;padding:10px;display:grid;gap:6px}.ex .top{display:flex;justify-content:space-between;gap:8px}.ex small{color:#5b6b82}.amt{font-weight:700}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;justify-self:start}.st.w{background:#FFF3E0;color:#8a4b00}.st.ok{background:#E6F3EC;color:#2F7D5C}.st.bad{background:#FDECE8;color:#D0402A}
+.row{display:flex;gap:8px;flex-wrap:wrap}.empty{text-align:center;padding:18px 10px;background:#F8FAFD;border-radius:12px;color:#5b6b82;display:grid;gap:6px}.empty b{color:#16212E}
+.ah{width:100%;display:flex;justify-content:space-between;align-items:center;border:1px solid #D5DEEE;background:#fff;border-radius:12px;padding:12px;font:inherit;text-align:start}.ah.open{border-color:#0F369D;background:#F4F7FF}
+.set{border:1px solid #D5DEEE;border-top:0;border-radius:0 0 12px 12px;padding:10px;display:grid;gap:8px;margin-top:-6px}.srow{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid #EEF2F8;padding-bottom:8px}.srow:last-child{border:0}.srow small{display:block;color:#5b6b82}
+.sheet{border:1px solid #0F369D;border-radius:14px;padding:12px;display:grid;gap:10px;box-shadow:0 6px 18px rgba(15,54,157,.12)}.sh{display:flex;justify-content:space-between;align-items:center}.x{width:34px;height:34px;border:1px solid #D5DEEE;background:#fff;border-radius:10px}
+label{display:grid;gap:4px;font-size:12px;color:#5b6b82}input{font:inherit;padding:10px;border:1px solid #D5DEEE;border-radius:10px;width:100%}
+.note{font-size:12px;color:#5b6b82;background:#F1F4F8;border-radius:8px;padding:6px 10px}
+@media(max-width:700px){.wrap{grid-template-columns:minmax(0,1fr)}}</style>
+<div class="wrap">
+<section class="card"><span class="cap">١) القايمة — فترة واحدة، أرقام فوق، كارت لكل مصروف</span>
+<div class="bar"><span class="menu">≡ أقسام الحسابات</span><span class="left"><b>مصروفات الورديات</b><button class="bk" aria-label="رجوع">→</button></span></div>
+<div class="period">الفترة: <b>من 01/11/2026 إلى 26/11/2026</b> — بتتغيّر من شريط الفترة اللي فوق</div>
+<div class="kpis"><div class="k"><span>عدد المصروفات</span><b>6</b></div><div class="k"><span>الإجمالي</span><b>780 ج.م</b></div><div class="k need"><span>مستني مراجعتك</span><b>2</b></div></div>
+<div class="chips"><span class="chip on">الكل</span><span class="chip">مستني مراجعة</span><span class="chip">اتراجع</span><span class="chip">مرفوض</span></div>
+<div class="ex"><div class="top"><b>مياه شرب</b><span class="amt">120 ج.م</span></div><small>خزينة مازن · أحمد · اليوم 11:20 ص</small><span class="st w">مستني مراجعة</span><div class="row"><button class="btn pri">اتراجع ✓</button><button class="btn">رفض</button><button class="btn">الإيصال</button></div></div>
+<div class="ex"><div class="top"><b>أدوات نظافة</b><span class="amt">210 ج.م</span></div><small>خزينة مريم · منى · امبارح 3:05 م</small><span class="st ok">اتراجع ✓</span><div class="row"><button class="btn">الإيصال</button></div></div>
+<div class="ex"><div class="top"><b>إكرامية</b><span class="amt">50 ج.م</span></div><small>خزينة منار · هبة · امبارح 1:10 م</small><span class="st bad">مرفوض — «من غير إيصال»</span></div>
+<button class="ah" type="button"><b>هامش الصرف لكل خزينة</b><span>⌄</span></button></section>
+
+<section class="card"><span class="cap">٢) لما مفيش مصروفات — رسالة بدل جدول فاضي</span>
+<div class="bar"><span class="menu">≡ أقسام الحسابات</span><span class="left"><b>مصروفات الورديات</b><button class="bk" aria-label="رجوع">→</button></span></div>
+<div class="period">الفترة: <b>من 01/11/2026 إلى 26/11/2026</b></div>
+<div class="kpis"><div class="k"><span>عدد المصروفات</span><b>0</b></div><div class="k"><span>الإجمالي</span><b>0 ج.م</b></div><div class="k"><span>مستني مراجعتك</span><b>0</b></div></div>
+<div class="chips"><span class="chip on">الكل</span><span class="chip">مستني مراجعة</span><span class="chip">اتراجع</span><span class="chip">مرفوض</span></div>
+<div class="empty"><b>مفيش مصروفات في الفترة دي</b><span>غيّر الفترة من الشريط اللي فوق لو عايز تشوف أيام تانية.</span></div>
+<button class="ah" type="button"><b>هامش الصرف لكل خزينة</b><span>⌄</span></button>
+<div class="note">الرفض بيتسجّل للمتابعة ومش بيخصم من حد تلقائي.</div></section>
+
+<section class="card"><span class="cap">٣) «هامش الصرف لكل خزينة» — ورا زرار + نافذة بدل prompt() فيها ✕</span>
+<button class="ah open" type="button"><b>هامش الصرف لكل خزينة</b><span>⌃</span></button>
+<div class="set"><div class="srow"><span><b>خزينة مازن</b><small>هامش الوردية 500 ج.م · حد المصروف الواحد 300 ج.م</small></span><button class="btn">تعديل</button></div>
+<div class="srow"><span><b>خزينة مريم</b><small>هامش الوردية 500 ج.م · حد المصروف الواحد 300 ج.م</small></span><button class="btn">تعديل</button></div>
+<div class="note">صفر = مصروفات الوردية مقفولة للخزينة دي.</div></div>
+<div class="sheet"><div class="sh"><b>تعديل هامش خزينة مازن</b><button class="x" aria-label="إغلاق">✕</button></div>
+<label>هامش مصروفات الوردية (ج.م)<input value="500" inputmode="numeric"></label><label>حد المصروف الواحد (ج.م)<input value="300" inputmode="numeric"></label>
+<div class="row"><button class="btn pri">حفظ</button><button class="btn">إلغاء</button></div></div>
+<div class="sheet"><div class="sh"><b>رفض مصروف «مياه شرب»</b><button class="x" aria-label="إغلاق">✕</button></div>
+<label>سبب الرفض (٣ حروف على الأقل)<input placeholder="مثلاً: من غير إيصال"></label><div class="row"><button class="btn pri">رفض المصروف</button><button class="btn">إلغاء</button></div></div></section>
+</div>
