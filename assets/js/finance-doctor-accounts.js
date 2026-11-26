@@ -91,18 +91,29 @@
       })) + '</div>';
   }
 
+  /* help 279 (owner «طبقه», mockup doctor-accounts-plain): three numbers per doctor, no code column, one statement button,
+     «اصرف» (invoice-linked dues) and, in the row menu, «صرف من الرصيد» for opening / legacy balances that have no invoices
+     (finance chat: the generic doctor_payout request is still needed for those). The name button stays first (applyFilter reads it). */
   function accountsRows(rows, h, d) {
     var e = h.esc, b = h.btn, m = h.money;
-    return h.table(['الطبيب', 'الكود', 'الرصيد', 'مستحق للصرف الآن', 'بانتظار التحصيل', 'طلبات صرف معلّقة', 'المصروف', 'الإجراء'], rows.map(function (r) {
-      var wait = m(r.waiting) + (Number(r.waiting_invoices) ? ' <small>(' + Number(r.waiting_invoices) + ' فاتورة)</small>' : '');
-      return [b('doctor-statement', r.doctor_key, r.doctor_name || r.doctor_key) + (r.has_active_contract ? '' : ' <small>بدون عقد معتمد</small>'), e(r.doctor_key), m(r.balance), '<strong>' + m(r.payable_now) + '</strong>', wait, m(r.pending_payouts), m(r.paid_out), b('doctor-statement', r.doctor_key, 'فتح الحساب') + (d && d.can_create ? ' ' + b('doctor-dues', r.doctor_key, 'صرف بالفواتير') : '')];
+    return h.table(['الدكتور', 'يتصرف له دلوقتي', 'مستني فلوس', 'اتصرف له', ''], rows.map(function (r) {
+      var legacy = !r.doctor_name || r.doctor_name === r.doctor_key, name = legacy ? 'حساب دكتور قديم' : r.doctor_name;
+      var notes = [];
+      if (legacy) notes.push('مفيش اسم محفوظ — رقمه القديم ' + r.doctor_key);
+      if (!r.has_active_contract) notes.push('مفيش عقد معتمد');
+      if (Number(r.pending_payouts)) notes.push('طلب صرف ' + m(r.pending_payouts) + ' مستني الاعتماد');
+      var wait = '<span class="fc-da-wait">' + m(r.waiting) + '</span>' + (Number(r.waiting_invoices) ? '<small class="fc-sub">' + Number(r.waiting_invoices) + ' فاتورة</small>' : '');
+      var acts = b('doctor-statement', r.doctor_key, 'كشف الحساب') + (d && d.can_create && Number(r.payable_now) > 0 ? ' ' + b('doctor-dues', r.doctor_key, 'اصرف') : '') +
+        (d && d.can_create ? '<details class="fc-da-more"><summary aria-label="اختيارات تانية">⋯</summary>' + b('open-disbursement', 'doctor_payment', 'صرف من الرصيد (من غير فواتير)') + '<small class="fc-sub">للأرصدة القديمة والافتتاحية</small></details>' : '');
+      return [b('doctor-statement', r.doctor_key, name).replace('btn ghost sm', 'fc-da-name') + (notes.length ? '<small class="fc-sub">' + e(notes.join(' · ')) + '</small>' : ''),
+        '<strong class="fc-da-now">' + m(r.payable_now) + '</strong>', wait, m(r.paid_out), '<span class="fc-da-acts">' + acts + '</span>'];
     }));
   }
   function accountsPanel(d, h) {
     var e = h.esc, m = h.money, b = h.btn;
     ensure(TAB);
     var html = '<div data-da-tab="' + TAB + '"><details class="fc-explain"><summary>إزاي بتتحسب؟</summary><p>الأطباء اللي ليهم حساب فعلي بس (أتعاب مستحقة أو مصروفات أو رصيد افتتاحي أو رصيد غير صفر). اضغط على اسم الطبيب لفتح كشف حسابه بالتفصيل. «مستحق للصرف الآن» = الرصيد بعد خصم أتعاب الفواتير اللي لسه ماتسددتش بالكامل، وهو نفس الرقم في كشف الدكتور.</p></details><div class="fc-actions">' +
-      b('doctor-accounts-refresh', '', 'تحديث') + (d.can_create ? b('open-disbursement', 'doctor_payment', 'طلب صرف مستحقات').replace('btn ghost sm', 'btn btn-primary') : '') + '</div>';
+      b('doctor-accounts-refresh', '', 'تحديث') + '</div>';
     if (!cache) return html + '<p role="status">جاري تحميل حسابات الأطباء…</p></div>';
     if (!cache.acc.ok) {
       var em = String((cache.acc.error && cache.acc.error.message) || ''), denied = /صلاحية|permission|42501/i.test(em);
@@ -110,10 +121,10 @@
     }
     var rows = cache.acc.v.doctors || [], now = rows.reduce(function (s, r) { return s + Number(r.payable_now || 0); }, 0), wait = rows.reduce(function (s, r) { return s + Number(r.waiting || 0); }, 0),
       owed = rows.filter(function (r) { return Number(r.payable_now) > 0; }).length;
-    html += '<div class="fc-st-cards fc-da-kpis"><div class="fc-st-card"><span>أطباء ليهم حساب</span><strong>' + rows.length + '</strong><small>من غير الأرصدة الصفر</small></div><div class="fc-st-card ok"><span>مستحق للصرف الآن</span><strong>' + m(now) + '</strong><small>' + (owed === 1 ? 'طبيب واحد' : owed + ' أطباء') + '</small></div><div class="fc-st-card wait"><span>بانتظار التحصيل</span><strong>' + m(wait) + '</strong><small>أتعاب فواتير لسه ماتسددتش</small></div></div>';
-    html += '<div class="fc-filter-bar">' + [['all', 'الكل (' + rows.length + ')'], ['owed', 'ليهم مستحق الآن (' + owed + ')'], ['waiting', 'عندهم أتعاب بانتظار التحصيل']].map(function (c) {
+    html += '<div class="fc-st-cards fc-da-kpis"><div class="fc-st-card"><span>أطباء ليهم حساب</span><strong>' + rows.length + '</strong><small>من غير الأرصدة الصفر</small></div><div class="fc-st-card ok"><span>يتصرف دلوقتي</span><strong>' + m(now) + '</strong><small>' + (owed === 1 ? 'طبيب واحد' : owed + ' أطباء') + '</small></div><div class="fc-st-card wait"><span>مستني فلوس المريض أو التأمين</span><strong>' + m(wait) + '</strong><small>أتعاب فواتير لسه ماتسددتش</small></div></div>';
+    html += '<div class="fc-filter-bar">' + [['all', 'الكل (' + rows.length + ')'], ['owed', 'ليهم فلوس دلوقتي (' + owed + ')'], ['waiting', 'مستنيين تحصيل']].map(function (c) {
       return '<button type="button" class="btn ghost sm fc-chip' + (filterKey === c[0] ? ' active' : '') + '" data-da-filter="' + c[0] + '">' + e(c[1]) + '</button>';
-    }).join(' ') + '<input type="search" class="fc-name-filter" data-da-name placeholder="بحث باسم الدكتور أو كوده" value="' + e(nameFilter) + '"></div>';
+    }).join(' ') + '<input type="search" class="fc-name-filter" data-da-name placeholder="ابحث باسم الدكتور" value="' + e(nameFilter) + '"></div>';
     html += '<div class="fc-da-table">' + (rows.length ? accountsRows(rows, h, d) : '<p>مفيش أطباء ليهم حساب لسه.</p>') + '</div>';
     /* owner 2026-11-18: the «ملهمش عقد» list lives in «عقود الأطباء» only; here just a one-line pointer to it */
     if (document.querySelector('.acs') && doctorsNeedingContract().length) html += '<p class="fc-note fc-da-pointer">' + (function (n) { return n === 1 ? 'طبيب واحد مسجل في الموارد البشرية وملوش عقد لسه.' : n === 2 ? 'طبيبين مسجلين في الموارد البشرية وملهمش عقد لسه.' : n + ' أطباء مسجلين في الموارد البشرية وملهمش عقد لسه.'; })(doctorsNeedingContract().length) + ' <button type="button" class="btn-link" data-acs-jump="doctors">افتح «عقود الأطباء»</button></p>';
