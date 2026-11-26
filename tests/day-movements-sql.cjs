@@ -29,8 +29,22 @@ await as(4);assert.equal((await call('clinic_finance_day_movements',[])).visits.
 // a plain cashier (admin 4) with his own open shift: sees it, without the opening balance (blind count kept)
 await as(1);const reg4=await call('clinic_finance_save_register',[null,'خزينة تانية (اختبار)',1000,'both']);
 await q("insert into clinic_finance.shifts(register_id,cashier_id,token,opening_book) values($1,$2,gen_random_uuid(),100)",[reg4,id(4)]);
-await as(4);{const c=await call('clinic_finance_day_movements',[]);assert.equal(c.manager,false);assert.equal(c.shifts.length,1);
- assert(!/opening|expected|counted/.test(JSON.stringify(c)),'blind count kept: no opening balance for the cashier');}
+// owner 2026-11-26 «نأجل تطبيق العد الأعمى مؤقتا»: switch OFF by default → the cashier sees his opening balance in «حركات اليوم»
+await as(4);{const c=await call('clinic_finance_day_movements',[]);assert.equal(c.manager,false);assert.equal(c.shifts.length,1);assert.equal(c.blind_count,false);assert.equal(c.can_set_blind,false);
+ assert.equal(+c.shifts[0].opening_book,100,'blind count OFF (trial): the cashier sees the opening balance');}
+// only the super admin / financial manager can switch it
+await as(4);assert.equal((await call('clinic_finance_blind_count',['settings'])).can_change,false);
+await assert.rejects(()=>call('clinic_finance_blind_count',['set',true]),e=>/للسوبر أدمن أو المدير المالي/.test(e.message));
+await db.exec('reset role');const sa=(await db.query("select id from public.admins where role in ('super_admin','financial_manager') and active order by role='super_admin' desc limit 1")).rows[0].id;
+await db.query("select set_config('test.admin',$1,false)",[sa]);await db.exec('set role authenticated');
+assert.equal((await call('clinic_finance_blind_count',['set',true])).enabled,true);await assert.rejects(()=>call('clinic_finance_blind_count',['set',null]),/حدد تشغيل/);
+// switch ON → the cashier is blind again (no opening / expected / counted), managers still see it
+await as(4);{const c=await call('clinic_finance_day_movements',[]);assert.equal(c.blind_count,true);
+ assert(!/opening|expected|counted/.test(JSON.stringify(c.shifts)),'blind count ON: no opening balance for the cashier');}
+await as(3);assert('opening_book' in (await call('clinic_finance_day_movements',[null,date,date])).shifts[0],'managers keep it');
+await db.exec('reset role');await db.query("select set_config('test.admin',$1,false)",[sa]);await db.exec('set role authenticated');await call('clinic_finance_blind_count',['set',false]);
+// the existing movements RPC is untouched: still no opening balance for the cashier whatever the switch
+await as(4);assert(!/opening|expected|counted/.test(JSON.stringify(await call('clinic_finance_shift_movements',[]))),'shift movements stay blind');
 await assert.rejects(()=>call('clinic_finance_day_movements',[fsid]),e=>/مش متاحة/.test(e.message));
 // financial manager: period view sees it, with the opening balance; range limit
 await as(3);d=await call('clinic_finance_day_movements',[null,date,date]);assert(d.manager);assert(d.visits.some(x=>x.id===v.id));assert('opening_book' in d.shifts[0],'manager sees the opening balance');
@@ -41,6 +55,7 @@ await db.exec('reset role');await db.exec('begin read only');await as(1);await c
 // rollback drops it
 await db.exec(require('fs').readFileSync('supabase/rollbacks/20261126220000_day_movements.rollback.sql','utf8'));
 assert.equal((await db.query("select to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)') f")).rows[0].f,null);
-await db.close();console.log('PASS day movements: cashier sees own shift visits (due, collected here + receipts, doctor share, discount asked/approved, payouts from his drawer), no opening balance; other employee nothing/refused; FM any shift/period with opening; read-only; re-apply refused; rollback drops.');})().catch(e=>{console.error(e);process.exit(1);});`;
+assert.equal((await db.query("select to_regclass('clinic_finance.blind_count_settings') t")).rows[0].t,null,'switch table dropped');
+await db.close();console.log('PASS day movements: cashier sees own shift visits (due, collected here + receipts, doctor share, discount asked/approved, payouts from his drawer), blind-count switch OFF (trial: cashier sees opening) / ON (blind), SA/FM only; other employee nothing/refused; FM any shift/period with opening; read-only; re-apply refused; rollback drops.');})().catch(e=>{console.error(e);process.exit(1);});`;
 const file=path.join(require('os').tmpdir(),'day-movements-run-'+process.pid+'.cjs');
 fs.writeFileSync(file,prefix+body);try{require(file);}finally{setTimeout(()=>{try{fs.unlinkSync(file);}catch(_){}},0);}

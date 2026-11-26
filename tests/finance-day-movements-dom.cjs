@@ -16,7 +16,7 @@ const mv=[{at:'2026-11-26T08:16:00Z',direction:'in',kind:'self',title:'منى ع
  {at:'2026-11-26T13:20:00Z',direction:'out',kind:'out',title:'مصروف',detail:'أدوات نظافة',method:'cash',reference:'E-2',amount:-120}];
 const pay=(m,a,rc)=>[{method:m,amount:a,receipt_no:rc,reference:rc,at:'2026-11-26T08:00:00Z'}];
 const svc=(o)=>Object.assign({status:'completed',discount_percent:0,discount:0,claim:0,request:null,finance_invoice_id:null},o);
-const day={manager:false,shifts:[{id:'s1',register_name:'خزينة الاستقبال 1',cashier_name:'نهى',status:'open'}],channels:{'f-1':{name:'فيزيتا',kind:'external',payable:'none',platform_share:150},'f-4':{name:'ترشيح د. خارجي',kind:'external',payable:'commission',platform_share:50}},
+const day={manager:false,blind_count:true,can_set_blind:false,shifts:[{id:'s1',register_name:'خزينة الاستقبال 1',cashier_name:'نهى',status:'open'}],channels:{'f-1':{name:'فيزيتا',kind:'external',payable:'none',platform_share:150},'f-4':{name:'ترشيح د. خارجي',kind:'external',payable:'commission',platform_share:50}},
  visits:[
   {id:'v1',at:'2026-11-26T08:15:00Z',patient:'منى عادل',file_no:'P-2026-900101',provider:'د. سامح فؤاد',provider_id:'p1',source:'whatsapp',discount_kind:'vezeeta',fixes:[],
    services:[svc({id:'o1',name:'كشف جلدية',provider:'د. سامح فؤاد',provider_id:'p1',gross:600,due:600,collected_here:600,collected_total:600,doctor_fee:225,payments:pay('cash',600,'RC-1'),finance_invoice_id:'f-1'})]},
@@ -30,7 +30,7 @@ const day={manager:false,shifts:[{id:'s1',register_name:'خزينة الاستق
    services:[svc({id:'o5',name:'كشف عظام',provider:'د. طارق لطفي',provider_id:'p3',gross:500,due:500,collected_here:500,collected_total:500,doctor_fee:250,payments:pay('cash',500,'RC-5'),finance_invoice_id:'f-4'})]}],
  payouts:[{id:'po1',at:'2026-11-26T12:05:00Z',provider_id:'p2',doctor_name:'د. هالة منصور',amount:180,reference:'E-1'}]};
 const calls=[];let dayResult=day;
-const rpc=(n,a)=>{calls.push([n,JSON.parse(JSON.stringify(a))]);return Promise.resolve(n==='clinic_finance_day_movements'?dayResult:{shifts:day.shifts,movements:mv,manager:false});};
+const rpc=(n,a)=>{calls.push([n,JSON.parse(JSON.stringify(a))]);return Promise.resolve(n==='clinic_finance_day_movements'?dayResult:n==='clinic_finance_blind_count'?{enabled:a.p_enabled}:{shifts:day.shifts,movements:mv,manager:false});};
 // ---- reception cashier (own shift) ----
 let host=doc.createElement('div');doc.body.append(host);const view=w.SSMPDShiftMovements.mount(host,{rpc});await tick();
 assert.deepEqual(calls.map(c=>c[0]),['clinic_finance_shift_movements','clinic_finance_day_movements'],'one extra read-only call');
@@ -42,7 +42,7 @@ const tiles=[...host.querySelectorAll('.dm-tile')].map(t=>t.textContent);
 assert(tiles[0].includes('اتحصّل في ورديتك')&&tiles[0].includes('2,670')&&tiles[0].includes('نقدي 1,500')&&tiles[0].includes('فيزا 360')&&tiles[0].includes('إنستا باي 810'));
 assert(tiles[1].includes('300')&&tiles[1].includes('للأطباء 180')&&tiles[1].includes('مصروفات وغيرها 120'));
 assert(tiles[2].includes('330')&&tiles[2].includes('2 خصم'));
-assert(tiles[3].includes('صافي النقدي في ورديتك')&&tiles[3].includes('1,200')&&!/المفروض في الدرج/.test(tiles[3]),'cashier: no expected drawer (blind count kept)');
+assert(tiles[3].includes('صافي النقدي في ورديتك')&&tiles[3].includes('1,200')&&!/المفروض في الدرج/.test(tiles[3]),'blind count ON: cashier sees net cash only');
 const popText=()=>host.querySelector('[data-dm-pop]').textContent,ovOpen=()=>!host.querySelector('[data-dm-ov]').hidden;
 const closeBtn=()=>host.querySelector('[data-dm-pop] [data-dm-close]'),backBtn=()=>host.querySelector('[data-dm-pop] [data-dm-back]');
 // every tile opens its detail with ✕
@@ -83,15 +83,23 @@ assert(lines[0].textContent.includes('خصم العاملين بالمركز 40�
 host.querySelector('[data-dm-pop] .dm-ln').click();assert(popText().includes('كريم ناصر')&&backBtn());closeBtn().click();assert(!ovOpen());
 // back to «كل الحركات»: the original filters still work
 host.querySelector('[data-dm-tab="all"]').click();host.querySelector('[data-mv-filter="out"]').click();assert.equal(host.querySelectorAll('.mv-row').length,2);
+// ---- trial (owner 2026-11-26 «نأجل تطبيق العد الأعمى مؤقتا»): blind count OFF → the server sends the opening balance → cashier sees the expected drawer
+host.remove();host=doc.createElement('div');doc.body.append(host);calls.length=0;dayResult=Object.assign({},day,{blind_count:false,shifts:[Object.assign({opening_book:500},day.shifts[0])]});
+w.SSMPDShiftMovements.mount(host,{rpc});await tick();
+let tl=host.querySelectorAll('.dm-tile')[3].textContent;assert(tl.includes('المفروض في الدرج')&&tl.includes('1,700'),'cashier, blind OFF: 500 + 1,500 − 300');
+host.querySelectorAll('.dm-tile')[3].click();assert(popText().includes('رصيد أول الوردية')&&!host.querySelector('[data-dm-blind]'),'no switch for the cashier');closeBtn().click();
 // ---- manager (FM): period view, sees the expected drawer cash with the opening balance ----
-host.remove();host=doc.createElement('div');doc.body.append(host);calls.length=0;dayResult=Object.assign({},day,{manager:true,shifts:[Object.assign({opening_book:500},day.shifts[0])]});
+host.remove();host=doc.createElement('div');doc.body.append(host);calls.length=0;dayResult=Object.assign({},day,{manager:true,blind_count:false,can_set_blind:true,shifts:[Object.assign({opening_book:500},day.shifts[0])]});
 const mgr=w.SSMPDShiftMovements.mount(host,{rpc,manager:true,staff:[{id:'e1',name:'نهى'}]});await tick();
 assert(calls[1][1].p_from&&calls[1][1].p_to&&calls[1][1].p_cashier===null,'manager: period args passed to the day RPC too');
 let last=host.querySelectorAll('.dm-tile')[3].textContent;assert(last.includes('المفروض في الدرج')&&last.includes('1,700'),'500 + 1,500 − 300');
+// SA / FM: the switch in the expected-drawer popup → clinic_finance_blind_count('set') then reload
+host.querySelectorAll('.dm-tile')[3].click();assert(popText().includes('متوقف (فترة تجريبية)'));const sw=host.querySelector('[data-dm-blind="on"]');assert(sw&&sw.textContent.includes('شغّل العدّ الأعمى'));
+const before=calls.length;sw.click();await tick();assert.deepEqual(calls[before],['clinic_finance_blind_count',{p_action:'set',p_enabled:true}]);assert(!ovOpen(),'popup closed');assert(calls.slice(before).some(c=>c[0]==='clinic_finance_shift_movements'),'reloaded');
 mgr.showShift('s9');await tick();assert.deepEqual(calls.at(-1),['clinic_finance_day_movements',{p_shift:'s9',p_from:null,p_to:null,p_cashier:null}]);
 // day RPC error is shown, the existing view still works
 host.remove();host=doc.createElement('div');doc.body.append(host);
 w.SSMPDShiftMovements.mount(host,{rpc:(n)=>n==='clinic_finance_day_movements'?Promise.reject(new Error('الوردية مش متاحة لك')):Promise.resolve({shifts:[],movements:mv})});await tick();
 assert(host.querySelector('.dm-top .mv-error').textContent.includes('مش متاحة'));assert.equal(host.querySelectorAll('.mv-row').length,7);
-assert.deepEqual(errors,[]);console.log('PASS day movements UI (reception cashier): summary tiles (collected by method, paid out doctors/expenses, discounts, net cash — no expected drawer), tabs, one-line lists, popups with ✕ and → back, discount/visit/doctor/payout details, chips, search, Excel + CSV, print on letterhead, Esc; «كل الحركات» unchanged; FM sees expected drawer; errors shown.');
+assert.deepEqual(errors,[]);console.log('PASS day movements UI (reception cashier): summary tiles (collected by method, paid out doctors/expenses, discounts, net cash — net cash while blind count ON; expected drawer while OFF), tabs, one-line lists, popups with ✕ and → back, discount/visit/doctor/payout details, chips, search, Excel + CSV, print on letterhead, Esc; «كل الحركات» unchanged; SA/FM switch blind count (set + reload); errors shown.');
 })().catch(e=>{console.error(e);process.exit(1);});

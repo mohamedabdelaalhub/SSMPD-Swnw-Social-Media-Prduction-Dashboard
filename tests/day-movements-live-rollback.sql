@@ -4,10 +4,12 @@
 --   Mazen (reception, auth sub f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb): his open shift (default) and his latest shift by id;
 --   another reception cashier's shift as Mazen: refused; the financial manager (an active admin who passes clinic_finance.allowed('review'),
 --   preferring role financial_manager): today's period, all shifts.
+-- Blind-count switch (owner 2026-11-26, default OFF in the trial): Mazen sees his opening balance while OFF, not while ON (flipped inside
+-- the txn); the switch is refused to Mazen and works for the super admin / financial manager.
 -- Also checks the RPC matches clinic_finance_shift_movements (same shifts) and runs inside a READ ONLY sub-check.
 -- Output: one table (step, expected, actual, ok).
 do $$ begin
-  if to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)') is not null then
+  if to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)') is not null or to_regclass('clinic_finance.blind_count_settings') is not null then
     raise exception '20261126220000 already applied — this dry-run is for before the apply'; end if;
   if to_regprocedure('public.clinic_finance_shift_movements(uuid,date,date,uuid,uuid)') is null then raise exception 'shift movements RPC missing'; end if;
 end $$;
@@ -22,17 +24,48 @@ do $$ begin
   if to_regprocedure('public.clinic_finance_shift_movements(uuid,date,date,uuid,uuid)') is null then
     raise exception 'clinic_finance_shift_movements غير موجودة؛ طبق ملفات حركات الوردية أولًا';
   end if;
-  if to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)') is not null then
+  if to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)') is not null or to_regclass('clinic_finance.blind_count_settings') is not null then
     raise exception 'تم تطبيق هذا الملف من قبل';
   end if;
 end $$;
 
+create table clinic_finance.blind_count_settings(id boolean primary key default true check (id), enabled boolean not null default false,
+  updated_by uuid references public.admins(id), updated_at timestamptz);
+insert into clinic_finance.blind_count_settings(id, enabled) values (true, false);
+alter table clinic_finance.blind_count_settings enable row level security;
+revoke all on clinic_finance.blind_count_settings from public, anon, authenticated;
+
+create function public.clinic_finance_blind_count(p_action text, p_enabled boolean default null) returns jsonb
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare me uuid := public.my_admin_id(); st clinic_finance.blind_count_settings%rowtype; can_change boolean;
+begin
+  if me is null or not exists (select 1 from public.admins where id = me and active) then raise exception 'سجل الدخول' using errcode = '42501'; end if;
+  select * into st from clinic_finance.blind_count_settings where id;
+  can_change := public.has_role('super_admin') or public.has_role('financial_manager');
+  if p_action = 'settings' then
+    return jsonb_build_object('enabled', coalesce(st.enabled, false), 'can_change', can_change, 'updated_at', st.updated_at,
+      'updated_by', (select coalesce(nullif(trim(to_jsonb(a)->>'name'), ''), 'موظف') from public.admins a where a.id = st.updated_by));
+  elsif p_action = 'set' then
+    if not can_change then raise exception 'تغيير الإعداد ده للسوبر أدمن أو المدير المالي بس' using errcode = '42501'; end if;
+    if p_enabled is null then raise exception 'حدد تشغيل أو إيقاف'; end if;
+    update clinic_finance.blind_count_settings set enabled = p_enabled, updated_by = me, updated_at = now() where id;
+    if to_regclass('clinic_finance.audit') is not null then
+      execute 'insert into clinic_finance.audit(actor, action, entity_id, detail) values ($1, $2, null, $3)' using me, 'blind_count_setting', jsonb_build_object('enabled', p_enabled);
+    end if;
+    return jsonb_build_object('enabled', p_enabled, 'can_change', true);
+  end if;
+  raise exception 'إجراء غير معروف';
+end $$;
+revoke all on function public.clinic_finance_blind_count(text, boolean) from public, anon;
+grant execute on function public.clinic_finance_blind_count(text, boolean) to authenticated;
+
 create function public.clinic_finance_day_movements(p_shift uuid default null, p_from date default null, p_to date default null, p_cashier uuid default null)
 returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public as $$
-declare me uuid := public.my_admin_id(); manager boolean; ids uuid[]; v_shifts jsonb; v_visits jsonb; v_payouts jsonb := '[]'; v_channels jsonb := '{}'; fin uuid[];
+declare me uuid := public.my_admin_id(); manager boolean; blind boolean; ids uuid[]; v_shifts jsonb; v_visits jsonb; v_payouts jsonb := '[]'; v_channels jsonb := '{}'; fin uuid[];
 begin
   if me is null or not exists (select 1 from public.admins where id = me and active) then raise exception 'سجل الدخول' using errcode = '42501'; end if;
   manager := public.has_role('super_admin') or public.has_role('general_manager') or clinic_finance.allowed('review');
+  blind := coalesce((select enabled from clinic_finance.blind_count_settings where id), false);
   if p_shift is null and (p_from is not null or p_to is not null) then
     if p_from is null or p_to is null or p_to < p_from then raise exception 'اختار فترة صحيحة'; end if;
     if p_to - p_from > 30 then raise exception 'أقصى فترة ٣١ يوم'; end if;
@@ -50,7 +83,7 @@ begin
 
   select coalesce(jsonb_agg(jsonb_build_object('id', fs.id, 'register_name', reg.name,
            'cashier_name', coalesce(nullif(trim(to_jsonb(ad)->>'name'), ''), 'موظف'), 'opened_at', fs.opened_at, 'status', fs.status)
-           || case when manager then jsonb_build_object('opening_book', fs.opening_book) else '{}'::jsonb end order by fs.opened_at), '[]')
+           || case when manager or not blind then jsonb_build_object('opening_book', fs.opening_book) else '{}'::jsonb end order by fs.opened_at), '[]')
     into v_shifts
     from clinic_finance.shifts fs join clinic_finance.registers reg on reg.id = fs.register_id left join public.admins ad on ad.id = fs.cashier_id
    where fs.id = any(ids);
@@ -126,7 +159,8 @@ begin
                from clinic_finance.doctor_payouts p where p.shift_id = any($1) and p.status = 'approved'$q$ into v_payouts using ids;
   end if;
 
-  return jsonb_build_object('shifts', v_shifts, 'manager', manager, 'visits', v_visits, 'payouts', v_payouts, 'channels', v_channels,
+  return jsonb_build_object('shifts', v_shifts, 'manager', manager, 'blind_count', blind,
+                            'can_set_blind', public.has_role('super_admin') or public.has_role('financial_manager'), 'visits', v_visits, 'payouts', v_payouts, 'channels', v_channels,
                             'capped', jsonb_array_length(v_visits) >= 1000);
 end $$;
 revoke all on function public.clinic_finance_day_movements(uuid, date, date, uuid) from public, anon;
@@ -148,11 +182,22 @@ begin
   begin d := public.clinic_finance_day_movements(); err := 'ok'; exception when others then err := sqlerrm; end;
   begin m := public.clinic_finance_shift_movements(); exception when others then m := null; end;
   execute 'reset role';
-  insert into dmv_live(step, expected, actual, ok) values ('1 Mazen default (open shift)', 'ok · no opening balance · same shifts as the movements',
+  insert into dmv_live(step, expected, actual, ok) values ('1 Mazen default (open shift), blind count OFF (trial)', 'ok · opening balance shown (if he has an open shift) · same shifts as the movements',
     err || ' · shifts ' || coalesce(jsonb_array_length(d->'shifts'), -1) || ' · visits ' || coalesce(jsonb_array_length(d->'visits'), -1) || ' · payouts ' || coalesce(jsonb_array_length(d->'payouts'), -1)
       || ' · manager ' || coalesce(d->>'manager', '?'),
-    err = 'ok' and position('opening' in coalesce(d->>'shifts', '')) = 0 and coalesce(d->>'manager','') = 'false'
+    err = 'ok' and coalesce(d->>'blind_count','') = 'false' and (jsonb_array_length(d->'shifts') = 0 or (d->'shifts'->0) ? 'opening_book')
       and (m is null or (select coalesce(array_agg(x->>'id' order by x->>'id'), '{}') from jsonb_array_elements(d->'shifts') x) = (select coalesce(array_agg(x->>'id' order by x->>'id'), '{}') from jsonb_array_elements(m->'shifts') x)));
+  -- 1b) blind count ON (switched inside this txn): Mazen gets no opening balance; the switch is refused to him
+  update clinic_finance.blind_count_settings set enabled = true where id;
+  execute 'set local role authenticated';
+  begin d := public.clinic_finance_day_movements(); err := 'ok'; exception when others then err := sqlerrm; end;
+  begin perform public.clinic_finance_blind_count('set', false); exception when others then m := jsonb_build_object('e', sqlerrm); end;
+  execute 'reset role';
+  insert into dmv_live(step, expected, actual, ok) values ('1b blind count ON: Mazen', 'ok · no opening balance · Mazen cannot change the switch (unless SA/FM)',
+    err || ' · blind ' || coalesce(d->>'blind_count','?') || ' · opening shown ' || (position('opening' in coalesce(d->>'shifts','')) > 0) || ' · set: ' || coalesce(m->>'e', 'allowed'),
+    err = 'ok' and (coalesce(d->>'manager','') = 'true' or position('opening' in coalesce(d->>'shifts','')) = 0));
+  update clinic_finance.blind_count_settings set enabled = false where id;
+  m := null;
   -- 2) Mazen, his latest shift by id: totals reconcile (collected here ≤ due; per-visit numbers present)
   if last_shift is not null then
     execute 'set local role authenticated';
@@ -195,6 +240,19 @@ begin
   else
     insert into dmv_live(step, expected, actual, ok) values ('4 finance manager', 'an active FM/GM/SA admin', 'none found', false);
   end if;
+  -- 4b) the switch as the FM / SA (if that role): set ON then OFF
+  if fm_sub is not null then
+    perform set_config('request.jwt.claims', jsonb_build_object('sub', fm_sub, 'role', 'authenticated')::text, true);
+    perform set_config('request.jwt.claim.sub', fm_sub::text, true);
+    execute 'set local role authenticated';
+    begin d := public.clinic_finance_blind_count('settings'); err := 'ok'; exception when others then err := sqlerrm; end;
+    if coalesce(d->>'can_change','') = 'true' then
+      begin perform public.clinic_finance_blind_count('set', true); d := public.clinic_finance_blind_count('settings'); perform public.clinic_finance_blind_count('set', false); err := 'set ON ok → ' || (d->>'enabled'); exception when others then err := sqlerrm; end;
+    end if;
+    execute 'reset role';
+    insert into dmv_live(step, expected, actual, ok) values ('4b switch as the chosen manager', 'SA / FM: set ON → enabled true; GM: can_change false',
+      err || ' · can_change ' || coalesce(d->>'can_change','?'), err like 'set ON ok → true' or (err = 'ok' and coalesce(d->>'can_change','') = 'false'));
+  end if;
   -- 5) anon cannot call it
   execute 'set local role anon';
   begin perform public.clinic_finance_day_movements(); err := 'accepted'; exception when others then err := sqlerrm; end;
@@ -210,9 +268,12 @@ insert into dmv_live(step, expected, actual, ok)
 
 -- >>> ROLLBACK BODY: supabase/rollbacks/20261126220000_day_movements.rollback.sql >>>
 drop function if exists public.clinic_finance_day_movements(uuid, date, date, uuid);
+drop function if exists public.clinic_finance_blind_count(text, boolean);
+drop table if exists clinic_finance.blind_count_settings;
 -- <<< END ROLLBACK BODY <<<
-insert into dmv_live(step, expected, actual, ok) select '7 rollback body', 'function dropped',
-  coalesce(to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)')::text, 'dropped'), to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)') is null;
+insert into dmv_live(step, expected, actual, ok) select '7 rollback body', 'functions + switch table dropped',
+  coalesce(to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)')::text, 'dropped') || ' · ' || coalesce(to_regclass('clinic_finance.blind_count_settings')::text, 'switch dropped'),
+  to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)') is null and to_regprocedure('public.clinic_finance_blind_count(text,boolean)') is null and to_regclass('clinic_finance.blind_count_settings') is null;
 
 select step, expected, actual, ok from dmv_live order by n;
 rollback;

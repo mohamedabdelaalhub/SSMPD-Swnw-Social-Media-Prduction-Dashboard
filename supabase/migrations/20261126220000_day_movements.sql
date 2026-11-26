@@ -5,8 +5,11 @@
 -- It returns the visits whose money went through those shifts (one entry per visit, its services: price → discount → due →
 -- collected here + method/receipt, doctor fee, discount details and who approved, payment-method corrections), the doctor payouts
 -- paid from those shifts, and the booking-channel split (platform share / referral commission) when the finance side has it.
--- Nothing is written, nothing existing is changed or removed. Opening balance / expected cash are returned to managers only
--- (the cashier's blind count stays as it is).
+-- Nothing existing is changed or removed. Owner 2026-11-26 «احنا في فترة تجريبية نأجل تطبيق العد الأعمى مؤقتا»: a new switch
+-- clinic_finance.blind_count_settings (default OFF during the trial). OFF → the cashier also gets the opening balance in «حركات اليوم»
+-- (tile «المفروض في الدرج»); ON → only managers get it (the cashier sees net cash movement). The switch is changed by the super admin or
+-- the financial manager through public.clinic_finance_blind_count('set', …). The close-shift flow and clinic_finance_shift_movements are
+-- NOT touched by this file (they stay blind as today).
 -- Rollback: supabase/rollbacks/20261126220000_day_movements.rollback.sql
 begin;
 
@@ -14,17 +17,48 @@ do $$ begin
   if to_regprocedure('public.clinic_finance_shift_movements(uuid,date,date,uuid,uuid)') is null then
     raise exception 'clinic_finance_shift_movements غير موجودة؛ طبق ملفات حركات الوردية أولًا';
   end if;
-  if to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)') is not null then
+  if to_regprocedure('public.clinic_finance_day_movements(uuid,date,date,uuid)') is not null or to_regclass('clinic_finance.blind_count_settings') is not null then
     raise exception 'تم تطبيق هذا الملف من قبل';
   end if;
 end $$;
 
+create table clinic_finance.blind_count_settings(id boolean primary key default true check (id), enabled boolean not null default false,
+  updated_by uuid references public.admins(id), updated_at timestamptz);
+insert into clinic_finance.blind_count_settings(id, enabled) values (true, false);
+alter table clinic_finance.blind_count_settings enable row level security;
+revoke all on clinic_finance.blind_count_settings from public, anon, authenticated;
+
+create function public.clinic_finance_blind_count(p_action text, p_enabled boolean default null) returns jsonb
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare me uuid := public.my_admin_id(); st clinic_finance.blind_count_settings%rowtype; can_change boolean;
+begin
+  if me is null or not exists (select 1 from public.admins where id = me and active) then raise exception 'سجل الدخول' using errcode = '42501'; end if;
+  select * into st from clinic_finance.blind_count_settings where id;
+  can_change := public.has_role('super_admin') or public.has_role('financial_manager');
+  if p_action = 'settings' then
+    return jsonb_build_object('enabled', coalesce(st.enabled, false), 'can_change', can_change, 'updated_at', st.updated_at,
+      'updated_by', (select coalesce(nullif(trim(to_jsonb(a)->>'name'), ''), 'موظف') from public.admins a where a.id = st.updated_by));
+  elsif p_action = 'set' then
+    if not can_change then raise exception 'تغيير الإعداد ده للسوبر أدمن أو المدير المالي بس' using errcode = '42501'; end if;
+    if p_enabled is null then raise exception 'حدد تشغيل أو إيقاف'; end if;
+    update clinic_finance.blind_count_settings set enabled = p_enabled, updated_by = me, updated_at = now() where id;
+    if to_regclass('clinic_finance.audit') is not null then
+      execute 'insert into clinic_finance.audit(actor, action, entity_id, detail) values ($1, $2, null, $3)' using me, 'blind_count_setting', jsonb_build_object('enabled', p_enabled);
+    end if;
+    return jsonb_build_object('enabled', p_enabled, 'can_change', true);
+  end if;
+  raise exception 'إجراء غير معروف';
+end $$;
+revoke all on function public.clinic_finance_blind_count(text, boolean) from public, anon;
+grant execute on function public.clinic_finance_blind_count(text, boolean) to authenticated;
+
 create function public.clinic_finance_day_movements(p_shift uuid default null, p_from date default null, p_to date default null, p_cashier uuid default null)
 returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public as $$
-declare me uuid := public.my_admin_id(); manager boolean; ids uuid[]; v_shifts jsonb; v_visits jsonb; v_payouts jsonb := '[]'; v_channels jsonb := '{}'; fin uuid[];
+declare me uuid := public.my_admin_id(); manager boolean; blind boolean; ids uuid[]; v_shifts jsonb; v_visits jsonb; v_payouts jsonb := '[]'; v_channels jsonb := '{}'; fin uuid[];
 begin
   if me is null or not exists (select 1 from public.admins where id = me and active) then raise exception 'سجل الدخول' using errcode = '42501'; end if;
   manager := public.has_role('super_admin') or public.has_role('general_manager') or clinic_finance.allowed('review');
+  blind := coalesce((select enabled from clinic_finance.blind_count_settings where id), false);
   if p_shift is null and (p_from is not null or p_to is not null) then
     if p_from is null or p_to is null or p_to < p_from then raise exception 'اختار فترة صحيحة'; end if;
     if p_to - p_from > 30 then raise exception 'أقصى فترة ٣١ يوم'; end if;
@@ -42,7 +76,7 @@ begin
 
   select coalesce(jsonb_agg(jsonb_build_object('id', fs.id, 'register_name', reg.name,
            'cashier_name', coalesce(nullif(trim(to_jsonb(ad)->>'name'), ''), 'موظف'), 'opened_at', fs.opened_at, 'status', fs.status)
-           || case when manager then jsonb_build_object('opening_book', fs.opening_book) else '{}'::jsonb end order by fs.opened_at), '[]')
+           || case when manager or not blind then jsonb_build_object('opening_book', fs.opening_book) else '{}'::jsonb end order by fs.opened_at), '[]')
     into v_shifts
     from clinic_finance.shifts fs join clinic_finance.registers reg on reg.id = fs.register_id left join public.admins ad on ad.id = fs.cashier_id
    where fs.id = any(ids);
@@ -118,7 +152,8 @@ begin
                from clinic_finance.doctor_payouts p where p.shift_id = any($1) and p.status = 'approved'$q$ into v_payouts using ids;
   end if;
 
-  return jsonb_build_object('shifts', v_shifts, 'manager', manager, 'visits', v_visits, 'payouts', v_payouts, 'channels', v_channels,
+  return jsonb_build_object('shifts', v_shifts, 'manager', manager, 'blind_count', blind,
+                            'can_set_blind', public.has_role('super_admin') or public.has_role('financial_manager'), 'visits', v_visits, 'payouts', v_payouts, 'channels', v_channels,
                             'capped', jsonb_array_length(v_visits) >= 1000);
 end $$;
 revoke all on function public.clinic_finance_day_movements(uuid, date, date, uuid) from public, anon;

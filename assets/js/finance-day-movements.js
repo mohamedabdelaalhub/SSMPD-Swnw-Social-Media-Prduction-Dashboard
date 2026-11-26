@@ -37,8 +37,9 @@ function build(day,mv){var V=(day&&day.visits)||[],C=(day&&day.channels)||{},P=(
  var discounts=[];visits.forEach(function(x){(x.v.services||[]).forEach(function(s,si){var d=discountOf(x.v,s);if(d)discounts.push(Object.assign({vi:x.i,si:si,at:x.v.at,patient:x.v.patient,service:s.name},d));});});
  var by={},cashIn=0,cashOut=0,outAll=0,inAll=0;rows.forEach(function(r){var a=n(r.amount);if(r.direction==='in'){inAll+=a;by[r.method]=(by[r.method]||0)+a;if(r.method==='cash')cashIn+=a;}else if(r.direction==='out'){outAll+=-a;if(r.method==='cash')cashOut+=-a;}});
  var paidDoctors=P.reduce(function(t,p){return t+n(p.amount);},0),opening=null;
- if(day&&day.manager)(day.shifts||[]).forEach(function(s){if(s.opening_book!=null)opening=(opening||0)+n(s.opening_book);});
- return {visits:visits,doctors:order.map(function(k){return docs[k];}),discounts:discounts,payouts:P,outRows:rows.filter(function(r){return r.direction==='out';}),
+ /* opening balance comes only when allowed: managers, or everyone while the blind count is OFF (owner 2026-11-26, trial) */
+ if(day)(day.shifts||[]).forEach(function(s){if(s.opening_book!=null)opening=(opening||0)+n(s.opening_book);});
+ return {blind:day?{on:!!day.blind_count,can:!!day.can_set_blind,manager:!!day.manager}:null,visits:visits,doctors:order.map(function(k){return docs[k];}),discounts:discounts,payouts:P,outRows:rows.filter(function(r){return r.direction==='out';}),
   sum:{inAll:inAll,by:by,outAll:outAll,paidDoctors:paidDoctors,other:Math.max(0,outAll-paidDoctors),disc:discounts.reduce(function(t,d){return t+d.amt;},0),cashIn:cashIn,cashOut:cashOut,opening:opening}};}
 /* ---------- html ---------- */
 function ln(key,a,b,c,dot){return '<button type="button" class="dm-ln" data-dm-open="'+esc(key)+'"><span class="dm-a">'+(dot==null?'':'<span class="dm-dot'+(dot?' r':'')+'"></span>')+a+'</span><span class="dm-b">'+b+'</span><span class="dm-c">'+c+'</span><span class="dm-go" aria-hidden="true">‹</span></button>';}
@@ -46,7 +47,7 @@ function tag(cls,t){return '<span class="dm-tag '+cls+'">'+esc(t)+'</span>';}
 function r(k,v,cls){return '<div class="dm-r'+(cls?' '+cls:'')+'"><span>'+esc(k)+'</span><b>'+v+'</b></div>';}
 function methodsLine(by){var o=['cash','pos','instapay','bank','wallet'].filter(function(m){return by[m];});return o.length?o.map(function(m){return methodLabel(m)+' '+n(by[m]).toLocaleString('en-US');}).join(' · '):'مفيش تحصيل لسه';}
 function summaryHtml(D,manager){var s=D.sum,cashNet=s.cashIn-s.cashOut;
- var last=manager&&s.opening!=null?'<button type="button" class="dm-tile" data-dm-open="sum/cash"><small>المفروض في الدرج (نقدي)</small><b>'+money(s.opening+cashNet)+'</b><span>رصيد أول الوردية + داخل − خارج</span></button>'
+ var last=s.opening!=null?'<button type="button" class="dm-tile" data-dm-open="sum/cash"><small>المفروض في الدرج (نقدي)</small><b>'+money(s.opening+cashNet)+'</b><span>رصيد أول الوردية + داخل − خارج</span></button>'
   :'<button type="button" class="dm-tile" data-dm-open="sum/cash"><small>صافي النقدي في ورديتك</small><b>'+money(cashNet)+'</b><span>نقدي داخل '+n(s.cashIn).toLocaleString('en-US')+' − خارج '+n(s.cashOut).toLocaleString('en-US')+'</span></button>';
  return '<div class="dm-sum"><button type="button" class="dm-tile hero" data-dm-open="sum/in"><small>'+(manager?'اتحصّل':'اتحصّل في ورديتك')+'</small><b>'+money(s.inAll)+'</b><span>'+esc(methodsLine(s.by))+'</span></button>'+
   '<button type="button" class="dm-tile" data-dm-open="sum/out"><small>'+(manager?'اتصرف من الخزينة':'اتصرف من خزينتك')+'</small><b class="neg">'+money(s.outAll)+'</b><span>للأطباء '+n(s.paidDoctors).toLocaleString('en-US')+' · مصروفات وغيرها '+n(s.other).toLocaleString('en-US')+'</span></button>'+
@@ -85,8 +86,12 @@ function popHtml(key,D,back,manager){var m;
  if(key==='sum/in')return head(manager?'اللي اتحصّل':'اللي اتحصّل في ورديتك','بطريقة الدفع',back)+'<div class="dm-kv">'+['cash','pos','instapay','bank','wallet'].filter(function(k){return s.by[k];}).map(function(k){return r(methodLabel(k),money(s.by[k]));}).join('')+r('الإجمالي',money(s.inAll),'tot')+'</div>';
  if(key==='sum/out')return head(manager?'اللي اتصرف من الخزينة':'اللي اتصرف من خزينتك','صرف أتعاب ومصروفات ومرتجعات',back)+(D.outRows.length?'<div class="dm-kv">'+D.outRows.map(function(o){return r(time(o.at)+' · '+(o.title||'')+(o.detail?' — '+o.detail:''),'<span class="neg">'+minus(-n(o.amount))+'</span>');}).join('')+r('الإجمالي',minus(s.outAll),'tot')+'</div>':'<p class="mv-empty">مفيش صرف.</p>');
  if(key==='sum/disc')return head(manager?'الخصومات':'الخصومات اللي عملتها','',back)+(D.discounts.length?'<div class="dm-list">'+D.discounts.map(function(z,i){return ln('x'+i,'<b>'+esc(z.patient)+'</b>',esc(z.kind+' '+z.pct+'٪'),'<span class="neg">'+minus(z.amt)+'</span>');}).join('')+'</div>':'<p class="mv-empty">مفيش خصومات.</p>');
- if(key==='sum/cash')return head(manager&&s.opening!=null?'المفروض في الدرج':'صافي النقدي في ورديتك','نقدي بس',back)+'<div class="dm-kv">'+(manager&&s.opening!=null?r('رصيد أول الوردية',money(s.opening)):'')+r('نقدي داخل',money(s.cashIn))+r('نقدي خارج',minus(s.cashOut))+r(manager&&s.opening!=null?'المفروض في الدرج':'الصافي',money((manager&&s.opening!=null?s.opening:0)+s.cashIn-s.cashOut),'tot')+'</div>';
+ if(key==='sum/cash'){var op=s.opening!=null;return head(op?'المفروض في الدرج':'صافي النقدي في ورديتك','نقدي بس',back)+'<div class="dm-kv">'+(op?r('رصيد أول الوردية',money(s.opening)):'')+r('نقدي داخل',money(s.cashIn))+r('نقدي خارج',minus(s.cashOut))+r(op?'المفروض في الدرج':'الصافي',money((op?s.opening:0)+s.cashIn-s.cashOut),'tot')+'</div>'+blindHtml(D);}
  return '';}
+/* blind count switch (owner 2026-11-26 «نأجل تطبيق العد الأعمى مؤقتا»): state for managers, a button for SA / FM */
+function blindHtml(D){var b=D.blind;if(!b||!b.manager)return '';
+ return '<div class="dm-kv"><h4>العدّ الأعمى للكاشير</h4>'+r('الحالة',b.on?'<span class="pos">شغّال — الكاشير مش بيشوف رصيد أول الوردية ولا المفروض في الدرج</span>':'<span class="warn">متوقف (فترة تجريبية) — الكاشير بيشوف المفروض في الدرج</span>')+
+  (b.can?'<button type="button" class="dm-r" data-dm-blind="'+(b.on?'off':'on')+'"><span>'+(b.on?'وقّف العدّ الأعمى':'شغّل العدّ الأعمى')+' ‹</span><b>'+(b.on?'الكاشير هيشوف المفروض في الدرج':'الكاشير مش هيشوفه')+'</b></button>':'')+'</div>';}
 /* ---------- export ---------- */
 function table(tab,D){if(tab==='patients')return {head:['الوقت','المريض','رقم الملف','الطبيب','المصدر','المستحق','اتحصّل هنا','الخصم','نصيب الطبيب','المنصة','الترشيح','ملاحظات'],rows:D.visits.map(function(x){return [time(x.v.at),x.v.patient,x.v.file_no||'',x.v.provider||'',x.src[1],x.due,x.here,x.disc,x.share,x.plat,x.ref,x.flags.join(' · ')];})};
  if(tab==='doctors')return {head:['الطبيب','الحالات','اتحصّل من حالاته','الخصومات','نصيبه','اتصرفله','الباقي'],rows:D.doctors.map(function(d){return [d.name,d.visits.length,d.here,d.disc,d.share,d.paid,Math.max(0,d.share-d.paid)];})};
@@ -130,13 +135,14 @@ function mount(host,opts){opts=opts||{};
   var o=e.target.closest('[data-dm-open]');if(o){open(o.dataset.dmOpen);return;}
   if(e.target.closest('[data-dm-close]')||e.target===ov){close();return;}
   if(e.target.closest('[data-dm-back]')){back();return;}
+  var bl=e.target.closest('[data-dm-blind]');if(bl){bl.disabled=true;Promise.resolve(base('clinic_finance_blind_count',{p_action:'set',p_enabled:bl.dataset.dmBlind==='on'})).then(function(){close();if(handle&&handle.reload)handle.reload();}).catch(function(er){bl.disabled=false;var msg=(er&&er.message)||'تعذر تغيير الإعداد';if(window.SSMPDToast&&window.SSMPDToast.show)window.SSMPDToast.show(msg);else window.alert(msg);});return;}
   var c=e.target.closest('[data-dm-chip]');if(c){st.chip=c.dataset.dmChip;paint();return;}
   if(e.target.closest('[data-dm-excel]')){var D=data();excel(st.tab,D);return;}
   if(e.target.closest('[data-dm-print]')){try{print(st.tab,data(),manager()?'حسب الفلتر':'ورديتك');}catch(er){var msg=(er&&er.message)||'تعذر فتح نافذة الطباعة';if(window.SSMPDToast&&window.SSMPDToast.show)window.SSMPDToast.show(msg);else window.alert(msg);}return;}});
  host.addEventListener('input',function(e){if(e.target.matches('[data-dm-q]')){st.q=e.target.value;var l=pane.querySelector('[data-dm-list]'),D=st.day&&st.mv&&data();if(l&&D)l.innerHTML=listHtml(st.tab,D,st.q,st.chip);}});
  host.addEventListener('keydown',function(e){if(e.key==='Escape'&&!ov.hidden){e.stopPropagation();close();}});
- paint();
- var handle=ORIG(orig,Object.assign({},opts,{rpc:rpc}));
+ var handle=null;paint();
+ handle=ORIG(orig,Object.assign({},opts,{rpc:rpc}));
  return Object.assign({},handle,{dayState:st,openDetail:open});}
 SM.mount=mount;SM.__day=true;SM.dayHelpers={build:build,discountOf:discountOf,table:table};
 })();
