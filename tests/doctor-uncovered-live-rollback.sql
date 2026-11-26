@@ -34,8 +34,8 @@ begin
      and not exists (select 1 from clinic_finance.doctor_contracts c where c.doctor_key = p.doctor_key and c.status = 'active')
    order by p.doctor_key limit 1;
   select c.doctor_key into withc from clinic_finance.doctor_contracts c where c.status = 'active' order by c.doctor_key limit 1;
+  n0 := (select count(*) from clinic_finance.entries) + (select count(*) from clinic_finance.doctor_accruals);  -- counted as the owner role, before the switch
   perform set_config('request.jwt.claim.sub', fu::text, true); execute 'set local role authenticated';
-  n0 := (select count(*) from clinic_finance.entries) + (select count(*) from clinic_finance.doctor_accruals);
   if withc is not null then
     d1 := public.clinic_finance_doctor_statement_detail(withc, f, t);
     if jsonb_typeof(d1->'uncovered') <> 'array' then raise exception 'contracted doctor lost its section'; end if;
@@ -46,9 +46,9 @@ begin
     if jsonb_typeof(d0->'uncovered') <> 'array' or jsonb_array_length(d0->'uncovered') = 0 then raise exception 'doctor without contract still shows no services: %', d0->'uncovered'; end if;
     if exists (select 1 from jsonb_array_elements(d0->'uncovered') u where u->>'reason' not in ('none', 'pending', 'starts_later', 'expired')) then raise exception 'bad reason'; end if;
   end if;
+  execute 'reset role';
   n1 := (select count(*) from clinic_finance.entries) + (select count(*) from clinic_finance.doctor_accruals);
   if n1 <> n0 then raise exception 'the statement wrote something'; end if;
-  execute 'reset role';
   raise notice 'doctor uncovered dry-run OK: doctor without contract % → % services listed; contracted doctor % section kept; nothing written',
     coalesce(noc, '(none found)'), coalesce(jsonb_array_length(d0->'uncovered'), 0), coalesce(withc, '(none)');
 end $$;
