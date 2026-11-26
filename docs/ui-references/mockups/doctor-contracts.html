@@ -1,0 +1,46 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: عقود الأطباء</title>
+<style>*{box-sizing:border-box}body{margin:0;padding:16px;background:#f4f7fc;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:1240px;margin:auto}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;align-content:start;min-width:0}.cap{font-size:12px;color:#5b6b82}h3,p{margin:0}
+.btn{border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:8px 12px;font:inherit;min-height:40px;min-width:0}.pri{background:#0F369D;color:#fff;border-color:#0F369D}
+.head{display:flex;align-items:center;justify-content:space-between;gap:8px}.ic{width:40px;height:40px;border:1px solid #D5DEEE;background:#fff;border-radius:10px;font-size:19px;line-height:1;flex:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{border:1px solid #D5DEEE;border-radius:999px;padding:6px 12px;font-size:13px;background:#fff}.chip.on{background:#0F369D;color:#fff;border-color:#0F369D}
+.search{border:1px solid #D5DEEE;border-radius:10px;padding:10px;font:inherit;width:100%;color:#5b6b82}
+.bulk{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#FFF6EF;border:1px solid #F15A22;border-radius:12px;padding:10px;flex-wrap:wrap}.bulk b{color:#F15A22}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #D5DEEE;border-radius:12px;padding:10px;min-width:0}.row b{display:block}.row small{color:#5b6b82}
+.pill{border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;background:#EAF0FF;color:#0F369D;white-space:nowrap}.pill.ok{background:#E6F3EC;color:#2F7D5C}.pill.warn{background:#FFF4EE;color:#F15A22}
+.fold{display:flex;justify-content:space-between;align-items:center;border:1px solid #D5DEEE;border-radius:12px;padding:12px;background:#fff;font:inherit;width:100%;text-align:start}.fold small{color:#5b6b82;display:block}
+.note{font-size:12px;color:#5b6b82;background:#F1F4F8;border-radius:8px;padding:6px 10px}
+.menu{border:1px solid #D5DEEE;border-radius:12px;padding:6px;display:grid;gap:2px;background:#fff;box-shadow:0 8px 24px rgba(15,54,157,.12)}.menu span{padding:10px;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-bottom:1px solid #EEF1F6;text-align:start}th{color:#5b6b82}
+.pg{display:flex;justify-content:space-between;align-items:center;gap:8px}
+@media(max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}}</style>
+<div class="wrap">
+<section class="card"><span class="cap">١) الشاشة — العقود فوق، والإعدادات مطوية</span>
+<div class="head"><h3>عقود الأطباء</h3><button class="ic" aria-label="رجوع">→</button></div>
+<div class="chips"><span class="chip on">سارية + قيد الاعتماد (500)</span><span class="chip">قيد الاعتماد (39)</span><span class="chip">بينتهي قريب</span><span class="chip">الكل</span></div>
+<div class="search">بحث باسم الدكتور أو كوده</div>
+<div class="bulk"><span><b>39 عقد</b> محتاجين اعتمادك — من 39 دكتور</span><button class="btn pri">مراجعة كل المعلّق (39)</button></div>
+<div class="row"><span><b>أ/ لينا الحسيني — EMP-000010</b><small>12 عقد · النسب 20% – 50%</small></span><span class="pill warn">قيد الاعتماد 1</span><button class="ic" aria-label="خيارات">⋯</button></div>
+<div class="row"><span><b>د. خلود شلتوت — EMP-000006</b><small>12 عقد · النسب 20% – 50%</small></span><span class="pill warn">قيد الاعتماد 1</span><button class="ic" aria-label="خيارات">⋯</button></div>
+<div class="row"><span><b>د. داليا سعيد — EMP-000036</b><small>74 عقد · النسب 20% – 50%</small></span><span class="pill warn">قيد الاعتماد 1</span><button class="ic" aria-label="خيارات">⋯</button></div>
+<button class="fold"><span>إعدادات العقود<small>نص العقد، إقرار المسؤولية، بداية التطبيق</small></span><span>‹</span></button>
+<button class="fold"><span>أطباء لسه ماعندهمش عقد (1)<small>اتسجلوا في الموارد البشرية</small></span><span>‹</span></button></section>
+<section class="card"><span class="cap">٢) «مراجعة كل المعلّق» — قايمة قبل التأكيد</span>
+<div class="head"><h3>مراجعة 39 عقد معلّق</h3><button class="ic" aria-label="إغلاق">✕</button></div>
+<div class="note">عقودك إنت (اللي سجلتها) مش داخلة هنا. لو عقد واحد فيه مشكلة (تداخل فترات) الدفعة كلها بتتلغي ومفيش حاجة بتتغير.</div>
+<table><tr><th>الدكتور</th><th>الخدمة / القسم</th><th>النسبة</th></tr><tr><td>لينا الحسيني</td><td>قسم: الاسنان</td><td>30%</td></tr><tr><td>خلود شلتوت</td><td>قسم: الليزر</td><td>20%</td></tr><tr><td>داليا سعيد</td><td>0001374</td><td>40%</td></tr><tr><td colspan="3" class="cap">… و36 عقد تانيين</td></tr></table>
+<label class="cap">القرار<br><span class="chip on">اعتماد الكل</span> <span class="chip">رفض الكل</span></label>
+<label class="cap">سبب القرار (مطلوب للرفض)<br><span class="search" style="display:block">…</span></label>
+<div style="display:flex;gap:8px"><button class="btn pri">اعتماد 39 عقد</button><button class="btn">إلغاء</button></div></section>
+<section class="card"><span class="cap">٣) «⋯» على الدكتور — بدل التلات أزرار المكررة</span>
+<div class="row"><span><b>د. داليا سعيد — EMP-000036</b><small>74 عقد · العقد: غير موقّع</small></span><span class="pill warn">قيد الاعتماد 1</span><button class="ic" aria-label="خيارات">⋯</button></div>
+<div class="menu"><span>مراجعة العقد المعلّق</span><span>الصورة والنشر</span><span>حساب الدكتور</span><span>إرسال للتوقيع</span><span>فتح كل عقوده (74)</span></div>
+<div class="note">«إرسال للتوقيع» بتفتح تفاصيل الاتفاق جوه الخيار نفسه، مش نص طويل على الزرار.</div></section>
+<section class="card"><span class="cap">٤) الجداول التقيلة تبقى مطوية وبصفحات (٥٠ صف)</span>
+<button class="fold"><span>استحقاق الفواتير<small>3000 صف — الأحدث الأول</small></span><span>‹</span></button>
+<div class="head"><b>استحقاق الفواتير</b><button class="ic" aria-label="إغلاق">✕</button></div>
+<table><tr><th>الفاتورة</th><th>الدكتور</th><th>المستحق</th></tr><tr><td>RX-3000</td><td>د. طبيب 1</td><td>300</td></tr><tr><td>RX-2999</td><td>د. طبيب 2</td><td>250</td></tr><tr><td colspan="3" class="cap">… 50 صف في الصفحة</td></tr></table>
+<div class="pg"><button class="btn">السابق</button><span class="cap">صفحة 1 من 60</span><button class="btn pri">التالي</button></div>
+<div class="note">ده اللي بيخلي الصفحة تفتح في أقل من ثانية حتى لو الفواتير آلاف.</div></section>
+</div>
