@@ -7781,6 +7781,32 @@
       "reviewed": true
     },
     {
+      "title": "دوّر",
+      "labels": [
+        "دوّر"
+      ],
+      "text": "اختر دور الموظف الذي ستعرض أو تعدل مستهدفاته وأوزان مؤشراته، وليس حساب شخص منفرد أو منح صلاحية جديدة.",
+      "article": "indicators",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب اسم المريض أو التليفون أو رقم الملف",
+      "labels": [
+        "اكتب اسم المريض أو التليفون أو رقم الملف"
+      ],
+      "text": "دوّر على المريض باسمه أو تليفونه أو رقم ملفه علشان تفتح زيارته وتصلّح اللي فيها.",
+      "article": "fix-visit",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "القسم",
       "labels": [
         "القسم"
@@ -12089,6 +12115,19 @@
       "reviewed": true
     },
     {
+      "title": "شهر الحسابات",
+      "labels": [
+        "شهر الحسابات"
+      ],
+      "text": "الشهر اللي عايز تشوف حساباته. المستحق والسداد والطلبات كلها للشهر ده.",
+      "article": "month-end-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "المخزن اللي هيتخصم منه",
       "labels": [
         "المخزن اللي هيتخصم منه"
@@ -12147,6 +12186,32 @@
       ],
       "text": "اكتب بكلام المريض سبب الزيارة النهارده. بتظهر للدكتور بين علامتي تنصيص في شريط الفحص قبل الكشف.",
       "article": "nursing-triage",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "كاش ولا بنك؟",
+      "labels": [
+        "كاش ولا بنك؟"
+      ],
+      "text": "كاش من الخزينة الرئيسية (لازم ورديتها تكون مفتوحة) أو البنك. الشريك بيتعامل مع الخزينة الرئيسية بس.",
+      "article": "partner-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: توريد لدفع إيجار المركز",
+      "labels": [
+        "مثلاً: توريد لدفع إيجار المركز"
+      ],
+      "text": "اكتب الفلوس دي ليه — بتظهر في كشف حساب الشريك.",
+      "article": "partner-accounts",
       "tabs": [
         "production"
       ],
@@ -15729,12 +15794,12 @@
       "reviewed": true
     },
     {
-      "title": "اكتب حرفين من اسم الخدمة",
+      "title": "اكتب حرفين من اسم الخدمة أو كود سونو",
       "labels": [
-        "اكتب حرفين من اسم الخدمة"
+        "اكتب حرفين من اسم الخدمة أو كود سونو"
       ],
-      "text": "اكتب حرفين على الأقل من اسم الخدمة واختارها من النتايج.",
-      "article": "booking-flow",
+      "text": "اكتب حرفين على الأقل من اسم الخدمة أو كود سونو واختارها من النتايج. في «تأمين / تعاقد» اختار الجهة الأول، وبعدها دوّر باسم سونو أو اسم الجهة أو كودها.",
+      "article": "reception-entity-service-names",
       "tabs": [
         "reception_services"
       ],
@@ -23536,9 +23601,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2027,
-    "labels": 1474,
-    "files": 162,
-    "groups": 1598
+    "definitions": 2033,
+    "labels": 1478,
+    "files": 165,
+    "groups": 1603
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

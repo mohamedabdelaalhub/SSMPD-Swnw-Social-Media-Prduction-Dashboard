@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2027,
-    "labels": 1474,
-    "files": 162,
-    "groups": 1598
+    "definitions": 2033,
+    "labels": 1478,
+    "files": 165,
+    "groups": 1603
   },
   "fields": [
     {
@@ -6884,6 +6884,26 @@
       "text_sha256": "f8459d8304fdf06b3ddc05e6e459fd34abd09d56e226268e0cbdbe494682140d"
     },
     {
+      "file": "fix-visit.js",
+      "label": "دوّر",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "indicators",
+      "text_sha256": "5c0d8bc6e7d747e6bf4c8af607e98ce79b9c33142c950bec2087672ed840c829"
+    },
+    {
+      "file": "fix-visit.js",
+      "label": "اكتب اسم المريض أو التليفون أو رقم الملف",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "fix-visit",
+      "text_sha256": "63604ef1eec243d8f5b782cd541154812077ed4594b0d23e16b6e04dada03039"
+    },
+    {
       "file": "hr-attendance-reports.js",
       "label": "القسم",
       "name": "",
@@ -10493,6 +10513,16 @@
       "text_sha256": "a21ad9d28e2191e6557244226e39fd526699de2cecda568291a4f8dceb372f43"
     },
     {
+      "file": "month-end-accounts.js",
+      "label": "شهر الحسابات",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "month-end-accounts",
+      "text_sha256": "a9253f7f65835cb24e2ff477add1e1b104449f86578657c743c6a485411ef676"
+    },
+    {
       "file": "my-contract.js",
       "label": "سبب الرفض",
       "name": "",
@@ -10571,6 +10601,36 @@
       "tab": "production",
       "article": "nursing-triage",
       "text_sha256": "4e478ffd5542800f0b62bc21cc9c46fb1297efdb58b2c7f069d70643ede38950"
+    },
+    {
+      "file": "partner-accounts.js",
+      "label": "كاش ولا بنك؟",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "partner-accounts",
+      "text_sha256": "c05375285092878575292c296caf45e64bd117641da994c519b776025e9199b8"
+    },
+    {
+      "file": "partner-accounts.js",
+      "label": "مثلاً: توريد لدفع إيجار المركز",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "partner-accounts",
+      "text_sha256": "90d1f5f4aef67c5683eaebcd2f3c3187bc0370fb52f52d68ec873756254b99f4"
+    },
+    {
+      "file": "partner-accounts.js",
+      "label": "السبب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
     {
       "file": "patient360.js",
@@ -14034,13 +14094,13 @@
     },
     {
       "file": "reception-workspace.js",
-      "label": "اكتب حرفين من اسم الخدمة",
+      "label": "اكتب حرفين من اسم الخدمة أو كود سونو",
       "name": "",
       "kind": "placeholder",
       "forms": [],
       "tab": "reception_services",
-      "article": "booking-flow",
-      "text_sha256": "71437b4cf74f00464133fc4672c06e67cc111f938d56d453386618aa848c1f72"
+      "article": "reception-entity-service-names",
+      "text_sha256": "83898e1d2e6269c01c15a842b339acbdf6ec01a04d99c470906a024ca1bf47cf"
     },
     {
       "file": "reception-workspace.js",

@@ -795,6 +795,7 @@
     removeRefreshNotice();
     currentTab = tab;
     if(window.SSMPDNavigationUI)window.SSMPDNavigationUI.setCurrent(titleTab);
+    if(window.SSMPDBackNav)window.SSMPDBackNav.record(titleTab);
     try { sessionStorage.setItem(ACTIVE_TAB_KEY, tab);sessionStorage.setItem('ssmpd_active_tab_owner',activeAdmin.id); } catch (e) {}
     document.querySelectorAll(".tab-btn").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-tab") === tab);
