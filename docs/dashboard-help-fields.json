@@ -2,9 +2,9 @@
   "coverage": {
     "version": "20261117-1",
     "definitions": 2019,
-    "labels": 1465,
+    "labels": 1466,
     "files": 160,
-    "groups": 1586
+    "groups": 1587
   },
   "fields": [
     {
@@ -5161,13 +5161,13 @@
     },
     {
       "file": "finance-doctor-accounts.js",
-      "label": "بحث باسم الدكتور أو كوده",
+      "label": "ابحث باسم الدكتور",
       "name": "",
       "kind": "placeholder",
       "forms": [],
       "tab": "accounting",
-      "article": "payroll",
-      "text_sha256": "01797bdcd381d3f49ad886634bda28dafe94aa2b129ad59fe7a1aeb196f21e49"
+      "article": "doctor-accounts-plain",
+      "text_sha256": "3b2d87c09c8cb86df44a50704a8b9c70169a579c7c569237b115fed57bf4e08f"
     },
     {
       "file": "finance-doctor-accounts.js",
