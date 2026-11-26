@@ -1,0 +1,57 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: الخزائن والورديات — تفاصيل جوه أزرار</title>
+<style>*{box-sizing:border-box}body{margin:0;padding:16px;background:#f4f7fc;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.wrap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;max-width:1240px;margin:auto}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;align-content:start;min-width:0}
+.cap{font-size:12px;color:#5b6b82}h3{margin:0;font-size:17px}p{margin:0}
+.btn{border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:8px 12px;font:inherit;min-width:0}.pri{background:#0F369D;color:#fff;border-color:#0F369D}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.acc{display:grid;gap:8px}
+.ah{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid #D5DEEE;background:#fff;border-radius:12px;padding:12px;font:inherit;text-align:start;cursor:pointer;min-width:0}
+.ah b{font-size:15px}.ah small{display:block;color:#5b6b82;font-size:12px}
+.ah .badge{background:#F1F4F8;border-radius:999px;padding:2px 10px;font-size:12px}.ah .need{background:#F15A22;color:#fff}
+.ah .chev{color:#5b6b82;transition:transform .15s}
+.item.open>.ah{border-color:#0F369D;background:#F4F7FF}.item.open>.ah .chev{transform:rotate(180deg)}
+.body{display:none;border:1px solid #D5DEEE;border-top:0;border-radius:0 0 12px 12px;padding:10px;gap:8px;margin-top:-6px}
+.item.open>.body{display:grid}
+.cash{border:1px solid #D5DEEE;border-radius:12px;padding:10px;display:grid;gap:6px}
+.cash .amt{font-weight:700;font-size:18px}.cash .neg{color:#D0402A}
+.chip{display:inline-block;background:#E8EFFD;color:#0F369D;border-radius:999px;padding:3px 10px;font-size:12px}
+.ho{border-bottom:1px solid #EEF2F8;padding:8px 0;display:grid;gap:3px}.ho:last-child{border:0}
+.ok{background:#E6F3EC;color:#2F7D5C;border-radius:999px;padding:2px 10px;font-size:12px;justify-self:start}.warn{background:#FDECE8;color:#D0402A;border-radius:999px;padding:2px 10px;font-size:12px;justify-self:start}
+.note{font-size:12px;color:#5b6b82;background:#F1F4F8;border-radius:8px;padding:6px 10px}
+@media(max-width:700px){.wrap{grid-template-columns:minmax(0,1fr)}}</style>
+<div class="wrap">
+<section class="card" data-demo="closed"><span class="cap">١) الشاشة بعد التعديل — كل حاجة مقفولة</span><h3>الخزائن والورديات</h3>
+<p class="cap">فتح الوردية وجردها وتسليمها للمراجعة.</p>
+<div class="row"><button class="btn pri">فتح وردية</button><button class="btn">كشف الخزينة</button><button class="btn">سجل السندات</button></div>
+<div class="acc">
+<div class="item"><button class="ah" type="button"><span><b>خزن التحصيل المفتوحة</b><small>مازن · منار — وردية شغالة</small></span><span><span class="badge">2</span> <span class="chev">⌄</span></span></button></div>
+<div class="item"><button class="ah" type="button"><span><b>تسليم الخزينة الرئيسية</b><small>آخر تسليم: مريم، النهارده 11:33 م</small></span><span><span class="badge need">1 محتاج منك</span> <span class="chev">⌄</span></span></button></div>
+<div class="item"><button class="ah" type="button"><span><b>الورديات</b><small>9 ورديات في الفترة</small></span><span><span class="badge">9</span> <span class="chev">⌄</span></span></button></div>
+</div><div class="note">الصفحة بقت قصيرة. كل زرار بيفتح تفاصيله، وعلامة «محتاج منك» برتقالي على اللي فيه شغل ليك.</div></section>
+
+<section class="card" data-demo="open1"><span class="cap">٢) دوست «خزن التحصيل المفتوحة»</span><h3>الخزائن والورديات</h3>
+<div class="row"><button class="btn pri">فتح وردية</button><button class="btn">كشف الخزينة</button><button class="btn">سجل السندات</button></div>
+<div class="acc">
+<div class="item open"><button class="ah" type="button" aria-expanded="true"><span><b>خزن التحصيل المفتوحة</b><small>مازن · منار — وردية شغالة</small></span><span><span class="badge">2</span> <span class="chev">⌄</span></span></button>
+<div class="body"><div class="cash"><b>خزينة مازن</b><span class="amt neg">-450.00 ج.م</span><span class="cap">النقدي المسجل في العهدة</span><span class="chip">الوردية شغالة — لسه ماجردتش</span><button class="btn">اطلب منه يسلّم</button></div>
+<div class="cash"><b>خزينة منار</b><span class="amt">1,100.00 ج.م</span><span class="cap">النقدي المسجل في العهدة</span><span class="chip">الوردية شغالة — لسه ماجردتش</span><button class="btn">اطلب منه يسلّم</button></div>
+<button class="btn">طلب تسليم للرئيسية</button></div></div>
+<div class="item"><button class="ah" type="button" aria-expanded="false"><span><b>تسليم الخزينة الرئيسية</b><small>آخر تسليم: مريم، النهارده 11:33 م</small></span><span><span class="badge need">1 محتاج منك</span> <span class="chev">⌄</span></span></button></div>
+<div class="item"><button class="ah" type="button" aria-expanded="false"><span><b>الورديات</b><small>9 ورديات في الفترة</small></span><span><span class="badge">9</span> <span class="chev">⌄</span></span></button></div>
+</div></section>
+
+<section class="card" data-demo="open2"><span class="cap">٣) دوست زرار تاني «تسليم الخزينة الرئيسية» — الأول اتقفل لوحده</span><h3>الخزائن والورديات</h3>
+<div class="row"><button class="btn pri">فتح وردية</button><button class="btn">كشف الخزينة</button><button class="btn">سجل السندات</button></div>
+<div class="acc">
+<div class="item"><button class="ah" type="button" aria-expanded="false"><span><b>خزن التحصيل المفتوحة</b><small>مازن · منار — وردية شغالة</small></span><span><span class="badge">2</span> <span class="chev">⌄</span></span></button></div>
+<div class="item open"><button class="ah" type="button" aria-expanded="true"><span><b>تسليم الخزينة الرئيسية</b><small>آخر تسليم: مريم، النهارده 11:33 م</small></span><span><span class="badge need">1 محتاج منك</span> <span class="chev">⌄</span></span></button>
+<div class="body"><div class="ho"><b>آخر وردية — خزينة مريم</b><span class="cap">إلى الخزينة الرئيسية · «استلام خزينة مريم الفرعية»</span><b>920.00 ج</b><span class="ok">مطابق ✓</span><span class="ok">اتسلّم ✓</span></div>
+<div class="ho"><b>آخر وردية — خزينة مريم</b><span class="cap">«اعتماد النقدية»</span><b>1,190.00 ج</b><span class="warn">زيادة 2,280.00</span><span class="ok">اتسلّم ✓</span></div>
+<div class="ho"><b>آخر وردية — خزينة منار</b><span class="cap">«اعتماد النقدية»</span><b>1,500.00 ج</b><span class="ok">مطابق ✓</span><span class="ok">اتسلّم ✓</span></div>
+<button class="btn">اعرض الباقي (11)</button></div></div>
+<div class="item"><button class="ah" type="button" aria-expanded="false"><span><b>الورديات</b><small>9 ورديات في الفترة</small></span><span><span class="badge">9</span> <span class="chev">⌄</span></span></button></div>
+</div></section>
+</div>
+<script>/* the demo is interactive: one open at a time */
+document.querySelectorAll('.acc').forEach(function(acc){acc.addEventListener('click',function(e){var h=e.target.closest('.ah');if(!h)return;var it=h.parentNode,was=it.classList.contains('open');acc.querySelectorAll('.item.open').forEach(function(x){x.classList.remove('open');x.querySelector('.ah').setAttribute('aria-expanded','false');});if(!was){it.classList.add('open');h.setAttribute('aria-expanded','true');}});});</script>
