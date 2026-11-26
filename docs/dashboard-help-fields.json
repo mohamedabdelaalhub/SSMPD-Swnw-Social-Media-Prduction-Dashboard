@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2042,
-    "labels": 1481,
+    "definitions": 2043,
+    "labels": 1482,
     "files": 166,
-    "groups": 1612
+    "groups": 1613
   },
   "fields": [
     {
@@ -11217,6 +11217,16 @@
       "tab": "reception_services",
       "article": "reception-booking-discount",
       "text_sha256": "9470e36ce7220ba744494e5d5b87e4015e64e0dad57cbd065a72347430fb5fe4"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "الموظف (لازم يكون المريض نفسه)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-staff-discount",
+      "text_sha256": "2d8044419c2b64d8a1f50dc9cd4b0724af0d23e0c30663fe81268ef3b6d09c33"
     },
     {
       "file": "reception-booking-discount.js",

@@ -1,0 +1,323 @@
+-- Live rollback test for 20261126170000_staff_discount.sql («خصم العاملين بالمركز»). Run the WHOLE file as postgres.
+-- ONE transaction, ends with ROLLBACK — nothing is kept (temp HR rows, phones, bookings, discounts are all rolled back).
+-- Acts as Mazen (reception, auth sub f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb). Fixture: 3 real live reception patients without a
+-- booking today; inside the txn their phones are set to test numbers and 2 temp HR people are added (one active on P1's number,
+-- one ENDED on P3's number). If nobody is on shift now, a temp availability block; the unrelated cash-shift guard is stubbed if
+-- Mazen has no open shift. Output: one table (step, expected, actual, ok) — no names or phone numbers.
+do $$ begin
+  if to_regprocedure('clinic_reception.set_booking_discount_before_staff(uuid,uuid,jsonb,uuid)') is not null then
+    raise exception '20261126170000 already applied — this dry-run is for before the apply'; end if;
+end $$;
+
+begin;
+savepoint stf_guard;
+create temp table stf_live(n serial, step text, expected text, actual text, ok boolean);
+create temp table stf_fx(w uuid, me uuid, sub uuid, prov uuid, svc uuid, p1 uuid, p2 uuid, p3 uuid, e1 uuid, e3 uuid);
+
+-- >>> MIGRATION BODY: supabase/migrations/20261126170000_staff_discount.sql (between its begin; / commit;) >>>
+
+alter table clinic_reception.appointments add column discount_staff_id uuid references clinic_people.people(id);
+alter table clinic_reception.appointments drop constraint if exists appointments_discount_kind_check;
+alter table clinic_reception.appointments add constraint appointments_discount_kind_check
+  check (discount_kind in ('syndicate', 'special', 'vezeeta', 'family', 'staff'));
+alter table clinic_reception.appointments drop constraint appointments_discount_complete;
+alter table clinic_reception.appointments add constraint appointments_discount_complete check (
+  discount_kind is null
+  or (discount_kind = 'syndicate' and discount_percent is not null and discount_org_type is not null
+      and length(btrim(coalesce(discount_org_name, ''))) >= 2 and length(btrim(coalesce(discount_card_no, ''))) >= 2
+      and discount_card_expiry is not null and length(coalesce(discount_card_path, '')) > 3)
+  or (discount_kind = 'special' and discount_percent is not null and length(btrim(coalesce(discount_reason, ''))) >= 3)
+  or (discount_kind = 'vezeeta' and discount_percent = 40 and length(btrim(coalesce(discount_card_no, ''))) >= 2
+      and discount_card_expiry is not null and length(coalesce(discount_card_path, '')) > 3)
+  or (discount_kind = 'family' and discount_percent between 10 and 50)
+  or (discount_kind = 'staff' and discount_percent is not null and discount_staff_id is not null and length(btrim(coalesce(discount_reason, ''))) >= 3));
+alter table clinic_reception.appointments add constraint appointments_discount_staff_complete check (
+  discount_kind is distinct from 'staff' or (discount_staff_id is not null and discount_percent > 0 and discount_percent <= 30));
+
+create or replace function clinic_reception.booking_discount_max_for(p_kind text) returns numeric language sql immutable as $$
+  select case p_kind when 'vezeeta' then 40 when 'family' then 50 when 'staff' then 30 else clinic_reception.booking_discount_max() end::numeric $$;
+revoke all on function clinic_reception.booking_discount_max_for(text) from public, anon, authenticated;
+
+-- active HR people whose phone is the patient file's phone (the patient IS the employee)
+create function clinic_reception.staff_for_patient(p_patient uuid, p_day date) returns table(person_id uuid, name text, code text)
+language sql stable security definer set search_path = pg_catalog, public as $$
+  select pp.id, pp.full_name, pp.code
+    from clinic_reception.patients rp
+    join clinic_people.people pp on length(regexp_replace(coalesce(pp.phone, ''), '\D', '', 'g')) >= 10
+     and right(regexp_replace(pp.phone, '\D', '', 'g'), 10) = right(regexp_replace(coalesce(rp.phone, ''), '\D', '', 'g'), 10)
+   where rp.id = p_patient and length(regexp_replace(coalesce(rp.phone, ''), '\D', '', 'g')) >= 10
+     and pp.status in ('active', 'on_leave') and (pp.end_date is null or pp.end_date >= p_day)
+   order by pp.full_name $$;
+revoke all on function clinic_reception.staff_for_patient(uuid, date) from public, anon, authenticated;
+
+create function clinic_reception.staff_check(p_patient uuid, p_person uuid, p_day date) returns text
+language plpgsql stable security definer set search_path = pg_catalog, public as $$
+declare r record;
+begin
+  if p_person is null then raise exception 'اختار الموظف'; end if;
+  select * into r from clinic_reception.staff_for_patient(p_patient, p_day) s where s.person_id = p_person;
+  if not found then
+    raise exception 'خصم العاملين للموظفين الشغالين بس — المريض لازم يكون نفس الموظف (نفس رقم التليفون في الموارد البشرية) وشغال لحد يوم الزيارة';
+  end if;
+  return 'خصم العاملين بالمركز — ' || r.name || ' (' || r.code || ')';
+end $$;
+revoke all on function clinic_reception.staff_check(uuid, uuid, date) from public, anon, authenticated;
+
+-- reception's picker: who can this patient be (only matching active employees; name + HR code)
+create function public.clinic_reception_staff_discount(p_workspace uuid, p_patient uuid, p_day date default null) returns jsonb
+language plpgsql stable security definer set search_path = pg_catalog, public as $$
+declare d date := coalesce(p_day, (now() at time zone 'Africa/Cairo')::date);
+begin
+  perform clinic_reception.access(p_workspace, 'book');
+  if not exists (select 1 from clinic_reception.patients where id = p_patient and workspace_id = p_workspace) then raise exception 'اختار المريض الأول'; end if;
+  return jsonb_build_object('max', 30, 'staff', coalesce((select jsonb_agg(jsonb_build_object('id', s.person_id, 'name', s.name, 'code', s.code))
+    from clinic_reception.staff_for_patient(p_patient, d) s), '[]'::jsonb));
+end $$;
+revoke all on function public.clinic_reception_staff_discount(uuid, uuid, date) from public, anon;
+grant execute on function public.clinic_reception_staff_discount(uuid, uuid, date) to authenticated;
+
+-- booking side (book / walk-in / reschedule / «خصم على الحجز»)
+alter function clinic_reception.set_booking_discount(uuid, uuid, jsonb, uuid) rename to set_booking_discount_before_staff;
+revoke all on function clinic_reception.set_booking_discount_before_staff(uuid, uuid, jsonb, uuid) from public, anon, authenticated;
+create function clinic_reception.set_booking_discount(p_workspace uuid, p_appointment uuid, p jsonb, p_me uuid) returns void
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare ap record; why text; person uuid;
+begin
+  if nullif(btrim(coalesce(p->>'discount_kind', '')), '') is distinct from 'staff' then
+    perform clinic_reception.set_booking_discount_before_staff(p_workspace, p_appointment, p, p_me);
+    update clinic_reception.appointments set discount_staff_id = null where id = p_appointment and discount_kind is distinct from 'staff' and discount_staff_id is not null;
+    return;
+  end if;
+  select * into ap from clinic_reception.appointments where id = p_appointment and workspace_id = p_workspace;
+  if not found then raise exception 'الحجز مش موجود'; end if;
+  begin person := nullif(p->>'discount_staff_id', '')::uuid; exception when others then person := null; end;
+  why := clinic_reception.staff_check(ap.patient_id, person, (ap.starts_at at time zone 'Africa/Cairo')::date);
+  perform clinic_reception.set_booking_discount_before_staff(p_workspace, p_appointment, p || jsonb_build_object('discount_kind', 'special', 'discount_reason', why), p_me);
+  update clinic_reception.appointments set discount_kind = 'staff', discount_staff_id = person where id = p_appointment;
+end $$;
+revoke all on function clinic_reception.set_booking_discount(uuid, uuid, jsonb, uuid) from public, anon, authenticated;
+
+-- visit side («خصم على الزيارة», before execution / collection)
+alter function clinic_reception.order_discount(uuid, uuid, jsonb, uuid) rename to order_discount_before_staff;
+revoke all on function clinic_reception.order_discount_before_staff(uuid, uuid, jsonb, uuid) from public, anon, authenticated;
+create function clinic_reception.order_discount(p_workspace uuid, p_order uuid, p jsonb, p_me uuid) returns jsonb
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare o record; why text; person uuid; res jsonb;
+begin
+  if nullif(btrim(coalesce(p->>'discount_kind', '')), '') is distinct from 'staff' then
+    return clinic_reception.order_discount_before_staff(p_workspace, p_order, p, p_me);
+  end if;
+  select ord.id, v.patient_id, v.appointment_id into o from clinic_reception.orders ord join clinic_reception.visits v on v.id = ord.visit_id
+   where ord.id = p_order and ord.workspace_id = p_workspace;
+  if not found then raise exception 'الخدمة مش موجودة'; end if;
+  begin person := nullif(p->>'discount_staff_id', '')::uuid; exception when others then person := null; end;
+  why := clinic_reception.staff_check(o.patient_id, person, (now() at time zone 'Africa/Cairo')::date);
+  res := clinic_reception.order_discount_before_staff(p_workspace, p_order, p || jsonb_build_object('discount_kind', 'special', 'discount_reason', why), p_me);
+  update clinic_reception.appointments set discount_kind = 'staff', discount_staff_id = person where id = o.appointment_id;
+  update clinic_reception.discount_requests set reason = replace(reason, 'خصم الحجز: خصم خاص — ', 'خصم الحجز: ')
+   where order_id = p_order and reason like 'خصم الحجز: خصم خاص — خصم العاملين بالمركز%';
+  return res;
+end $$;
+revoke all on function clinic_reception.order_discount(uuid, uuid, jsonb, uuid) from public, anon, authenticated;
+
+-- at arrival (booking_discount_apply): re-check the employee on the arrival day and label the request
+create function clinic_reception.staff_discount_request() returns trigger
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare ap record;
+begin
+  if new.reason not like 'خصم الحجز: %' then return new; end if;
+  select a.* into ap from clinic_reception.orders o join clinic_reception.visits v on v.id = o.visit_id
+    join clinic_reception.appointments a on a.id = v.appointment_id where o.id = new.order_id;
+  if not found or ap.discount_kind is distinct from 'staff' then return new; end if;
+  perform clinic_reception.staff_check(ap.patient_id, ap.discount_staff_id, (now() at time zone 'Africa/Cairo')::date);
+  new.reason := replace(new.reason, 'خصم الحجز: خصم خاص — ', 'خصم الحجز: ');
+  return new;
+end $$;
+revoke all on function clinic_reception.staff_discount_request() from public, anon, authenticated;
+create trigger staff_discount_request before insert on clinic_reception.discount_requests
+  for each row execute function clinic_reception.staff_discount_request();
+
+-- the «one discount per visit» refusal names the staff kind
+create or replace function clinic_reception.booking_discount_exclusive() returns trigger
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare oid uuid := new.order_id; ap record;
+begin
+  select a.discount_kind, a.discount_org_name into ap
+    from clinic_reception.orders o join clinic_reception.visits v on v.id = o.visit_id join clinic_reception.appointments a on a.id = v.appointment_id
+   where o.id = oid;
+  if not found or ap.discount_kind is null then return new; end if;
+  if tg_table_name = 'discount_requests' and new.reason like 'خصم الحجز: %' then return new; end if;
+  raise exception 'الحجز ده عليه خصم % — مينفعش خصم تاني ولا سعر تعاقد عليه',
+    case ap.discount_kind when 'syndicate' then 'نقابة / نادي (' || ap.discount_org_name || ')' when 'vezeeta' then 'فيزيتا شامل'
+      when 'family' then 'كارت العيلة' when 'staff' then 'العاملين بالمركز' else 'خاص' end;
+end $$;
+revoke all on function clinic_reception.booking_discount_exclusive() from public, anon, authenticated;
+
+notify pgrst, 'reload schema';
+-- <<< END MIGRATION BODY <<<
+
+do $$
+declare sub uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; me uuid; w uuid; prov uuid; svc uuid; p1 uuid; p2 uuid; p3 uuid; e1 uuid; e3 uuid;
+  d date := (now() at time zone 'Africa/Cairo')::date; g jsonb; pids uuid[];
+begin
+  select id into w from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
+  select id into me from public.admins where user_id = sub;
+  if w is null or me is null then raise exception 'live workspace % / admin for sub % missing', w, sub; end if;
+  perform clinic_reception.sync_catalog(w); perform clinic_reception.sync_catalog(w);
+  -- a provider + a priced, non-home, non-offer service of its department; working now or a temp block
+  select av.provider_id, s.id into prov, svc
+    from clinic_reception.availability av join clinic_reception.providers pr2 on pr2.id = av.provider_id
+    join clinic_reception.services s on s.workspace_id = w and s.department = pr2.department and s.active and s.price > 0
+     and to_jsonb(s)->>'pricing_service_id' is not null and coalesce((to_jsonb(s)->>'is_home')::boolean, false) = false
+     and not clinic_reception.service_is_offer(s.id)
+     and not exists (select 1 from public.pricing_services ps where ps.active and ps.booking_enabled and btrim(ps.booking_code) = s.code
+                       and ps.id <> (to_jsonb(s)->>'pricing_service_id')::uuid)
+   where av.workspace_id = w and now() between av.starts_at and av.ends_at - interval '2 hours' and pr2.active and nullif(btrim(coalesce(pr2.doctor_key,'')),'') is not null
+   order by s.price limit 1;
+  if prov is null then
+    select pr2.id, s.id into prov, svc from clinic_reception.providers pr2
+      join clinic_reception.services s on s.workspace_id = w and s.department = pr2.department and s.active and s.price > 0
+       and to_jsonb(s)->>'pricing_service_id' is not null and coalesce((to_jsonb(s)->>'is_home')::boolean, false) = false
+       and not clinic_reception.service_is_offer(s.id)
+       and not exists (select 1 from public.pricing_services ps where ps.active and ps.booking_enabled and btrim(ps.booking_code) = s.code
+                         and ps.id <> (to_jsonb(s)->>'pricing_service_id')::uuid)
+     where pr2.workspace_id = w and pr2.active and nullif(btrim(coalesce(pr2.doctor_key,'')),'') is not null
+     order by s.price, pr2.name limit 1;
+    insert into clinic_reception.availability(workspace_id, provider_id, starts_at, ends_at)
+      values (w, prov, date_trunc('minute', now()) - interval '7 minutes', date_trunc('minute', now()) + interval '3 hours');
+    insert into stf_live(step, expected, actual, ok) values ('0a provider on shift', 'working now or a temp block', 'temp availability block (rolled back)', true);
+  end if;
+  -- 3 real patients without a booking today; test phones inside the txn
+  select array_agg(id order by created_at desc) into pids from (select p.id, p.created_at from clinic_reception.patients p where p.workspace_id = w and p.patient_id is not null
+     and not exists (select 1 from clinic_reception.appointments x where x.patient_id = p.id and (x.starts_at at time zone 'Africa/Cairo')::date = d)
+   order by p.created_at desc limit 3) z;
+  p1 := pids[1]; p2 := pids[2]; p3 := pids[3];
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', sub, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', sub::text, true);
+  update clinic_reception.patients set phone = '01999000901' where id = p1;
+  update clinic_reception.patients set phone = '01999000902' where id = p2;
+  update clinic_reception.patients set phone = '01999000903' where id = p3;
+  insert into clinic_people.people(full_name, phone, status, created_by) values ('ROLLBACK STAFF ONE', '+20 1999000901', 'active', me) returning id into e1;
+  insert into clinic_people.people(full_name, phone, status, end_date, created_by) values ('ROLLBACK STAFF ENDED', '01999000903', 'ended', d - 1, me) returning id into e3;
+  insert into stf_fx values (w, me, sub, prov, svc, p1, p2, p3, e1, e3);
+  insert into stf_live(step, expected, actual, ok) values ('fixture', '3 patients + provider/service + 2 temp HR rows',
+    'nobody else on the test numbers: ' || ((select count(*) from clinic_people.people where right(regexp_replace(phone,'\D','','g'),10) in ('1999000901','1999000902','1999000903')) = 2),
+    p3 is not null and svc is not null);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', sub, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', sub::text, true);
+  if to_regprocedure('clinic_reception.shift_guard_check(uuid)') is not null then
+    begin g := clinic_reception.shift_guard_state();
+      if coalesce((g->>'locked')::boolean, false) then
+        execute 'create or replace function clinic_reception.shift_guard_check(p_workspace uuid) returns void language plpgsql as $f$ begin return; end $f$';
+        insert into stf_live(step, expected, actual, ok) values ('shift guard (unrelated)', 'open shift, or stubbed in this txn', 'stubbed (Mazen had no open shift)', true);
+      end if;
+    exception when others then insert into stf_live(step, expected, actual, ok) values ('shift guard (unrelated)', 'state readable', sqlerrm, true); end;
+  end if;
+end $$;
+
+do $$ declare f stf_fx; r jsonb; err text; ap record; o record; wk uuid;
+begin select * into f from stf_fx;
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', f.sub, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', f.sub::text, true);
+  -- 1) the picker as Mazen
+  begin execute 'set local role authenticated';
+    r := public.clinic_reception_staff_discount(f.w, f.p1); execute 'reset role';
+    insert into stf_live(step, expected, actual, ok) values ('1 picker P1 (employee)', '1 employee (the temp one)', jsonb_array_length(r->'staff') || ' · max ' || (r->>'max'),
+      jsonb_array_length(r->'staff') = 1 and (r->'staff'->0->>'id')::uuid = f.e1 and (r->>'max') = '30');
+    execute 'set local role authenticated'; r := public.clinic_reception_staff_discount(f.w, f.p3); execute 'reset role';
+    insert into stf_live(step, expected, actual, ok) values ('1b picker P3 (ended employee)', '0', jsonb_array_length(r->'staff')::text, jsonb_array_length(r->'staff') = 0);
+  exception when others then execute 'reset role'; insert into stf_live(step, expected, actual, ok) values ('1 picker', 'works', sqlerrm, false); end;
+  -- 2) walk-in P1 staff 31 → refused
+  begin execute 'set local role authenticated';
+    perform public.clinic_reception_command(f.w, 'walk_in', jsonb_build_object('patient_id', f.p1, 'provider_id', f.prov, 'service_id', f.svc, 'same_day_ok', true,
+      'discount_kind', 'staff', 'discount_percent', '31', 'discount_staff_id', f.e1), gen_random_uuid()); execute 'reset role'; err := 'accepted';
+  exception when others then execute 'reset role'; err := sqlerrm; end;
+  insert into stf_live(step, expected, actual, ok) values ('2 Mazen staff 31%', 'refused «أقصى خصم»', err, err like '%أقصى خصم%');
+  -- 3) P2 (not an employee) with E1 → refused
+  begin execute 'set local role authenticated';
+    perform public.clinic_reception_command(f.w, 'walk_in', jsonb_build_object('patient_id', f.p2, 'provider_id', f.prov, 'service_id', f.svc, 'same_day_ok', true,
+      'discount_kind', 'staff', 'discount_percent', '20', 'discount_staff_id', f.e1), gen_random_uuid()); execute 'reset role'; err := 'accepted';
+  exception when others then execute 'reset role'; err := sqlerrm; end;
+  insert into stf_live(step, expected, actual, ok) values ('3 Mazen staff for a non-employee', 'refused «للموظفين الشغالين بس»', err, err like '%للموظفين الشغالين بس%');
+  -- 4) P3 with the ENDED employee → refused
+  begin execute 'set local role authenticated';
+    perform public.clinic_reception_command(f.w, 'walk_in', jsonb_build_object('patient_id', f.p3, 'provider_id', f.prov, 'service_id', f.svc, 'same_day_ok', true,
+      'discount_kind', 'staff', 'discount_percent', '20', 'discount_staff_id', f.e3), gen_random_uuid()); execute 'reset role'; err := 'accepted';
+  exception when others then execute 'reset role'; err := sqlerrm; end;
+  insert into stf_live(step, expected, actual, ok) values ('4 Mazen staff for an ended employee', 'refused «للموظفين الشغالين بس»', err, err like '%للموظفين الشغالين بس%');
+  -- 5) P1 staff 30 → saved; arrive → approved 30%, labelled
+  begin execute 'set local role authenticated';
+    r := public.clinic_reception_command(f.w, 'walk_in', jsonb_build_object('patient_id', f.p1, 'provider_id', f.prov, 'service_id', f.svc, 'same_day_ok', true,
+      'discount_kind', 'staff', 'discount_percent', '30', 'discount_staff_id', f.e1), gen_random_uuid()); execute 'reset role'; err := 'ok'; wk := (r->>'id')::uuid;
+  exception when others then execute 'reset role'; err := sqlerrm; end;
+  select * into ap from clinic_reception.appointments where id = wk;
+  insert into stf_live(step, expected, actual, ok) values ('5 Mazen staff 30% (walk-in)', 'saved · staff · 30 · employee linked',
+    err || ' · ' || coalesce(ap.discount_kind, '-') || ' · ' || coalesce(ap.discount_percent::text, '-') || ' · linked ' || (ap.discount_staff_id = f.e1),
+    err = 'ok' and ap.discount_kind = 'staff' and ap.discount_percent = 30 and ap.discount_staff_id = f.e1);
+  if wk is not null then
+    begin execute 'set local role authenticated';
+      perform public.clinic_reception_command(f.w, 'arrive', jsonb_build_object('id', wk), gen_random_uuid()); execute 'reset role'; err := 'ok';
+    exception when others then execute 'reset role'; err := sqlerrm; end;
+    select ord.discount, dr.status, dr.reason into o from clinic_reception.orders ord join clinic_reception.visits v on v.id = ord.visit_id
+      left join clinic_reception.discount_requests dr on dr.order_id = ord.id where v.appointment_id = wk order by ord.created_at limit 1;
+    insert into stf_live(step, expected, actual, ok) values ('5b Mazen «وصل»', 'order 30% · approved · «خصم العاملين بالمركز»',
+      err || ' · ' || coalesce(o.discount::text, '-') || ' · ' || coalesce(o.status, '-') || ' · ' || coalesce(left(o.reason, 40), '-'),
+      err = 'ok' and o.discount = 30 and o.status = 'approved' and o.reason like 'خصم الحجز: خصم العاملين بالمركز%');
+  end if;
+end $$;
+
+-- >>> ROLLBACK BODY: supabase/rollbacks/20261126170000_staff_discount.rollback.sql >>>
+drop trigger staff_discount_request on clinic_reception.discount_requests;
+drop function clinic_reception.staff_discount_request();
+drop function clinic_reception.order_discount(uuid, uuid, jsonb, uuid);
+alter function clinic_reception.order_discount_before_staff(uuid, uuid, jsonb, uuid) rename to order_discount;
+drop function clinic_reception.set_booking_discount(uuid, uuid, jsonb, uuid);
+alter function clinic_reception.set_booking_discount_before_staff(uuid, uuid, jsonb, uuid) rename to set_booking_discount;
+drop function public.clinic_reception_staff_discount(uuid, uuid, date);
+drop function clinic_reception.staff_check(uuid, uuid, date);
+drop function clinic_reception.staff_for_patient(uuid, date);
+update clinic_reception.appointments set discount_kind = 'special', discount_reason = coalesce(discount_reason, 'خصم العاملين بالمركز')
+ where discount_kind = 'staff';
+alter table clinic_reception.appointments drop constraint appointments_discount_staff_complete;
+alter table clinic_reception.appointments drop constraint appointments_discount_kind_check;
+alter table clinic_reception.appointments add constraint appointments_discount_kind_check
+  check (discount_kind in ('syndicate', 'special', 'vezeeta', 'family'));
+alter table clinic_reception.appointments drop constraint appointments_discount_complete;
+alter table clinic_reception.appointments add constraint appointments_discount_complete check (
+  discount_kind is null
+  or (discount_kind = 'syndicate' and discount_percent is not null and discount_org_type is not null
+      and length(btrim(coalesce(discount_org_name, ''))) >= 2 and length(btrim(coalesce(discount_card_no, ''))) >= 2
+      and discount_card_expiry is not null and length(coalesce(discount_card_path, '')) > 3)
+  or (discount_kind = 'special' and discount_percent is not null and length(btrim(coalesce(discount_reason, ''))) >= 3)
+  or (discount_kind = 'vezeeta' and discount_percent = 40 and length(btrim(coalesce(discount_card_no, ''))) >= 2
+      and discount_card_expiry is not null and length(coalesce(discount_card_path, '')) > 3)
+  or (discount_kind = 'family' and discount_percent between 10 and 50));
+alter table clinic_reception.appointments drop column discount_staff_id;
+create or replace function clinic_reception.booking_discount_max_for(p_kind text) returns numeric language sql immutable as $$
+  select case p_kind when 'vezeeta' then 40 when 'family' then 50 else clinic_reception.booking_discount_max() end::numeric $$;
+revoke all on function clinic_reception.booking_discount_max_for(text) from public, anon, authenticated;
+create or replace function clinic_reception.booking_discount_exclusive() returns trigger
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare oid uuid := new.order_id; ap record;
+begin
+  select a.discount_kind, a.discount_org_name into ap
+    from clinic_reception.orders o join clinic_reception.visits v on v.id = o.visit_id join clinic_reception.appointments a on a.id = v.appointment_id
+   where o.id = oid;
+  if not found or ap.discount_kind is null then return new; end if;
+  if tg_table_name = 'discount_requests' and new.reason like 'خصم الحجز: %' then return new; end if;
+  raise exception 'الحجز ده عليه خصم % — مينفعش خصم تاني ولا سعر تعاقد عليه',
+    case ap.discount_kind when 'syndicate' then 'نقابة / نادي (' || ap.discount_org_name || ')' when 'vezeeta' then 'فيزيتا شامل'
+      when 'family' then 'كارت العيلة' else 'خاص' end;
+end $$;
+revoke all on function clinic_reception.booking_discount_exclusive() from public, anon, authenticated;
+notify pgrst, 'reload schema';
+-- <<< END ROLLBACK BODY <<<
+insert into stf_live(step, expected, actual, ok) select '6 rollback body', 'wrappers gone, kind check back',
+  coalesce(to_regprocedure('clinic_reception.set_booking_discount_before_staff(uuid,uuid,jsonb,uuid)')::text, 'gone') || ' / ' ||
+  coalesce(to_regprocedure('public.clinic_reception_staff_discount(uuid,uuid,date)')::text, 'gone'),
+  to_regprocedure('clinic_reception.set_booking_discount_before_staff(uuid,uuid,jsonb,uuid)') is null
+  and to_regprocedure('public.clinic_reception_staff_discount(uuid,uuid,date)') is null
+  and to_regprocedure('clinic_reception.set_booking_discount(uuid,uuid,jsonb,uuid)') is not null;
+
+select step, expected, actual, ok from stf_live order by n;
+rollback;

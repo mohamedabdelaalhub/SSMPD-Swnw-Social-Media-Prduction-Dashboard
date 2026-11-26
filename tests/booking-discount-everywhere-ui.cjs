@@ -26,7 +26,7 @@ const cairoDay=t=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:
  // (b) booked card ⋯ → «خصم …» → خاص 15% → saved on the booking
  let card=await openCard(a1);const disc=card.locator('[data-rx-action="booking-discount"]');assert.equal(await disc.textContent(),'خصم (نقابة / نادي / فيزيتا / العيلة / خاص)');
  await disc.click();await page.waitForSelector('.rx-modal [data-rbd]');
- assert.match(await page.locator('.rx-modal .rbd-sw').textContent(),/خصم \(نقابة \/ نادي \/ فيزيتا \/ كارت العيلة \/ خاص\)/);
+ assert.match(await page.locator('.rx-modal .rbd-sw').textContent(),/خصم \(نقابة \/ نادي \/ فيزيتا \/ كارت العيلة \/ العاملين \/ خاص\)/);
  await page.locator('.rx-modal label.rbd-chip:has(input[name="discount_kind"][value="special"])').click();await page.fill('.rx-modal input[name="discount_reason"]','قريب موظف');await page.fill('.rx-modal input[name="discount_percent"]','15');
  await page.locator('.rx-modal button[type="submit"]').click();await page.waitForSelector('.rx-modal',{state:'detached'});
  let s=await rpc('clinic_reception_snapshot',{p_workspace:w,p_from:today,p_to:today});let ap=s.appointments.find(x=>x.id===a1);assert.equal(ap.discount_kind,'special');assert.equal(+ap.discount_percent,15);

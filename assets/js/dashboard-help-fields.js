@@ -12956,6 +12956,19 @@
       "reviewed": true
     },
     {
+      "title": "الموظف (لازم يكون المريض نفسه)",
+      "labels": [
+        "الموظف (لازم يكون المريض نفسه)"
+      ],
+      "text": "«خصم العاملين بالمركز»: الموظف المتسجّل في الموارد البشرية بنفس رقم تليفون المريض وشغال — لو مفيش، الخصم ده مش متاح للمريض.",
+      "article": "reception-staff-discount",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "مثلاً قريب موظف",
       "labels": [
         "مثلاً قريب موظف",
@@ -23722,9 +23735,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2042,
-    "labels": 1481,
+    "definitions": 2043,
+    "labels": 1482,
     "files": 166,
-    "groups": 1612
+    "groups": 1613
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
