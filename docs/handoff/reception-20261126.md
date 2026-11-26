@@ -196,3 +196,16 @@ Most of these were relayed by the hub.
   - New live script md5 `6853a07c782d1b4cc1fb47a2be12d46b`; the migration is unchanged (`7a3364c0…`).
   - Verified on the PGlite harness with and without availability: all rows ok.
   - Waiting: the hub's re-dry-run, then the owner's «انشر 880».
+
+## Addendum 3 (about 01:15Z)
+- main moved to `e20f7504`: #871 (treasury) also took help data version 20261126-278. All three PRs conflicted on the help version and token lines only. Each was fixed with a proper 2-parent merge of main, then the help build plus `--check`, then the suites (all PASS).
+  - **#875:** head `ec62cee1`, token `help-278-restricted-doctor-treasury-20261126-3`.
+  - **#877:** head `01d93da4`, token `help-279-home-consult-split-20261126-3`.
+  - **#880:** head `aa17d541`, token `help-290-entity-names-20261126-2`.
+- **Migration / ops / live-script md5s are unchanged.**
+- When one of the three merges, the other two will conflict again on the same 3 lines (`index.html`, `dashboard-help.js`, and the version line of `dashboard-help-data.js`).
+  - Fix: merge main, keep the higher version line and this PR's token, run `python3 scripts/build-dashboard-help.py` then `--check`, commit, push.
+- **Restart lesson:** the worker restart wiped `/tmp/claude-0/scratchpad`, including worktrees, node_modules and `pw-pre.cjs`.
+  - Use the session scratchpad directory.
+  - Recreate the worktrees with `git worktree add <dir> origin/<branch>` and run `npm ci` with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`.
+  - Recreate `pw-pre.cjs`: a small require hook that sets `executablePath` to `/opt/pw-browsers/chromium` on `chromium.launch`.
