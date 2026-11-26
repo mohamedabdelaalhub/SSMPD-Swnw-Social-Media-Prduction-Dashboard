@@ -13645,6 +13645,32 @@
       "reviewed": true
     },
     {
+      "title": "دوّر",
+      "labels": [
+        "دوّر"
+      ],
+      "text": "اختر دور الموظف الذي ستعرض أو تعدل مستهدفاته وأوزان مؤشراته، وليس حساب شخص منفرد أو منح صلاحية جديدة.",
+      "article": "indicators",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب اللي عايزه… مثلاً: مصروف",
+      "labels": [
+        "اكتب اللي عايزه… مثلاً: مصروف"
+      ],
+      "text": "اكتب كلمة من اللي عايز تعمله (مثلاً: مصروف، تحصيل، ورديتي) والقايمة هتوريك الجمل اللي فيها الكلمة دي بس.",
+      "article": "reception-drawer",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "من مواعيد النهارده (اختياري)",
       "labels": [
         "من مواعيد النهارده (اختياري)"
@@ -23393,9 +23419,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2019,
-    "labels": 1466,
-    "files": 160,
-    "groups": 1587
+    "definitions": 2021,
+    "labels": 1468,
+    "files": 161,
+    "groups": 1589
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
