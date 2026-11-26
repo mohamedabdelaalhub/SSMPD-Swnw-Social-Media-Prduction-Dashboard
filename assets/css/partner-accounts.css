@@ -1,0 +1,12 @@
+/* «حساب الشريك» */
+.pa-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem;margin:.75rem 0}
+.pa-card{border:1px solid #e3e7ee;border-radius:12px;padding:.75rem 1rem;background:#fff}
+.pa-card h4{margin:0 0 .35rem;color:#0F369D}
+.pa-card h4 small{color:#6b7684;font-weight:400}
+.pa-actions{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.pa-add{display:flex;align-items:center;justify-content:center;border-style:dashed}
+.pa-st{font-style:normal;font-size:.8rem;padding:.1rem .5rem;border-radius:999px;background:#eef1f6;color:#16212E}
+.pa-st.ok{background:#e3f2ea;color:#2F7D5C}
+.pa-st.bad{background:#fbe7e3;color:#D0402A}
+.pa-st.wait{background:#fdeee6;color:#b0461a}
+.pa-modal .modal{max-width:760px}

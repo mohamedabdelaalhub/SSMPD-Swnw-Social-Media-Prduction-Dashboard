@@ -8491,6 +8491,127 @@
       "reviewed": true
     },
     {
+      "title": "المدة",
+      "labels": [
+        "المدة"
+      ],
+      "text": "اكتب مدة الجلسة أو الاستخدام المقصود بوحدة الحقل، مع التمييز بينها وبين فترة العلاج الكاملة أو فاصل تكرار الجرعة.",
+      "article": "patient-records",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "من يوم",
+      "labels": [
+        "من يوم"
+      ],
+      "text": "أول يوم في المهمة الخارجية. لو المهمة يوم واحد خلّي «إلى يوم» نفس اليوم.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "إلى يوم",
+      "labels": [
+        "إلى يوم"
+      ],
+      "text": "آخر يوم في المهمة الخارجية (لحد 31 يوم). نفس الفترة بتتطبق على كل الأيام.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "من الساعة",
+      "labels": [
+        "من الساعة"
+      ],
+      "text": "حدد بداية أو نهاية الفترة وفق المواعيد المقصودة. عند تجهيز تصميم مواعيد راجعها مع الجدول، فهي لا تعدل جدول الحجز تلقائيًا.",
+      "article": "design-guide",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "إلى الساعة",
+      "labels": [
+        "إلى الساعة"
+      ],
+      "text": "ساعة نهاية المهمة لما تختار «ساعات». بعدها الموظف يرجع يظهر زي أي موظف عادي.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المكان",
+      "labels": [
+        "المكان"
+      ],
+      "text": "اختر مكان حفظ الكمية المقصودة، أو اكتب اسمًا يميز المخزن عند إنشائه. الأرصدة والجرد والحركات تُراجع على المكان المحدد.",
+      "article": "inventory-count",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الملاحظة / السبب",
+      "labels": [
+        "الملاحظة / السبب"
+      ],
+      "text": "سبب المهمة أو تفاصيلها (3 حروف على الأقل). بتظهر للي بيراجع الطلب.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المدة بالدقايق",
+      "labels": [
+        "المدة بالدقايق"
+      ],
+      "text": "مدة الطريق بالدقايق (من 1 لـ 720). بتتحسب جوه الوردية بس، ومش وقت إضافي، والمدير بيراجعها.",
+      "article": "hr-external-mission",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [
+        "ساعات الطريق"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة (اختياري)",
+      "labels": [
+        "ملاحظة (اختياري)"
+      ],
+      "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
+      "article": "personal",
+      "tabs": [
+        "human_resources"
+      ],
+      "forms": [
+        "ساعات الطريق"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "الموظف",
       "labels": [
         "الموظف"
@@ -12193,6 +12314,32 @@
       "reviewed": true
     },
     {
+      "title": "كاش ولا بنك؟",
+      "labels": [
+        "كاش ولا بنك؟"
+      ],
+      "text": "كاش من الخزينة الرئيسية (لازم ورديتها تكون مفتوحة) أو البنك. الشريك بيتعامل مع الخزينة الرئيسية بس.",
+      "article": "partner-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: توريد لدفع إيجار المركز",
+      "labels": [
+        "مثلاً: توريد لدفع إيجار المركز"
+      ],
+      "text": "اكتب الفلوس دي ليه — بتظهر في كشف حساب الشريك.",
+      "article": "partner-accounts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اكتب المعلومة، ولا تفترض سببًا غير مؤكد.",
       "labels": [
         "اكتب المعلومة، ولا تفترض سببًا غير مؤكد."
@@ -15610,12 +15757,38 @@
       "reviewed": true
     },
     {
-      "title": "الحالة",
+      "title": "سبب الرفض (٣ حروف على الأقل)",
       "labels": [
-        "الحالة"
+        "سبب الرفض (٣ حروف على الأقل)"
       ],
-      "text": "اختار الحالة الفعلية أو فلتر العرض حسب هذه الشاشة. تغيير الفلتر لا ينقل المستند لمرحلة جديدة، والحالة التنفيذية لها إجراء وصلاحية مستقلان.",
-      "article": "personal",
+      "text": "اكتب ليه رفضت المصروف (٣ حروف على الأقل). الرفض علامة للمتابعة بس ومش بيرجّع الفلوس ولا بيغيّر القيد.",
+      "article": "shift-expenses-review",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "هامش مصروفات الوردية (ج.م)",
+      "labels": [
+        "هامش مصروفات الوردية (ج.م)"
+      ],
+      "text": "أقصى إجمالي مصروفات الكاشير في الوردية الواحدة على الخزينة دي. صفر = كارت المصروفات مقفول.",
+      "article": "shift-expenses-review",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "حد المصروف الواحد (ج.م)",
+      "labels": [
+        "حد المصروف الواحد (ج.م)"
+      ],
+      "text": "أقصى مبلغ للمصروف الواحد. صفر = كارت المصروفات مقفول للخزينة دي.",
+      "article": "shift-expenses-review",
       "tabs": [
         "reception_services"
       ],
@@ -15683,6 +15856,19 @@
       ],
       "text": "اعرض حجوزات طبيب معين بس، أو كل الأطباء.",
       "article": "booking-flow",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الحالة",
+      "labels": [
+        "الحالة"
+      ],
+      "text": "اختار الحالة الفعلية أو فلتر العرض حسب هذه الشاشة. تغيير الفلتر لا ينقل المستند لمرحلة جديدة، والحالة التنفيذية لها إجراء وصلاحية مستقلان.",
+      "article": "personal",
       "tabs": [
         "reception_services"
       ],
@@ -23536,9 +23722,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2030,
-    "labels": 1473,
-    "files": 164,
-    "groups": 1598
+    "definitions": 2042,
+    "labels": 1481,
+    "files": 166,
+    "groups": 1612
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

@@ -5,7 +5,7 @@
   // Mounted by hr-attendance-hub.js into the «الحضور اللحظي» section; loads only while that tab is open and refreshes every 15 seconds.
   var STALE_MINUTES = 5, LONG_IN_MINUTES = 14 * 60, LONG_BREAK_MINUTES = 30, REFRESH_MS = 15000, WIN_PAST = 16 * 60, WIN_FUT = 4 * 60;
   var C = w.SSMPDAttCore, esc = C.esc, ico = C.ico, clock = C.clock, day = function (iso) { return new Intl.DateTimeFormat('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'long' }).format(new Date(iso)); }, hhmm = C.hhmm, dur = C.dur, mins = C.minutesBetween, initials = C.initials;
-  var STATE_LABEL = { in: ['p-in', 'حاضر'], break: ['p-break', 'استراحة'], absent: ['p-none', 'لم يصل'], up: ['p-up', 'لم يبدأ'], out: ['p-out', 'انصرف'], leave: ['p-leave', 'إجازة'], idle: ['p-out', 'لم يبصم'], nolink: ['p-up', 'غير مربوط'] };
+  var STATE_LABEL = { in: ['p-in', 'حاضر'], break: ['p-break', 'استراحة'], absent: ['p-none', 'لم يصل'], up: ['p-up', 'لم يبدأ'], out: ['p-out', 'انصرف'], leave: ['p-leave', 'إجازة'], mission: ['p-leave', 'مهمة خارجية'], idle: ['p-out', 'لم يبصم'], nolink: ['p-up', 'غير مربوط'] };
   var FILTER_LABEL = { in: 'الموجودون', late: 'المتأخرون', abs: 'الغايبون', leave: 'في إجازة', up: 'لم يبدأوا', out: 'المنصرفون' };
   var UNMAPPED_DEPT = { id: 'unmapped', name: 'أرقام غير مربوطة بموظف', icon: 'link', col: '#6B7688', tint: '#EEF1F6', min: 0 };
 
@@ -52,7 +52,8 @@
       });
       Object.keys(byId).forEach(function (id) {
         var x = byId[id], r = x.r, b = x.b, s = r && r.state, st;
-        if (b && b.status === 'leave') st = 'leave';
+        if (b && b.status === 'mission') st = 'mission';
+        else if (b && b.status === 'leave') st = 'leave';
         else if (b && b.excused && b.status === 'absent') st = 'leave';
         else if (s === 'in') st = 'in'; else if (s === 'break') st = 'break'; else if (s === 'out') st = 'out';
         else if (b) st = b.status === 'absent' ? 'absent' : (b.status === 'waiting' || b.status === 'upcoming') ? 'up' : b.status === 'unmapped' ? 'nolink' : 'out';
@@ -133,8 +134,10 @@
       return '<div class="strip">' + out.join('') + '</div>';
     }
     // Departments below their minimum staffing because someone scheduled did not come.
+    function missionLabel(p) { var m = p.b && p.b.mission, to = m && (m.to_time || ''); return m && !m.whole_day && to ? 'مهمة خارجية — لحد ' + String(m.to_with_travel || to).slice(0, 5) : 'مهمة خارجية'; }
+    // an approved external mission counts as present for the department minimum (owner 2026-11-26)
     function deptStats(d) {
-      var all = M.list.filter(function (p) { return p.dept.id === d.id; }), pres = all.filter(isIn).length;
+      var all = M.list.filter(function (p) { return p.dept.id === d.id; }), pres = all.filter(function (p) { return isIn(p) || p.st === 'mission'; }).length;
       var sched = all.filter(function (p) { return p.st !== 'leave' && (p.b || isIn(p)); }).length, abs = all.filter(function (p) { return p.st === 'absent'; }).length;
       return { all: all, pres: pres, sched: sched, abs: abs, low: d.min > 0 && pres < d.min && abs > 0 };
     }
@@ -175,6 +178,7 @@
           (p.isLate ? '<span class="pill p-late">متأخر ' + esc(dur(p.late)) + '</span>' : st === 'in' ? '<span>من ' + esc(dur(p.inAgo)) + '</span>' : '');
       } else if (st === 'absent') meta = '<span class="pill p-none">لم يصل منذ ' + esc(dur(p.sinceStart)) + '</span><span>وردية ' + esc(clock(p.start)) + '</span>';
       else if (st === 'up') meta = '<span class="pill p-up">' + ico('hour') + ' تبدأ ' + esc(clock(p.start)) + '</span><span>' + (p.start ? 'بعد ' + esc(dur(mins(M.now, p.start))) : '') + '</span>';
+      else if (st === 'mission') meta = '<span class="pill p-leave" data-presence-mission>' + esc(missionLabel(p)) + '</span>';
       else if (st === 'leave') meta = '<span class="pill p-leave">' + (p.excusedLeave ? 'إذن معتمد' : 'إجازة') + '</span>';
       else if (st === 'out') meta = '<span class="pill p-out">انصرف ' + esc(clock(p.r.last_out_at || p.r.last_punch_at)) + '</span><span>' + (p.worked != null ? 'عمل ' + esc(dur(p.worked)) : '') + '</span>';
       else if (st === 'nolink') meta = '<span class="pill p-up">غير مربوط بالبصمة</span>';
@@ -195,6 +199,7 @@
       if (st === 'break') return ['استراحة', 'p-break'];
       if (st === 'absent') return ['لم يصل', 'p-none'];
       if (st === 'up') return ['تبدأ ' + clock(p.start), 'p-up'];
+      if (st === 'mission') return [missionLabel(p), 'p-leave'];
       if (st === 'leave') return [p.excusedLeave ? 'إذن معتمد' : 'إجازة', 'p-leave'];
       if (st === 'out') return ['انصرف ' + clock(p.r.last_out_at || p.r.last_punch_at), 'p-out'];
       if (st === 'nolink') return ['غير مربوط', 'p-up'];
@@ -242,8 +247,8 @@
       if (!groups.length) return quiet.length ? '<div class="panel empty" data-presence-empty>لا أحد حاضر الآن — شوف «أقسام بدون حضور الآن».</div>' : '<div class="panel empty" data-presence-empty>لا توجد نتائج مطابقة.</div>';
       var halves = 0, html = groups.map(function (g) {
         var d = g.d, stt = deptStats(d), ls = list.filter(function (p) { return p.dept.id === d.id; }), pres = stt.pres, sched = stt.sched, low = stt.low;
-        var main = ls.filter(isIn).sort(function (a, b) { return (b.inAgo || 0) - (a.inAgo || 0); }), absL = ls.filter(function (p) { return p.st === 'absent'; });
-        var rest = ls.filter(function (p) { return !isIn(p) && p.st !== 'absent'; }), open = S.openOut[d.id] || (filt && S.state !== 'abs');
+        var main = ls.filter(isIn).sort(function (a, b) { return (b.inAgo || 0) - (a.inAgo || 0); }).concat(ls.filter(function (p) { return p.st === 'mission'; })), absL = ls.filter(function (p) { return p.st === 'absent'; });
+        var rest = ls.filter(function (p) { return !isIn(p) && p.st !== 'absent' && p.st !== 'mission'; }), open = S.openOut[d.id] || (filt && S.state !== 'abs');
         var n = main.length + absL.length, wide = n >= 3, unm = d.id === 'unmapped';
         var badge = unm ? '' : low ? '<span class="pv-st bad">ناقص ' + (d.min - pres) + '</span>' : stt.abs ? '<span class="pv-st warn">غايب ' + stt.abs + '</span>' : pres ? '<span class="pv-st ok">مكتمل</span>' : '';
         var c = { up: 0, out: 0, leave: 0, other: 0 }; rest.forEach(function (p) { c[p.st === 'up' ? 'up' : p.st === 'out' ? 'out' : p.st === 'leave' ? 'leave' : 'other']++; });
@@ -266,11 +271,12 @@
       for (var h = -16; h <= 4; h += 2) ticks.push([x(h * 60), hhmm(M.nowMin + h * 60)]);
       var row = function (p) {
         var sR = p.start ? mins(M.now, p.start) : null, eR = p.end ? mins(M.now, p.end) : null;
-        var band = p.st === 'leave' || sR == null ? '' : '<div class="tl-band" style="left:' + x(sR) + '%;width:' + Math.max(.4, x(eR) - x(sR)) + '%"></div>', bar = '';
+        var band = p.st === 'leave' || p.st === 'mission' || sR == null ? '' : '<div class="tl-band" style="left:' + x(sR) + '%;width:' + Math.max(.4, x(eR) - x(sR)) + '%"></div>', bar = '';
         if ((p.st === 'in' || p.st === 'break' || p.st === 'out') && p.inAgo != null) { var s = -p.inAgo, en = p.st === 'out' && p.outAgo != null ? -p.outAgo : 0; bar = '<div class="tl-bar ' + (p.st === 'out' ? '' : 'live') + '" style="left:' + x(s) + '%;width:' + Math.max(.8, x(en) - x(s)) + '%"></div>'; }
         if (p.st === 'absent' && sR != null) bar = '<div class="tl-miss" style="left:' + x(sR) + '%" title="لم يصل"></div>';
         if (p.st === 'up' && p.start) bar = '<span class="tl-lab" style="right:6px">تبدأ ' + esc(clock(p.start)) + ' ←</span>';
-        if (p.st === 'leave') bar = '<div class="tl-band" style="left:0;width:100%;background:var(--blue-t);border-color:#BED7EE;text-align:center;font-size:12px;color:var(--blue);line-height:20px">' + (p.excusedLeave ? 'إذن معتمد' : 'إجازة') + '</div>';
+        if (p.st === 'mission') bar = '<div class="tl-band" style="left:0;width:100%;background:#EDE9FE;border-color:#CFC3F3;text-align:center;font-size:12px;color:#5B3FB5;line-height:20px">' + missionLabel(p) + '</div>';
+        else if (p.st === 'leave') bar = '<div class="tl-band" style="left:0;width:100%;background:var(--blue-t);border-color:#BED7EE;text-align:center;font-size:12px;color:var(--blue);line-height:20px">' + (p.excusedLeave ? 'إذن معتمد' : 'إجازة') + '</div>';
         return '<div class="tl-row" data-presence-tlrow style="--col:' + esc(p.dept.col) + '"><div class="tl-nm">' + esc(p.name) + '<br><small>' + esc(p.tname || p.role || '') + '</small></div><div class="tl-track">' + band + bar + '<div class="tl-now" style="left:' + x(0) + '%"></div></div></div>';
       };
       return '<div class="tl" data-presence-timeline><div class="legend"><span><i style="background:var(--pos);width:18px;height:8px;border-radius:99px"></i>داخل المركز</span><span><i style="background:#8794A8;width:18px;height:8px;border-radius:99px"></i>أنهى وردية</span><span><i style="background:rgba(15,54,157,.15);border:1px dashed rgba(15,54,157,.4);width:18px;height:10px;border-radius:3px"></i>ميعاد الوردية</span><span><i style="background:var(--neg);width:3px;height:14px"></i>لم يصل</span><span><i style="background:var(--alert);width:3px;height:14px"></i>الآن</span></div><div class="tl-head"><div></div><div class="tl-axis">' +

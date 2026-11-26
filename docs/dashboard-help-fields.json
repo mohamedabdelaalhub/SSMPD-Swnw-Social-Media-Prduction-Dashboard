@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2030,
-    "labels": 1473,
-    "files": 164,
-    "groups": 1598
+    "definitions": 2042,
+    "labels": 1481,
+    "files": 166,
+    "groups": 1612
   },
   "fields": [
     {
@@ -7487,6 +7487,100 @@
       "text_sha256": "4fc2fd9821d9aebd776f0340a9ed8d3c75c6d6c7c762deb3e20664c9c037f42b"
     },
     {
+      "file": "hr-mission.js",
+      "label": "المدة",
+      "name": "mode",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "patient-records",
+      "text_sha256": "375a5dc7452535eef90388f4d91c30991080165a34daf4474495ca5d4491c8a1"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "من يوم",
+      "name": "from_date",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-external-mission",
+      "text_sha256": "43d17a6a3a20617926bf44dea3f551fab9bbff1b624cd4f3e8313e3086ca665b"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "إلى يوم",
+      "name": "to_date",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-external-mission",
+      "text_sha256": "462bc3a54341e73eccaa1831e1892e6cd1f721f7a7a024264da4eebfbadbfbfc"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "من الساعة",
+      "name": "from_time",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "design-guide",
+      "text_sha256": "eec768dae27bf2de3693d2d37ba93ae01c2648aaf8c5e7b69afdb717e662d0c0"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "إلى الساعة",
+      "name": "to_time",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-external-mission",
+      "text_sha256": "d986a4f3727db5028c8525170c3c50efbb155c14705437817f59fbfaf0157c13"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "المكان",
+      "name": "place",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "inventory-count",
+      "text_sha256": "e122379738ad3d6afb3e24b51be69e2a0279dc6d4ec7ce5089532ae9d80bf4ad"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "الملاحظة / السبب",
+      "name": "note",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-external-mission",
+      "text_sha256": "a8a2236d14eeba914c46c0d8996839891f24e90118863d172e85bd995ea5c9e6"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "المدة بالدقايق",
+      "name": "minutes",
+      "kind": "helper",
+      "forms": [
+        "ساعات الطريق"
+      ],
+      "tab": "human_resources",
+      "article": "hr-external-mission",
+      "text_sha256": "da9efb88b539e56fea704707bc6cf692f4a26ec917bbb3a0ec6d5588b2723a74"
+    },
+    {
+      "file": "hr-mission.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "ساعات الطريق"
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
       "file": "hr-offboarding.js",
       "label": "الموظف",
       "name": "person_id",
@@ -10601,6 +10695,36 @@
       "tab": "production",
       "article": "nursing-triage",
       "text_sha256": "4e478ffd5542800f0b62bc21cc9c46fb1297efdb58b2c7f069d70643ede38950"
+    },
+    {
+      "file": "partner-accounts.js",
+      "label": "كاش ولا بنك؟",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "partner-accounts",
+      "text_sha256": "c05375285092878575292c296caf45e64bd117641da994c519b776025e9199b8"
+    },
+    {
+      "file": "partner-accounts.js",
+      "label": "مثلاً: توريد لدفع إيجار المركز",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "partner-accounts",
+      "text_sha256": "90d1f5f4aef67c5683eaebcd2f3c3187bc0370fb52f52d68ec873756254b99f4"
+    },
+    {
+      "file": "partner-accounts.js",
+      "label": "السبب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
     {
       "file": "patient360.js",
@@ -13842,33 +13966,33 @@
     },
     {
       "file": "reception-shift-expenses.js",
-      "label": "من",
+      "label": "سبب الرفض (٣ حروف على الأقل)",
       "name": "",
-      "kind": "html",
+      "kind": "label",
       "forms": [],
       "tab": "reception_services",
-      "article": "personal",
-      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+      "article": "shift-expenses-review",
+      "text_sha256": "97ed0ae684007d9cfb9f0d4b8e20a722f3f7a1d5ceb41e25e13af4baf7fdb36a"
     },
     {
       "file": "reception-shift-expenses.js",
-      "label": "إلى",
+      "label": "هامش مصروفات الوردية (ج.م)",
       "name": "",
       "kind": "html",
       "forms": [],
       "tab": "reception_services",
-      "article": "personal",
-      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+      "article": "shift-expenses-review",
+      "text_sha256": "baefdaf902d35d8a7efc7b1c2c31f023aea0118e9e719e4d0ac59359d730ca38"
     },
     {
       "file": "reception-shift-expenses.js",
-      "label": "الحالة",
+      "label": "حد المصروف الواحد (ج.م)",
       "name": "",
       "kind": "html",
       "forms": [],
       "tab": "reception_services",
-      "article": "personal",
-      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+      "article": "shift-expenses-review",
+      "text_sha256": "7874f0f73a8de1334b8801d900f5617184950df9b3298a359ad5b06835da4a75"
     },
     {
       "file": "reception-visit-supplies.js",
