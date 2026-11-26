@@ -39,7 +39,7 @@
       var body = '<p>من وردية «' + esc(o.shift.register) + '» — الكاش المتاح للتسليم: <b>' + money(o.shift.available) + '</b>. الفلوس مش هتتنقل غير لما زميلك يعدّها ويدوس «استلمت».</p>' +
         (mine.length ? '<div class="peer-pending">' + mine.map(function (h) { return '<p>تسليم معلّق لـ ' + esc(h.to_name) + ': <b>' + money(h.amount) + '</b> <button type="button" class="btn" data-peer-cancel="' + esc(h.id) + '">إلغاء التسليم</button></p>'; }).join("") + '</div>' : '') +
         (main || opts.only === "peer" ? '' : '<p class="peer-main-off">وردية الخزينة الرئيسية مش مفتوحة دلوقتي، فمش هتظهر في القايمة. لو عايز تسلّم للرئيسية خلّي المسؤول يفتح ورديتها الأول.</p>') +
-        (cols.length || main ? '<form data-peer-form class="peer-form"><label>سلّم لـ<select name="to" required><option value="">اختار زميلك أو الخزينة الرئيسية</option>' +
+        (cols.length || main ? '<form data-peer-form class="peer-form" autocomplete="off"><label>سلّم لـ<select name="to" required><option value="">اختار زميلك أو الخزينة الرئيسية</option>' +
           (main ? '<option value="main">' + esc(main.register || 'الخزينة الرئيسية') + ' — ' + esc(main.name) + '</option>' : '') + cols.map(function (c) { return '<option value="' + esc(c.shift_id) + '">' + esc(c.name) + ' — ' + esc(c.register) + '</option>'; }).join("") + '</select></label>' +
           '<p class="peer-main-hint" data-peer-main-hint hidden>التسليم للخزينة الرئيسية بيروح لـ ' + esc(main ? main.name : '') + '، وهو اللي يعدّ ويضغط «استلمت النقد فعليًا — اعتماد» من «الخزائن والورديات». الفلوس بتفضل في عهدتك لحد ما يعتمد.</p>' +
           '<label class="peer-mode"><input type="radio" name="mode" value="part" checked> جزء من التحصيل (وأكمّل ورديتي)</label>' +
