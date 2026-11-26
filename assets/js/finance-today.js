@@ -9,26 +9,30 @@
 'use strict';
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function n(v){var x=Number(v);return isNaN(x)?0:x;}
-function card(i,t,hot){return '<div class="ft-task'+(hot?' is-hot':'')+'"><span class="ft-n">'+i+'</span><b>'+esc(t.title)+(t.count?' <span class="ft-badge">'+esc(t.count)+'</span>':'')+'</b><span class="ft-sub">'+esc(t.sub)+'</span>'+
- '<button type="button" class="btn'+(i===1?' btn-primary':'')+'" '+t.attr+'>'+esc(t.btn)+'</button></div>';}
-function band(title,sub,tasks){return '<section class="ft" dir="rtl" data-ft><div class="ft-head"><b>'+esc(title)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</div><div class="ft-tasks">'+
- tasks.map(function(t,i){return card(i+1,t,!!t.count);}).join('')+'</div></section>';}
+/* help 277 (owner «طبقه» 2026-11-25, mockup finance-today-plain): what waits for me in one row of equal cards (buttons on one line),
+   the everyday tasks in a calmer row under «كل يوم»; no card opens a screen that lacks what the card promises. */
+function card(i,t,hot){return '<div class="ft-task'+(hot?' is-hot':'')+(t.calm?' is-calm':'')+'"><b><span>'+esc(t.title)+'</span>'+(t.count?'<span class="ft-badge">'+esc(t.count)+'</span>':'')+'</b><span class="ft-sub">'+esc(t.sub)+'</span>'+
+ '<button type="button" class="btn'+(hot&&i===1?' btn-primary':'')+'" '+t.attr+'>'+esc(t.btn)+'</button></div>';}
+function band(title,sub,tasks){var hot=tasks.filter(function(t){return n(t.count)>0;}),calm=tasks.filter(function(t){return !(n(t.count)>0);});
+ var grid=function(list,cls,isHot){return '<div class="ft-tasks'+(cls?' '+cls:'')+'" data-cols="'+Math.min(4,list.length)+'">'+list.map(function(t,i){return card(i+1,t,isHot);}).join('')+'</div>';};
+ return '<section class="ft" dir="rtl" data-ft><div class="ft-head"><b>'+esc(title)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</div>'+
+  (hot.length>1?grid(hot,'',true)+(calm.length?'<p class="ft-group">كل يوم</p>'+grid(calm.map(function(t){return Object.assign({},t,{calm:true});}),'ft-calm',false):''):'<div class="ft-tasks" data-cols="'+Math.min(4,tasks.length)+'">'+tasks.map(function(t,i){return card(i+1,t,n(t.count)>0);}).join('')+'</div>')+'</section>';}
 function need(dd,kind){var x=(dd.needs||[]).filter(function(v){return v.kind===kind;})[0];return x?n(x.count):0;}
 
 /* reviewer / accountant tasks from the overview payload; `allowed(id)` hides a task whose section this person cannot open */
 function financeTasks(dd,allowed){
  var ok=function(id){return !allowed||allowed(id);},t=[];
  if(dd.can_review){
-  t.push({title:'استلم كاش من الخزن',count:need(dd,'handover'),sub:'خزن التحصيل اللي طلبت التسليم — عدّ الفلوس واعتمد.',btn:'استلم',attr:'data-ft-go="shifts"'});
+  t.push({title:'استلم كاش',count:need(dd,'handover'),sub:'خزن التحصيل اللي طلبت التسليم — عدّ الفلوس واعتمد.',btn:'استلم',attr:'data-ft-go="shifts"'});
   t.push({title:'اعتمادات مستنياك',count:need(dd,'requests'),sub:'صرف وتصحيح وإلغاء خدمة — كل اللي محتاج موافقة تانية.',btn:'اعتمد',attr:'data-ft-go="requests"'});
   t.push({title:'فروق الخزينة',count:need(dd,'cash_cases'),sub:'وردية اتقفلت بفرق في الجرد — قرّر من غير خصم تلقائي.',btn:'راجع الفروق',attr:'data-ft-go="cases"'});
-  t.push({title:'مراجعة الورديات',count:need(dd,'shift_review'),sub:'ورديات اتقفلت ومستنية مراجعة شخص تاني.',btn:'راجع',attr:'data-ft-go="shifts"'});
+  t.push({title:'ورديات للمراجعة',count:need(dd,'shift_review'),sub:'ورديات اتقفلت ومستنية مراجعة شخص تاني.',btn:'راجع',attr:'data-ft-go="shifts"'});
   t.push({title:'ملخص اليوم',count:0,sub:'التحصيل والصرف والكاش في الخزن والبنك.',btn:'افتح الملخص',attr:'data-ft-more-open'});
  }else{
-  t.push({title:'طلبات الصرف',count:need(dd,'requests'),sub:'سجّل طلب صرف أو تابع طلباتك.',btn:'افتح الطلبات',attr:'data-ft-go="requests"'});
-  t.push({title:'سند قبض / سند صرف',count:0,sub:'أي فلوس داخلة أو خارجة من غير تحصيل مريض.',btn:'السندات',attr:'data-ft-go="shifts"'});
-  t.push({title:'كشف الخزينة',count:0,sub:'الرصيد والحركات لأي خزينة في أي يوم.',btn:'افتح',attr:'data-ft-go="shifts"'});
-  t.push({title:'حساب دكتور أو مورد',count:0,sub:'كام له، كام اتصرف، والباقي.',btn:'افتح',attr:'data-ft-go="'+(ok('doctor-accounts')?'doctor-accounts':'suppliers')+'"'});
+  t.push({title:'طلبات الصرف',count:need(dd,'requests'),sub:'سجّل طلب صرف أو تابع طلباتك واللي اترفض منها.',btn:'افتح طلباتي',attr:'data-ft-go="requests"'});
+  /* «سند قبض / سند صرف» is added by mountAccounting only for the main-treasury custodian with an open shift; «كشف الخزينة» is reviewer-only on the server */
+  t.push({title:'حساب دكتور',count:0,sub:'له كام، اتصرف له كام، والباقي.',btn:'اختار الدكتور',attr:'data-ft-go="doctor-accounts"'});
+  t.push({title:'حساب مورد',count:0,sub:'عليه كام، اتدفع كام، والباقي.',btn:'اختار المورد',attr:'data-ft-go="suppliers"'});
  }
  return t.filter(function(x){var m=/data-ft-go="([^"]+)"/.exec(x.attr);return !m||ok(m[1]);});
 }
@@ -42,13 +46,14 @@ function mountAccounting(host,o){
  more.addEventListener('toggle',function(){try{localStorage.setItem(key,more.open?'1':'0');}catch(_){}if(more.open)draw();});
  return Promise.resolve(db.client.rpc('clinic_finance_overview')).then(function(r){
   if(!r||r.error)throw (r&&r.error)||Error('no data');if(!host.isConnected)return r.data;var dd=r.data||{};
-  var paint=function(extra){host.querySelector('[data-ft-band]').innerHTML=band('شغلي النهارده',dd.can_review?'المهام اللي مستنياك دلوقتي — الرقم البرتقالي يعني فيه حاجة مستنياك':'اختصارات شغلك اليومي',(extra||[]).concat(financeTasks(dd,o.allowed)));
+  var day=new Intl.DateTimeFormat('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',weekday:'long',day:'numeric',month:'long'}).format(new Date());
+  var paint=function(extra){host.querySelector('[data-ft-band]').innerHTML=band('اللي مستنيك النهارده',day,(extra||[]).concat(financeTasks(dd,o.allowed)));
    host.querySelectorAll('[data-ft-go]').forEach(function(b){b.onclick=function(){if(o.go)o.go(b.getAttribute('data-ft-go'));};});
    host.querySelectorAll('[data-ft-main-count]').forEach(function(b){b.onclick=function(){if(w.SSMPDMainCount)w.SSMPDMainCount.autoOpen=true;if(o.go)o.go('shifts');};});
    var mo=host.querySelector('[data-ft-more-open]');if(mo)mo.onclick=function(){more.open=true;draw();more.scrollIntoView({behavior:'smooth',block:'start'});};};
   paint([]);
   /* «جرد الخزينة الرئيسية» (20261122200000): the custodian's count task first; reviewers get a hot task for counts waiting > 24h */
-  if(w.SSMPDMainCount&&(!o.allowed||o.allowed('shifts')))w.SSMPDMainCount.status().then(function(v){var t=w.SSMPDMainCount.tasks(v);if(t.length&&host.isConnected)paint(t);}).catch(function(){});
+  if(w.SSMPDMainCount&&(!o.allowed||o.allowed('shifts')))w.SSMPDMainCount.status().then(function(v){var t=w.SSMPDMainCount.tasks(v);if(v&&v.can_count)t.push({title:'سند قبض / سند صرف',count:0,sub:'للفلوس اللي داخلة أو خارجة من الخزينة الرئيسية ومش تبع مريض (زي فاتورة كهربا كاش). بيتسجّل بعد موافقة شخص تاني.',btn:'السندات',attr:'data-ft-go="shifts"'});if(t.length&&host.isConnected)paint(t);}).catch(function(){});
   if(!dd.can_review)more.remove();else{var keep=null;try{keep=localStorage.getItem(key);}catch(_){}if(keep==='1'){more.open=true;draw();}}
   return dd;});
 }

@@ -11,7 +11,8 @@ ov={can_review:true,needs:[{kind:'handover',count:2},{kind:'requests',count:4},{
 let host=d.createElement('div');d.body.appendChild(host);const went=[];
 let r=await T.mountAccounting(host,{go:id=>went.push(id),allowed:()=>true});assert.equal(r.can_review,true);
 let tasks=[...host.querySelectorAll('.ft-task')];assert.equal(tasks.length,5);
-assert.deepEqual(tasks.map(t=>t.querySelector('b').textContent.replace(/\s+/g,' ').trim()),['استلم كاش من الخزن 2','اعتمادات مستنياك 4','فروق الخزينة 1','مراجعة الورديات','ملخص اليوم']);
+assert.deepEqual(tasks.map(t=>[...t.querySelector('b').children].map(x=>x.textContent).join(' ')),['استلم كاش 2','اعتمادات مستنياك 4','فروق الخزينة 1','ورديات للمراجعة','ملخص اليوم']);
+assert.equal(host.querySelector('.ft-group').textContent,'كل يوم','everyday tasks in their own row (help 277)');assert.equal(host.querySelectorAll('.ft-calm .ft-task').length,2);
 assert.deepEqual(tasks.map(t=>t.classList.contains('is-hot')),[true,true,true,false,false]);
 tasks[0].querySelector('button').click();tasks[1].querySelector('button').click();tasks[2].querySelector('button').click();assert.deepEqual(went,['shifts','requests','cases']);
 const more=host.querySelector('[data-ft-more]');assert(more&&!more.open,'details closed by default');assert.equal(renders,0,'overview not drawn until opened');
@@ -22,8 +23,8 @@ host=d.createElement('div');d.body.appendChild(host);await T.mountAccounting(hos
 // 2. accountant (no review): shortcuts, no numbers block; a section he cannot open is not offered
 ov={can_review:false,needs:[]};host=d.createElement('div');d.body.appendChild(host);
 await T.mountAccounting(host,{go:()=>{},allowed:id=>id!=='doctor-accounts'});
-tasks=[...host.querySelectorAll('.ft-task')];assert.deepEqual(tasks.map(t=>t.querySelector('b').textContent),['طلبات الصرف','سند قبض / سند صرف','كشف الخزينة','حساب دكتور أو مورد']);
-assert.equal(tasks[3].querySelector('button').getAttribute('data-ft-go'),'suppliers');assert.equal(host.querySelector('[data-ft-more]'),null,'no clinic-wide numbers');
+tasks=[...host.querySelectorAll('.ft-task')];assert.deepEqual(tasks.map(t=>t.querySelector('b').textContent),['طلبات الصرف','حساب مورد'],'help 277: no voucher/statement cards that open an empty screen; doctor and supplier are separate, filtered by allowed()');
+assert.equal(tasks[1].querySelector('button').getAttribute('data-ft-go'),'suppliers');assert.equal(host.querySelector('[data-ft-more]'),null,'no clinic-wide numbers');
 // 3. overview unavailable -> rejects (caller falls back to the old behaviour)
 ov=new Error('function does not exist');host=d.createElement('div');d.body.appendChild(host);await assert.rejects(T.mountAccounting(host,{}));
 // 4. cashier band
