@@ -10,6 +10,9 @@ const cairoDay=t=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:
  let snap=await rpc('clinic_reception_snapshot',{p_workspace:w,p_from:today,p_to:today});
  const doc=snap.providers[0],consult=snap.services.find(s=>s.code==='CONSULT'),pat=snap.patients[0].id;
  await db.exec('reset role');
+ // mirror live: 20261116230000 moved the core agreement-validity checks from current_date to clinic_reception.today() (Cairo).
+ // Without it this test failed between 00:00 and 02:00 Cairo (core used the UTC date, the unit agreement starts on the Cairo date).
+ await db.exec(fs.readFileSync('supabase/migrations/20261116230000_reception_agreements_cairo_date.sql','utf8'));
  // live-shaped: today(), finance contracts table + resolver, and the 20261108230000 sync_doctor_contract
  await db.exec(`create or replace function clinic_reception.today() returns date language sql stable as $f$select (now() at time zone 'Africa/Cairo')::date$f$;
   create schema if not exists clinic_finance;
@@ -33,19 +36,13 @@ const cairoDay=t=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:
  await assert.rejects(sync(o1,unit),/حدد عقدًا واحدًا معتمدًا للطبيب والخدمة/);
  await db.exec(fs.readFileSync('supabase/migrations/20261126160000_unit_provider_no_doctor_fee.sql','utf8'));
  await assert.rejects(db.exec(fs.readFileSync('supabase/migrations/20261126160000_unit_provider_no_doctor_fee.sql','utf8')),/تم تطبيق هذا الملف من قبل/);
- // 20261126210000: Cairo date vs server date — simulate 00:00–02:00 Cairo (today() = server date + 1) on a fresh pair: before the fix the
- // first execution is refused by the core «يلزم عقد أتعاب…»; after it, it works. Then today() goes back to the real Cairo date.
+ // any hour: simulate 00:00–02:00 Cairo (today() = server date + 1) — a fresh unit pair still executes (core and wrapper both use today())
  const realToday=(await db.query("select pg_get_functiondef('clinic_reception.today()'::regprocedure) d")).rows[0].d;
  await db.exec("create or replace function clinic_reception.today() returns date language sql stable as $f$select current_date + 1$f$");
  const unit2=(await db.query("insert into clinic_reception.providers(workspace_id,name,department,branch,active) select workspace_id,'المعمل',department,branch,true from clinic_reception.providers where id=$1 returning id",[doc.id])).rows[0].id;
- const oW1=await ord(unit2);await db.query("select set_config('test.admin',$1,false)",[me]);await sync(oW1,unit2);
- await as(1);await assert.rejects(cmd('execute',{id:oW1,provider_id:unit2}),/يلزم عقد أتعاب معتمد/);await db.exec('reset role');
- await db.exec(fs.readFileSync('supabase/migrations/20261126210000_unit_agreement_cairo_date.sql','utf8'));
- await assert.rejects(db.exec(fs.readFileSync('supabase/migrations/20261126210000_unit_agreement_cairo_date.sql','utf8')),/تم تطبيق هذا الملف من قبل/);
- assert.equal((await db.query("select count(*)::int n from clinic_reception.doctor_agreements where provider_id=$1 and valid_from>current_date",[unit2])).rows[0].n,0,'data fix moved the start back');
- const oW2=await ord(unit2);await db.query("select set_config('test.admin',$1,false)",[me]);await sync(oW2,unit2);
- await as(1);await cmd('execute',{id:oW2,provider_id:unit2});await db.exec('reset role');
- assert.equal((await db.query("select status from clinic_reception.orders where id=$1",[oW2])).rows[0].status,'completed','executes in the Cairo-ahead window');
+ const oW=await ord(unit2);await db.query("select set_config('test.admin',$1,false)",[me]);await sync(oW,unit2);
+ await as(1);await cmd('execute',{id:oW,provider_id:unit2});await db.exec('reset role');
+ assert.equal((await db.query("select status from clinic_reception.orders where id=$1",[oW])).rows[0].status,'completed','executes in the Cairo-ahead window');
  await db.exec(realToday);
  // AFTER: unit → 0% agreement, execute completes with fee 0; a second sync does not duplicate
  await db.query("select set_config('test.admin',$1,false)",[me]);await sync(o1,unit);await sync(o1,unit);
@@ -61,9 +58,8 @@ const cairoDay=t=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:
  await sync(o2,doc.id);
  assert.equal(Number((await db.query("select rate from clinic_reception.doctor_agreements where provider_id=$1 and status='active'",[doc.id])).rows[0].rate),30);
  // rollback restores the previous function
- await db.exec(fs.readFileSync('supabase/rollbacks/20261126210000_unit_agreement_cairo_date.rollback.sql','utf8'));
  await db.exec(fs.readFileSync('supabase/rollbacks/20261126160000_unit_provider_no_doctor_fee.rollback.sql','utf8'));
  assert.equal((await db.query("select to_regprocedure('clinic_reception.sync_doctor_contract_before_units(uuid,uuid,uuid)') x")).rows[0].x,null);
  const o3=await ord(unit);await assert.rejects(sync(o3,unit),/حدد عقدًا واحدًا معتمدًا للطبيب والخدمة/);
- console.log('PASS unit provider no doctor fee (+ 20261126210000 Cairo/server date): unit (no doctor_key) refused before; after the fix gets one 0% agreement (idempotent), executes with fee 0; doctor without contract still refused, with one contract syncs 30%; re-apply refused; rollback restores the refusal.');
+ console.log('PASS unit provider no doctor fee: unit (no doctor_key) refused before; after the fix gets one 0% agreement (idempotent), executes with fee 0; doctor without contract still refused, with one contract syncs 30%; re-apply refused; rollback restores the refusal.');
 })().catch(e=>{console.error(e);process.exit(1);});
