@@ -29,8 +29,9 @@ try{for(const width of [1280,390]){const page=await browser.newPage({viewport:{w
  await page.evaluate(()=>{D.shifts=[];draw();});
  // main treasury card
  await page.evaluate(()=>SSMPDFinanceCash.helpers.fillMainBalance(document.getElementById('mb')));await page.waitForSelector('#mb .fc-mb-tile');const mb=await page.locator('#mb').innerText();
- assert.match(mb,/الخزينة الرئيسية دلوقتي/);assert.doesNotMatch(mb,/دفتري|SHIFT-/);assert.match(mb,/آخر حركة: استلام من خزينة الاستقبال 1 —/);
- await page.evaluate(()=>{delete LM.from_register;});await page.evaluate(()=>SSMPDFinanceCash.helpers.fillMainBalance(document.getElementById('mb')));await page.waitForTimeout(100);assert.match(await page.locator('#mb').innerText(),/آخر حركة: استلام تسليم وردية —/,'fallback without the drawer name');
+ assert.match(mb,/الخزينة الرئيسية دلوقتي/);assert.doesNotMatch(mb,/دفتري|SHIFT-/);assert.match(mb,/آخر حركة: استلام من خزينة الاستقبال 1 3,980\.00 ج —/);
+ await page.evaluate(()=>{delete LM.from_register;});await page.evaluate(()=>SSMPDFinanceCash.helpers.fillMainBalance(document.getElementById('mb')));await page.waitForTimeout(100);assert.match(await page.locator('#mb').innerText(),/آخر حركة: استلام تسليم وردية 3,980\.00 ج —/,'fallback without the drawer name');
+ await page.evaluate(()=>{LM.description='reception_receipt_amount_fix';LM.amount=-150;});await page.evaluate(()=>SSMPDFinanceCash.helpers.fillMainBalance(document.getElementById('mb')));await page.waitForTimeout(100);{const t=await page.locator('#mb').innerText();assert.match(t,/آخر حركة: خرج 150\.00 ج —/,'non-handover source, negative reads خرج');assert.doesNotMatch(t,/reception_receipt|_fix/);}
  await page.evaluate(()=>{LM.from_register='خزينة الاستقبال 1';});
  if(shots)await page.screenshot({path:path.join(shots,'trp-'+width+'.png'),fullPage:true});
  const size=await page.evaluate(()=>({w:innerWidth,s:document.documentElement.scrollWidth}));assert(size.s<=size.w+1,'no sideways scroll');
