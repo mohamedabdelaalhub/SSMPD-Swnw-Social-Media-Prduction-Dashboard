@@ -23,6 +23,7 @@
 <script src="assets/js/nutrition-view.js?v=english-digits-20261122-1"></script>
 <link rel="stylesheet" href="assets/css/personal-home.css?v=home-tiles-20261118-1">
 <link rel="stylesheet" href="assets/css/role-landing.css?v=role-landing-20261125-1">
+<link rel="stylesheet" href="assets/css/reception-drawer.css?v=reception-drawer-20261126-1">
 <link rel="stylesheet" href="assets/css/staff-kpi.css?v=team-perf-20261118-2">
 <link rel="stylesheet" href="assets/css/ops-panels.css?v=weekly-plan-1">
 <link rel="stylesheet" href="assets/css/indicator-reports.css?v=operations-live-20261017-2">
@@ -30,13 +31,13 @@
 <link rel="stylesheet" href="assets/css/patient-profile-ui.css?v=patient-file-look-20261122-1">
 <link rel="stylesheet" href="assets/css/patient-file-look.css?v=patient-file-look-20261122-1">
 <link rel="stylesheet" href="assets/css/tips-coach.css?v=tips-coach-20261122-1">
-<link rel="stylesheet" href="assets/css/finance-cash.css?v=doctor-contracts-look-20261125-2">
+<link rel="stylesheet" href="assets/css/finance-cash.css?v=reports-plain-20261126-2">
 <link rel="stylesheet" href="assets/css/finance-doctors-look.css?v=doctor-contracts-refine-20261125-1">
 <link rel="stylesheet" href="assets/css/finance-section-template.css?v=section-template-20261125-1">
 <link rel="stylesheet" href="assets/css/finance-doctor-dues.css?v=dues-fit-20261125-1">
-<link rel="stylesheet" href="assets/css/finance-reports.css?v=statements-look-20261125-1">
+<link rel="stylesheet" href="assets/css/finance-reports.css?v=reports-plain-20261126-2">
 <link rel="stylesheet" href="assets/css/ledger-look.css?v=ledger-look-20261125-1">
-<link rel="stylesheet" href="assets/css/finance-today.css?v=treasury-plain-20261126-1">
+<link rel="stylesheet" href="assets/css/finance-today.css?v=payroll-plain-20261126-2">
 <link rel="stylesheet" href="assets/css/booking-cash-view.css?v=booking-cash-plain-20261125-1">
 <link rel="stylesheet" href="assets/css/accounting-shell.css?v=masa-mobile-20261120-2">
 <link rel="stylesheet" href="assets/css/reception-workspace.css?v=booking-simplify-20261122-1">
@@ -106,7 +107,7 @@
 <link rel="stylesheet" href="assets/css/contracts-workbench.css?v=unified-price-actions-20261029-1">
 <link rel="stylesheet" href="assets/css/price-name-review.css?v=price-name-review-20261123-1">
 <link rel="stylesheet" href="assets/css/lab-link-review.css?v=lab-newsvc-20261109-1">
-<link rel="stylesheet" href="assets/css/entity-claims.css?v=entity-claims-20261029-1">
+<link rel="stylesheet" href="assets/css/entity-claims.css?v=claim-names-20261126-1">
 </head>
 <body>
 <div id="app-root"></div>
@@ -217,10 +218,10 @@
 <script src="assets/js/render-mediabuyer.js?v=operations-live-20261017-2"></script>
 <script src="assets/js/swnw-print.js?v=referrer-20261123-2"></script>
 <script src="assets/js/finance-controls.js?v=cash-settle-cap-20261125-1"></script>
-<script src="assets/js/finance-doctors.js?v=doctor-contracts-refine-20261125-1"></script>
+<script src="assets/js/finance-doctors.js?v=doctor-accounts-plain-20261126-3"></script>
 <script src="assets/js/finance-channels.js?v=channels-20261108-1"></script>
 <script src="assets/js/finance-doctor-payout.js?v=payout2-20261108-1"></script>
-<script src="assets/js/finance-doctor-accounts.js?v=acc-dupes-20261118-1"></script>
+<script src="assets/js/finance-doctor-accounts.js?v=doctor-accounts-plain-20261126-2"></script>
 <script src="assets/js/finance-staff-insurance.js?v=insurance-20261109-1"></script>
 <script src="assets/js/finance-staff-tax.js?v=tax-20261109-1"></script>
 <script src="assets/js/finance-doctor-dues.js?v=dues-fit-20261125-1"></script>
@@ -234,14 +235,14 @@
 <script src="assets/js/inventory-look.js?v=inventory-look-20261123-1"></script>
 <script src="assets/js/medicines-pricing.js?v=buttons-20261123-1"></script>
 <script src="assets/js/finance-bank.js?v=finance-groups-20261017-1"></script>
-<script src="assets/js/finance-business.js?v=booking-cash-plain-20261125-1"></script>
-<script src="assets/js/finance-reports.js?v=statements-look-20261125-1"></script>
-<script src="assets/js/finance-advances.js?v=count-repeat-20261126-1"></script>
-<script src="assets/js/booking-cash-view.js?v=booking-cash-plain-20261125-1"></script>
+<script src="assets/js/finance-business.js?v=payroll-plain-20261126-1"></script>
+<script src="assets/js/finance-reports.js?v=reports-plain-20261126-1"></script>
+<script src="assets/js/finance-advances.js?v=advances-plain-20261126-1"></script>
+<script src="assets/js/booking-cash-view.js?v=advances-plain-20261126-1"></script>
 <script src="assets/js/finance-treasury.js?v=finance-today-plain-20261126-1"></script>
 <script src="assets/js/ledger-editor.js?v=ledger-look-20261125-1"></script>
 <script src="assets/js/accountant-workspace.js?v=merge-count-repeat-guard-20261126-1"></script>
-<script src="assets/js/finance-statement-import.js?v=reconcile-20261019-5"></script>
+<script src="assets/js/finance-statement-import.js?v=advances-plain-20261126-1"></script>
 <script src="assets/js/finance-account-statements.js?v=finance-today-plain-20261126-2"></script>
 <script src="assets/js/account-breakdown.js?v=breakdown-20261125-3"></script>
 <script src="assets/js/count-check.js?v=count-repeat-20261126-1"></script>
@@ -257,7 +258,7 @@
 <script src="assets/js/finance-shift-movements.js?v=breakdown-20261125-1"></script>
 <script src="assets/js/finance-labels.js?v=accnames-20261122-1"></script>
 <script src="assets/js/payment-proof.js?v=proof-photo-1"></script>
-<script src="assets/js/finance-cash.js?v=merge-drawer-payout-requests-20261126-2"></script>
+<script src="assets/js/finance-cash.js?v=merge-drawer-requests-876-20261126-3"></script>
 <script src="assets/js/tax-status.js?v=tax-20261122-1"></script>
 <script src="assets/js/main-treasury-count.js?v=count-repeat-20261126-1"></script>
 <script src="assets/js/today-review-inbox.js?v=integ-inbox-phone-20261123-1"></script>
@@ -278,7 +279,7 @@
 <script src="assets/js/update-notice.js?v=home-settings-20261025-1"></script>
 <script src="assets/js/section-icons.js?v=reports-wave1-20261119-3"></script>
 <script src="assets/js/home-charts.js?v=home-perf-20261118-1"></script>
-<script src="assets/js/role-landing.js?v=role-landing-20261125-1"></script>
+<script src="assets/js/role-landing.js?v=reception-drawer-20261126-1"></script>
 <script src="assets/js/personal-home.js?v=role-landing-20261125-1"></script>
 <script src="assets/js/job-duties-data.js?v=job-duties-20261110-1"></script>
 <script src="assets/js/job-duties.js?v=job-duties-20261110-1"></script>
@@ -316,13 +317,14 @@
 <script src="assets/js/peer-handover.js?v=zero-handover-20261125-2"></script>
 <script src="assets/js/reception-shift-guard.js?v=shift-guard-20261123-4"></script>
 <script src="assets/js/reception-shift-reminder.js?v=handover-choice-20261124-1"></script>
+<script src="assets/js/reception-drawer.js?v=reception-drawer-20261126-2"></script>
 <script src="assets/js/reception-doctor-payout.js?v=start-visit-20261120-1"></script>
 <script src="assets/js/search-destinations.js?v=nav-names-20261125-1"></script>
 <script src="assets/js/navigation-ui.js?v=nav-fold-20261121-2"></script>
 <script src="assets/js/training-videos.js?v=tips-coach-20261122-1"></script>
 <script src="assets/js/tips-coach.js?v=handover-choice-20261124-1"></script>
 <script src="assets/js/usage-heatmap.js?v=heatmap-20261114-1"></script>
-<script src="assets/js/dashboard-help.js?v=help-291-drawer-requests-20261126-4"></script>
+<script src="assets/js/dashboard-help.js?v=help-294-882-drawer-requests-20261126-1"></script>
 <script src="assets/js/workforce-prices.js?v=hr-lists-look-20261125-1"></script>
 <script src="assets/js/training-course-data.js?v=training-gahar-20261119-1"></script>
 <script src="assets/js/training-evaluation.js?v=training-center-20261119-8"></script>
@@ -353,8 +355,8 @@
 <script src="assets/js/hr-today-inbox.js?v=hr-nav-home-20261125-2"></script>
 <script src="assets/js/hr-navigation.js?v=hr-nav-home-20261125-2"></script>
 <script src="assets/js/contract-navigation.js?v=entities-look-20261125-2"></script>
-<script src="assets/js/entity-claims-print.js?v=print-look-20261119-3"></script>
-<script src="assets/js/entity-claims.js?v=entity-claims-20261029-2"></script>
+<script src="assets/js/entity-claims-print.js?v=claim-names-20261126-1"></script>
+<script src="assets/js/entity-claims.js?v=claim-names-20261126-1"></script>
 <script src="assets/js/lab-link-review.js?v=lab-newsvc-20261109-1"></script>
 <script src="assets/js/instinct-assistant.js?v=instinct-20261125-2"></script>
 <script src="assets/js/app.js?v=instinct-20261124-1"></script>
