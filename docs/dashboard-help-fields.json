@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2043,
-    "labels": 1482,
-    "files": 166,
-    "groups": 1613
+    "definitions": 2045,
+    "labels": 1484,
+    "files": 167,
+    "groups": 1615
   },
   "fields": [
     {
@@ -19530,6 +19530,26 @@
       "tab": "tasks",
       "article": "tasks-guide",
       "text_sha256": "d2eea2754a97cb6aed022894d7a712ecefa0457e5a9d6bbe451a8973b2a2d5c2"
+    },
+    {
+      "file": "select-search.js",
+      "label": "بحث في القايمة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "select-search",
+      "text_sha256": "de23351f2013cf8eb0cd4bb3f2f8214e7c2b374eb07d437170ee1385b3406f3b"
+    },
+    {
+      "file": "select-search.js",
+      "label": "اكتب للبحث…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "select-search",
+      "text_sha256": "ba0efd05817436dcaa09a0736cb4499de505c7908133590808464212cc49c675"
     },
     {
       "file": "service-mapping-review.js",

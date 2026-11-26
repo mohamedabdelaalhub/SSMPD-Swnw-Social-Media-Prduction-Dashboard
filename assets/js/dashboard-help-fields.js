@@ -21286,6 +21286,32 @@
       "reviewed": true
     },
     {
+      "title": "بحث في القايمة",
+      "labels": [
+        "بحث في القايمة"
+      ],
+      "text": "خانة بحث فوق القايمة الكبيرة. اكتب وهتلاقي المطابق، Enter يختار أول نتيجة، Esc يمسح.",
+      "article": "select-search",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب للبحث…",
+      "labels": [
+        "اكتب للبحث…"
+      ],
+      "text": "اكتب جزء من الاسم أو الكود أو التليفون أو رقم الملف والقايمة بتصغر على المطابق. بيتجاهل أ/إ/آ وة/ه وى/ي والتشكيل.",
+      "article": "select-search",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "قائمة الجهة",
       "labels": [
         "قائمة الجهة"
@@ -23735,9 +23761,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2043,
-    "labels": 1482,
-    "files": 166,
-    "groups": 1613
+    "definitions": 2045,
+    "labels": 1484,
+    "files": 167,
+    "groups": 1615
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
