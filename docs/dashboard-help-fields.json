@@ -2,9 +2,9 @@
   "coverage": {
     "version": "20261117-1",
     "definitions": 2033,
-    "labels": 1475,
+    "labels": 1478,
     "files": 165,
-    "groups": 1600
+    "groups": 1603
   },
   "fields": [
     {
@@ -13872,33 +13872,33 @@
     },
     {
       "file": "reception-shift-expenses.js",
-      "label": "من",
+      "label": "سبب الرفض (٣ حروف على الأقل)",
       "name": "",
-      "kind": "html",
+      "kind": "label",
       "forms": [],
       "tab": "reception_services",
-      "article": "personal",
-      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+      "article": "shift-expenses-review",
+      "text_sha256": "97ed0ae684007d9cfb9f0d4b8e20a722f3f7a1d5ceb41e25e13af4baf7fdb36a"
     },
     {
       "file": "reception-shift-expenses.js",
-      "label": "إلى",
+      "label": "هامش مصروفات الوردية (ج.م)",
       "name": "",
       "kind": "html",
       "forms": [],
       "tab": "reception_services",
-      "article": "personal",
-      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+      "article": "shift-expenses-review",
+      "text_sha256": "baefdaf902d35d8a7efc7b1c2c31f023aea0118e9e719e4d0ac59359d730ca38"
     },
     {
       "file": "reception-shift-expenses.js",
-      "label": "الحالة",
+      "label": "حد المصروف الواحد (ج.م)",
       "name": "",
       "kind": "html",
       "forms": [],
       "tab": "reception_services",
-      "article": "personal",
-      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+      "article": "shift-expenses-review",
+      "text_sha256": "7874f0f73a8de1334b8801d900f5617184950df9b3298a359ad5b06835da4a75"
     },
     {
       "file": "reception-visit-supplies.js",
