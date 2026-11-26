@@ -6,3 +6,10 @@
 @media(max-width:650px){.ec-overlay{padding:6px}.ec-dialog{max-height:98dvh;border-radius:16px}.ec-head{padding:12px;border-radius:15px 15px 0 0}.ec-head h2{font-size:16px}.ec-body{padding:12px}.ec-panel{padding:12px}.ec-grid,.ec-result{grid-template-columns:1fr}.ec-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.ec-metric:last-child{grid-column:1/-1}.ec-field input,.ec-field select,.ec-field textarea{font-size:16px}.ec-line{grid-template-columns:1fr 1fr}.ec-line>label:first-child{grid-column:1/-1}.ec-toolbar{align-items:stretch}.ec-toolbar>label{flex-basis:130px}.ec-actions .btn{flex:1 1 auto}.ec-table table{min-width:620px}}
 }
 @media screen and (max-width:650px){.ec-toolbar>label:has(input[type=date]){flex-basis:100%}}
+/* owner 2026-11-25: service name in the claim — entity / center / both */
+.ec-name-mode{display:grid;gap:8px;margin:10px 0;padding:10px 12px;border:1px solid #D5DEEE;border-radius:12px;background:#F6F8FC}
+.ec-name-mode-label{font-size:13px;font-weight:700}
+.ec-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ec-seg .btn.on{border-color:#0F369D;background:#EAF0FF;color:#0F369D;font-weight:700}
+.ec-name-mode .ec-muted{margin:0}
+.ec-name-mode [data-ec="name-default"]{justify-self:start}
