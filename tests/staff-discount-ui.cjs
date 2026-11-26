@@ -21,7 +21,7 @@ const cairoDay=t=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:
  await db.exec(fs.readFileSync('supabase/migrations/20261123130000_visit_discount_all_services.sql','utf8'));
  await db.exec("alter table clinic_reception.services add column if not exists pricing_evidence jsonb");
  await db.exec(fs.readFileSync('supabase/migrations/20261123200000_offer_no_other_discount.sql','utf8'));
- await db.exec("create schema if not exists clinic_people; create table clinic_people.people(id uuid primary key default gen_random_uuid(),code text not null,full_name text not null,phone text not null default '',status text not null default 'active',end_date date);");
+ await db.exec("alter table public.patients add column if not exists phone text; create schema if not exists clinic_people; create table clinic_people.people(id uuid primary key default gen_random_uuid(),code text not null,full_name text not null,phone text not null default '',status text not null default 'active',end_date date);");
  await db.query("insert into clinic_people.people(code,full_name,phone) values('EMP-000201','موظفة الاستقبال','01000000001'),('EMP-000203','موظف تالت','+201000000003')");
  await db.exec(fs.readFileSync('supabase/migrations/20261126170000_staff_discount.sql','utf8'));
  await as(3);await cmd('arrive',{id:a2});await cmd('arrive',{id:a3});

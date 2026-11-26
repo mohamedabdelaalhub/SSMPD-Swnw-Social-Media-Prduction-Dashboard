@@ -14,7 +14,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  await db.exec("alter table clinic_reception.services add column if not exists pricing_evidence jsonb");
  await db.exec(fs.readFileSync('supabase/migrations/20261123200000_offer_no_other_discount.sql','utf8'));
  // HR people (live-shaped subset)
- await db.exec(`create schema if not exists clinic_people; create table clinic_people.people(id uuid primary key default gen_random_uuid(),code text not null,full_name text not null,phone text not null default '',status text not null default 'active',end_date date);`);
+ await db.exec(`alter table public.patients add column if not exists phone text; create schema if not exists clinic_people; create table clinic_people.people(id uuid primary key default gen_random_uuid(),code text not null,full_name text not null,phone text not null default '',status text not null default 'active',end_date date);`);
  const today=date,yday=new Date(Date.parse(date)-86400000).toISOString().slice(0,10);
  const E1=(await db.query("insert into clinic_people.people(code,full_name,phone) values('EMP-000101','هدى موظفة','+20 100 000 0001') returning id")).rows[0].id;
  const E3=(await db.query("insert into clinic_people.people(code,full_name,phone,status,end_date) values('EMP-000103','موظف سابق','01000000003','ended',$1) returning id",[yday])).rows[0].id;
@@ -79,6 +79,10 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  // an unlinked relation (removed link) no longer qualifies
  await q("update clinic_reception.patient_relatives set removed_at=now(),removed_by=$2,removed_reason='test' where patient_id=$1",[P1,id(1)]);
  assert.equal((await staff(R1)).staff.length,0,'removed link no longer qualifies');
+ // live: the ARCHIVE phone (public.patients) is the source — a reception file with a stale phone still matches via its archive
+ const arc=(await q("insert into public.patients(id,phone) values(gen_random_uuid(),'01000000001') returning id"))[0].id,PA=await mk(9);
+ await q("update clinic_reception.patients set phone='01234567899',patient_id=$2 where id=$1",[PA,arc]);
+ assert.deepEqual(JSON.parse(JSON.stringify((await staff(PA)).staff)).map(x=>x.code),['EMP-000101'],'archive phone wins');
  // anon cannot call the picker
  await db.exec('reset role');assert.equal((await db.query("select has_function_privilege('anon','public.clinic_reception_staff_discount(uuid,uuid,date)','execute') x")).rows[0].x,false);
  // rollback
