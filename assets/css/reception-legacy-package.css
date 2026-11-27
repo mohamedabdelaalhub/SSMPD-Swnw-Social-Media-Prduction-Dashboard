@@ -11,3 +11,4 @@
 .rlp-ent{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;border:1.5px solid #CBD5E1;border-radius:12px;padding:9px 10px;font-size:13px;cursor:pointer}
 .rlp-ent:has(input:checked){border-color:#0F369D;background:#EAF0FF}.rlp-ent small{display:block;color:#5b6577;font-size:11px}
 @media (max-width:560px){.rlp-line{grid-template-columns:1fr 1fr}.rlp-line .rlp-svc{grid-column:1/-1}.rlp-req{grid-template-columns:1fr}}
+.rlp-sum b.rlp-bad{color:#D0402A}
