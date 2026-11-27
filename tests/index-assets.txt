@@ -91,6 +91,7 @@ assets/css/reception-shifts-view.css
 assets/css/reception-visit-usage.css
 assets/css/reception-workspace.css
 assets/css/reports-center.css
+assets/css/review-before-money.css
 assets/css/role-landing.css
 assets/css/scroll-top.css
 assets/css/select-search.css
@@ -280,6 +281,7 @@ assets/js/reception-booking-discount.js
 assets/js/reception-booking-plus.js
 assets/js/reception-bridge.js
 assets/js/reception-collect-once.js
+assets/js/reception-collect-review.js
 assets/js/reception-controls.js
 assets/js/reception-day-capacity.js
 assets/js/reception-doctor-payout.js

@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2098,
-    "labels": 1529,
+    "definitions": 2104,
+    "labels": 1535,
     "files": 172,
-    "groups": 1659
+    "groups": 1663
   },
   "fields": [
     {
@@ -3022,6 +3022,36 @@
       "tab": "production",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "المبلغ اللي هيتصرف (جنيه)",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "review-before-money",
+      "text_sha256": "fa731de4abd6308253dc794b038bc6aabeaf23e3ead2619f1a0db62c0cb05871"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "مثلاً: الموظف طلب 400 بس",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "review-before-money",
+      "text_sha256": "281fb89aa2062c5c7e16f7af7169e319fbd7034554852313b0b1ae5746588371"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "ملاحظة / السبب (إجباري لو المبلغ أقل)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "review-before-money",
+      "text_sha256": "281fb89aa2062c5c7e16f7af7169e319fbd7034554852313b0b1ae5746588371"
     },
     {
       "file": "employee-assistant.js",
@@ -12569,6 +12599,36 @@
       "tab": "reception_services",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "reception-doctor-payout.js",
+      "label": "المبلغ اللي هتطلبه",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "review-before-money",
+      "text_sha256": "161c52159a48abb692e0b61afc5cf322c6df5ac0d6f4befdb801ef7567b9c3e5"
+    },
+    {
+      "file": "reception-doctor-payout.js",
+      "label": "مثلاً: الدكتور هيستلم الباقي بكرة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "review-before-money",
+      "text_sha256": "042222b376a65a86f9aafbea50958a02443b54eba69eb1c475e4e2aaa8f17297"
+    },
+    {
+      "file": "reception-doctor-payout.js",
+      "label": "السبب (إجباري لو شلت حالة أو قللت المبلغ)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "review-before-money",
+      "text_sha256": "042222b376a65a86f9aafbea50958a02443b54eba69eb1c475e4e2aaa8f17297"
     },
     {
       "file": "reception-doctor-payout.js",
