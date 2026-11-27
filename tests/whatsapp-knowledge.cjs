@@ -51,8 +51,8 @@ assert.match(legacy, /الخدمات: Hearing/);
   now += 30001; fail = false; assert.equal(await get(), 'complete facts');
 
   let promptRequests = [], websiteReads = 0;
-  const ai = load(['meta-comments/clinic-facts.ts', 'meta-comments/clinic-catalog.ts', 'whatsapp-webhook/reply-rules.ts', 'meta-comments/ai.ts'], {
-    Deno: { env: { get: () => 'test-key-not-a-real-secret' } },
+  const ai = load(['meta-comments/clinic-facts.ts', 'meta-comments/clinic-catalog.ts', 'whatsapp-webhook/reply-rules.ts', '_shared/llm.ts', 'meta-comments/ai.ts'], {
+    Deno: { env: { get: (n) => (/^(ANTHROPIC|AI_)/.test(n) ? undefined : 'test-key-not-a-real-secret') } }, // OpenAI key only: this test checks the OpenAI request
     fetch: async (url, options) => {
       if (url.includes('published.json')) { websiteReads++; return Response.json(site); }
       assert.equal(url, 'https://api.openai.com/v1/responses');
