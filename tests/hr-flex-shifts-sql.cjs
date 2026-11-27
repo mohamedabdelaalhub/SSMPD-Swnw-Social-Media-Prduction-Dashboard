@@ -33,9 +33,13 @@ begin
   raise exception 'unknown';
 end $f$;
 create function public.clinic_reception_nursing(p_workspace uuid, p_action text, p_payload jsonb default '{}') returns jsonb language sql security definer as $f$select clinic_reception.nursing_before_vitals(p_workspace,p_action,p_payload)$f$;
-grant execute on function public.clinic_reception_nursing(uuid,text,jsonb) to authenticated;`);
+grant execute on function public.clinic_reception_nursing(uuid,text,jsonb) to authenticated;
+create table if not exists public.personal_notice_reads(admin_id uuid not null,notice_key text not null,read_at timestamptz not null default now(),primary key(admin_id,notice_key));
+create function clinic_finance.home_inbox_before_unread_daily() returns jsonb language sql stable security definer as $f$select jsonb_build_object('notices',jsonb_build_array(jsonb_build_object('key','task:x','type','task','id','x','at',now()-interval '1 hour','message','مهمة قديمة','read',false)),'unread',1,'limited',false)$f$;
+create function public.personal_home_inbox() returns jsonb language plpgsql stable security definer as $f$begin return clinic_finance.home_inbox_before_unread_daily(); end$f$;
+grant execute on function public.personal_home_inbox() to authenticated;`);
 const snap=async()=>owner(`select string_agg(p.oid::regprocedure::text||':'||md5(pg_get_functiondef(p.oid)),',' order by p.oid::regprocedure::text) s from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-  where p.prokind='f' and (p.proname in ('hr_attendance_today','hr_attendance_range','hr_shifts_workspace','nurse_presence','nursing_before_vitals','hr_payroll_calculate') or p.proname like 'attendance_eval%' or p.proname like 'payroll_before%')`);
+  where p.prokind='f' and (p.proname in ('hr_attendance_today','hr_attendance_range','hr_shifts_workspace','nurse_presence','nursing_before_vitals','hr_payroll_calculate','personal_home_inbox','home_inbox_before_unread_daily') or p.proname like 'attendance_eval%' or p.proname like 'payroll_before%')`);
 const before=(await snap())[0].s;
 await db.exec(M('20261127130000_hr_flex_shifts'));
 
@@ -147,6 +151,18 @@ let me6=st.nurses.find(n=>n.admin_id===id(6));
 if(me6.state==='off'){assert.equal(me6.can_quick,true,'her manager can add a quick shift');assert.equal(me6.person_id,pE);assert.ok(me6.punch_in);}
 await as(2);st=await call('clinic_reception_nursing',[ws,'staff_today',{}]);me6=st.nurses.find(n=>n.admin_id===id(6));
 assert.equal(me6.can_quick,false);assert.equal(me6.person_id,null,'person id only for someone who can act');
+await as(1);
+
+// C2) notices in the employee's own inbox: doctor cancelled (X), quick shift added by her manager (W); never her own actions
+await as(7);let ib=await call('personal_home_inbox',[]);
+const hn=ib.notices.filter(n=>n.type==='hr_shift');
+assert.ok(hn.some(n=>/الطبيب لغى يوم/.test(n.message)&&n.message.includes(X.slice(8,10)+'/'+X.slice(5,7))),'doctor cancelled → notice');
+assert.ok(hn.some(n=>/اتحطتلك وردية يوم/.test(n.message)&&/10:00 لـ 14:00/.test(n.message)),'quick shift added → notice');
+assert.equal(ib.unread,1+hn.length,'unread counts the shift notices');assert.equal(ib.notices.length,1+hn.length,'base notices kept');
+await owner('insert into personal_notice_reads(admin_id,notice_key) values($1,$2)',[id(7),hn[0].key]);
+ib=await call('personal_home_inbox',[]);assert.equal(ib.unread,hn.length,'read state honoured');
+await as(6);ib=await call('personal_home_inbox',[]);assert.ok(ib.notices.some(n=>n.type==='hr_shift'&&/اتلغت ورديتك يوم/.test(n.message)),'quick shift cancelled by HR → notice to her');
+await as(5);ib=await call('personal_home_inbox',[]);assert.equal(ib.notices.filter(n=>n.type==='hr_shift').length,0,'the manager gets no notice for his own action / other people');
 await as(1);
 
 // D) payroll: worked extra quick day

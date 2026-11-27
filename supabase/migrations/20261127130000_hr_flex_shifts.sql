@@ -466,4 +466,60 @@ do $$ begin
   end if;
 end $$;
 
+-- 8. notices to the employee (owner 2026-11-27 «خلي الإشعار يتعمل»): the header bell / home inbox of the employee's own login shows
+--    «الطبيب لغى يوم …» (doctor shift removed), «اتحطتلك وردية يوم …» (quick shift added) and «اتلغت ورديتك يوم …» (quick shift cancelled),
+--    for days from yesterday on, events of the last 7 days. Derived from day_shifts (no new table); read state = personal_notice_reads
+--    (personal_home_read already accepts any key the inbox returns). The innermost inbox layer is wrapped so the unread-per-day chart counts them.
+create function clinic_people.flex_notices() returns jsonb
+language sql stable security definer set search_path = pg_catalog, public as $$
+  with me as (select p.id pid from clinic_people.people p where p.admin_id = public.my_admin_id() and p.status <> 'ended'),
+  ev as (
+    select s.id, s.day, s.start_at, s.end_at, s.source, s.cancel_reason, s.active,
+           case when s.active then s.created_at else s.cancelled_at end at
+      from clinic_people.day_shifts s join me on me.pid = s.person_id
+     where s.day >= (now() at time zone 'Africa/Cairo')::date - 1
+       and ((s.source = 'quick' and s.active and s.created_by is distinct from public.my_admin_id())
+         or (s.source = 'quick' and not s.active and s.cancelled_by is distinct from public.my_admin_id())
+         or (s.source = 'doctor' and not s.active and s.cancel_reason = 'doctor_off'
+             and not exists (select 1 from clinic_people.day_shifts o where o.person_id = s.person_id and o.day = s.day and o.active and o.source = 'doctor'))))
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'key', 'hr_shift:' || ev.id || ':' || case when ev.active then 'on' else 'off' end, 'type', 'hr_shift', 'id', ev.id, 'at', ev.at, 'native_read', false,
+      'message', case
+        when ev.source = 'doctor' then 'الطبيب لغى يوم ' || to_char(ev.day, 'DD/MM') || ' — مفيش شغل ليك اليوم ده (مش غياب)'
+        when ev.active then 'اتحطتلك وردية يوم ' || to_char(ev.day, 'DD/MM') || ' من ' || to_char(ev.start_at at time zone 'Africa/Cairo', 'HH24:MI') || ' لـ ' || to_char(ev.end_at at time zone 'Africa/Cairo', 'HH24:MI')
+        else 'اتلغت ورديتك يوم ' || to_char(ev.day, 'DD/MM') end,
+      'read', exists (select 1 from public.personal_notice_reads r where r.admin_id = public.my_admin_id()
+                       and r.notice_key = 'hr_shift:' || ev.id || ':' || case when ev.active then 'on' else 'off' end)) order by ev.at desc), '[]'::jsonb)
+    from ev where ev.at > now() - interval '7 days'
+$$;
+create function clinic_people.flex_inbox_merge(base jsonb) returns jsonb
+language plpgsql stable security definer set search_path = pg_catalog, public as $$
+declare extra jsonb; all_rows jsonb; unread integer;
+begin
+  begin extra := clinic_people.flex_notices(); exception when others then return base; end;
+  if base is null or jsonb_typeof(base->'notices') <> 'array' or jsonb_array_length(extra) = 0 then return base; end if;
+  with all_notices as (select value n from jsonb_array_elements(base->'notices') union all select value from jsonb_array_elements(extra)),
+  latest as (select n from all_notices order by (n->>'at')::timestamptz desc limit 80)
+  select coalesce(jsonb_agg(n order by (n->>'at')::timestamptz desc), '[]'), count(*) filter (where not coalesce((n->>'read')::boolean, false)) into all_rows, unread from latest;
+  return base || jsonb_build_object('notices', all_rows, 'unread', unread,
+    'limited', coalesce((base->>'limited')::boolean, false) or jsonb_array_length(base->'notices') + jsonb_array_length(extra) > 80);
+end $$;
+revoke all on function clinic_people.flex_notices(), clinic_people.flex_inbox_merge(jsonb) from public, anon, authenticated;
+do $$ begin
+  if to_regclass('public.personal_notice_reads') is null then raise notice 'personal home inbox not installed: no shift notices'; return; end if;
+  if to_regprocedure('clinic_finance.home_inbox_before_unread_daily()') is not null then
+    alter function clinic_finance.home_inbox_before_unread_daily() rename to home_inbox_before_flex_shifts;
+    execute $f$create function clinic_finance.home_inbox_before_unread_daily() returns jsonb language sql stable security definer set search_path = pg_catalog, public as
+      'select clinic_people.flex_inbox_merge(clinic_finance.home_inbox_before_flex_shifts())'$f$;
+    revoke all on function clinic_finance.home_inbox_before_unread_daily(), clinic_finance.home_inbox_before_flex_shifts() from public, anon, authenticated;
+  elsif to_regprocedure('public.personal_home_inbox()') is not null then
+    alter function public.personal_home_inbox() rename to home_inbox_before_flex_shifts;
+    alter function public.home_inbox_before_flex_shifts() set schema clinic_finance;
+    execute $f$create function public.personal_home_inbox() returns jsonb language sql stable security definer set search_path = pg_catalog, public as
+      'select clinic_people.flex_inbox_merge(clinic_finance.home_inbox_before_flex_shifts())'$f$;
+    revoke all on function public.personal_home_inbox(), clinic_finance.home_inbox_before_flex_shifts() from public, anon, authenticated;
+    grant execute on function public.personal_home_inbox() to authenticated;
+  else raise notice 'personal home inbox not installed: no shift notices'; end if;
+end $$;
+
 commit;

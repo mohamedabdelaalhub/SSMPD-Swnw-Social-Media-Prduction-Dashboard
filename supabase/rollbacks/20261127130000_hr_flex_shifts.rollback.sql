@@ -10,6 +10,23 @@ do $$ begin
   end if;
 end $$;
 
+-- shift notices in the home inbox
+do $$ begin
+  if to_regprocedure('clinic_finance.home_inbox_before_flex_shifts()') is not null then
+    if position('home_inbox_before_flex_shifts' in coalesce(pg_get_functiondef(to_regprocedure('clinic_finance.home_inbox_before_unread_daily()')), '')) > 0 then
+      drop function clinic_finance.home_inbox_before_unread_daily();
+      alter function clinic_finance.home_inbox_before_flex_shifts() rename to home_inbox_before_unread_daily;
+    else
+      drop function public.personal_home_inbox();
+      alter function clinic_finance.home_inbox_before_flex_shifts() set schema public;
+      alter function public.home_inbox_before_flex_shifts() rename to personal_home_inbox;
+      grant execute on function public.personal_home_inbox() to authenticated;
+    end if;
+  end if;
+end $$;
+drop function clinic_people.flex_inbox_merge(jsonb);
+drop function clinic_people.flex_notices();
+
 drop trigger if exists flex_avail_ins on clinic_reception.availability;
 drop trigger if exists flex_avail_del on clinic_reception.availability;
 drop trigger if exists flex_avail_upd on clinic_reception.availability;

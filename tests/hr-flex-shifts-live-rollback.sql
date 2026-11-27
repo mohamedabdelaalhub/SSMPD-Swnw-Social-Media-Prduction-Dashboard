@@ -73,6 +73,14 @@ reset role;
 \else
 select 'quick' part, 'SKIP (no empty day in the next 14 days for this employee)';
 \endif
+-- 2a. the employee's own inbox shows the shift notice (added then cancelled by someone else → «اتلغت ورديتك يوم …»)
+\if :has_emp_login
+select set_config('request.jwt.claims', json_build_object('sub', :'emp_user', 'role', 'authenticated')::text, true);
+set local role authenticated;
+do $$ begin insert into mx values ('emp_inbox', public.personal_home_inbox());
+exception when others then insert into mx values ('emp_inbox_error', to_jsonb(sqlerrm)); end $$;
+reset role;
+\endif
 -- 2b. the direct manager may not link to a doctor
 \if :has_mgr
 select set_config('request.jwt.claims', json_build_object('sub', :'mgr_user', 'role', 'authenticated')::text, true);
@@ -118,6 +126,9 @@ select 'readers' part, json_build_object('unscheduled', (select v->'unscheduled'
   'nurse_presence_state', (select v->>'state' from mx where k = 'nurse_presence'))::text;
 select 'payroll' part, case when exists (select 1 from mx where k = 'payroll_skip') then 'SKIP (month not approved): ' || (select v #>> '{}' from mx where k = 'payroll_skip')
   else json_build_object('extra_days', (select v->'extra_days' from mx where k = 'payroll'), 'extra_days_pay', (select v->'extra_days_pay' from mx where k = 'payroll'))::text end;
+select 'notices' part, json_build_object('error', (select v from mx where k = 'emp_inbox_error'),
+  'hr_shift_notices', (select json_agg(n->>'message') from mx, jsonb_array_elements(v->'notices') n where k = 'emp_inbox' and n->>'type' = 'hr_shift'),
+  'unread', (select v->'unread' from mx where k = 'emp_inbox'))::text;
 select 'anon_can_execute' part, has_function_privilege('anon', 'public.hr_day_shift(text,jsonb)', 'execute')::text;
 do $$ begin
   if exists (select 1 from mx where k = 'q1') then
