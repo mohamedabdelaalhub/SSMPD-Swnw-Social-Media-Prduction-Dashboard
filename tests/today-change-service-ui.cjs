@@ -35,7 +35,11 @@ const cairoDay=t=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:
  const skip=page.locator('[data-guide-skip]');if(await skip.count())await skip.click();
  await page.locator('[data-rx-section="journey"]').click();await page.waitForSelector(`[data-journey-action][data-id="${a1}"]`,{state:"attached",timeout:8000});
  const wait=async f=>{for(let n=0;n<120;n++){const s=await rpc('clinic_reception_snapshot',{p_workspace:w,p_from:today,p_to:today});if(f(s))return s;await new Promise(r=>setTimeout(r,50));}throw Error('server state not reached');};
- const openShortcut=async()=>{if(!(await page.locator(`[data-journey-open="${a1}"]`).count()))await page.locator('[data-rx-section="journey"]').click();const chip=page.locator(`[data-journey-open="${a1}"]`);await chip.waitFor({state:'attached'});
+ const openShortcut=async()=>{
+  // the board redraws after every window closes: wait until EITHER the patient chip (inside «تشغيل اليوم») or the section card
+  // (home grid) is on the page — the card only exists on the home grid, so never click it while we are already inside the section
+  await page.waitForSelector(`[data-journey-open="${a1}"], [data-rx-section="journey"]`,{state:'attached',timeout:15000});
+  if(!(await page.locator(`[data-journey-open="${a1}"]`).count())&&await page.locator('[data-rx-section="journey"]').count())await page.locator('[data-rx-section="journey"]').click();const chip=page.locator(`[data-journey-open="${a1}"]`);await chip.waitFor({state:'attached'});
   const btn=page.locator(`[data-journey-action="change_service"][data-id="${v1.id}"]`);if(!(await btn.isVisible())){if(await page.locator(`[data-journey-open="${a1}"][aria-expanded="false"]`).count())await chip.click();await btn.evaluate(b=>{const d=b.closest('details');if(d)d.open=true;});}
   await btn.click();await page.waitForSelector('.rx-modal [data-change-hint]');};
  // 1) only on the arrived card (live, reception); never on a booked (not arrived) card
