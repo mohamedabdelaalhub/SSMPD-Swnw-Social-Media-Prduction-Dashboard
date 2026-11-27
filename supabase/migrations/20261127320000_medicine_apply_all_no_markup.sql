@@ -1,0 +1,65 @@
+-- «طبّق الهامش الموحّد على كل الأصناف» must never mark up a medicine (owner decision with 20261122300000: a medicine is sold at
+-- the price it was bought at). Found while testing #955: BEFORE triggers fire in name order, so inventory_medicine_no_markup
+-- reset the markup to 0 and THEN inventory_standard_markup (use_standard_markup = true, set by inventory_set_standard_markup's
+-- apply-all loop) put the standard markup and price back. Main chat asked for this fix 2026-11-27. راجعت قرارات المالك.
+--   * inventory_medicine_no_markup also takes the medicine off the standard markup (use_standard_markup := false), so the
+--     standard trigger that runs after it does nothing for a medicine.
+--   * the price-history row apply-all writes for a medicine with the standard markup (a change that never happened) is skipped.
+--   * repair: every medicine still on the standard markup or carrying a markup is brought back to 0 with the purchase price
+--     (one real price-history row per item that changes; each printed as a NOTICE: sku, old → new).
+-- Shortage («ناقص») and supply items are unchanged.
+-- Rollback: supabase/rollbacks/20261127320000_medicine_apply_all_no_markup.rollback.sql (repaired prices stay).
+do $$ begin
+  if to_regprocedure('public.inventory_medicine_no_markup()') is null or to_regprocedure('public.inventory_set_standard_markup(numeric,boolean)') is null then
+    raise exception 'طبّق تسعير الأدوية (20261122300000) الأول'; end if;
+  if to_regprocedure('public.inventory_medicine_history_guard()') is not null then raise exception 'تم تطبيق هذا الملف من قبل'; end if;
+end $$;
+begin;
+
+create or replace function public.inventory_medicine_no_markup() returns trigger
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare base numeric;
+begin
+  if new.pricing_kind = 'medicine' then
+    new.use_standard_markup := false;   -- the standard-markup trigger fires after this one (name order)
+    if new.markup_percent <> 0 then
+      base := clinic_finance.inventory_highest_purchase(new.id);
+      if base is null then base := round(new.current_sale_price / (1 + new.markup_percent / 100), 2); end if;
+      new.markup_percent := 0;
+      new.current_sale_price := round(base, 2);
+    end if;
+  end if;
+  return new;
+end $$;
+revoke all on function public.inventory_medicine_no_markup() from public, anon, authenticated;
+
+create function public.inventory_medicine_history_guard() returns trigger
+language plpgsql security definer set search_path = pg_catalog, public as $$
+begin
+  if coalesce(new.new_markup, 0) <> 0 and exists (select 1 from public.inventory_items i where i.id = new.item_id and i.pricing_kind = 'medicine') then
+    return null; end if;
+  return new;
+end $$;
+revoke all on function public.inventory_medicine_history_guard() from public, anon, authenticated;
+create trigger inventory_medicine_history before insert on public.inventory_price_history
+  for each row execute function public.inventory_medicine_history_guard();
+
+do $$
+declare actor uuid; r record; n int := 0; p numeric;
+begin
+  select a.id into actor from public.admins a where a.active and coalesce(a.name, '') <> 'Admin Test' and a.role = 'super_admin'
+   order by (a.name like '%عبدالعال%') desc, a.id limit 1;
+  for r in select i.id, i.sku, i.current_sale_price, i.markup_percent from public.inventory_items i
+           where i.pricing_kind = 'medicine' and (i.use_standard_markup or i.markup_percent <> 0) order by i.sku for update loop
+    update public.inventory_items set use_standard_markup = false, updated_at = now() where id = r.id returning current_sale_price into p;
+    if p is distinct from r.current_sale_price or r.markup_percent <> 0 then
+      insert into public.inventory_price_history(item_id, previous_price, new_price, previous_markup, new_markup, changed_by)
+        values (r.id, r.current_sale_price, p, r.markup_percent, 0, actor);
+    end if;
+    n := n + 1;
+    raise notice 'medicine back to no markup: % — % (markup %) → %', r.sku, r.current_sale_price, r.markup_percent, p;
+  end loop;
+  raise notice 'medicines repaired: %', n;
+end $$;
+
+commit;
