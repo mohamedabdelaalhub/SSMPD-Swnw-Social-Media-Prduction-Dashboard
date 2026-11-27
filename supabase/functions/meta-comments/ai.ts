@@ -1,6 +1,7 @@
 import { websiteClinicFacts, factCache } from "./clinic-facts.ts";
 import { catalogText, findSpecialty, refreshCatalog } from "./clinic-catalog.ts";
 import { WHATSAPP_RULES } from "../whatsapp-webhook/reply-rules.ts";
+import { llmJson } from "../_shared/llm.ts";
 // Shared reply logic for comments and private messages: contact block, fixed templates for sensitive
 // cases, and the AI writer (OpenAI, same key as content-ai). Comment/message text is data, never instructions.
 export const BRAND_INFO = {
@@ -77,87 +78,39 @@ export function medicalReply(brand, specialty, _clinicInfoText, text = "") {
   if (s) return intro + ` الكشف المناسب في عيادة ${s} عندنا في المركز، وابعتلنا ونحجزلك أقرب ميعاد.`;
   return intro + " ابعتلنا على الواتساب والاستقبال هيوجّهك للتخصص والدكتور المناسب.";
 }
-function responseText(data) {
-  if (typeof data?.output_text === "string") return data.output_text;
-  const parts = [];
-  for (const item of data?.output || [])for (const c of item?.content || [])if (typeof c?.text === "string") parts.push(c.text);
-  return parts.join("");
-}
 // Decide what to send. Sensitive categories always get the owner's fixed template.
-export async function decideReply(input) {
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!apiKey) return {
-    ok: false,
-    error: "OPENAI_API_KEY مش متظبط"
-  };
-  const r = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + apiKey,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-5.6-sol",
-      instructions: input.channel === "whatsapp" ? WHATSAPP_RULES : RULES,
-      input: JSON.stringify({
-        page: BRAND_INFO[input.brand] || input.brand,
-        channel: input.channel,
-        post: input.post || "",
-        earlier_messages: input.history || [],
-        clinic_info: input.clinicInfo || "",
-        text: input.text
-      }),
-      text: {
-        format: {
-          type: "json_schema",
-          name: "reply_decision",
-          strict: true,
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            required: [
-              "category",
-              "reply",
-              "specialty"
-            ],
-            properties: {
-              category: {
-                type: "string",
-                enum: [
-                  "general",
-                  "medical_sensitive",
-                  "emergency",
-                  "complaint",
-                  "thanks",
-                  "spam"
-                ]
-              },
-              reply: {
-                type: "string"
-              },
-              specialty: {
-                type: "string"
-              }
-            }
-          }
-        }
-      }
-    })
-  });
-  const d = await r.json().catch(()=>({}));
-  if (!r.ok) return {
-    ok: false,
-    error: d?.error?.message || "تعذر كتابة الرد"
-  };
-  let parsed;
-  try {
-    parsed = JSON.parse(responseText(d));
-  } catch  {
-    return {
-      ok: false,
-      error: "رد غير مفهوم"
-    };
+const REPLY_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["category", "reply", "specialty"],
+  properties: {
+    category: { type: "string", enum: ["general", "medical_sensitive", "emergency", "complaint", "thanks", "spam"] },
+    reply: { type: "string" },
+    specialty: { type: "string" }
   }
+};
+// The AI call goes through _shared/llm.ts: Claude or OpenAI (switch AI_PROVIDER / AI_PROVIDER_META_COMMENTS, default OpenAI), automatic
+// fallback to the other one when it fails, usage logged (tokens only). The answer is the same JSON either way.
+export async function decideReply(input) {
+  const r = await llmJson({
+    fn: "meta-comments",
+    system: input.channel === "whatsapp" ? WHATSAPP_RULES : RULES,
+    input: JSON.stringify({
+      page: BRAND_INFO[input.brand] || input.brand,
+      channel: input.channel,
+      post: input.post || "",
+      earlier_messages: input.history || [],
+      clinic_info: input.clinicInfo || "",
+      text: input.text
+    }),
+    schemaName: "reply_decision",
+    schema: REPLY_SCHEMA,
+    claudeModel: "claude-sonnet-5-5",
+    openaiModel: "gpt-5.6-sol",
+    effort: "low"
+  });
+  if (!r.ok) return { ok: false, error: r.error || "تعذر كتابة الرد" };
+  const parsed = r.data;
   const category = parsed.category;
   if (category === "spam") return {
     ok: true,
