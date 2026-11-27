@@ -1,6 +1,6 @@
 /* Reviewed operational help; no patient records, network calls or generated AI answers. */
 window.SSMPDHelpData={
-  "version": "20261127-336-hr-flex-int-938",
+  "version": "20261127-337-int-936-943",
   "articles": [
     {
       "id": "reception-shifts-view",
