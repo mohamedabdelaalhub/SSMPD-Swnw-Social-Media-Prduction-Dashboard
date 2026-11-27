@@ -3464,6 +3464,123 @@
       "reviewed": true
     },
     {
+      "title": "المديونية",
+      "labels": [
+        "المديونية"
+      ],
+      "text": "لو الموظف عليه أكتر من مديونية، اختار اللي عايز تغيّر أقساطها.",
+      "article": "employee-debt-reschedule",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تأجيل قسط",
+      "labels": [
+        "تأجيل قسط"
+      ],
+      "text": "تأخير قسط واحد لشهر بعد آخر قسط. في الشهر بتاعه مش هيتخصم حاجة من المرتب، والمبلغ الكلي زي ما هو.",
+      "article": "employee-debt-reschedule",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تغيير عدد الأقساط",
+      "labels": [
+        "تغيير عدد الأقساط"
+      ],
+      "text": "الباقي من المديونية يتقسم من جديد على عدد شهور تختاره (من 1 لـ 12).",
+      "article": "employee-debt-reschedule",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "القسط اللي هيتأجل",
+      "labels": [
+        "القسط اللي هيتأجل"
+      ],
+      "text": "قسط لسه ماتخصمش ومش في مرتب متجهز. الأقساط اللي اتخصمت مابتظهرش هنا.",
+      "article": "employee-debt-reschedule",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "يتأجل لحد",
+      "labels": [
+        "يتأجل لحد"
+      ],
+      "text": "شهر بعد آخر قسط في الجدول، لحد 6 شهور بعده.",
+      "article": "employee-debt-reschedule",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "عدد الأقساط الجديد (للباقي)",
+      "labels": [
+        "عدد الأقساط الجديد (للباقي)"
+      ],
+      "text": "عدد الشهور اللي الباقي هيتقسم عليها (1 = الباقي كله مرة واحدة). آخر قسط بياخد كسور القروش.",
+      "article": "employee-debt-reschedule",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "من مرتب",
+      "labels": [
+        "من مرتب"
+      ],
+      "text": "الشهر اللي يبدأ منه الجدول الجديد — الشهر ده أو الـ 3 شهور الجايين، ومش شهر قسطه في مرتب متجهز.",
+      "article": "employee-debt-reschedule",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: ظروف عائلية — بطلب الموظف",
+      "labels": [
+        "مثلاً: ظروف عائلية — بطلب الموظف"
+      ],
+      "text": "اكتب سبب التأجيل أو تغيير الأقساط باختصار.",
+      "article": "employee-debt-reschedule",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "السبب (إجباري)",
+      "labels": [
+        "السبب (إجباري)"
+      ],
+      "text": "اكتب سبب التغيير (3 حروف على الأقل) — بيظهر للي هيوافق وبيتسجل في السجل.",
+      "article": "employee-debt-reschedule",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "فترة المتابعة",
       "labels": [
         "فترة المتابعة"
@@ -24046,9 +24163,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2070,
-    "labels": 1506,
+    "definitions": 2079,
+    "labels": 1515,
     "files": 170,
-    "groups": 1636
+    "groups": 1645
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

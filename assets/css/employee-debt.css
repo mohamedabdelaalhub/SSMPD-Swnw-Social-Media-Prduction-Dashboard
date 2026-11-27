@@ -11,3 +11,5 @@
 #view-container .emd-card .rse-note{color:#5B6577;font-size:13px}
 #view-container .emd-card h4 small{color:#5B6577;font-weight:400}
 .emd-card{margin-top:16px}
+.emd-sched{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}.emd-sched span{border:1px solid #E3E8F2;border-radius:10px;padding:6px 10px;font-size:13px;display:grid;gap:2px;text-align:center;min-width:88px}
+.emd-sched span small{color:#5B6676}.emd-sched span.done{background:#E6F4EC;border-color:#BFE3CC}.emd-sched span.moved{background:#FFF1E8;border-color:#F15A22}.emd-sched span.new{background:#F5F8FF;border-color:#0F369D}

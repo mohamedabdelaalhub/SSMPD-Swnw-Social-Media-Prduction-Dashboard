@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2070,
-    "labels": 1506,
+    "definitions": 2079,
+    "labels": 1515,
     "files": 170,
-    "groups": 1636
+    "groups": 1645
   },
   "fields": [
     {
@@ -3152,6 +3152,96 @@
       "tab": "production",
       "article": "employee-debt",
       "text_sha256": "98c86ab2b6c4bd1b6ecb6876d44ad25e4ece46d64abe9cfb9e3277347086fc8d"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "المديونية",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt-reschedule",
+      "text_sha256": "a12d174f0773463dc67cdfd08ce3790e927da314508e144cbe5ed4360bfe6af9"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "تأجيل قسط",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt-reschedule",
+      "text_sha256": "b5115e564146bd1af842bd3104add75f3deb831e78f70254601b5f876ee62bb1"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "تغيير عدد الأقساط",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt-reschedule",
+      "text_sha256": "921793acca0b8876814adda7ed58b37d4221252a3f993232ef6c76f58b0b77ad"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "القسط اللي هيتأجل",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt-reschedule",
+      "text_sha256": "22366956fcf883dd0a1e50d929404f5a1d1598950184dcd4eff003c6d81a5649"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "يتأجل لحد",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt-reschedule",
+      "text_sha256": "45fcb5e5761aede2cda1784ce7e7e219a3b91fcb5d62c16a609a16788f867bd9"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "عدد الأقساط الجديد (للباقي)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt-reschedule",
+      "text_sha256": "d683337f021e35f260f43f5e8db7af762bd1b11cbfb3530ba7dbb0f283e3c39e"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "من مرتب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt-reschedule",
+      "text_sha256": "ab9ff6e43e09ffb0f7d1f4c11885acea6d123313f6fc6b9ae4f2ff8829ee9425"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "مثلاً: ظروف عائلية — بطلب الموظف",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt-reschedule",
+      "text_sha256": "d48dec5a20bff3a59b3125c8b89cad6d25fe73801db2af31e9117a9a7f03f8b4"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "السبب (إجباري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt-reschedule",
+      "text_sha256": "010cdf04a3c73ba9e949c8e0da472e4e6084f3176adae3f47acf5571380beabb"
     },
     {
       "file": "employee-performance.js",
