@@ -4,7 +4,8 @@ const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/stri
 w.SSMPDAuth={currentAdmin:{id:'me',role:'super_admin'}};w.SSMPDRoles={canSeeTab:()=>true};
 const snap={workspace:{id:'w',mode:'live'},can_manage:true,patients:[],services:[],providers:[{id:'as',name:'د. أحمد سمير',department:'الجلدية'}],availability:[],appointments:[],visits:[],orders:[],packages:[],catalog_unavailable:[],consultation_scopes:{},provider_service_scopes:{}};
 const base={doctor_name:'د. أحمد سمير',department:'الجلدية',appointment_date:'2026-11-20',appointment_time:'10:00',needed_service:'كشف',source:'whatsapp',phone:'01000000001',customer_age:30};
-let list=[{...base,fallback_booking_id:'f1',customer_name:'مريض <b>واحد</b>',status:'pending'},{...base,fallback_booking_id:'f2',customer_name:'مريض اتنين',status:'conflict',source:'website'},{...base,fallback_booking_id:'f3',customer_name:'مريض تلاتة',status:'replayed',reception_confirmed:true,slot_released:true}];
+let list=[{...base,fallback_booking_id:'f1',customer_name:'مريض <b>واحد</b>',status:'pending',payment_mode:'insurance',payer_entity_name:'تأمين <i>أ</i>',approval_no:'AP-777'},{...base,fallback_booking_id:'f2',customer_name:'مريض اتنين',status:'conflict',source:'website'},{...base,fallback_booking_id:'f3',customer_name:'مريض تلاتة',status:'replayed',reception_confirmed:true,slot_released:true}];
+const copied=[],toasts=[];Object.defineProperty(w.navigator,'clipboard',{value:{writeText:t=>copied.push(t)}});w.SSMPDToast={show:m=>toasts.push(m)};
 const rpcs=[];w.SSMPDDb={receptionBootstrap:async()=>'w',receptionSnapshot:async()=>JSON.parse(JSON.stringify(snap)),receptionCommand:async()=>({}),
  client:{rpc:async(n,a)=>{rpcs.push([n,JSON.parse(JSON.stringify(a))]);if(n==='clinic_reception_fallback'&&a.p_action==='list')return {data:{bookings:list},error:null};return {data:{ok:true},error:null};}}};
 for(const f of ['assets/js/reception-fallback.js','assets/js/reception-workspace.js'])w.eval(fs.readFileSync(f,'utf8'));
@@ -19,7 +20,9 @@ w.prompt=()=>'  ';q('[data-fb-act="cancel"][data-id="f2"]').click();await sleep(
 w.prompt=()=>'المريض اعتذر';q('[data-fb-act="cancel"][data-id="f2"]').click();await sleep(30);
 const c=rpcs.find(r=>r[1].p_action==='cancel');assert.deepEqual(c[1],{p_workspace:'w',p_action:'cancel',p_payload:{id:'f2',reason:'المريض اعتذر'}});
 w.confirm=()=>false;q('[data-fb-act="release"][data-id="f1"]').click();await sleep(20);assert(!rpcs.some(r=>r[1].p_action==='release'));
+assert(/تأمين/.test(q('.rx-fb-pending').textContent)&&/AP-777/.test(q('.rx-fb-pending').textContent)&&!box.innerHTML.includes('<i>أ'),'payer kind, entity (escaped) and approval number shown on the parked booking');
 w.confirm=()=>true;q('[data-fb-act="release"][data-id="f1"]').click();await sleep(30);assert(rpcs.some(r=>r[1].p_action==='release'&&r[1].p_payload.id==='f1'));
+assert.deepEqual(copied,['AP-777'],'release copies the approval number');assert(toasts.some(m=>/AP-777/.test(m)&&/رقم مرجع الموافقة/.test(m)),'toast tells reception where to put it');
 q('[data-fb-act="confirm"]').click();await sleep(30);assert(rpcs.some(r=>r[1].p_action==='confirm'&&r[1].p_payload.id==='f1'));
 list=[];q('[data-rx-action="back"]').click();await sleep(30);q('[data-rx-section="appointments"]').click();await sleep(60);
 assert(q('[data-rx-fallback]').hidden,'nothing to show → hidden');

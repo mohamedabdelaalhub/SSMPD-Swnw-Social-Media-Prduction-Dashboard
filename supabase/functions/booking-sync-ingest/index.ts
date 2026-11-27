@@ -148,6 +148,40 @@ Deno.serve(async (request)=>{
     }
     patch.gender = body.gender;
   }
+  // Website payment step: how the visit is paid, the chosen contracting entity and the insurer's approval number (all optional).
+  if (body.payment_mode !== undefined && body.payment_mode !== null && body.payment_mode !== "") {
+    if (![
+      "direct",
+      "insurance",
+      "membership",
+      "entity"
+    ].includes(body.payment_mode)) {
+      return respond({
+        ok: false,
+        error: "invalid_payment_mode"
+      }, 400);
+    }
+    patch.payment_mode = body.payment_mode;
+  }
+  if (body.payer_entity_id !== undefined && body.payer_entity_id !== null && body.payer_entity_id !== "") {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(body.payer_entity_id))) {
+      return respond({
+        ok: false,
+        error: "invalid_payer_entity_id"
+      }, 400);
+    }
+    patch.payer_entity_id = String(body.payer_entity_id).toLowerCase();
+  }
+  if (body.approval_no !== undefined && body.approval_no !== null && body.approval_no !== "") {
+    if (!/^[0-9A-Za-z\-\/]{3,40}$/.test(String(body.approval_no).trim())) {
+      return respond({
+        ok: false,
+        error: "invalid_approval_no"
+      }, 400);
+    }
+    patch.approval_no = String(body.approval_no).trim();
+    patch.approval_at = now;
+  }
   if (body.needed_service !== undefined && body.needed_service !== null && body.needed_service !== "") {
     patch.needed_service = (textValue(body.needed_service) || "").slice(0, 80) || null;
   }

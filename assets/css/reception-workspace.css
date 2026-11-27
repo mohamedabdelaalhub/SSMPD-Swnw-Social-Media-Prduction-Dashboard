@@ -295,3 +295,5 @@
 .rx-collect-once{margin:8px 0;padding:10px 12px;border-radius:12px;background:#FEF3F2;border:1px solid rgba(208,64,42,.35);color:#7A271A}
 .rx-collect-once p{margin:0 0 8px;font-weight:700;line-height:1.6}
 .rx-collect-once-btns{display:flex;gap:8px;flex-wrap:wrap}
+.ab-pay{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12px;background:#F1F4F8;color:#525B6F;white-space:nowrap}.ab-pay.ok{background:#E6F2EC;color:#2F7D5C}.ab-pay.wait{background:#FFF3E0;color:#8A4B00}
+.ab-chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.ab-chip{padding:6px 12px;border-radius:999px;border:1px solid #D5DEEE;background:#F1F4F8;font:inherit;font-size:13px;min-height:44px;cursor:pointer}.ab-chip.on{background:#0F369D;color:#fff;border-color:#0F369D}

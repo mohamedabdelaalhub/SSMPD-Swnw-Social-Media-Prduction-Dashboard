@@ -11,7 +11,8 @@
   var CH = [["whatsapp", "واتساب"], ["website", "الموقع"], ["portal", "بوابة المرضى"]];
   var FB = { pending: "مستني يتسجل على ماسا", replayed: "اتسجل على ماسا", conflict: "⚠ ماسا رفض الميعاد", cancel_pending: "اتلغى — مستني ماسا", cancelled: "ملغي" };
   var CB = { confirmed: "متأكد على ماسا", rescheduled: "اتغيّر ميعاده", cancelled: "ملغي", arrived: "وصل", completed: "خلص", no_show: "محضرش" };
-  var state = { ws: null, open: "", data: null, busy: false };
+  var PAY = { insurance: "تأمين", membership: "عضوية", entity: "جهة متعاقدة", direct: "دفع مباشر" };
+  var state = { ws: null, open: "", data: null, busy: false, payFilter: "all" };
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function today() { try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo" }).format(new Date()); } catch (e) { return new Date().toISOString().slice(0, 10); } }
   function client() { return w.SSMPDDb && w.SSMPDDb.client; }
@@ -30,10 +31,32 @@
   function mirror() {
     var c = client(); if (!c || typeof c.from !== "function") return Promise.resolve([]);
     try {
-      return Promise.resolve(c.from("customer_bookings").select("id,channel,wa_id,customer_name,phone,doctor_name,specialty_name,appointment_date,appointment_time,status,booking_reference")
+      return Promise.resolve(c.from("customer_bookings").select("id,channel,wa_id,customer_name,phone,doctor_name,specialty_name,appointment_date,appointment_time,status,booking_reference,payment_mode,payer_entity_id,approval_no,approval_at")
         .gte("appointment_date", today()).order("appointment_date", { ascending: true }).order("appointment_time", { ascending: true }).limit(200))
         .then(function (r) { return r && !r.error && r.data || []; }, function () { return []; });
     } catch (e) { return Promise.resolve([]); }
+  }
+  // Names of the contracting entities the patients chose on the site (read-only; if the table is not readable the badge just says the kind).
+  function entities(rows) {
+    var ids = (rows || []).map(function (b) { return b.payer_entity_id; }).filter(Boolean), c = client();
+    if (!ids.length || !c || typeof c.from !== "function") return Promise.resolve({});
+    try {
+      return Promise.resolve(c.from("contracting_entities").select("id,name").in("id", ids.filter(function (x, i) { return ids.indexOf(x) === i; })))
+        .then(function (r) { var m = {}; ((r && !r.error && r.data) || []).forEach(function (e) { m[e.id] = e.name; }); return m; }, function () { return {}; });
+    } catch (e) { return Promise.resolve({}); }
+  }
+  function hm(iso) { try { return new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(iso)); } catch (e) { return ""; } }
+  function awaiting(b) { return b.payment_mode === "insurance" && !b.approval_no; }
+  function payBadge(b) {
+    if (!b.payment_mode) return "";
+    if (b.payment_mode === "insurance") return '<span class="ab-pay ' + (b.approval_no ? "ok" : "wait") + '">' + (b.approval_no ? "تأمين · الموافقة وصلت" : "تأمين · مستنية موافقة") + '</span>';
+    return '<span class="ab-pay">' + esc(PAY[b.payment_mode] || "") + '</span>';
+  }
+  function payLine(b, entName) {
+    if (!b.payment_mode || b.payment_mode === "direct") return "";
+    var ent = entName || (state.data && state.data.entities || {})[b.payer_entity_id] || "";
+    return '<br><small>' + esc(ent) + (b.approval_no ? ' · موافقة <b dir="ltr">' + esc(b.approval_no) + '</b>' + (b.approval_at ? " (وصلت " + esc(hm(b.approval_at)) + ")" : "") + ' <button type="button" class="btn ghost sm" data-ab-copy="' + esc(b.approval_no) + '">نسخ</button>' :
+      b.payment_mode === "insurance" ? " · لسه ما بعتتش رقم الموافقة" : (b.payment_mode === "direct" ? "" : " · السعر بيتحدد عند الحضور")) + '</small>';
   }
   function portal() {
     var c = client(); if (!c || !c.functions || typeof c.functions.invoke !== "function") return Promise.resolve(null);
@@ -54,13 +77,13 @@
   }
   function fbRow(b) {
     return '<article class="ab-row' + (b.status === "conflict" ? " warn" : "") + '"><div><strong>' + esc(b.customer_name) + '</strong> <span dir="ltr">' + esc(b.phone) + '</span><br>' +
-      esc(b.doctor_name) + ' — ' + esc(b.appointment_date) + ' ' + esc(b.appointment_time) + ' — ' + esc(b.needed_service || "") +
+      esc(b.doctor_name) + ' — ' + esc(b.appointment_date) + ' ' + esc(b.appointment_time) + ' — ' + esc(b.needed_service || "") + ' ' + payBadge(b) + payLine(b, b.payer_entity_name) +
       '<br><small>' + esc(FB[b.status] || b.status) + (b.reception_confirmed ? " · اتأكد مع المريض" : " · محتاج تأكيد مع المريض") + '</small></div></article>';
   }
   function cbRow(b) {
     return '<article class="ab-row"><div><strong>' + esc(b.customer_name || "—") + '</strong> <span dir="ltr">' + esc(b.phone || "") + '</span><br>' +
       esc(b.doctor_name || "") + (b.specialty_name ? " (" + esc(b.specialty_name) + ")" : "") + ' — ' + esc(b.appointment_date || "") + ' ' + esc(b.appointment_time || "") +
-      '<br><small>' + esc(CB[b.status] || b.status) + (b.booking_reference ? " · رقم " + esc(b.booking_reference) : "") + '</small></div></article>';
+      ' ' + payBadge(b) + '<br><small>' + esc(CB[b.status] || b.status) + (b.booking_reference ? " · رقم " + esc(b.booking_reference) : "") + '</small>' + payLine(b) + '</div></article>';
   }
   function panel(box, key) {
     var host = box.querySelector("[data-ab-panel]"); if (!host) return;
@@ -77,8 +100,16 @@
     var html = "";
     if (fb.length) html += '<h5>حجوزات احتياطية (اتعملت من الداشبورد لما ماسا كان واقف)</h5>' + fb.map(fbRow).join("") +
       '<button type="button" class="btn" data-ab-goto="appointments">التعامل معاها: المواعيد ← الحجوزات الاحتياطية</button>';
-    if (cb.length) html += '<h5>حجوزات اتسجلت على ماسا (للمتابعة)</h5>' + cb.map(cbRow).join("");
+    if (cb.length) {
+      var anyPay = key === "website" && cb.some(function (b) { return b.payment_mode; }), f = anyPay ? state.payFilter : "all";
+      var shown = cb.filter(function (b) { return f === "all" || (f === "wait" && awaiting(b)) || (f === "got" && b.payment_mode === "insurance" && b.approval_no) || (f === "direct" && (!b.payment_mode || b.payment_mode === "direct")); });
+      html += '<h5>حجوزات اتسجلت على ماسا (للمتابعة)</h5>' + (anyPay ? '<div class="ab-chips">' + [["all", "الكل"], ["wait", "مستنية موافقة"], ["got", "الموافقة وصلت"], ["direct", "دفع مباشر"]].map(function (c) {
+        return '<button type="button" class="ab-chip' + (f === c[0] ? " on" : "") + '" data-ab-pay="' + c[0] + '" aria-pressed="' + (f === c[0]) + '">' + c[1] + '</button>'; }).join("") + '</div>' : "") +
+        (shown.length ? shown.map(cbRow).join("") : '<p class="ab-empty">مفيش حجوزات بالفلتر ده.</p>');
+    }
     host.innerHTML = html || '<p class="ab-empty">مفيش حجوزات جاية من ' + esc(key === "whatsapp" ? "الواتساب" : "الموقع") + ' دلوقتي.</p>';
+    host.querySelectorAll("[data-ab-pay]").forEach(function (b) { b.onclick = function () { state.payFilter = b.getAttribute("data-ab-pay"); panel(box, key); }; });
+    host.querySelectorAll("[data-ab-copy]").forEach(function (b) { b.onclick = function () { try { w.navigator.clipboard.writeText(b.getAttribute("data-ab-copy")); b.textContent = "اتنسخ"; } catch (e) { /* clipboard not available */ } }; });
     var go = host.querySelector("[data-ab-goto]");
     if (go) go.onclick = function () { var b = d.querySelector('[data-rx-section="appointments"]'); if (b) b.click(); };
   }
@@ -100,8 +131,10 @@
   function refresh(box) {
     paint(box);
     return Promise.all([fallback(state.ws), mirror(), portal()]).then(function (r) {
-      state.data = { fallback: r[0] || [], mirror: r[1] || [], portal: r[2] };
-      if (box.isConnected) paint(box);
+      return entities(r[1]).then(function (ents) {
+        state.data = { fallback: r[0] || [], mirror: r[1] || [], portal: r[2], entities: ents };
+        if (box.isConnected) paint(box);
+      });
     });
   }
   function mayView() {
