@@ -8,7 +8,7 @@ do $$
 declare ws uuid; rec uuid; other uuid; r jsonb; rid uuid; n int;
 begin
   if to_regclass('public.website_requests') is null then raise exception 'الملف لم يُطبَّق'; end if;
-  select id into ws from clinic_reception.workspaces order by created_at limit 1;
+  select id into ws from clinic_reception.workspaces where mode = 'live' order by id limit 1;
   select user_id into rec from public.admins where active and role = 'reception' and user_id is not null order by id limit 1;
   select user_id into other from public.admins where active and role in ('designer', 'page_manager') and user_id is not null order by id limit 1;
   insert into wr_result values ('inputs', ws is not null and rec is not null, format('workspace=%s reception_user=%s other_user=%s', ws is not null, rec is not null, other is not null));
