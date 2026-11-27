@@ -13,6 +13,7 @@ const pool = b("supabase/functions/meta-comments/pool.ts", "pool"), fb = b("supa
   assert.deepEqual(res, [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]); assert.equal(peak, 3); assert.deepEqual(await pool.mapPool([], 5, async (x) => x), []);
   const t0 = Date.now(); await pool.mapPool(Array.from({ length: 10 }, (_, i) => i), 5, () => new Promise((r) => setTimeout(r, 40))); assert(Date.now() - t0 < 160, "10 x 40 ms with 5 in flight takes ~80 ms, not 400");
   assert.equal(pool.isPermanentGraphError("Unsupported get request. Object with ID '1820849849155219' does not exist, cannot be loaded due to missing permissions"), true);
+  assert.equal(pool.isPermanentGraphError("(#100) Tried accessing nonexisting field (comments) on node type (Page)"), true, "no comments connection: permanent");
   assert.equal(pool.isPermanentGraphError("Graph timeout after 20s"), false); assert.equal(pool.isPermanentGraphError("(#4) rate limit"), false); assert.equal(pool.isPermanentGraphError(undefined), false);
   // readFbThreads: replies in parallel (bounded to 4), order kept, a failing reply read does not drop the comment, permanent flag on a dead post
   let live = 0, maxLive = 0;

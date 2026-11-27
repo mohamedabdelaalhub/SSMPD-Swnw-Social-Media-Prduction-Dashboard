@@ -28,6 +28,6 @@ const { readFbThreads, TOP_FIELDS, REPLY_FIELDS } = require(out);
   // whole post failure → ok:false and the reason is reported
   const errs2 = [];
   const bad = await readFbThreads(async () => ({ ok: false, data: {}, error: "(#100) boom" }), "post2", "T", errs2, "sono");
-  assert.equal(bad.ok, false); assert.deepEqual(errs2, ["sono facebook: (#100) boom"]);
+  assert.equal(bad.ok, false); assert.deepEqual(errs2, ["sono facebook post2: (#100) boom"]);
   console.log("PASS meta-comments fb-comments: no nested expansion, replies per comment, partial failures tolerated, post failure reported");
 })().catch((e) => { console.error(e); process.exit(1); });
