@@ -2,7 +2,7 @@
 -- Nothing is kept: no function change, no booking, no message. Appointments are only READ. Output is COUNTS ONLY (no patient data).
 -- (a) READ-ONLY before the body: the REPORT — Masa auto-booked appointments since 2026-11-26 whose service is outside the
 --     doctor's own departments (home / provider_departments / scope row), split past (done / collected) vs upcoming, and today's
---     pick for «كشف جديد» of every active live doctor; then the masa-auto-service-check on the state BEFORE the fix (shows the bug).
+--     pick for «كشف جديد» of Dr Ahmed Mostafa (the live check before the fix was 45 of 51 doctors / 7 bookings — dropped for speed).
 -- (b) the migration body (between the markers, without begin / commit).
 -- (c) after: no doctor's pick is outside his departments; Dr Ahmed Mostafa's pick; how many picks changed / became NULL
 --     (= staff choose); the owner's flow as Mazen (booked as «الخدمة تتحدد عند الحضور», «وصل» refused without a service,
@@ -43,40 +43,8 @@ select '(a) REPORT: Masa auto-booked since 11-26 with another department''s serv
        count(*) || ' booking(s), ' || count(distinct provider_id) || ' doctor(s)', true from apod_wrong;
 create temp table apod_before as
   select p.id provider_id, p.name, p.department, clinic_reception.auto_time_service(p.workspace_id, p.id, 'كشف جديد') svc
-    from clinic_reception.providers p join clinic_reception.workspaces w on w.id = p.workspace_id and w.mode = 'live' where p.active;
-insert into apod_live(step, expected, actual, ok)
-select '(a) before: doctors whose «كشف جديد» pick is outside their departments', 'info (the bug)',
-       count(*) || ' of ' || (select count(*) from apod_before), true
-  from apod_before b join clinic_reception.services s on s.id = b.svc where not pg_temp.apod_member(b.provider_id, s.department, s.code);
--- >>> BEGIN masa-auto-service-check (same text in tests/masa-auto-service-live-check.sql; CI: tests/masa-auto-service-guard.cjs) <<<
--- Re-runs the auto picker on the REAL Masa bookings of the last 7 days and compares the department of the picked service with
--- the doctor's own departments (home / provider_departments / scope row). Expected: 0 outside. Reads only.
-create function pg_temp.masa_chk_member(p_provider uuid, p_department text, p_code text) returns boolean language sql stable as $f$
-  select exists (select 1 from clinic_reception.providers p where p.id = p_provider and p.department = p_department)
-      or exists (select 1 from clinic_reception.provider_departments d where d.provider_id = p_provider and d.department = p_department)
-      or exists (select 1 from clinic_reception.provider_service_scopes sc where sc.provider_id = p_provider and sc.service_code = p_code)
-$f$;
-create temp table masa_chk as
-  select e.id, e.provider_id, s.department svc_dept, s.code, s.name svc_name, s.is_home, s.placeholder
-    from clinic_reception.external_bookings e
-    join clinic_reception.providers p on p.id = e.provider_id
-    left join clinic_reception.services s on s.id = clinic_reception.auto_time_service(p.workspace_id, e.provider_id, e.needed_service)
-   where e.source = 'masa' and e.created_at >= now() - interval '7 days';
-create temp table masa_chk_result(n serial, step text, expected text, actual text, ok boolean);
-insert into masa_chk_result(step, expected, actual, ok)
-select 'masa check: Masa bookings of the last 7 days re-picked', '> 0 (info)',
-       count(*) || ' (' || count(*) filter (where code is null) || ' → staff review)', true from masa_chk;
-insert into masa_chk_result(step, expected, actual, ok)
-select 'masa check: picked service outside the doctor''s departments', '0', count(*)::text, count(*) = 0
-  from masa_chk where code is not null and not pg_temp.masa_chk_member(provider_id, svc_dept, code);
-insert into masa_chk_result(step, expected, actual, ok)
-select 'masa check: picked a home / placeholder / non-consult service for a consult text', '0', count(*)::text, count(*) = 0
-  from masa_chk c join clinic_reception.external_bookings e on e.id = c.id
- where c.code is not null and clinic_reception.consult_kind(e.needed_service) is not null
-   and (c.is_home or coalesce(c.placeholder, false) or not clinic_reception.consult_pickable(c.svc_name));
--- >>> END masa-auto-service-check <<<
-insert into apod_live(step, expected, actual, ok)
-select '(a) BEFORE fix — ' || step, 'info (the bug)', actual, true from masa_chk_result order by n;
+    from clinic_reception.providers p join clinic_reception.workspaces w on w.id = p.workspace_id and w.mode = 'live'
+   where p.active and (p.name like '%أحمد مصطفى%' or p.name like '%احمد مصطفى%');
 -- >>> BEGIN migration body: supabase/migrations/20261127310000_auto_pick_own_department.sql (without begin / commit) <<<
 -- Masa auto booking puts «كشف أخصائي أمراض الدم والمناعة» on consults of OTHER doctors (owner bug 2026-11-27, relayed by main
 -- chat 7 from Mazen: «اي حالة بتتسجل كشف من علي ماسا بيتحول لي الداش نفس نوع الكشف دا اخصائي المناعه و الدم», booking of
@@ -131,34 +99,35 @@ insert into clinic_reception.auto_pick_saved_defs(sig, def)
   values ('clinic_reception.auto_time_service(uuid,uuid,text)', pg_get_functiondef('clinic_reception.auto_time_service(uuid,uuid,text)'::regprocedure));
 create or replace function clinic_reception.auto_time_service(p_workspace uuid, p_provider uuid, p_needed text) returns uuid
 language plpgsql stable security definer set search_path = pg_catalog, public as $$
-declare v uuid; vn text; n int; dept text; k text := clinic_reception.service_name_key(p_needed); nk text := clinic_reception.consult_kind(p_needed);
+declare v uuid; vn text; n int; dept text; ids uuid[]; k text := clinic_reception.service_name_key(p_needed); nk text := clinic_reception.consult_kind(p_needed);
 begin
   select department into dept from clinic_reception.providers where id = p_provider and workspace_id = p_workspace;
   if dept is null then return null; end if;
-  -- 1) the service the source NAMES (unchanged from v4): unique exact match; a non-consult one only when the text is not a consult
+  -- the doctor's OWN services, computed once: a cheap membership filter first (home / extra department / scope row), then the
+  -- restriction rule (serves_service) only on those few rows
+  ids := array(select s.id from clinic_reception.services s
+                where s.workspace_id = p_workspace and s.active and not coalesce(s.placeholder, false) and not s.is_home
+                  and (s.department = dept
+                       or s.department in (select d.department from clinic_reception.provider_departments d where d.provider_id = p_provider)
+                       or s.code in (select sc.service_code from clinic_reception.provider_service_scopes sc where sc.provider_id = p_provider))
+                  and clinic_reception.serves_service(p_provider, s.department, s.code));
+  -- 1) the service the source NAMES (as v4): unique exact match; a non-consult one only when the text is not a consult
   if k <> '' then
     select min(s.id::text)::uuid, min(s.name) into v, vn from clinic_reception.services s
-     where s.workspace_id = p_workspace and s.active and not coalesce(s.placeholder, false) and not s.is_home
-       and clinic_reception.serves_service(p_provider, s.department, s.code) and clinic_reception.service_name_key(s.name) = k
-    having count(*) = 1;
+     where s.id = any(ids) and clinic_reception.service_name_key(s.name) = k having count(*) = 1;
     if v is not null and (clinic_reception.consult_pickable(vn) or nk is null) then return v; end if;
     v := null;
     if length(k) >= 3 then
       select min(s.id::text)::uuid, min(s.name) into v, vn from clinic_reception.services s
-       where s.workspace_id = p_workspace and s.active and not coalesce(s.placeholder, false) and not s.is_home
-         and clinic_reception.serves_service(p_provider, s.department, s.code) and clinic_reception.service_name_key(s.name) like k || '%'
-      having count(*) = 1;
+       where s.id = any(ids) and clinic_reception.service_name_key(s.name) like k || '%' having count(*) = 1;
       if v is not null and clinic_reception.consult_pickable(vn) then return v; end if;
     end if;
   end if;
-  -- 2) the doctor's SAVED service = a staff choice («اختار الخدمة»): only a consultation of his own services, never home
+  -- 2) the doctor's SAVED service = a staff choice («اختار الخدمة»): only a consultation of his own services
   v := clinic_reception.auto_book_service(p_workspace, p_provider);
-  if v is not null and exists (select 1 from clinic_reception.services x where x.id = v and x.active and not coalesce(x.placeholder, false)
-       and not x.is_home and clinic_reception.consult_pickable(x.name) and clinic_reception.serves_service(p_provider, x.department, x.code)) then return v; end if;
+  if v is not null and v = any(ids) and exists (select 1 from clinic_reception.services x where x.id = v and clinic_reception.consult_pickable(x.name)) then return v; end if;
   -- 3) the ONLY consultation the doctor serves (exactly one); more than one or none → NULL = staff choose
-  select min(s.id::text)::uuid, count(*) into v, n from clinic_reception.services s
-   where s.workspace_id = p_workspace and s.active and not coalesce(s.placeholder, false) and not s.is_home
-     and clinic_reception.serves_service(p_provider, s.department, s.code) and clinic_reception.consult_pickable(s.name);
+  select min(s.id::text)::uuid, count(*) into v, n from clinic_reception.services s where s.id = any(ids) and clinic_reception.consult_pickable(s.name);
   if n = 1 then return v; end if;
   return null;
 end $$;
@@ -196,8 +165,10 @@ update clinic_reception.external_bookings set state = 'pending', review_kind = n
  where state = 'review' and review_kind = 'service' and day >= clinic_reception.cairo_day(now());
 -- >>> END migration body <<<
 create temp table apod_after as
-  select b.provider_id, b.name, b.svc before_svc, clinic_reception.auto_time_service(p.workspace_id, p.id, 'كشف جديد') svc
-    from apod_before b join clinic_reception.providers p on p.id = b.provider_id;
+  select p.id provider_id, p.name, b.svc before_svc, clinic_reception.auto_time_service(p.workspace_id, p.id, 'كشف جديد') svc
+    from clinic_reception.providers p join clinic_reception.workspaces w on w.id = p.workspace_id and w.mode = 'live'
+    left join apod_before b on b.provider_id = p.id
+   where p.active;
 insert into apod_live(step, expected, actual, ok)
 select '(c) after: picks outside the doctor''s departments', '0', count(*)::text, count(*) = 0
   from apod_after x join clinic_reception.services s on s.id = x.svc where not pg_temp.apod_member(x.provider_id, s.department, s.code);
@@ -205,8 +176,8 @@ insert into apod_live(step, expected, actual, ok)
 select '(c) after: no pick is a procedure / home service', '0', count(*)::text, count(*) = 0
   from apod_after x join clinic_reception.services s on s.id = x.svc where s.is_home or not clinic_reception.consult_pickable(s.name);
 insert into apod_live(step, expected, actual, ok)
-select '(c) after: picks changed / now NULL (staff picks once)', 'info',
-       count(*) filter (where svc is distinct from before_svc) || ' changed, ' || count(*) filter (where svc is null) || ' NULL of ' || count(*), true from apod_after;
+select '(c) after: doctors whose «كشف جديد» waits for staff (NULL)', 'info',
+       count(*) filter (where svc is null) || ' of ' || count(*), true from apod_after;
 insert into apod_live(step, expected, actual, ok)
 select '(c) Dr Ahmed Mostafa: «كشف جديد» before → after', 'a consult of his own department',
        coalesce((select name from clinic_reception.services where id = x.before_svc), 'NULL') || ' → ' ||
@@ -216,7 +187,7 @@ select '(c) Dr Ahmed Mostafa: «كشف جديد» before → after', 'a consult 
 insert into apod_live(step, expected, actual, ok)
 select '(c) manual booking unchanged: basics of another department still open (provider_serves_code)', 'true',
        coalesce(bool_and(clinic_reception.provider_serves_code(x.provider_id, s.department, s.code, null))::text, 'no sample'), coalesce(bool_and(clinic_reception.provider_serves_code(x.provider_id, s.department, s.code, null)), true)
-  from (select provider_id, before_svc from apod_after limit 50) x join clinic_reception.services s on s.id = x.before_svc;
+  from (select provider_id, before_svc from apod_after where before_svc is not null limit 50) x join clinic_reception.services s on s.id = x.before_svc;
 -- (c) the owner's flow, rolled back: no clear service → booked as «الخدمة تتحدد عند الحضور»; «وصل» refused until staff choose
 insert into apod_live(step, expected, actual, ok)
 select '(c) auto_book_one + day-only path call auto_book_pick', '2 of 2',
@@ -281,8 +252,6 @@ begin
   perform set_config('request.jwt.claims', '', true);
   perform set_config('request.jwt.claim.sub', '', true);
 end $$;
-drop function pg_temp.masa_chk_member(uuid, text, text);
-drop table masa_chk, masa_chk_result;
 -- >>> BEGIN masa-auto-service-check (same text in tests/masa-auto-service-live-check.sql; CI: tests/masa-auto-service-guard.cjs) <<<
 -- Re-runs the auto picker on the REAL Masa bookings of the last 7 days and compares the department of the picked service with
 -- the doctor's own departments (home / provider_departments / scope row). Expected: 0 outside. Reads only.
@@ -292,22 +261,23 @@ create function pg_temp.masa_chk_member(p_provider uuid, p_department text, p_co
       or exists (select 1 from clinic_reception.provider_service_scopes sc where sc.provider_id = p_provider and sc.service_code = p_code)
 $f$;
 create temp table masa_chk as
-  select e.id, e.provider_id, s.department svc_dept, s.code, s.name svc_name, s.is_home, s.placeholder
-    from clinic_reception.external_bookings e
-    join clinic_reception.providers p on p.id = e.provider_id
-    left join clinic_reception.services s on s.id = clinic_reception.auto_time_service(p.workspace_id, e.provider_id, e.needed_service)
-   where e.source = 'masa' and e.created_at >= now() - interval '7 days';
+  with pairs as (select e.provider_id, e.needed_service, count(*) n from clinic_reception.external_bookings e
+                  where e.source = 'masa' and e.created_at >= now() - interval '7 days' and e.provider_id is not null group by 1, 2)
+  select x.provider_id, x.needed_service, x.n, s.department svc_dept, s.code, s.name svc_name, s.is_home, s.placeholder
+    from (select pr.provider_id, pr.needed_service, pr.n, clinic_reception.auto_time_service(p.workspace_id, pr.provider_id, pr.needed_service) svc
+            from pairs pr join clinic_reception.providers p on p.id = pr.provider_id) x
+    left join clinic_reception.services s on s.id = x.svc;
 create temp table masa_chk_result(n serial, step text, expected text, actual text, ok boolean);
 insert into masa_chk_result(step, expected, actual, ok)
-select 'masa check: Masa bookings of the last 7 days re-picked', '> 0 (info)',
-       count(*) || ' (' || count(*) filter (where code is null) || ' → staff review)', true from masa_chk;
+select 'masa check: Masa bookings of the last 7 days re-picked (once per doctor + Masa text)', '> 0 (info)',
+       coalesce(sum(n), 0) || ' bookings / ' || count(*) || ' pairs (' || coalesce(sum(n) filter (where code is null), 0) || ' → wait for staff)', true from masa_chk;
 insert into masa_chk_result(step, expected, actual, ok)
-select 'masa check: picked service outside the doctor''s departments', '0', count(*)::text, count(*) = 0
+select 'masa check: picked service outside the doctor''s departments', '0', coalesce(sum(n), 0)::text, coalesce(sum(n), 0) = 0
   from masa_chk where code is not null and not pg_temp.masa_chk_member(provider_id, svc_dept, code);
 insert into masa_chk_result(step, expected, actual, ok)
-select 'masa check: picked a home / placeholder / non-consult service for a consult text', '0', count(*)::text, count(*) = 0
-  from masa_chk c join clinic_reception.external_bookings e on e.id = c.id
- where c.code is not null and clinic_reception.consult_kind(e.needed_service) is not null
+select 'masa check: picked a home / placeholder / non-consult service for a consult text', '0', coalesce(sum(n), 0)::text, coalesce(sum(n), 0) = 0
+  from masa_chk c
+ where c.code is not null and clinic_reception.consult_kind(c.needed_service) is not null
    and (c.is_home or coalesce(c.placeholder, false) or not clinic_reception.consult_pickable(c.svc_name));
 -- >>> END masa-auto-service-check <<<
 insert into apod_live(step, expected, actual, ok)

@@ -52,34 +52,35 @@ insert into clinic_reception.auto_pick_saved_defs(sig, def)
   values ('clinic_reception.auto_time_service(uuid,uuid,text)', pg_get_functiondef('clinic_reception.auto_time_service(uuid,uuid,text)'::regprocedure));
 create or replace function clinic_reception.auto_time_service(p_workspace uuid, p_provider uuid, p_needed text) returns uuid
 language plpgsql stable security definer set search_path = pg_catalog, public as $$
-declare v uuid; vn text; n int; dept text; k text := clinic_reception.service_name_key(p_needed); nk text := clinic_reception.consult_kind(p_needed);
+declare v uuid; vn text; n int; dept text; ids uuid[]; k text := clinic_reception.service_name_key(p_needed); nk text := clinic_reception.consult_kind(p_needed);
 begin
   select department into dept from clinic_reception.providers where id = p_provider and workspace_id = p_workspace;
   if dept is null then return null; end if;
-  -- 1) the service the source NAMES (unchanged from v4): unique exact match; a non-consult one only when the text is not a consult
+  -- the doctor's OWN services, computed once: a cheap membership filter first (home / extra department / scope row), then the
+  -- restriction rule (serves_service) only on those few rows
+  ids := array(select s.id from clinic_reception.services s
+                where s.workspace_id = p_workspace and s.active and not coalesce(s.placeholder, false) and not s.is_home
+                  and (s.department = dept
+                       or s.department in (select d.department from clinic_reception.provider_departments d where d.provider_id = p_provider)
+                       or s.code in (select sc.service_code from clinic_reception.provider_service_scopes sc where sc.provider_id = p_provider))
+                  and clinic_reception.serves_service(p_provider, s.department, s.code));
+  -- 1) the service the source NAMES (as v4): unique exact match; a non-consult one only when the text is not a consult
   if k <> '' then
     select min(s.id::text)::uuid, min(s.name) into v, vn from clinic_reception.services s
-     where s.workspace_id = p_workspace and s.active and not coalesce(s.placeholder, false) and not s.is_home
-       and clinic_reception.serves_service(p_provider, s.department, s.code) and clinic_reception.service_name_key(s.name) = k
-    having count(*) = 1;
+     where s.id = any(ids) and clinic_reception.service_name_key(s.name) = k having count(*) = 1;
     if v is not null and (clinic_reception.consult_pickable(vn) or nk is null) then return v; end if;
     v := null;
     if length(k) >= 3 then
       select min(s.id::text)::uuid, min(s.name) into v, vn from clinic_reception.services s
-       where s.workspace_id = p_workspace and s.active and not coalesce(s.placeholder, false) and not s.is_home
-         and clinic_reception.serves_service(p_provider, s.department, s.code) and clinic_reception.service_name_key(s.name) like k || '%'
-      having count(*) = 1;
+       where s.id = any(ids) and clinic_reception.service_name_key(s.name) like k || '%' having count(*) = 1;
       if v is not null and clinic_reception.consult_pickable(vn) then return v; end if;
     end if;
   end if;
-  -- 2) the doctor's SAVED service = a staff choice («اختار الخدمة»): only a consultation of his own services, never home
+  -- 2) the doctor's SAVED service = a staff choice («اختار الخدمة»): only a consultation of his own services
   v := clinic_reception.auto_book_service(p_workspace, p_provider);
-  if v is not null and exists (select 1 from clinic_reception.services x where x.id = v and x.active and not coalesce(x.placeholder, false)
-       and not x.is_home and clinic_reception.consult_pickable(x.name) and clinic_reception.serves_service(p_provider, x.department, x.code)) then return v; end if;
+  if v is not null and v = any(ids) and exists (select 1 from clinic_reception.services x where x.id = v and clinic_reception.consult_pickable(x.name)) then return v; end if;
   -- 3) the ONLY consultation the doctor serves (exactly one); more than one or none → NULL = staff choose
-  select min(s.id::text)::uuid, count(*) into v, n from clinic_reception.services s
-   where s.workspace_id = p_workspace and s.active and not coalesce(s.placeholder, false) and not s.is_home
-     and clinic_reception.serves_service(p_provider, s.department, s.code) and clinic_reception.consult_pickable(s.name);
+  select min(s.id::text)::uuid, count(*) into v, n from clinic_reception.services s where s.id = any(ids) and clinic_reception.consult_pickable(s.name);
   if n = 1 then return v; end if;
   return null;
 end $$;

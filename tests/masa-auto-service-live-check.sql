@@ -18,22 +18,23 @@ create function pg_temp.masa_chk_member(p_provider uuid, p_department text, p_co
       or exists (select 1 from clinic_reception.provider_service_scopes sc where sc.provider_id = p_provider and sc.service_code = p_code)
 $f$;
 create temp table masa_chk as
-  select e.id, e.provider_id, s.department svc_dept, s.code, s.name svc_name, s.is_home, s.placeholder
-    from clinic_reception.external_bookings e
-    join clinic_reception.providers p on p.id = e.provider_id
-    left join clinic_reception.services s on s.id = clinic_reception.auto_time_service(p.workspace_id, e.provider_id, e.needed_service)
-   where e.source = 'masa' and e.created_at >= now() - interval '7 days';
+  with pairs as (select e.provider_id, e.needed_service, count(*) n from clinic_reception.external_bookings e
+                  where e.source = 'masa' and e.created_at >= now() - interval '7 days' and e.provider_id is not null group by 1, 2)
+  select x.provider_id, x.needed_service, x.n, s.department svc_dept, s.code, s.name svc_name, s.is_home, s.placeholder
+    from (select pr.provider_id, pr.needed_service, pr.n, clinic_reception.auto_time_service(p.workspace_id, pr.provider_id, pr.needed_service) svc
+            from pairs pr join clinic_reception.providers p on p.id = pr.provider_id) x
+    left join clinic_reception.services s on s.id = x.svc;
 create temp table masa_chk_result(n serial, step text, expected text, actual text, ok boolean);
 insert into masa_chk_result(step, expected, actual, ok)
-select 'masa check: Masa bookings of the last 7 days re-picked', '> 0 (info)',
-       count(*) || ' (' || count(*) filter (where code is null) || ' → staff review)', true from masa_chk;
+select 'masa check: Masa bookings of the last 7 days re-picked (once per doctor + Masa text)', '> 0 (info)',
+       coalesce(sum(n), 0) || ' bookings / ' || count(*) || ' pairs (' || coalesce(sum(n) filter (where code is null), 0) || ' → wait for staff)', true from masa_chk;
 insert into masa_chk_result(step, expected, actual, ok)
-select 'masa check: picked service outside the doctor''s departments', '0', count(*)::text, count(*) = 0
+select 'masa check: picked service outside the doctor''s departments', '0', coalesce(sum(n), 0)::text, coalesce(sum(n), 0) = 0
   from masa_chk where code is not null and not pg_temp.masa_chk_member(provider_id, svc_dept, code);
 insert into masa_chk_result(step, expected, actual, ok)
-select 'masa check: picked a home / placeholder / non-consult service for a consult text', '0', count(*)::text, count(*) = 0
-  from masa_chk c join clinic_reception.external_bookings e on e.id = c.id
- where c.code is not null and clinic_reception.consult_kind(e.needed_service) is not null
+select 'masa check: picked a home / placeholder / non-consult service for a consult text', '0', coalesce(sum(n), 0)::text, coalesce(sum(n), 0) = 0
+  from masa_chk c
+ where c.code is not null and clinic_reception.consult_kind(c.needed_service) is not null
    and (c.is_home or coalesce(c.placeholder, false) or not clinic_reception.consult_pickable(c.svc_name));
 -- >>> END masa-auto-service-check <<<
 select step, expected, actual, ok from masa_chk_result order by n;
