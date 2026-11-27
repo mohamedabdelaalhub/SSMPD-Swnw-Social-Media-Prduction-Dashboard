@@ -5,7 +5,7 @@
 --   2. Restores the four «Aminogram in Urine» aliases that 20261127080000 removed (from its audit copies), pointing them to
 --      SVC-0000304 so later imports link the name correctly.
 -- A list that already has an SVC-0000304 item is left as is (reported). Audited ('owner_price_fix'), list revisions bumped,
--- idempotent. Rollback: supabase/rollbacks/20261127210000_amino_acid_urine_entity_prices.rollback.sql
+-- idempotent. Rollback: supabase/rollbacks/20261127220000_amino_acid_urine_entity_prices.rollback.sql
 begin;
 do $$
 declare
@@ -29,7 +29,7 @@ begin
     insert into clinic_prices.items(list_id, service_id, fixed_price, section_id, external_name, notes)
     values (l.id, svc, 1890, sec, 'Aminogram in Urine', 'أمر المالك 2026-11-27: Aminogram في البول = Amino Acid Urine بـ1890');
     insert into clinic_prices.audit(actor_id, action, list_id, details) values (actor, 'owner_price_fix', l.id,
-      jsonb_build_object('migration', '20261127210000', 'step', 'item_added', 'service_id', svc, 'price', 1890));
+      jsonb_build_object('migration', '20261127220000', 'step', 'item_added', 'service_id', svc, 'price', 1890));
     update clinic_prices.lists set revision = revision + 1 where id = l.id;
     added := added + 1;
   end loop;
@@ -41,7 +41,7 @@ begin
     al.service_id := svc; al.reviewed_at := now();
     insert into clinic_prices.aliases select al.*;
     insert into clinic_prices.audit(actor_id, action, list_id, details) values (a.actor_id, 'owner_price_fix', al.list_id,
-      jsonb_build_object('migration', '20261127210000', 'step', 'alias_restored', 'alias_id', al.id, 'service_id', svc));
+      jsonb_build_object('migration', '20261127220000', 'step', 'alias_restored', 'alias_id', al.id, 'service_id', svc));
   end loop;
   raise notice 'amino_acid_urine_entity_prices: % item(s) added', added;
 end $$;
