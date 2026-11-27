@@ -233,6 +233,7 @@ assets/js/indicator-reports.js
 assets/js/instinct-assistant.js
 assets/js/inventory-batch-dates.js
 assets/js/inventory-catalog-import.js
+assets/js/inventory-fixed-price.js
 assets/js/inventory-direct-invoice.js
 assets/js/inventory-look.js
 assets/js/inventory-patient-supplies.js
