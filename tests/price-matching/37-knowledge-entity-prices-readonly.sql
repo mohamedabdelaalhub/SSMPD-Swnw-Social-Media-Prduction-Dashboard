@@ -38,6 +38,22 @@ select 'sample', (select jsonb_build_object('entity', 'E-sample', 'lines', jsonb
     join clinic_prices.items i on i.list_id = c.price_list_id join public.pricing_services s on s.id = i.service_id
     order by s.name limit 5) q)
 union all
+-- every non-deleted list: kind/status, how it links to a contract (lists.contract_id and/or contracts.price_list_id),
+-- and what blocks activation (draft import batches with rows still unreviewed). Names kept: these are list names, not people.
+select 'lists', jsonb_agg(jsonb_build_object('list', l.name, 'kind', l.list_kind, 'status', l.status, 'mode', l.mode,
+  'from', l.valid_from, 'to', l.valid_to, 'items', (select count(*) from clinic_prices.items i where i.list_id = l.id),
+  'list_contract_set', l.contract_id is not null,
+  'linked_by_contracts', (select jsonb_agg(jsonb_build_object('contract_status', c.status, 'link', c.price_list_link_status))
+                          from public.contracting_entity_contracts c where c.price_list_id = l.id),
+  'draft_batches', (select count(*) from clinic_prices.batches b where b.list_id = l.id and b.status = 'draft'),
+  'rows_unreviewed', (select count(*) from clinic_prices.batches b cross join lateral jsonb_array_elements(b.rows) r
+                      where b.list_id = l.id and b.status = 'draft' and not coalesce((r->>'confirmed')::boolean, false)
+                        and coalesce(r->>'review_status', '') not in ('deferred', 'proposed')),
+  'rows_deferred_or_proposed', (select count(*) from clinic_prices.batches b cross join lateral jsonb_array_elements(b.rows) r
+                      where b.list_id = l.id and b.status = 'draft' and coalesce(r->>'review_status', '') in ('deferred', 'proposed')))
+  order by l.list_kind, l.status, l.name)
+from clinic_prices.lists l where l.deleted_at is null
+union all
 select 'agreements_table', jsonb_build_object('exists', to_regclass('public.contracting_agreements') is not null,
   'reception_entity_contracts', case when to_regclass('clinic_reception.entity_contracts') is not null then 'exists' end);
 rollback;
