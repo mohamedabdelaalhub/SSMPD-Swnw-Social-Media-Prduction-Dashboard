@@ -3399,11 +3399,63 @@
       "reviewed": true
     },
     {
+      "title": "رقم الزيارة أو اسم المريض أو المبلغ",
+      "labels": [
+        "رقم الزيارة أو اسم المريض أو المبلغ"
+      ],
+      "text": "اكتب أي جزء من رقم الزيارة أو الاسم أو المبلغ عشان تلاقي الإيصال بسرعة.",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دوّر على الإيصال",
+      "labels": [
+        "دوّر على الإيصال"
+      ],
+      "text": "اكتب رقم الزيارة أو اسم المريض أو المبلغ، والقايمة اللي تحت بتتفلتر على طول.",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الإيصال النقدي",
       "labels": [
         "الإيصال النقدي"
       ],
       "text": "الإيصال النقدي اللي اتسجل بالغلط ومادخلش فلوس (آخر 14 يوم، والمريض موظف أو قريبه). بيبان معاه الزيارة والمبلغ واسم اللي حصّل وحالة الوردية.",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اسم الموظف أو رقم الزيارة أو اللي طلب",
+      "labels": [
+        "اسم الموظف أو رقم الزيارة أو اللي طلب"
+      ],
+      "text": "أي جزء من الاسم أو الرقم — الجدول بيبين اللي فيه الكلمة دي بس.",
+      "article": "employee-debt",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دوّر في الطلبات",
+      "labels": [
+        "دوّر في الطلبات"
+      ],
+      "text": "اكتب اسم الموظف أو رقم الزيارة أو اسم اللي طلب، والجدول بيتفلتر.",
       "article": "employee-debt",
       "tabs": [
         "production"
@@ -23826,9 +23878,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2051,
-    "labels": 1489,
+    "definitions": 2055,
+    "labels": 1493,
     "files": 167,
-    "groups": 1620
+    "groups": 1624
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

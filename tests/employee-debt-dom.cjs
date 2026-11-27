@@ -68,6 +68,9 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  assert.equal(m.querySelector('#rx-title').textContent,'تحويل التحصيل لمديونية على الموظف');assert.match(m.querySelector('[name=payment_id]').textContent,/زيارة 195 — هدى — 360\.00 — مازن \(مفتوحة\)/);
  assert.match(m.textContent,/الكاش المتوقع في الدرج يقل −360\.00/);assert.ok(m.querySelector('.modal-close'));assert.equal(m.querySelector('[data-rx-cancel]').textContent,'رجوع');
  assert.match(m.querySelector('[data-emd-sum]').textContent,/مرة واحدة من مرتب ديسمبر 2026/);
+ assert.ok(m.querySelector('.emd-adv')&&!m.querySelector('.emd-adv').open,'accounting entry under «خيارات متقدمة», closed by default');assert.match(m.querySelector('.emd-plain').textContent,/هيتسجلوا على الموظف/);
+ const qbox=m.querySelector('[data-emd-q]');qbox.value='195';qbox.dispatchEvent(new w.Event('input'));assert.ok(!m.querySelector('[name=payment_id]').options[0].hidden,'search keeps the match');
+ qbox.value='zzz';qbox.dispatchEvent(new w.Event('input'));assert.ok(m.querySelector('[name=payment_id]').options[0].hidden,'search hides non-matches');qbox.value='';qbox.dispatchEvent(new w.Event('input'));
  m.querySelector('[data-rx-cancel]').click();assert.ok(!d.querySelector('.rx-modal'),'«رجوع» closes');
  card().querySelector('[data-emd-convert]').click();await tick();await tick();m=d.querySelector('.rx-modal');
  m.querySelector('footer [type=submit]').click();await tick();await tick();await tick();
@@ -81,7 +84,8 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  const fin=async r=>{role=r;d.getElementById('fin').innerHTML=w.SSMPDFinanceControls.panel('drawer-requests',{},{});await tick();await tick();return d.querySelector('[data-employee-debts]');};
  let box=await fin('acc');assert.match(d.getElementById('fin').innerHTML,/prior:drawer-requests/,'drawer requests kept above');assert.ok(!box.querySelector('[data-emd-ok]'),'accountant: no approve buttons');assert.ok(box.querySelector('[data-emd-bal]'),'accountant sees balances');
  box=await fin('nada');assert.ok(!box.querySelector('[data-emd-ok]'));
- box=await fin('fm');let oks=box.querySelectorAll('[data-emd-ok]');assert.equal(oks.length,2,'FM inbox: 2 pending');assert.match(box.textContent,/3 × 120\.00/);assert.match(box.textContent,/مديونيات الموظفين/);
+ box=await fin('fm');let oks=box.querySelectorAll('[data-emd-ok]');
+ const ff=box.querySelector('[data-emd-filter]');ff.value='لا يوجد';ff.dispatchEvent(new w.Event('input'));assert.ok([...box.querySelectorAll('[data-emd-items] tbody tr')].every(r=>r.hidden),'filter hides');ff.value='هدى';ff.dispatchEvent(new w.Event('input'));assert.ok([...box.querySelectorAll('[data-emd-items] tbody tr')].some(r=>!r.hidden),'filter shows matches');assert.equal(oks.length,2,'FM inbox: 2 pending');assert.match(box.textContent,/3 × 120\.00/);assert.match(box.textContent,/مديونيات الموظفين/);
  oks[0].click();await tick();await tick();assert.deepEqual(calls.filter(x=>x[2]==='review').pop().slice(0,3),['fm','clinic_finance_employee_debt','review']);assert.equal(calls.filter(x=>x[2]==='review').pop()[3].ok,true);
  box=d.querySelector('[data-employee-debts]');assert.equal(box.querySelectorAll('[data-emd-ok]').length,1);
  box=await fin('sa');box.querySelector('[data-emd-no]').click();await tick();await tick();c=calls.filter(x=>x[2]==='review').pop();assert.deepEqual([c[0],c[3].ok,c[3].note],['sa',false,'يدفع كاش']);
@@ -89,7 +93,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  assert.ok(reqs.some(x=>x.status==='approved'&&x.kind==='service'),'FM approved the service debt');
  // help + cache tokens
  const html=fs.readFileSync('index.html','utf8');assert.ok(html.indexOf('drawer-requests.js')<html.indexOf('employee-debt.js')&&html.indexOf('employee-debt.js')<html.indexOf('finance-cash.js'),'load order');
- assert.match(html,/employee-debt\.js\?v=employee-debt-20261126-1/);assert.match(html,/employee-debt\.css\?v=employee-debt-20261126-1/);
+ assert.match(html,/employee-debt\.js\?v=employee-debt-20261126-2/);assert.match(html,/employee-debt\.css\?v=employee-debt-20261126-2/);
  const help=fs.readFileSync('assets/js/dashboard-help-data.js','utf8');assert.match(help,/"id": "employee-debt"/);
  console.log('employee-debt-dom: OK');
 })().catch(e=>{console.error(e);process.exit(1);});

@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2051,
-    "labels": 1489,
+    "definitions": 2055,
+    "labels": 1493,
     "files": 167,
-    "groups": 1620
+    "groups": 1624
   },
   "fields": [
     {
@@ -3105,6 +3105,26 @@
     },
     {
       "file": "employee-debt.js",
+      "label": "رقم الزيارة أو اسم المريض أو المبلغ",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "741f6110a6804e37ad8e6073e7138908d22a896bf6b20afab39d762bf06e33bc"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "دوّر على الإيصال",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "118799970c81be931441b23a3b54e6c7ee912b23e580e2f34f4196a8d2e2a303"
+    },
+    {
+      "file": "employee-debt.js",
       "label": "الإيصال النقدي",
       "name": "",
       "kind": "html",
@@ -3112,6 +3132,26 @@
       "tab": "production",
       "article": "employee-debt",
       "text_sha256": "4f3ddff34be9c03addf8b556966e15385337d60b45335d95c5eb288cf6524969"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "اسم الموظف أو رقم الزيارة أو اللي طلب",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "a81d8c6904614b6216bc3145f1953ece74411009c55b83c51ac9e82ec38268dc"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "دوّر في الطلبات",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "98c86ab2b6c4bd1b6ecb6876d44ad25e4ece46d64abe9cfb9e3277347086fc8d"
     },
     {
       "file": "employee-performance.js",

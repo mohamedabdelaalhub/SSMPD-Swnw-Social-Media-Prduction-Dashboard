@@ -4,3 +4,6 @@
 .emd-entry span{display:flex;justify-content:space-between;gap:12px}
 .emd-wait{margin:0 0 8px;background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px;color:#16212E;grid-column:1/-1}
 .emd-card .rdr-list li small{color:#5B6676}
+.emd-plain{margin:0;font-size:14px}
+.emd-adv summary{cursor:pointer;color:#5B6676;font-size:13px}
+.emd-search{display:grid;gap:4px;max-width:420px;margin:0 0 8px}
