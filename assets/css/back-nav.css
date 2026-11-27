@@ -1,7 +1,9 @@
 /* back arrow — help 298 */
-.back-nav-btn[disabled]{opacity:.5;cursor:default}
-/* owner 2026-11-27: always visible, right beside the bell (RTL: the bell's left); never hidden on desktop */
-.app-shell .topbar #back-nav-btn{order:3}
+.back-nav-btn[disabled]{opacity:.6;cursor:default;border-color:#C9D3E8}
+/* owner decision 2026-11-26/27: the app-wide back arrow is the OUTERMOST item of the top bar — far LEFT in Arabic (RTL), far RIGHT in English (LTR); always visible, never hidden on desktop */
+.app-shell .topbar #back-nav-btn{order:99;min-width:40px;min-height:40px}
+/* the page layout stays right-to-left (body{direction:rtl}) even when the language is English, so «far right» is the FIRST flex item there */
+:root[dir="ltr"] .app-shell .topbar #back-nav-btn{order:-1}
 /* every in-page «العودة إلى …» link looks like a real back button */
 .bn-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 14px;border:1px solid rgba(15,54,157,.28);border-radius:12px;background:#fff;color:#0F369D;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
 .bn-link::before{content:"←";font-weight:800}:root[dir="ltr"] .bn-link::before{content:"→"}

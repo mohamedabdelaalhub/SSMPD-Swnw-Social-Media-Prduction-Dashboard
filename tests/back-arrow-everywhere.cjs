@@ -4,7 +4,7 @@
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict'), { chromium } = require('playwright'), root = path.resolve(__dirname, '..');
 const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/assets/css/styles.css"><link rel="stylesheet" href="/assets/css/header-v2.css"><link rel="stylesheet" href="/assets/css/back-nav.css"></head><body>
 <div class="app-shell"><div class="topbar"><div class="brand"><img src="/assets/img/mark.svg" alt=""><span id="brand-section-name">مركز</span></div>
-<div class="topbar-tools"><button id="dashboard-help-toggle" class="btn ghost sm header-icon" type="button" aria-label="مساعدة">؟</button><div style="position:relative"><button id="notif-bell-btn" class="btn ghost sm header-icon" type="button" aria-label="إشعارات">🔔</button></div></div></div>
+<div class="topbar-tools"><button id="dashboard-help-toggle" class="btn ghost sm header-icon" type="button" aria-label="مساعدة">؟</button><div style="position:relative"><button id="notif-bell-btn" class="btn ghost sm header-icon" type="button" aria-label="إشعارات">🔔</button></div></div><div class="header-account"><b>محمد</b></div><button class="user-menu-icon" id="um" type="button" aria-label="القائمة">⌄</button></div>
 <main id="view-container"></main></div>
 <script>window.SSMPDGotoTab=function(t){window.went=(window.went||[]).concat(t);};window.clicked=[];</script><script src="/assets/js/back-nav.js"></script></body></html>`;
 (async () => {
@@ -17,7 +17,14 @@ const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-
       await page.evaluate(() => SSMPDBackNav.record('price_lists')); await wait();
       // 1) always visible, beside the bell (the arrow is on the bell's LEFT in RTL), disabled + greyed when there is nowhere to go
       assert.equal(await arrow.count(), 1); assert(await arrow.isVisible(), 'visible at ' + width); assert.equal(await arrow.isDisabled(), true, 'greyed on a first screen');
-      const ra = await arrow.boundingBox(), rb = await page.locator('#notif-bell-btn').boundingBox(), rh = await page.locator('#dashboard-help-toggle').boundingBox(); assert(ra.x < rb.x && (!rh || ra.x > rh.x), 'arrow sits between the bell (to its right) and the help button: ' + JSON.stringify([ra, rb, rh]));
+      // the arrow is the OUTERMOST control: far LEFT in Arabic (beyond the profile and its menu), far RIGHT in English; at least 40px
+      const xs = async () => { const out = {}; for (const id of ['#back-nav-btn', '#notif-bell-btn', '#um', '.header-account', '.brand']) { const bx = await page.locator(id).first().boundingBox(); if (bx) out[id] = bx; } return out; };
+      let pos = await xs(); const others = Object.entries(pos).filter(([k]) => k !== '#back-nav-btn').map(([, v]) => v);
+      assert(others.every(o => pos['#back-nav-btn'].x + pos['#back-nav-btn'].width <= o.x + 1), 'RTL: the arrow is the LEFT-most item (beyond the profile menu): ' + JSON.stringify(pos));
+      assert(pos['#back-nav-btn'].width >= 40 && pos['#back-nav-btn'].height >= 40, 'hit area at least 40px: ' + JSON.stringify(pos['#back-nav-btn']));
+      await page.evaluate(() => { document.documentElement.dir = 'ltr'; }); await wait(); pos = await xs(); const others2 = Object.entries(pos).filter(([k]) => k !== '#back-nav-btn').map(([, v]) => v);
+      assert(others2.every(o => pos['#back-nav-btn'].x >= o.x + o.width - 1), 'LTR: the arrow is the RIGHT-most item: ' + JSON.stringify(pos)); await page.evaluate(() => { document.documentElement.dir = 'rtl'; }); await wait();
+      assert(Number(await arrow.evaluate(b => getComputedStyle(b).opacity)) >= 0.6, 'greyed but clearly visible');
       // 2) price list detail — markup built like contract-price-workspace.js (the owner's screen)
       await page.evaluate(() => { document.getElementById('view-container').innerHTML = '<div class="section"><div data-detail-back></div><div data-pi-detail><h3>لائحة نقابة الأطباء 2024</h3></div></div>'; const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost'; b.dataset.pi = 'close'; b.textContent = 'العودة إلى قوائم الأسعار'; b.onclick = () => clicked.push('prices'); document.querySelector('[data-detail-back]').append(b); }); await wait();
       assert.equal(await arrow.isDisabled(), false, 'price list detail: the arrow is live'); const link = page.locator('[data-pi="close"]');
