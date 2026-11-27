@@ -18,6 +18,7 @@ async function upload(file){var c=client();if(!c||!c.storage)throw new Error('ت
  var ext=(String(file.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'jpg',path=uid+'/drw-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
  var r=await c.storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type||undefined});if(r&&r.error)throw r.error;return path;}
 function who(x){return x.kind==='supplier'?(x.supplier||''):(x.subject_name||x.subject||'');}
+function lessNote(x){return x&&x.approved_amount!=null?'<small data-rdr-less>اتصرف '+money(x.amount)+' من '+money(x.approved_amount)+' المعتمد — الباقي اتلغى'+(x.pay_less_note?': '+esc(x.pay_less_note):'')+'</small>':'';}
 function badge(s){var b=ST[s]||[s,'wait'];return '<em class="rdr-st '+b[1]+'">'+esc(b[0])+'</em>';}
 /* ---------- reception card ---------- */
 function cardHtml(s){var mine=s.mine||[],pend=mine.filter(function(x){return x.status==='pending'||x.status==='first_ok';}).length,appr=mine.filter(function(x){return x.status==='approved';}).length;
@@ -27,7 +28,7 @@ function cardHtml(s){var mine=s.mine||[],pend=mine.filter(function(x){return x.s
   (mine.length?'<ul class="rse-list rdr-list">'+mine.map(function(x){var act='';
     if(x.status==='approved')act='<button type="button" class="btn btn-primary" data-rdr-pay="'+esc(x.id)+'">اتصرف</button>';
     else if(x.status==='pending'||x.status==='first_ok')act='<button type="button" class="btn ghost" data-rdr-cancel="'+esc(x.id)+'">الغي</button>';
-    return '<li><span>'+esc(KIND[x.kind]||x.kind)+' — '+esc(who(x))+'</span><b dir="ltr">'+money(x.amount)+'</b>'+badge(x.status)+(x.status==='rejected'&&x.note?'<small>'+esc(x.note)+'</small>':'')+act+'</li>';}).join('')+'</ul>':'')+'</section>';}
+    return '<li><span>'+esc(KIND[x.kind]||x.kind)+' — '+esc(who(x))+'</span><b dir="ltr">'+money(x.amount)+'</b>'+badge(x.status)+(x.status==='rejected'&&x.note?'<small>'+esc(x.note)+'</small>':'')+lessNote(x)+act+'</li>';}).join('')+'</ul>':'')+'</section>';}
 function newModal(c,s,done){
  var emp=(s.employees||[]).map(function(e){return [e.subject,e.name];}),sup=(s.suppliers||[]).map(function(x){return [x.id,x.name];});
  var body='<fieldset class="rse-items" data-wide><legend>نوع الصرف</legend>'+['advance','incentive','supplier'].map(function(k,i){return '<label class="rse-chip"><input type="radio" name="kind" value="'+k+'"'+(i===0?' checked required':'')+'> '+esc(KIND[k])+'</label>';}).join('')+'</fieldset>'+
@@ -46,12 +47,39 @@ function newModal(c,s,done){
   var e=root.querySelector('[data-rdr-emp]'),u=root.querySelector('[data-rdr-sup]');e.hidden=isSup;u.hidden=!isSup;
   e.querySelectorAll('select,input').forEach(function(x){x.disabled=isSup;});u.querySelectorAll('select,input').forEach(function(x){x.disabled=!isSup;});};
  root.querySelectorAll('[name=kind]').forEach(function(r){r.onchange=sync;});sync();return root;}
+/* «اتصرف» → «راجع قبل ما تصرف» (owner 2026-11-27, mig 20261127140000, help 329): the whole request before the money leaves the drawer,
+   and «اصرف أقل» with a reason — the rest is cancelled (owner Q2); never more than approved. Falls back to the old confirm without c.modal. */
+function payModal(c,s,x,done){
+ var amt=+x.amount||0,cash=s.cash!=null?+s.cash:null;
+ if(!c||typeof c.modal!=='function'){if(!w.confirm('هتصرف '+money(amt)+' جنيه من درجك ('+(KIND[x.kind]||'')+' — '+who(x)+'). سلّم الفلوس بعد التأكيد.'))return null;
+  rpc('pay',{id:x.id}).then(function(){toast('اتصرف '+money(amt)+' جنيه واتخصم من ورديتك');done();},function(e){toast(e.message||'تعذر','error');});return null;}
+ var kv=[['النوع',KIND[x.kind]||x.kind],['لمين',who(x)],['المبلغ المعتمد',money(amt)+' جنيه'],['السبب',x.reason],['طلبه',(x.by||'')+(x.at?' · '+dt(x.at):'')]];
+ if(x.kind==='advance'&&x.employee_advance!=null)kv.push(['رصيد سلفه دلوقتي (قبل الصرف ده)',money(x.employee_advance)+' جنيه']);
+ var flow=[x.first_by?'✓ وافق: '+x.first_by+(x.first_at?' '+dt(x.first_at):''):null,x.approved_by?'✓ وافق: '+x.approved_by+(x.approved_at?' '+dt(x.approved_at):''):null].filter(Boolean);
+ var body='<section class="rbm-box" data-wide data-rdr-review><h4>تفاصيل الطلب</h4><div class="rdr-kv">'+kv.map(function(k){return '<span>'+esc(k[0])+'</span><b>'+esc(k[1])+'</b>';}).join('')+'</div>'+
+  (flow.length?'<div class="rdr-flow">'+flow.map(function(f){return '<span>'+esc(f)+'</span>';}).join('')+'</div>':'')+
+  (x.kind==='supplier'&&x.evidence?'<button type="button" class="rbm-e" data-rdr-evidence>📷 صورة فاتورة المورد</button>':'')+
+  (cash!=null?'<div class="rbm-tot"><span>كاش درجك دلوقتي <b dir="ltr">'+money(cash)+'</b></span><span>بعد الصرف <b class="big" dir="ltr" data-rdr-after>'+money(cash-amt)+'</b></span></div>':'')+
+  '<div class="rdr-less"><b>هتصرف أقل من '+money(amt)+'؟</b>'+c.field('amount','المبلغ اللي هيتصرف (جنيه)','number',String(amt),'required min="0.01" max="'+amt+'" step="0.01" inputmode="decimal"')+
+  '<label>ملاحظة / السبب (إجباري لو المبلغ أقل)<input name="note" maxlength="300" placeholder="مثلاً: الموظف طلب 400 بس"></label>'+
+  '<p class="rbm-hint">مينفعش أكتر من المعتمد. لو صرفت أقل، الباقي بيتلغي، ولو محتاجه يتعمل طلب جديد.</p></div></section>';
+ var root=c.modal('هتصرف من درجك — راجع الأول',body,function(v){var a=Math.round((+v.amount||0)*100)/100,note=String(v.note||'').trim();
+   if(!(a>0))throw new Error('اكتب المبلغ');if(a>amt)throw new Error('مينفعش تصرف أكتر من المعتمد ('+money(amt)+')');
+   var p={id:x.id};if(a<amt){if(note.length<3)throw new Error('اكتب ليه هتصرف أقل من المعتمد');p.amount=a;p.note=note;}
+   return rpc('pay',p).then(function(r){return r||{amount:a};});},
+  function(r){toast('اتصرف '+money((r&&r.amount)||amt)+' جنيه واتخصم من ورديتك'+(r&&r.cancelled_rest>0?' — والباقي '+money(r.cancelled_rest)+' اتلغى':''));done();},{ok:'اتصرف — سلّم الفلوس'});
+ if(!root)return null;
+ var f=root.querySelector('[name=amount]'),after=root.querySelector('[data-rdr-after]'),ok=root.querySelector('button[type=submit]');
+ if(f)f.oninput=function(){var a=+f.value||0;if(after&&cash!=null)after.textContent=money(cash-a);if(ok)ok.textContent='اتصرف '+money(a)+' — سلّم الفلوس';};
+ if(f&&!f.value)f.value=String(amt);if(f&&ok)ok.textContent='اتصرف '+money(amt)+' — سلّم الفلوس';
+ var ev=root.querySelector('[data-rdr-evidence]');if(ev)ev.onclick=function(){var cl=client();if(!cl||!cl.storage)return;
+  Promise.resolve(cl.storage.from(BUCKET).createSignedUrl(x.evidence,120)).then(function(r){if(r&&r.error)throw r.error;w.open(r.data.signedUrl,'_blank','noopener');}).catch(function(e){toast(e.message||'تعذر فتح الصورة','error');});};
+ return root;}
 function wireCard(card,c,section){
  var redo=function(){card.remove();decorate(c,section);};
  var nb=card.querySelector('[data-rdr-new]');if(nb)nb.onclick=function(){rpc('status',{}).then(function(s){newModal(c,s,redo);},function(e){toast(e.message||'تعذر','error');});};
  card.querySelectorAll('[data-rdr-pay]').forEach(function(b){b.onclick=function(){var x=(card._s.mine||[]).find(function(y){return y.id===b.getAttribute('data-rdr-pay');})||{};
-   if(!w.confirm('هتصرف '+money(x.amount)+' جنيه من درجك ('+(KIND[x.kind]||'')+' — '+who(x)+'). سلّم الفلوس بعد التأكيد.'))return;b.disabled=true;
-   rpc('pay',{id:x.id}).then(function(){toast('اتصرف '+money(x.amount)+' جنيه واتخصم من ورديتك');redo();},function(e){b.disabled=false;toast(e.message||'تعذر','error');});};});
+   payModal(c,card._s||{},x,redo);};});
  card.querySelectorAll('[data-rdr-cancel]').forEach(function(b){b.onclick=function(){if(!w.confirm('تلغي الطلب؟'))return;b.disabled=true;
    rpc('cancel',{id:b.getAttribute('data-rdr-cancel')}).then(function(){toast('الطلب اتلغى');redo();},function(e){b.disabled=false;toast(e.message||'تعذر','error');});};});}
 function decorate(c,section){if(!c||!c.host||!c.data||!c.data.workspace||c.data.workspace.mode!=='live')return;if(section&&section!=='operations'&&section!=='appointments')return;
@@ -72,7 +100,7 @@ function inboxHtml(s){var inbox=s.inbox||[];
    return '<tr><td dir="ltr">'+esc(dt(x.at))+'</td><td>'+esc(KIND[x.kind]||x.kind)+'<br><small>'+esc(x.by||'')+'</small></td><td>'+esc(who(x))+extra+'</td><td dir="ltr">'+money(x.amount)+'</td><td>'+esc(x.reason)+(x.first_by?'<br><small>وافق: '+esc(x.first_by)+'</small>':'')+'</td><td>'+esc(step[x.step]||'')+'</td>'+
     '<td><button type="button" class="btn btn-primary" data-rdr-ok="'+esc(x.id)+'">موافقة</button> <button type="button" class="btn" data-rdr-no="'+esc(x.id)+'">رفض</button>'+(x.evidence?' <button type="button" class="btn ghost" data-rdr-file="'+esc(x.evidence)+'">الفاتورة</button>':'')+'</td></tr>';}).join('')+'</tbody></table></div>':'<p class="fc-note">مفيش طلبات مستنياك.</p>');}
 function listHtml(items){return '<h4 class="fc-st-h">كل الطلبات في الفترة ('+items.length+')</h4>'+(items.length?'<div class="table-wrap"><table class="data-table"><thead><tr><th>الوقت</th><th>النوع</th><th>لمين</th><th>المبلغ</th><th>طلبه</th><th>الحالة</th></tr></thead><tbody>'+
-  items.map(function(x){return '<tr><td dir="ltr">'+esc(dt(x.at))+'</td><td>'+esc(KIND[x.kind]||x.kind)+'</td><td>'+esc(who(x))+'</td><td dir="ltr">'+money(x.amount)+'</td><td>'+esc(x.by||'')+'</td><td>'+badge(x.status)+(x.note?'<br><small>'+esc(x.note)+'</small>':'')+'</td></tr>';}).join('')+'</tbody></table></div>':'<p class="fc-note">مفيش طلبات في الفترة دي.</p>');}
+  items.map(function(x){return '<tr><td dir="ltr">'+esc(dt(x.at))+'</td><td>'+esc(KIND[x.kind]||x.kind)+'</td><td>'+esc(who(x))+'</td><td dir="ltr">'+money(x.amount)+'</td><td>'+esc(x.by||'')+'</td><td>'+badge(x.status)+(x.note?'<br><small>'+esc(x.note)+'</small>':'')+(x.approved_amount!=null?'<br>'+lessNote(x):'')+'</td></tr>';}).join('')+'</tbody></table></div>':'<p class="fc-note">مفيش طلبات في الفترة دي.</p>');}
 function load(box){box.setAttribute('aria-busy','true');
  return rpc('status',{}).then(function(s){return rpc('list',{from:state.from||null,to:state.to||null}).then(function(l){return [s,l];},function(){return [s,null];});}).then(function(r){var s=r[0]||{},l=r[1];
    box.removeAttribute('aria-busy');box.innerHTML='<p class="fc-note">طلبات الاستقبال للصرف من الدرج: السلفة والحافز (موافقة أولى للمدير العام أو السوبر أدمن، وتانية للمدير المالي)، وفاتورة المورد (المحاسب أو المدير المالي — سجّل الفاتورة بأصنافها في المخزن قبل الموافقة). الفلوس بتطلع من درج الموظف اللي طلب بعد الموافقة بس.</p>'+inboxHtml(s)+(l?listHtml(l.items||[]):'');wire(box);},
@@ -84,7 +112,7 @@ function wire(box){
 function fill(){var box=d.querySelector('[data-drawer-requests]');if(box)load(box);}
 var prior=w.SSMPDFinanceControls;
 if(prior&&prior.panel){w.SSMPDFinanceControls=Object.assign({},prior,{panel:function(tab,dd,h){if(tab!=='drawer-requests')return prior.panel(tab,dd,h);setTimeout(fill,0);return '<div class="rse rdr" data-drawer-requests><p class="rse-note">جاري التحميل…</p></div>';}});}
-w.SSMPDDrawerRequests={decorate:decorate,load:load,state:state,_t:{cardHtml:cardHtml,inboxHtml:inboxHtml,listHtml:listHtml}};
+w.SSMPDDrawerRequests={decorate:decorate,load:load,state:state,_t:{cardHtml:cardHtml,inboxHtml:inboxHtml,listHtml:listHtml,payModal:payModal}};
 /* one-tap opener for the reception «درجي» strip (UX #881 feature-detects this name): clicks the card's «+ طلب صرف من الدرج» */
 w.SSMPDDrawerPayout={open:function(){var b=d.querySelector('[data-rdr-new]');if(b&&!b.disabled){b.click();return true;}return false;}};
 })(window,document);

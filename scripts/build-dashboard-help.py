@@ -1249,6 +1249,11 @@ frule('select-search.js','اكتب للبحث…','اكتب جزء من الاس
 frule('select-search.js','بحث في القايمة','خانة بحث فوق القايمة الكبيرة. اكتب وهتلاقي المطابق، Enter يختار أول نتيجة، Esc يمسح.','select-search')
 frule('finance-doctors.js','القرار على كل العقود المعلّقة','اختار اعتماد الكل أو رفض الكل على كل العقود المعلّقة اللي تقدر تراجعها (من غير عقودك إنت).','doctor-contracts-layout')
 frule('finance-doctors.js','سبب القرار (مطلوب للرفض)','اكتب سبب القرار على كل العقود المعلّقة. لو الرفض، السبب إجباري. بيتسجّل مع القرار.','doctor-contracts-layout')
+# review before money (owner 2026-11-27, help 329)
+frule('drawer-requests.js','المبلغ اللي هيتصرف (جنيه)','المبلغ اللي هتصرفه دلوقتي. بيبدأ بالمبلغ المعتمد، وتقدر تكتب أقل بس. لو كتبت أقل، الباقي بيتلغي.','review-before-money')
+frule('drawer-requests.js','ملاحظة / السبب (إجباري لو المبلغ أقل)|مثلاً: الموظف طلب 400 بس','ليه هتصرف أقل من المعتمد. إجباري لو المبلغ أقل، وبيتسجل مع الصرف وبيظهر في قايمة الطلبات.','review-before-money')
+frule('reception-doctor-payout.js','المبلغ اللي هتطلبه','المبلغ اللي هيتطلب صرفه للدكتور. بيبدأ بالمحسوب للحالات اللي فاضلة، وتقدر تكتب أقل بس. المعتمد بيشوف التعديل.','review-before-money')
+frule('reception-doctor-payout.js','السبب (إجباري لو شلت حالة أو قللت المبلغ)|مثلاً: الدكتور هيستلم الباقي بكرة','ليه شلت حالة أو طلبت أقل من المحسوب. إجباري في الحالتين، والمعتمد بيشوفه مع الطلب.','review-before-money')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'

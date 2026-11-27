@@ -3310,6 +3310,33 @@
       "reviewed": true
     },
     {
+      "title": "المبلغ اللي هيتصرف (جنيه)",
+      "labels": [
+        "المبلغ اللي هيتصرف (جنيه)"
+      ],
+      "text": "المبلغ اللي هتصرفه دلوقتي. بيبدأ بالمبلغ المعتمد، وتقدر تكتب أقل بس. لو كتبت أقل، الباقي بيتلغي.",
+      "article": "review-before-money",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: الموظف طلب 400 بس",
+      "labels": [
+        "مثلاً: الموظف طلب 400 بس",
+        "ملاحظة / السبب (إجباري لو المبلغ أقل)"
+      ],
+      "text": "ليه هتصرف أقل من المعتمد. إجباري لو المبلغ أقل، وبيتسجل مع الصرف وبيظهر في قايمة الطلبات.",
+      "article": "review-before-money",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اكتب اللي مش عارف تعمله…",
       "labels": [
         "اكتب اللي مش عارف تعمله…"
@@ -14256,6 +14283,33 @@
       "reviewed": true
     },
     {
+      "title": "المبلغ اللي هتطلبه",
+      "labels": [
+        "المبلغ اللي هتطلبه"
+      ],
+      "text": "المبلغ اللي هيتطلب صرفه للدكتور. بيبدأ بالمحسوب للحالات اللي فاضلة، وتقدر تكتب أقل بس. المعتمد بيشوف التعديل.",
+      "article": "review-before-money",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: الدكتور هيستلم الباقي بكرة",
+      "labels": [
+        "مثلاً: الدكتور هيستلم الباقي بكرة",
+        "السبب (إجباري لو شلت حالة أو قللت المبلغ)"
+      ],
+      "text": "ليه شلت حالة أو طلبت أقل من المحسوب. إجباري في الحالتين، والمعتمد بيشوفه مع الطلب.",
+      "article": "review-before-money",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "رفع الإيصال الممضي (اختياري)",
       "labels": [
         "رفع الإيصال الممضي (اختياري)"
@@ -24163,9 +24217,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2079,
-    "labels": 1515,
+    "definitions": 2085,
+    "labels": 1521,
     "files": 170,
-    "groups": 1645
+    "groups": 1649
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
