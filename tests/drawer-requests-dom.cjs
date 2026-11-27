@@ -13,7 +13,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
   const x=reqs.find(y=>y.id===p.id);
   if(a==='review'){if(!p.ok){x.status='rejected';x.note=p.note;}else x.status=(x.kind!=='supplier'&&x.status==='pending')?'first_ok':'approved';if(x.status==='first_ok')x.first_by='gm';return row(x);}
   if(a==='cancel'){x.status='cancelled';return row(x);}
-  if(a==='pay'){if(x.status!=='approved')throw new Error('الطلب لسه مستني الموافقة');x.status='paid';return row(x);}
+  if(a==='pay'){if(x.status!=='approved')throw new Error('الطلب لسه مستني الموافقة');if(p.amount){x.approved_amount=x.amount;x.amount=p.amount;x.pay_less_note=p.note;x.cancelled_rest=x.approved_amount-p.amount;}x.status='paid';return row(x);}
   if(a==='list')return {items:reqs.map(row)};};
  w.SSMPDToast={show:()=>{}};w.prompt=()=>'الفاتورة مش واضحة';w.confirm=()=>true;
  w.SSMPDDb={client:{rpc:async(n,a)=>{calls.push([role,n,a.p_action,JSON.parse(JSON.stringify(a.p))]);assert.equal(n,'clinic_finance_drawer_request');try{return {data:server(a.p_action,a.p)};}catch(e){return {error:e};}},
@@ -65,7 +65,17 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  assert.deepEqual(calls.filter(x=>x[2]==='review').pop()[3],{id:'q2',ok:false,note:'الفاتورة مش واضحة'});assert.match(box.textContent,/اترفض/);
  // ---- cashier: «اتصرف» on the approved advance
  role='cashier';card().remove();se.decorate(ctx,'operations');await tick();const pay=card().querySelector('[data-rdr-pay="q1"]');assert.ok(pay,'approved → «اتصرف»');
- pay.click();await tick();await tick();assert.equal(reqs[0].status,'paid');assert.match(card().textContent,/اتصرف/);assert.ok(!card().querySelector('[data-rdr-pay]'));
+ // owner 2026-11-27 (help 329): «اتصرف» opens «راجع قبل ما تصرف» — the whole request, approvals, drawer cash; pay less with a reason
+ pay.click();await tick();const pm=d.querySelector('.rx-modal');assert.ok(pm.querySelector('[data-rdr-review]'),'review window instead of a bare confirm');
+ assert.match(pm.textContent,/تفاصيل الطلب/);assert.match(pm.textContent,/منار موسى/);assert.match(pm.textContent,/وافق: gm/);assert.match(pm.textContent,/كاش درجك دلوقتي/);
+ const appr=+reqs[0].amount;assert.equal(+pm.querySelector('[name=amount]').value,appr,'prefilled with the approved amount');
+ pm.querySelector('[name=amount]').value=String(appr-100);pm.querySelector('[name=amount]').oninput();assert.match(pm.querySelector('[data-rdr-after]').textContent,new RegExp((900-(appr-100)).toFixed(2)),'drawer after the payment updates');
+ await assert.rejects(()=>Promise.resolve().then(()=>saveFn({amount:String(appr+1),note:''})),/أكتر من المعتمد/);
+ await assert.rejects(()=>Promise.resolve().then(()=>saveFn({amount:String(appr-100),note:''})),/ليه هتصرف أقل/);
+ assert.equal(reqs[0].status,'approved','nothing sent on a refused check');
+ onSaved(await saveFn({amount:String(appr-100),note:'الموظفة طلبت أقل'}));await tick();await tick();
+ assert.deepEqual(calls.filter(x=>x[2]==='pay').pop()[3],{id:'q1',amount:appr-100,note:'الموظفة طلبت أقل'});
+ assert.equal(reqs[0].status,'paid');assert.match(card().textContent,/اتصرف/);assert.match(card().textContent,/الباقي اتلغى/);assert.ok(!card().querySelector('[data-rdr-pay]'));
  // ---- one-tap opener for UX #881
  assert.equal(typeof w.SSMPDDrawerPayout.open,'function');d.querySelectorAll('.rx-modal').forEach(x=>x.remove());assert.equal(w.SSMPDDrawerPayout.open(),true);await tick();assert.ok(d.querySelector('.rx-modal'),'opens the form');
  // ---- wiring

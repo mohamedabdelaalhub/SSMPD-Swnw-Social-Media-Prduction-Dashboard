@@ -49,6 +49,10 @@ const row=(o)=>Object.assign({name:'بند',code:'',category:'',unit:'',price:10
  // 1d) rows whose service already has a price in the list: counted as linked, no source_review; a different price is shown first
  t=await open([row({name:'نفس السعر',service_id:'s1',price:100}),row({name:'سعر مختلف',service_id:'s2',price:100}),row({name:'جديد',service_id:'s1x',confirmed:true}),row({review_status:'deferred'})],{items:[{list_id:'l',service_id:'s1',fixed_price:100},{list_id:'l',service_id:'s2',fixed_price:150}]});d=t.d;
  assert.equal(d.querySelector('[data-brp-tile="linked"] b').textContent,'3');assert.equal(d.querySelector('[data-brp-tile="left"] b').textContent,'0');
+ const pill=k=>d.querySelector('[data-brr-filter="'+k+'"]').textContent;
+ assert(pill('linked').endsWith(' 3')&&pill('left').endsWith(' 0')&&pill('off').endsWith(' 1'),'filter pills count the same as the tiles: '+[pill('linked'),pill('left'),pill('off')]);
+ d.querySelector('[data-brr-filter="left"]').click();assert.equal(d.querySelectorAll('[data-pi=details]').length,0,'«محتاج قرار» filter shows no already-priced rows');
+ d.querySelector('[data-brr-filter="all"]').click();
  d.querySelector('[data-pi=finish]').click();await t.tick();
  assert.deepEqual(t.calls,[],'nothing written before the price differences are seen');
  let box=d.querySelector('[data-brp-diffs]');assert.equal(box.hidden,false);
