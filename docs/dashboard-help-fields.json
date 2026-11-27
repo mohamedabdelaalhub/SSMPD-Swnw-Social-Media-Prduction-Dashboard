@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2105,
-    "labels": 1536,
-    "files": 173,
-    "groups": 1664
+    "definitions": 2114,
+    "labels": 1544,
+    "files": 174,
+    "groups": 1672
   },
   "fields": [
     {
@@ -12679,6 +12679,96 @@
       "tab": "reception_services",
       "article": "reception-drawer",
       "text_sha256": "5b49034ab79315a3c229085217aee88b15d2120a5545b2823968582971d3a9a9"
+    },
+    {
+      "file": "reception-execute-all.js",
+      "label": "دوّر في الخدمات",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "execute-all",
+      "text_sha256": "ffbc3c59eb6c8f89637cc049aed61b23a9a9fe82dc965c12ad5270f8b6ce1c89"
+    },
+    {
+      "file": "reception-execute-all.js",
+      "label": "مخزن الصرف",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "internal-issue",
+      "text_sha256": "3343a357f4c350f37b8beb9fb760bfa9acde12c3f966e57e7340af82807677ea"
+    },
+    {
+      "file": "reception-execute-all.js",
+      "label": "الجهاز",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "execute-all",
+      "text_sha256": "cf664cd13ac269d4e9f8ffc3ffd87a948e55b9d63a117b466ea338ae0ea81e0b"
+    },
+    {
+      "file": "reception-execute-all.js",
+      "label": "دقايق التشغيل للجلسة كلها",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "execute-all",
+      "text_sha256": "fa79e5c646f102f298cecc20283e0ceaad8f7b9c2293e335cdb83a601594d1c6"
+    },
+    {
+      "file": "reception-execute-all.js",
+      "label": "العداد قبل الجلسة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "execute-all",
+      "text_sha256": "584492e1c7801be885782a64efb36c695e0a36c3fdbfdd3a1f41dcf9c8e17056"
+    },
+    {
+      "file": "reception-execute-all.js",
+      "label": "العداد بعد الجلسة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "execute-all",
+      "text_sha256": "214e38a042fe80f134dd79c6c07f100d22abea0a4dff46612c7b889f3b606358"
+    },
+    {
+      "file": "reception-execute-all.js",
+      "label": "ضيف مستلزم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "execute-all",
+      "text_sha256": "c09d3d044ada7bc9c546bda179b812a4f411b2533ba6a9573cf1297f3ed9853b"
+    },
+    {
+      "file": "reception-execute-all.js",
+      "label": "سبب اختلاف الاستهلاك عن المكونات (لو فيه)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "execute-all",
+      "text_sha256": "680ce26a5dd8eb0eac409a2ead7d11ca5222adc88097908f5a40c0cd0daa52ab"
+    },
+    {
+      "file": "reception-execute-all.js",
+      "label": "عدد نبضات البند ده",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "execute-all",
+      "text_sha256": "0e93b365ad1eb4fae6240623194cfa71545562719314c308fa5bfce8413d12d6"
     },
     {
       "file": "reception-follow-ups.js",

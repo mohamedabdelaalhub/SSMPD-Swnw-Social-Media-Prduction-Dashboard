@@ -73,6 +73,7 @@ assets/css/reception-auto-book.css
 assets/css/reception-booking-discount.css
 assets/css/reception-booking-plus.css
 assets/css/reception-drawer.css
+assets/css/reception-execute-all.css
 assets/css/reception-follow-ups.css
 assets/css/reception-home-tiles.css
 assets/css/reception-legacy-package.css
@@ -287,6 +288,7 @@ assets/js/reception-controls.js
 assets/js/reception-day-capacity.js
 assets/js/reception-doctor-payout.js
 assets/js/reception-drawer.js
+assets/js/reception-execute-all.js
 assets/js/reception-fallback.js
 assets/js/reception-family-legacy.js
 assets/js/reception-follow-ups.js

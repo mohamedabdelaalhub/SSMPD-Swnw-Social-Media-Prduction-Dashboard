@@ -1,0 +1,111 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: تنفيذ الكل في نفس الزيارة</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<!-- MOCKUP — reception report via the owner (2026-11-27): a Candela laser visit with 5 areas → «لازم اخش عل كل واحده اعمل تنفيذ».
+     #visit  «تفاصيل الزيارة»: new «✓ تنفيذ الكل (5)» above the waiting services; every single «تنفيذ» stays as is.
+     #window ONE window for the ticked services: doctor + store + device + minutes + counter before/after ONCE for the session,
+             the split per service shown before saving, actual supplies ONCE (combined), extras approval ONCE, then all executed together.
+     #pulse  a service priced per pulse (laser_pulse_services) keeps its own counter line (its price depends on it).
+     Server (planned): one action that runs the SAME per-service execute for each ticked service in ONE transaction —
+     all or nothing; same roles, same guards. FAKE names. -->
+<style>body{background:#f4f7fc;margin:0;padding:16px;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.page{max-width:1100px;margin:auto;display:grid;gap:14px}.ph{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.ph h2{margin:0;font-size:20px;flex:1}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}.tabs a{font-size:13px;padding:7px 13px;border-radius:999px;background:#fff;border:1px solid #D5DEEE;color:#16212E;text-decoration:none}.tabs a.on{background:#0F369D;color:#fff;border-color:#0F369D}
+.note{background:#fff;border:1px solid #e6ebf3;border-radius:14px;padding:12px 14px;font-size:13px;color:#475467;margin:0}
+.ov{background:rgba(22,33,46,.45);border-radius:18px;padding:18px;display:none;justify-content:center}.ov.on{display:flex}
+.md{width:min(780px,100%);background:#fff;border-radius:18px;padding:16px;display:grid;gap:12px}
+.mh{display:flex;align-items:center;gap:8px}.mh h3{margin:0;flex:1;font-size:17px}.x{width:38px;height:38px;border-radius:10px;border:1px solid #D5DEEE;background:#fff;font-size:18px}
+.pill{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:#EEF4FF;color:#0F369D}.pill.soft{background:#F1F4F8;color:#475467}.pill.ok{background:#ECF8F2;color:#2F7D5C}
+.new{font-size:10.5px;background:#F15A22;color:#fff;border-radius:6px;padding:1px 6px;margin-inline-start:6px}
+.orow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid #eef1f6;font-size:14px}
+.orow small{display:block;color:#B4400F;font-size:12px}.olist{border:1px solid #e6ebf3;border-radius:12px;overflow:hidden}
+.btn{font:inherit;font-size:14px;font-weight:700;padding:9px 16px;border-radius:10px;border:1px solid #D5DEEE;background:#fff;color:#0F369D}.btn.pri{background:#0F369D;color:#fff;border-color:#0F369D}.btn.sm{padding:6px 12px;font-size:13px}.orow .btn.pri{background:#16212E;border-color:#16212E}.btn.all{background:#0F369D;border-color:#0F369D;color:#fff}
+.bar{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.sec{border:1px solid #e6ebf3;border-radius:14px;padding:12px;display:grid;gap:10px}.sec h4{margin:0;font-size:14px;color:#0F369D}
+.pick{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-top:1px solid #eef1f6;font-size:14px}.pick:first-child{border-top:0}
+.pick input{width:18px;height:18px}.pick small{display:block;color:#667085;font-size:12px}
+.f{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.f label{min-width:0;display:grid;gap:3px;font-size:12px;color:#667085}.f input,.f select{min-width:0;width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:9px 10px;border:1px solid #D5DEEE;border-radius:10px;color:#16212E;background:#fff}
+.split{display:grid;border:1px solid #e6ebf3;border-radius:12px;overflow:hidden;font-size:13px}.split .r{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.7fr) minmax(0,1.2fr);gap:8px;padding:7px 10px;border-top:1px solid #eef1f6}.split .r.h{border-top:0;background:#F1F4F8;font-weight:700;color:#475467;font-size:12px}
+.mat{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 10px;border-top:1px solid #eef1f6;font-size:13.5px}.mat:first-child{border-top:0}.mat small{display:block;color:#667085;font-size:11.5px}
+.qty{display:flex;align-items:center;gap:6px}.qty button{width:30px;height:30px;border-radius:8px;border:1px solid #D5DEEE;background:#fff;font-size:16px}.qty b{min-width:34px;text-align:center}
+.hint{margin:0;font-size:12px;color:#667085}.hint.w{color:#B4400F;font-weight:700}
+.tot{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px}.tot b{font-size:15px}.tot .big{color:#0F369D}
+.pulse{background:#FFF8F4;border:1px solid #F7C9B3;border-radius:12px;padding:10px 12px;display:grid;gap:8px}
+.search{font:inherit;font-size:14px;padding:9px 12px;border:1px solid #D5DEEE;border-radius:10px;width:100%;box-sizing:border-box}
+@media(max-width:760px){body{padding:10px}.ov{padding:0;background:none}.f{grid-template-columns:1fr}.split .r{grid-template-columns:minmax(0,1fr) auto}.split .r>:nth-child(3){grid-column:1/-1}}
+</style>
+<div class="page">
+<div class="ph"><h2>تنفيذ الكل في نفس الزيارة</h2><nav class="tabs"><a href="#visit">تفاصيل الزيارة</a><a href="#window">نافذة «تنفيذ الكل»</a><a href="#pulse">بند بالنبضات</a></nav></div>
+<p class="note">زرار «تنفيذ» لكل خدمة فاضل زي ما هو. الجديد زرار «تنفيذ الكل»، وبيظهر بس لما يكون في الزيارة خدمتين أو أكتر مستنيين تنفيذ ولمين بيقدر ينفّذ. الجهاز والدقايق والعداد بيتكتبوا مرة واحدة للجلسة، والمستلزمات مرة واحدة، والموافقة على الإضافات مرة واحدة. بعدين كل خدمة بتتنفّذ بنفس فحوصات «تنفيذ» العادية، ولو خدمة واحدة اترفضت مفيش ولا خدمة بتتنفّذ، والرسالة بتقول أنهي خدمة وليه. (الأسامي وهمية)</p>
+
+<!-- ============ visit detail ============ -->
+<div class="ov" id="visit"><div class="md" role="dialog" aria-label="تفاصيل الزيارة">
+<div class="mh"><h3>هبة سمير (اسم وهمي) <span class="pill">زيارة 2</span> <span class="pill soft">حضر 5:10 م</span></h3><button class="x" aria-label="إغلاق">✕</button></div>
+<div class="bar"><b>الخدمات</b><button class="btn all">✓ تنفيذ الكل (5)<span class="new">جديد</span></button></div>
+<div class="olist">
+ <div class="orow"><span><b>ليزر كانديلا — بيكيني</b><small>مستنية تنفيذ</small></span><span>190 ج.م</span><button class="btn pri sm">تنفيذ</button></div>
+ <div class="orow"><span><b>ليزر كانديلا — شارب</b><small>مستنية تنفيذ</small></span><span>50 ج.م</span><button class="btn pri sm">تنفيذ</button></div>
+ <div class="orow"><span><b>ليزر كانديلا — نص رجلين</b><small>مستنية تنفيذ</small></span><span>485 ج.م</span><button class="btn pri sm">تنفيذ</button></div>
+ <div class="orow"><span><b>ليزر كانديلا — نص إيدين</b><small>مستنية تنفيذ</small></span><span>390 ج.م</span><button class="btn pri sm">تنفيذ</button></div>
+ <div class="orow"><span><b>ليزر كانديلا — تحت الإبط</b><small>مستنية تنفيذ</small></span><span>140 ج.م</span><button class="btn pri sm">تنفيذ</button></div>
+</div>
+<div class="tot"><span>إجمالي الزيارة <b>1,255</b></span><span>على المريض <b class="big">1,255</b></span></div>
+</div></div>
+
+<!-- ============ window ============ -->
+<div class="ov" id="window"><div class="md" role="dialog" aria-label="تنفيذ الكل">
+<div class="mh"><h3>تنفيذ الكل — هبة سمير (وهمي) · زيارة 2</h3><button class="x" aria-label="إغلاق">✕</button></div>
+<section class="sec"><h4>1) الخدمات اللي هتتنفّذ</h4>
+ <input class="search" placeholder="دوّر في الخدمات… (بيظهر لو الخدمات 9 أو أكتر)" aria-label="دوّر">
+ <div>
+  <label class="pick"><input type="checkbox" checked><span><b>بيكيني</b><small>ليزر كانديلا · 15 د</small></span><span>190</span></label>
+  <label class="pick"><input type="checkbox" checked><span><b>شارب</b><small>ليزر كانديلا · 5 د</small></span><span>50</span></label>
+  <label class="pick"><input type="checkbox" checked><span><b>نص رجلين</b><small>ليزر كانديلا · 20 د</small></span><span>485</span></label>
+  <label class="pick"><input type="checkbox" checked><span><b>نص إيدين</b><small>ليزر كانديلا · 15 د</small></span><span>390</span></label>
+  <label class="pick"><input type="checkbox" checked><span><b>تحت الإبط</b><small>ليزر كانديلا · 5 د</small></span><span>140</span></label>
+ </div>
+ <p class="hint">شيل العلامة من أي خدمة مش هتتعمل دلوقتي، وهتفضل «مستنية تنفيذ» زي ما هي.</p>
+</section>
+<section class="sec"><h4>2) الجلسة — مرة واحدة</h4>
+ <div class="f"><label>الطبيب المنفذ<select><option>د. رانيا عادل (وهمي) — جلدية</option></select></label><label>مخزن الصرف<select><option>مخزن الليزر</option></select></label><label>الجهاز<select><option>كانديلا GentleMax — عداد نبضات</option></select></label>
+ <label>دقايق التشغيل للجلسة كلها<input value="60"></label><label>العداد قبل الجلسة<input value="152,300"></label><label>العداد بعد الجلسة<input value="153,900"></label></div>
+ <p class="hint">التقسيم على الخدمات بيتعمل لوحده حسب الوقت القياسي لكل خدمة، والعداد بيتسلسل من غير فجوة:</p>
+ <div class="split"><div class="r h"><span>الخدمة</span><span>الدقايق</span><span>العداد</span></div>
+  <div class="r"><span>بيكيني</span><span>15</span><span dir="ltr">152,300 → 152,700</span></div>
+  <div class="r"><span>شارب</span><span>5</span><span dir="ltr">152,700 → 152,833</span></div>
+  <div class="r"><span>نص رجلين</span><span>20</span><span dir="ltr">152,833 → 153,367</span></div>
+  <div class="r"><span>نص إيدين</span><span>15</span><span dir="ltr">153,367 → 153,767</span></div>
+  <div class="r"><span>تحت الإبط</span><span>5</span><span dir="ltr">153,767 → 153,900</span></div>
+ </div>
+</section>
+<section class="sec"><h4>3) المستلزمات الفعلية — مرة واحدة للجلسة</h4>
+ <div>
+  <div class="mat"><span>جل تبريد<small>المكونات: 5 × 30 مل</small></span><span class="qty"><button>−</button><b>120</b><button>+</button></span><span>مل</span></div>
+  <div class="mat"><span>غطا كاوتش للقطعة<small>المكونات: 5</small></span><span class="qty"><button>−</button><b>2</b><button>+</button></span><span>قطعة</span></div>
+  <div class="mat"><span>شاش معقم<small>المكونات: 5</small></span><span class="qty"><button>−</button><b>5</b><button>+</button></span><span>عبوة</span></div>
+ </div>
+ <button class="btn sm">＋ ضيف مستلزم (بحث)</button>
+ <div class="f"><label style="grid-column:1/-1">سبب اختلاف الاستهلاك عن المكونات (لو فيه)<input value="جلسة واحدة لكل المناطق — جل وغطا أقل"></label></div>
+ <p class="hint">الكمية المشتركة بتتوزع على الخدمات بالمكونات بتاعتها، والزيادة على أول خدمة. المشمول مش بيتحسب على المريض تاني.</p>
+</section>
+<section class="sec"><h4>4) الموافقة على الإضافات</h4>
+ <div class="f"><label style="grid-column:1/-1"><select><option>لا توجد موافقة على إضافات</option><option>وافق المريض على الكميات وأسعار البيع المبينة</option></select></label></div>
+</section>
+<div class="tot"><span>هيتنفّذ <b>5 خدمات</b></span><span>الإجمالي <b class="big">1,255 ج.م</b></span></div>
+<div class="bar"><button class="btn all">✓ نفّذ 5 خدمات</button><button class="btn">اقفل</button></div>
+<p class="hint w">لو خدمة واحدة مش هينفع تتنفّذ (مثلاً عليها خصم مستني موافقة، أو الطبيب مالوش عقد ليها)، مفيش حاجة بتتنفّذ، والرسالة بتقول اسم الخدمة والسبب.</p>
+</div></div>
+
+<!-- ============ pulse ============ -->
+<div class="ov" id="pulse"><div class="md" role="dialog" aria-label="بند بالنبضات">
+<div class="mh"><h3>تنفيذ الكل — بند بيتحسب بالنبضة</h3><button class="x" aria-label="إغلاق">✕</button></div>
+<section class="sec"><h4>2) الجلسة — مرة واحدة</h4>
+ <div class="f"><label>الجهاز<select><option>كانديلا GentleMax — عداد نبضات</option></select></label><label>العداد قبل الجلسة<input value="152,300"></label><label>العداد بعد الجلسة<input value="154,350"></label></div>
+ <div class="pulse"><b>«ليزر بالنبضة — ظهر» سعره بعدد النبضات: اكتب العداد بتاعه هو</b>
+  <div class="f"><label>قبل البند ده<input value="153,900"></label><label>بعد البند ده<input value="154,350"></label><label>النبضات<input value="450" disabled></label></div>
+  <p class="hint">البند ده بياخد النبضات بتاعته بالظبط (والسعر بيتحسب منها)، وباقي العداد بيتقسم على المناطق التانية زي ما فوق.</p></div>
+</section>
+</div></div>
+</div>
+<script>function show(){var h=(location.hash||'#visit').slice(1);document.querySelectorAll('.ov').forEach(function(o){o.classList.toggle('on',o.id===h);});document.querySelectorAll('.tabs a').forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+h);});}
+window.addEventListener('hashchange',show);show();</script>
+</html>
