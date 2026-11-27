@@ -7,3 +7,7 @@
 .emd-plain{margin:0;font-size:14px}
 .emd-adv summary{cursor:pointer;color:#5B6676;font-size:13px}
 .emd-search{display:grid;gap:4px;max-width:420px;margin:0 0 8px}
+#view-container .emd-card,#view-container .emd-card h4{color:#16212E}
+#view-container .emd-card .rse-note{color:#5B6577;font-size:13px}
+#view-container .emd-card h4 small{color:#5B6577;font-weight:400}
+.emd-card{margin-top:16px}
