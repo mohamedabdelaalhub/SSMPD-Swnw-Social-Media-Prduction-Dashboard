@@ -176,9 +176,14 @@
         '<button class="btn btn-primary sm" type="button" id="lm-edit-save">حفظ التعديلات</button>' +
       '</div>';
 
-    var statusBlock = modal.querySelector("#lm-status") && modal.querySelector("#lm-status").closest(".field");
-    if (statusBlock) modal.insertBefore(panel, statusBlock);
-    else modal.appendChild(panel);
+    /* owner 2026-11-27 «الزرار دا عطلان مابقاش بيفتح»: the panel used to go before the status field, which the «رسالة افتتاحية جاهزة»
+       block pushed far below the fold — the click worked but nothing changed on screen. Put it right under the header and bring it into view. */
+    var head = modal.querySelector(".modal-head");
+    if (head && head.parentNode) head.parentNode.insertBefore(panel, head.nextSibling);
+    else modal.insertBefore(panel, modal.firstChild);
+    if (panel.scrollIntoView) panel.scrollIntoView({ block: "start", behavior: "smooth" });
+    var nameInput = panel.querySelector("#lm-edit-name");
+    if (nameInput && nameInput.focus) nameInput.focus({ preventScroll: true });
 
     panel.querySelector("#lm-edit-cancel").onclick = function () { panel.remove(); };
     panel.querySelector("#lm-edit-save").onclick = function () {
