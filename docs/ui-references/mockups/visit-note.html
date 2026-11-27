@@ -1,4 +1,4 @@
-<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: ملاحظة على الزيارة</title>
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: ملاحظة على الزيارة + تعديل تفاصيل الحجز قبل التحصيل</title>
 <!-- MOCKUP — request via main chat 7 (2026-11-27): «مش لاقيين مكان نكتب فيه ملاحظة على الزيارة… زي «حجز فيزيتا اتسجّل من ماسا كعادي» للمحاسب».
      Today: «ملاحظة للحجز ده بس» exists ONLY inside «حجز موعد / تعديل الحجز» (gone after «وصل»), the permanent patient note is about the
      patient, and nothing reaches finance. Proposal: «📝 ملاحظة على الزيارة» — append-only notes on a visit, each with the writer's name +
@@ -25,8 +25,8 @@ textarea{font:inherit;font-size:14px;width:100%;box-sizing:border-box;border:1px
 section[id]{display:none}section[id]:target,section#board:not(:target){display:grid}
 </style>
 <div class="page">
- <div class="ph"><h2>تصور: «📝 ملاحظة على الزيارة»</h2><span class="tag">تصور بس — مفيش تنفيذ قبل موافقة المالك</span></div>
- <nav class="tabs"><a href="#board">١) الكارت في «تشغيل اليوم»</a><a href="#write">٢) نافذة الكتابة</a><a href="#visit">٣) تفاصيل الزيارة</a><a href="#money">٤) المراجعة قبل التحصيل والحساب</a></nav>
+ <div class="ph"><h2>تصور: «📝 ملاحظة على الزيارة»</h2><span class="tag">١–٤ اتوافق عليها (المالك 2026-11-27) · ٥–٦ تصور جديد مستني الموافقة</span></div>
+ <nav class="tabs"><a href="#board">١) الكارت في «تشغيل اليوم»</a><a href="#write">٢) نافذة الكتابة</a><a href="#visit">٣) تفاصيل الزيارة</a><a href="#money">٤) المراجعة قبل التحصيل والحساب</a><a href="#edit">٥) تعديل تفاصيل الحجز قبل التحصيل</a><a href="#log">٦) سجل التعديلات</a></nav>
  <p class="note">النهارده: «ملاحظة للحجز ده بس» موجودة جوه «حجز موعد / تعديل الحجز» بس، ومش بتتعدل بعد «وصل»، ومش بتوصل للحسابات. الاقتراح: ملاحظات على <b>الزيارة</b> نفسها، كل ملاحظة باسم اللي كتبها واليوم والساعة، بتظهر للاستقبال والتمريض والحسابات. الملاحظة <b>ما بتتعدلش ولا بتتمسح</b> — لو اتكتبت غلط بتتعلّم «اتكتبت غلط» وتفضل ظاهرة مشطوبة (زي قاعدة «ممنوع شيل أي حاجة»).</p>
 
  <section id="board" class="card">
@@ -34,7 +34,7 @@ section[id]{display:none}section[id]:target,section#board:not(:target){display:g
   <div class="row"><span class="chip"><b>8:20م</b> محمد تجريبي <span class="tag">📝 2</span></span><span class="hint">← عدد الملاحظات على الزيارة بيظهر على الكارت</span></div>
   <div class="row" style="align-items:flex-start">
    <div class="menu" aria-label="⋯ إجراءات أخرى">
-    <button>تغيير الخدمة</button><button>خصم على الزيارة (قبل التحصيل)</button><button class="hl">📝 ملاحظة على الزيارة<span class="new">جديد</span></button><button>تفاصيل الزيارة</button>
+    <button>تغيير الخدمة</button><button>خصم على الزيارة (قبل التحصيل)</button><button class="hl">📝 ملاحظة على الزيارة<span class="new">جديد</span></button><button>تفاصيل الزيارة</button><button class="hl">✎ تعديل تفاصيل الحجز (قبل التحصيل)<span class="new">جديد</span></button>
    </div>
    <p class="hint" style="max-width:420px">الزرار في «⋯» على كارت أي مريض <b>وصل</b> (مستني / في الكشف / خلص) — وكمان جوه «تفاصيل الزيارة» تحت الخدمات. قبل «وصل» تفضل «ملاحظة للحجز ده بس» زي ما هي في «تعديل الحجز».</p>
   </div>
@@ -77,5 +77,48 @@ section[id]{display:none}section[id]:target,section#board:not(:target){display:g
   </div>
  </section>
 
- <p class="note"><b>أسئلة للمالك:</b> (١) مين يكتب؟ الاقتراح: الاستقبال + التمريض + الحسابات (والدكتور لأ). (٢) تظهر للدكتور؟ الاقتراح: لأ. (٣) «اتكتبت غلط» بدل التعديل/المسح — موافق؟ (٤) تظهر في المراجعة قبل التحصيل — موافق؟</p>
+ <section id="edit" class="card">
+  <div class="mh"><h3>✎ تعديل تفاصيل الحجز — محمد تجريبي</h3><button class="x" aria-label="إغلاق">✕</button></div>
+  <p class="note" style="background:#FFF8F4;border-color:#F7C9B3;color:#7A2E0B">متاح من «⋯» على أي زيارة <b>لسه ما اتحصلش منها ولا جنيه</b> — حتى لو المريض خلص كل الإجراءات. أول ما يتحصّل أي مبلغ الزرار بيختفي (والتصحيح بعد كده من «في غلط في زيارة؟» للحسابات زي النهارده).</p>
+  <div class="grid2">
+   <div class="card">
+    <h4 style="margin:0;color:#0F369D">١) مصدر الحجز</h4>
+    <p class="hint">دلوقتي: <b>عادي (من ماسا)</b></p>
+    <label class="hint">المصدر الصح<select style="display:block;width:100%;font:inherit;padding:8px;border-radius:10px;border:1px solid #D5DEEE;margin-top:4px"><option>فيزيتا</option></select></label>
+    <p class="hint">بيغيّر تقارير التسويق والمصدر بس — مش السعر.</p>
+   </div>
+   <div class="card">
+    <h4 style="margin:0;color:#0F369D">٢) طريقة الدفع / الجهة</h4>
+    <p class="hint">دلوقتي: <b>خاص</b> — بيفتح نفس نافذة «طريقة الدفع / الخصم» الحالية (فيزيتا / نقابة / نادي / العيلة / خاص)، بنفس قواعدها: نسبة المنصة 25% على الكشف/الاستشارة بس، ورقم الموافقة لو مطلوب.</p>
+    <button class="btn sm">افتح طريقة الدفع / الجهة</button>
+   </div>
+   <div class="card">
+    <h4 style="margin:0;color:#0F369D">٣) الدكتور أو الخدمة</h4>
+    <p class="hint">• الخدمة <b>لسه ما اتنفذتش</b>: التغيير على طول (نفس «تغيير الخدمة»).<br>• الخدمة <b>اتنفذت</b> (اتصرف مستلزمات / اتحسب أتعاب دكتور): بيتبعت <b>طلب للمدير المالي</b> — بعد الاعتماد الخدمة القديمة وأتعابها ومستلزماتها بيتعكسوا بقيود والجديدة بتتسجّل. لحد الاعتماد الزيارة «مستنية اعتماد تعديل» ومينفعش تتحصّل.</p>
+    <label class="hint">الدكتور<select style="display:block;width:100%;font:inherit;padding:8px;border-radius:10px;border:1px solid #D5DEEE;margin-top:4px"><option>د. أحمد تجريبي</option></select></label>
+    <label class="hint">الخدمة<select style="display:block;width:100%;font:inherit;padding:8px;border-radius:10px;border:1px solid #D5DEEE;margin-top:4px"><option>كشف استشاري باطنة</option></select></label>
+   </div>
+   <div class="card">
+    <h4 style="margin:0;color:#0F369D">٤) ميعاد الحجز</h4>
+    <p class="hint">دلوقتي: <b>27/11/2026 · 8:20م</b> — تصحيح للتسجيل بس (الزيارة حصلت خلاص). ممنوع يتحط ميعاد بكرة أو بعده.</p>
+    <div class="row"><input type="date" value="2026-11-27" style="font:inherit;padding:8px;border-radius:10px;border:1px solid #D5DEEE"><input type="time" value="20:00" style="font:inherit;padding:8px;border-radius:10px;border:1px solid #D5DEEE"></div>
+   </div>
+  </div>
+  <label class="hint">السبب (إجباري)<textarea style="min-height:60px">الحجز ده فيزيتا بس اتسجّل من ماسا كعادي</textarea></label>
+  <div class="row"><button class="btn pri">احفظ التعديلات</button><button class="btn">تراجع</button></div>
+ </section>
+
+ <section id="log" class="card">
+  <div class="mh"><h3>سجل تعديلات الحجز — محمد تجريبي</h3><button class="x" aria-label="إغلاق">✕</button></div>
+  <p class="hint">بيظهر تحت «ملاحظات على الزيارة» في تفاصيل الزيارة، وفي حساب الزيارة عند الحسابات، وفي سجل نشاط الاستقبال.</p>
+  <div class="nl">
+   <div class="n"><p>مصدر الحجز: <s>عادي (من ماسا)</s> ← <b>فيزيتا</b></p><small>مازن تجريبي · 27/11/2026 · 9:02م · السبب: الحجز ده فيزيتا بس اتسجّل من ماسا كعادي</small></div>
+   <div class="n"><p>طريقة الدفع: <s>خاص</s> ← <b>فيزيتا</b> (نسبة المنصة 25% على الكشف)</p><small>مازن تجريبي · 27/11/2026 · 9:02م</small></div>
+   <div class="n"><p>الخدمة: <s>كشف أخصائي أمراض الدم والمناعة</s> ← <b>كشف استشاري باطنة</b> — <span class="tag">مستني اعتماد المدير المالي</span></p><small>مازن تجريبي · 27/11/2026 · 9:03م · السبب: الخدمة اتسجلت غلط من ماسا</small></div>
+  </div>
+ </section>
+
+ <p class="note"><b>اتوافق (المالك 2026-11-27):</b> الاستقبال + التمريض + الحسابات يكتبوا الملاحظة، الدكتور ما يشوفهاش، «اتكتبت غلط» بدل التعديل/المسح، وتظهر في «راجع قبل التحصيل».</p>
+ <p class="note"><b>أسئلة للمالك على «تعديل تفاصيل الحجز»:</b> (١) مين يعدّل؟ الاقتراح: الاستقبال + مدير المساحة + الحسابات. (٢) تغيير خدمة <b>اتنفذت</b> يروح للمدير المالي يعتمده — موافق؟ (٣) الزرار يختفي أول ما يتحصّل أي مبلغ — موافق؟</p>
+ <p class="note" hidden><b>أسئلة للمالك:</b> (١) مين يكتب؟ الاقتراح: الاستقبال + التمريض + الحسابات (والدكتور لأ). (٢) تظهر للدكتور؟ الاقتراح: لأ. (٣) «اتكتبت غلط» بدل التعديل/المسح — موافق؟ (٤) تظهر في المراجعة قبل التحصيل — موافق؟</p>
 </div>
