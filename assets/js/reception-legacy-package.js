@@ -17,7 +17,7 @@ function cairoDay(dt){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/C
 function svcOptions(d){return (d.services||[]).filter(function(s){return s.active!==false;}).map(function(s){return '<option value="'+esc(s.id)+'" data-code="'+esc(s.code||'')+'">'+esc(s.name)+(s.department?' — '+esc(s.department):'')+'</option>';}).join('');}
 function lineHtml(d){return '<div class="rlp-line" data-rlp-line><label class="rlp-f rlp-svc">الخدمة<select name="rlp_service" data-service-select required><option value="">اختار الخدمة</option>'+svcOptions(d)+'</select></label>'+
  '<label class="rlp-f">جلسات<input name="rlp_sessions" type="number" min="1" max="50" step="1" inputmode="numeric" dir="ltr" required></label>'+
- '<label class="rlp-f">المبلغ المدفوع<input name="rlp_amount" type="number" min="1" step="0.01" inputmode="decimal" dir="ltr" required></label>'+
+ '<label class="rlp-f">قيمة الخدمة في الباكج<input name="rlp_amount" type="number" min="1" step="0.01" inputmode="decimal" dir="ltr" required></label>'+
  '<button type="button" class="btn rlp-x" data-rlp-del aria-label="شيل الخدمة">×</button></div>';}
 /* 1) register */
 function openRequest(patientId,c){var d=c.data||{},p=(d.patients||[]).find(function(x){return x.id===patientId;})||{};
@@ -28,17 +28,23 @@ function openRequest(patientId,c){var d=c.data||{},p=(d.patients||[]).find(funct
   '<div class="rlp-lines" data-wide data-rlp-lines>'+lineHtml(d)+'</div>'+
   '<button type="button" class="btn rlp-add" data-wide data-rlp-add>+ خدمة تانية</button>'+
   '<label data-wide>رقم الإيصال القديم أو صورته (لو موجود)<input name="rlp_receipt" maxlength="200"></label>'+
-  '<div class="rlp-sum" data-wide data-rlp-sum></div><p class="rlp-note" data-wide>مفيش فلوس بتدخل الخزينة النهارده. الطلب بيروح للسوبر أدمن أو المدير المالي يعتمده.</p>';
+  /* owner 2026-11-27 «موافق على المدفوع والباقي في الباكج القديم» (mig 20261127290000, help 345) */
+  '<label data-wide>المدفوع قبل كده في السيستم القديم (لو اتدفع كله سيبها فاضية)<input name="rlp_paid_before" type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" placeholder="مثلاً 2000"></label>'+
+  '<div class="rlp-sum" data-wide data-rlp-sum></div><p class="rlp-note" data-wide>المدفوع قبل كده مش بيدخل الخزينة النهارده. لو فيه باقي، بيبقى فاتورة على الباكج تتحصّل عادي («تحصيل») أو من «استخدام رصيد المريض». الطلب بيروح للسوبر أدمن أو المدير المالي يعتمده.</p>';
  var root=c.modal('باكج مدفوع قبل السيستم',body,function(){var f=root.querySelector('form'),lines=collect(f);
    if(!lines.length)throw new Error('اختار خدمة واحدة على الأقل');var total=r2(lines.reduce(function(t,l){return t+l.amount;},0));
+   var pbv=String(f.elements.rlp_paid_before.value||'').trim(),pb=pbv===''?total:r2(+pbv);
+   if(pbv!==''&&!(pb>0))throw new Error('المدفوع قبل كده لازم يبقى أكبر من صفر');if(pb>total)throw new Error('المدفوع قبل كده ('+money(pb)+') أكبر من قيمة الباكج ('+money(total)+')');
    var payload={patient_id:patientId,name:f.elements.rlp_name.value.trim(),paid_on:f.elements.rlp_paid_on.value,total:String(total),receipt_ref:f.elements.rlp_receipt.value.trim(),
      lines:lines.map(function(l){return {service_id:l.service_id,sessions:l.sessions,amount:String(l.amount)};})};
-   return c.command('legacy_package_request',payload,crypto.randomUUID()).then(function(r){if(w.SSMPDToast)w.SSMPDToast.show('اتبعت للاعتماد ✓ — '+money(total)+' مدفوع قبل التشغيل');return r;});},null,{ok:'ابعت للاعتماد'});
+   if(pb<total)payload.paid_before=String(pb);
+   return c.command('legacy_package_request',payload,crypto.randomUUID()).then(function(r){if(w.SSMPDToast)w.SSMPDToast.show('اتبعت للاعتماد ✓ — '+money(pb)+' مدفوع قبل التشغيل'+(pb<total?' · الباقي '+money(r2(total-pb))+' هيبقى فاتورة على الباكج':''));return r;});},null,{ok:'ابعت للاعتماد'});
  if(!root)return true;var f=root.querySelector('form'),box=f.querySelector('[data-rlp-lines]');
  function collect(form){return Array.prototype.map.call(form.querySelectorAll('[data-rlp-line]'),function(x){var s=x.querySelector('select'),n=+x.querySelector('[name=rlp_sessions]').value,a=+x.querySelector('[name=rlp_amount]').value;
    return {service_id:s.value,name:s.value?s.options[s.selectedIndex].textContent:'',sessions:n,amount:a};}).filter(function(l){return l.service_id&&l.sessions>0&&l.amount>0;});}
  function paint(){var ls=collect(f),tot=ls.reduce(function(t,l){return t+l.amount;},0),sum=f.querySelector('[data-rlp-sum]');
-  sum.innerHTML=ls.length?'<span>الإجمالي المدفوع</span><b>'+money(tot)+'</b>'+ls.map(function(l){return '<span>قيمة الجلسة — '+esc(l.name.split(' — ')[0])+'</span><span>'+money(r2(l.amount/l.sessions))+'</span>';}).join(''):'';
+  var pbv=String(f.elements.rlp_paid_before.value||'').trim(),pb=pbv===''?tot:+pbv,rem=r2(tot-pb);
+  sum.innerHTML=ls.length?'<span>قيمة الباكج</span><b>'+money(tot)+'</b>'+(pbv!==''?'<span>اتدفع قبل كده</span><b data-rlp-pb>'+money(pb)+'</b><span>الباقي (فاتورة على الباكج)</span><b data-rlp-rem class="'+(rem<0?'rlp-bad':'')+'">'+money(rem)+'</b>':'')+ls.map(function(l){return '<span>قيمة الجلسة — '+esc(l.name.split(' — ')[0])+'</span><span>'+money(r2(l.amount/l.sessions))+'</span>';}).join(''):'';
   box.querySelectorAll('[data-rlp-del]').forEach(function(b){b.hidden=box.children.length<2;});}
  f.querySelector('[data-rlp-add]').onclick=function(){box.insertAdjacentHTML('beforeend',lineHtml(d));paint();};
  box.addEventListener('click',function(e){var b=e.target.closest('[data-rlp-del]');if(b&&box.children.length>1){b.closest('[data-rlp-line]').remove();paint();}});
@@ -49,7 +55,7 @@ function approvals(host,c){if(!host||!c||!c.workspace)return;var a=w.SSMPDAuth&&
  rpc('clinic_reception_legacy_packages',{p_workspace:c.workspace,p_patient:null}).then(function(r){if(!host.isConnected)return;var old=host.querySelector('[data-rlp-approvals]');if(old)old.remove();
   var list=(r&&r.pending||[]).filter(function(x){return !x.mine;});if(!r||!r.can_review||!list.length)return;
   var sec=document.createElement('section');sec.className='rlp-appr';sec.setAttribute('data-rlp-approvals','');
-  sec.innerHTML='<h3>باكجات مدفوعة قبل السيستم — مستنية اعتمادك</h3>'+list.map(function(x){return '<article class="rlp-req" data-rlp-req="'+esc(x.id)+'"><div><b>'+esc(x.patient)+'</b> — '+money(x.total)+
+  sec.innerHTML='<h3>باكجات مدفوعة قبل السيستم — مستنية اعتمادك</h3>'+list.map(function(x){return '<article class="rlp-req" data-rlp-req="'+esc(x.id)+'"><div><b>'+esc(x.patient)+'</b> — '+money(x.total)+(+x.remaining>0?' <span class="rlp-badge" data-rlp-split>اتدفع قبل كده '+money(x.paid_before)+' · الباقي '+money(x.remaining)+' فاتورة على الباكج</span>':'')+
    ' <span class="rlp-badge">مدفوع قبل التشغيل بتاريخ '+esc(String(x.paid_on).split('-').reverse().join('/'))+'</span><small>'+esc(x.name)+' · '+(x.lines||[]).map(function(l){return esc(l.name)+' '+l.sessions+' × '+money(l.per_session);}).join(' · ')+
    ' — سجّلته: '+esc(x.requester||'')+(x.receipt_ref?' · '+esc(x.receipt_ref):'')+'</small></div><div class="rlp-btns"><button type="button" class="btn btn-primary" data-rlp-ok>اعتمد</button><button type="button" class="btn rx-danger" data-rlp-no>ارفض (بسبب)</button></div></article>';}).join('');
   var anchor=host.querySelector('.rx-header');if(anchor)anchor.after(sec);else host.prepend(sec);
