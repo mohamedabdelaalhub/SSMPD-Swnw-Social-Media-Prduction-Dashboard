@@ -2,7 +2,7 @@
   "coverage": {
     "version": "20261117-1",
     "definitions": 2117,
-    "labels": 1546,
+    "labels": 1547,
     "files": 175,
     "groups": 1674
   },
@@ -12932,7 +12932,7 @@
     },
     {
       "file": "reception-no-meter.js",
-      "label": "دوّر",
+      "label": "دوّر في جلسات من غير عداد",
       "name": "",
       "kind": "aria",
       "forms": [],

@@ -15,7 +15,7 @@ function card(host,c){if(!host||!c||!c.workspace||hidden[c.workspace])return Pro
   var rows=x.rows,sec=d.createElement('section');sec.className='rnm-card';sec.setAttribute('data-no-meter-card','');
   sec.innerHTML='<div class="rnm-h"><h3>جلسات ليزر من غير قراية عداد <small>آخر 30 يوم · '+rows.length+'</small></h3><button type="button" class="btn rnm-x" data-no-meter-close aria-label="إغلاق">✕</button></div>'+
    '<p class="rnm-note">حل مؤقت لحد ما نقرا العدد من أجهزة الليزر: الموظف كتب عدد النبضات بس. راجع الأرقام والصورة لو موجودة.</p>'+
-   (rows.length>=9?'<input type="search" class="rnm-q" data-no-meter-q placeholder="دوّر بالجهاز أو الموظف أو الخدمة أو رقم الملف" aria-label="دوّر">':'')+
+   (rows.length>=9?'<input type="search" class="rnm-q" data-no-meter-q placeholder="دوّر بالجهاز أو الموظف أو الخدمة أو رقم الملف" aria-label="دوّر في جلسات من غير عداد">':'')+
    '<div class="table-wrap"><table class="data-table rnm-t"><thead><tr><th>التاريخ</th><th>الجهاز</th><th>الخدمة</th><th>الموظف</th><th>النبضات</th><th>الملف</th><th></th></tr></thead><tbody>'+
    rows.map(function(z){return '<tr data-no-meter-row><td dir="ltr">'+esc(when(z.at))+'</td><td>'+esc(z.device)+'</td><td>'+esc(z.service)+'</td><td>'+esc(z.by)+'</td><td dir="ltr"><b>'+num(z.pulses)+'</b></td><td dir="ltr">'+esc(z.file_no||'')+'</td><td>'+
     (z.evidence?'<button type="button" class="btn ghost" data-no-meter-photo="'+esc(z.evidence)+'">صورة</button>':'<span class="rnm-none">من غير صورة</span>')+'</td></tr>';}).join('')+'</tbody></table></div>';
