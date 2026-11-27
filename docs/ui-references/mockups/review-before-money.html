@@ -1,0 +1,98 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: راجع وعدّل قبل ما الفلوس تتحرك</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<!-- MOCKUP — owner 2026-11-27 (relayed by main 7): «عايز لما موظف يدوس زرار تحصيل من حد او صرف مستحقات لحد تظهرله تفاصيل التحصيل
+     او الصرف دا كاملة قابلة للتعديل علشان قبل ما يحصل او يصرف فلوس يقدر يراجع التفاصيل ويعدلها اذا استدعت الحاجة».
+     #collect  «تسجيل تحصيل» (also collect-invoice / collect_multi): full review + edit buttons that open the EXISTING paths
+               (add service, cancel service, discount request with its approval, payer, reopen visit, the amount itself).
+     #doctor   «حساب الطبيب» before «اطلب صرف» and before «سلّمت الفلوس»: cases, doctor share, discounts / platform cut, advances,
+               paid before, net; remove a case / ask a lower amount with a reason → still goes to the approver.
+     #drawer   «طلب صرف من الدرج» before «اتصرف»: who / what / approvals / evidence / previous advances / drawer cash; pay less / cancel.
+     Nothing here skips an approval or raises a computed amount. FAKE names and numbers. -->
+<style>body{background:#f4f7fc;margin:0;padding:16px;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.page{max-width:1100px;margin:auto;display:grid;gap:14px}.ph{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.ph h2{margin:0;font-size:20px;flex:1}
+.tabs{background:none;border:0;box-shadow:none;display:flex;gap:6px;flex-wrap:wrap}.tabs a{font-size:13px;padding:7px 13px;border-radius:999px;background:#fff;border:1px solid #D5DEEE;color:#16212E;text-decoration:none}.tabs a.on{background:#0F369D;color:#fff;border-color:#0F369D}
+.note{background:#fff;border:1px solid #e6ebf3;border-radius:14px;padding:12px 14px;font-size:13px;color:#475467;margin:0}
+.ov{position:relative;background:rgba(22,33,46,.45);border-radius:18px;padding:18px;display:none;justify-content:center}.ov.on{display:flex}
+.md{width:min(760px,100%);background:#fff;border-radius:18px;padding:16px;display:grid;gap:12px}
+.mh{display:flex;align-items:center;gap:8px}.mh h3{margin:0;flex:1;font-size:17px}.x{width:38px;height:38px;border-radius:10px;border:1px solid #D5DEEE;background:#fff;font-size:18px}
+.who{font-size:13px;color:#475467;margin:0}
+.rv{border:1px solid #c7d6f5;background:#F5F8FF;border-radius:14px;padding:12px;display:grid;gap:10px}.rv h4{margin:0;font-size:14px;color:#0F369D;display:flex;gap:8px;align-items:center}
+.new{font-size:10.5px;background:#F15A22;color:#fff;border-radius:6px;padding:1px 6px}
+.ln{display:grid;border:1px solid #e6ebf3;border-radius:12px;overflow:hidden;background:#fff}
+.r{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,.8fr) minmax(0,1.3fr) minmax(0,.8fr) auto;gap:8px;padding:9px 12px;border-top:1px solid #eef1f6;font-size:13px;align-items:center}
+.r.h{border-top:0;background:#F1F4F8;font-weight:700;color:#475467;font-size:12px}.r.off{opacity:.5;text-decoration:line-through}
+.r small{display:block;color:#667085;font-size:11.5px;text-decoration:none}
+.tag{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EEF4FF;color:#0F369D;white-space:nowrap}.tag.ins{background:#F4F0FF;color:#5B3CC4}.r .tag{white-space:normal;display:inline-block}.tag.wait{background:#FFF4EC;color:#B4400F}.tag.ok{background:#ECF8F2;color:#2F7D5C}
+.neg{color:#D0402A}.tot{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px}.tot b{font-size:15px}.tot .big{color:#0F369D}
+.ed{display:flex;gap:6px;flex-wrap:wrap}.e{font:inherit;font-size:12.5px;font-weight:700;padding:6px 10px;border-radius:9px;border:1px dashed #9db2e6;background:#fff;color:#0F369D}
+.mini{font:inherit;font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid #D5DEEE;background:#fff;color:#0F369D;white-space:nowrap}
+.f{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.f label{display:grid;gap:3px;font-size:12px;color:#667085}.f input,.f select{font:inherit;font-size:14px;padding:9px 10px;border:1px solid #D5DEEE;border-radius:10px;color:#16212E;background:#fff}
+.f .chg{border-color:#F15A22;background:#FFF8F4}
+.hint{font-size:12px;color:#667085;margin:0}.hint.w{color:#B4400F;font-weight:700}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.btn{font:inherit;font-size:14px;font-weight:700;padding:10px 18px;border-radius:10px;border:1px solid #D5DEEE;background:#fff;color:#0F369D}.btn.pri{background:#0F369D;color:#fff;border-color:#0F369D}.btn.or{background:#F15A22;color:#fff;border-color:#F15A22}
+.ask{background:#FFF8F4;border:1px solid #F7C9B3;border-radius:12px;padding:10px 12px;display:grid;gap:8px}.ask textarea{font:inherit;font-size:13px;border:1px solid #F7C9B3;border-radius:9px;padding:8px;min-height:44px}
+.flow{display:flex;gap:6px;flex-wrap:wrap;font-size:12.5px}.flow span{padding:3px 9px;border-radius:999px;background:#ECF8F2;color:#2F7D5C;font-weight:700}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;font-size:13px}.kv span{color:#667085}.kv b{color:#16212E}
+@media(max-width:760px){body{padding:10px}.ov{padding:0;background:none}.md{border-radius:16px}.f{grid-template-columns:1fr 1fr}
+ .r{grid-template-columns:minmax(0,1fr) auto}.r.h{display:none}.r>:nth-child(2),.r>:nth-child(3){grid-column:1/-1}.kv{grid-template-columns:1fr}}
+</style>
+<div class="page">
+<div class="ph"><h2>راجع وعدّل قبل ما الفلوس تتحرك</h2><nav class="tabs"><a href="#collect">تسجيل تحصيل</a><a href="#doctor">صرف حساب الطبيب</a><a href="#drawer">طلب صرف من الدرج</a></nav></div>
+<p class="note">التفاصيل كلها بتظهر قبل زرار الفلوس. كل زرار «تعديل» بيفتح الطريق الموجود النهارده بنفس اعتماده، ومفيش أي تعديل بيعدّي من غير موافقة أو بيزوّد مبلغ محسوب. بعد أي تعديل الملخص بيتحدّث لوحده قبل ما تدوس الزرار الأخير. (أسامي وأرقام وهمية)</p>
+
+<!-- ================= (1) COLLECT ================= -->
+<div class="ov" id="collect"><div class="md" role="dialog" aria-label="تسجيل تحصيل">
+<div class="mh"><h3>تسجيل تحصيل</h3><button class="x" aria-label="إغلاق">✕</button></div>
+<p class="who">ملف <b>F-1042</b> — <b>منى سامي (اسم وهمي)</b> · زيارة 3 النهارده 11:20</p>
+<section class="rv"><h4>راجع قبل ما تحصّل <span class="new">جديد</span></h4>
+<div class="ln">
+ <div class="r h"><span>الخدمة والطبيب</span><span>السعر</span><span>الخصم</span><span>عليه</span><span></span></div>
+ <div class="r"><span>كشف باطنة<small>د. أحمد فؤاد · <span class="tag">المريض نفسه</span></small></span><span>400</span><span><span class="neg" dir="ltr">−40 (10%)</span><small>مريض متكرر · وافق: أ/محمود</small></span><span><b>360</b></span><span class="ed"><button class="mini">٪ غيّر الخصم</button><button class="mini">⇄ الجهة</button><button class="mini">✕ شيل</button></span></div>
+ <div class="r"><span>رسم قلب<small>د. أحمد فؤاد · <span class="tag ins">شركة تأمين (وهمي) 80%</span></small></span><span>250</span><span>—</span><span><b>50</b><small>الشركة 200</small></span><span class="ed"><button class="mini">٪ اطلب خصم</button><button class="mini">⇄ الجهة</button><button class="mini">✕ شيل</button></span></div>
+ <div class="r"><span>تحليل سكر<small>المعمل · <span class="tag">المريض نفسه</span></small></span><span>120</span><span><span class="tag wait">خصم 20% مستني موافقة</span></span><span><b>120</b><small>هيبقى 96 لو اتوافق</small></span><span class="ed"><button class="mini">⇄ الجهة</button><button class="mini">✕ شيل</button></span></div>
+</div>
+<div class="tot"><span>إجمالي الزيارة <b>770</b></span><span>اتدفع قبل كده <b>100</b></span><span>الباقي عليه <b class="big">430</b></span><span>رصيد مقدم <b>0</b></span></div>
+<div class="ed"><button class="e">＋ ضيف خدمة</button><button class="e">↺ افتح الزيارة للتعديل</button><button class="e">⇄ مين اللي هيدفع</button></div>
+<p class="hint">إيصالات المريض في ورديتك: RC-2026-000118 · 100 نقدي · 10:05</p>
+<p class="hint w">الخصم المستني موافقة: تقدر تحصّل دلوقتي 120 كاملة، أو تستنى الموافقة (زي النهارده بالظبط).</p>
+</section>
+<div class="f"><label>المبلغ<input class="chg" value="430"></label><label>طريقة السداد<select><option>نقدي</option></select></label><label>رقم الإيصال / المرجع<input placeholder="اختياري للنقدي"></label></div>
+<p class="hint">المبلغ اتملى لوحده بالباقي، وتقدر تكتب أقل (تحصيل جزئي). لو كتبت أكتر من الباقي، الزيادة بتتسجل رصيد مقدم للمريض وبتظهر هنا قبل التأكيد.</p>
+<div class="btns"><button class="btn pri">حصّل 430</button><button class="btn">اقفل</button></div>
+</div></div>
+
+<!-- ================= (2) DOCTOR PAYOUT ================= -->
+<div class="ov" id="doctor"><div class="md" role="dialog" aria-label="حساب الطبيب">
+<div class="mh"><h3>حساب الطبيب — د. أحمد فؤاد (وهمي)</h3><button class="x" aria-label="إغلاق">✕</button></div>
+<section class="rv"><h4>راجع قبل ما تطلب الصرف <span class="new">جديد</span></h4>
+<div class="ln">
+ <div class="r h"><span>الحالة</span><span>الفاتورة</span><span>اللي اتشال الأول</span><span>نصيب الطبيب</span><span></span></div>
+ <div class="r"><span>كشف — منى سامي<small>RC-000118 · 10:05</small></span><span>400</span><span><span class="neg" dir="ltr">−40 خصم</span></span><span><b>180</b><small>50% من 360</small></span><span><button class="mini">✕ شيل الحالة</button></span></div>
+ <div class="r"><span>كشف فيزيتا — كريم نبيل<small>RC-000121 · 11:40</small></span><span>400</span><span><span class="neg" dir="ltr">−100 فيزيتا 25%</span></span><span><b>150</b><small>50% من 300</small></span><span><button class="mini">✕ شيل الحالة</button></span></div>
+ <div class="r off"><span>رسم قلب — سارة عادل<small>RC-000124 · 12:15</small></span><span>250</span><span>—</span><span><b>75</b><small>30% من 250</small></span><span><button class="mini">↺ رجّعها</button></span></div>
+</div>
+<p class="hint">الحالة اللي بتتشال مبتضيعش: بتفضل محجوزة للدكتور وتظهر في الصرف الجاي.</p>
+<div class="kv"><span>نصيب الطبيب من الحالات</span><b>330</b><span>سلفة على الطبيب تتخصم</span><b class="neg" dir="ltr">−50</b><span>اتصرف له النهارده قبل كده</span><b>0</b><span>محجوز لحد ما المرضى يدفعوا</span><b>120</b></div>
+<div class="tot"><span>الصافي اللي هيتطلب <b class="big">280</b></span><span>كاش درجك دلوقتي <b>3,450</b></span></div>
+<div class="ask"><b>عايز تطلب أقل من 280؟</b><div class="f"><label>المبلغ<input value="280"></label><label style="grid-column:span 2">السبب (إجباري لو المبلغ اتغيّر)<input placeholder="مثلاً: الدكتور طالب يستلم الباقي بكرة"></label></div><p class="hint">مينفعش أكتر من الصافي المحسوب. الطلب بيروح للي بيعتمد زي النهارده، وهو شايف التعديل والسبب.</p></div>
+</section>
+<div class="btns"><button class="btn or">اطلب صرف 280</button><button class="btn">اقفل</button></div>
+<p class="hint">وبعد الاعتماد، قبل «سلّمت الفلوس للدكتور» بيظهر نفس الملخص ومعاه: اعتمده مين وامتى، ولو المعتمد غيّر المبلغ بيظهر المبلغ القديم والجديد وسببه.</p>
+</div></div>
+
+<!-- ================= (3) DRAWER REQUEST ================= -->
+<div class="ov" id="drawer"><div class="md" role="dialog" aria-label="اتصرف">
+<div class="mh"><h3>هتصرف من درجك — راجع الأول</h3><button class="x" aria-label="إغلاق">✕</button></div>
+<section class="rv"><h4>تفاصيل الطلب <span class="new">جديد</span></h4>
+<div class="kv"><span>النوع</span><b>سلفة</b><span>لمين</span><b>هاني رضا (موظف وهمي)</b><span>المبلغ المعتمد</span><b>500</b><span>السبب</span><b>سلفة شخصية — تتخصم من مرتب الشهر</b><span>طلبه</span><b>انت · النهارده 09:40</b><span>سلف الشهر ده قبل كده</span><b>300 (مرة واحدة)</b></div>
+<div class="flow"><span>✓ وافق: د. دينا 10:02</span><span>✓ وافق: أ/محمود 10:30</span></div>
+<div class="tot"><span>كاش درجك دلوقتي <b>3,450</b></span><span>بعد الصرف <b class="big">2,950</b></span></div>
+<div class="ask"><b>هتصرف أقل من 500؟</b><div class="f"><label>المبلغ<input value="500"></label><label style="grid-column:span 2">ملاحظة / السبب<input placeholder="مثلاً: الموظف طلب 400 بس"></label></div><p class="hint">مينفعش أكتر من المعتمد. لو صرفت أقل، الباقي بيتلغي (أو يفضل للصرف بعدين — حسب قرارك).</p></div>
+<p class="hint">فاتورة المورد: هنا بتظهر صورة الفاتورة وأصنافها اللي المحاسب سجّلها، ومبلغ أقل بس.</p>
+</section>
+<div class="btns"><button class="btn or">اتصرف 500 — سلّم الفلوس</button><button class="btn">الغي الطلب</button><button class="btn">اقفل</button></div>
+</div></div>
+</div>
+<script>function show(){var h=(location.hash||'#collect').slice(1);document.querySelectorAll('.ov').forEach(function(o){o.classList.toggle('on',o.id===h);});document.querySelectorAll('.tabs a').forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+h);});}
+window.addEventListener('hashchange',show);show();</script>
+</html>

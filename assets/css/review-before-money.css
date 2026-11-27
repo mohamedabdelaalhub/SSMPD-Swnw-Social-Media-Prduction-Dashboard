@@ -1,0 +1,36 @@
+/* «راجع وعدّل قبل ما الفلوس تتحرك» (owner 2026-11-27, mockup docs/ui-references/mockups/review-before-money.html, help 329) */
+/* shared review box */
+.rbm-box,.dp-review{border:1px solid #c7d6f5;background:#F5F8FF;border-radius:14px;padding:12px;display:grid;gap:10px}
+.rbm-box h4,.dp-review .dp-h{margin:0;font-size:14px;color:#0F369D}
+.rbm-tag{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EEF4FF;color:#0F369D;display:inline-block}
+.rbm-tag.ins{background:#F4F0FF;color:#5B3CC4}.rbm-tag.wait{background:#FFF4EC;color:#B4400F}
+.rbm-neg,.dp-neg{color:#D0402A}
+.rbm-tot{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px}.rbm-tot b{font-size:15px}.rbm-tot .big{color:#0F369D}
+.rbm-hint{margin:0;font-size:12px;color:#667085}.rbm-hint.w{color:#B4400F;font-weight:700}
+.rbm-ed{display:flex;gap:6px;flex-wrap:wrap}
+.rbm-e{font:inherit;font-size:12.5px;font-weight:700;padding:6px 10px;border-radius:9px;border:1px dashed #9db2e6;background:#fff;color:#0F369D;cursor:pointer;min-height:36px}
+/* collect: service rows */
+.rbm-lines{display:grid;border:1px solid #e6ebf3;border-radius:12px;overflow:hidden;background:#fff}
+.rbm-r{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,.7fr) minmax(0,1.3fr) minmax(0,.9fr);gap:8px;padding:9px 12px;border-top:1px solid #eef1f6;font-size:13px;align-items:center}
+.rbm-r.h{border-top:0;background:#F1F4F8;font-weight:700;color:#475467;font-size:12px}
+.rbm-r small{display:block;color:#667085;font-size:11.5px}
+.rbm-v{font-size:12.5px;font-weight:700;color:#475467;padding:6px 12px;background:#F8FAFD;border-top:1px solid #eef1f6}
+/* doctor payout */
+.dp-rv-list{display:grid;border:1px solid #e6ebf3;border-radius:12px;overflow:hidden;background:#fff}
+.dp-rv-row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,1fr) auto;gap:8px;padding:9px 12px;border-top:1px solid #eef1f6;font-size:13px;align-items:center}
+.dp-rv-row:first-child{border-top:0}.dp-rv-row small{display:block;color:#667085;font-size:11.5px}
+.dp-rv-row.is-off .dp-rv-name,.dp-rv-row.is-off .dp-rv-num{opacity:.5;text-decoration:line-through}
+.dp-rv-x{white-space:nowrap}
+.dp-rv-ask{background:#FFF8F4;border:1px solid #F7C9B3;border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:160px 1fr;gap:8px}
+.dp-rv-ask label{display:grid;gap:4px;font-size:12.5px;color:#3B4658}
+.dp-rv-ask input{min-height:40px;padding:0 10px;border:1px solid #F7C9B3;border-radius:10px;font:inherit;background:#fff}
+.dp-rv-ask .dp-muted{grid-column:1/-1}
+.dp-rv-note{background:#FFF8F4;border-radius:10px;padding:8px 10px;font-size:13px}
+/* drawer «اتصرف» */
+.rdr-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;font-size:13px}.rdr-kv span{color:#667085}.rdr-kv b{color:#16212E}
+.rdr-flow{display:flex;gap:6px;flex-wrap:wrap;font-size:12.5px}.rdr-flow span{padding:3px 9px;border-radius:999px;background:#ECF8F2;color:#2F7D5C;font-weight:700}
+.rdr-less{background:#FFF8F4;border:1px solid #F7C9B3;border-radius:12px;padding:10px 12px;display:grid;gap:8px}
+@media(max-width:620px){
+ .rbm-r{grid-template-columns:minmax(0,1fr) auto}.rbm-r.h{display:none}.rbm-r>:nth-child(2),.rbm-r>:nth-child(3){grid-column:1/-1}
+ .dp-rv-row{grid-template-columns:minmax(0,1fr) auto}.dp-rv-row>:nth-child(2),.dp-rv-row>:nth-child(3){grid-column:1/-1}
+ .dp-rv-ask{grid-template-columns:1fr}.rdr-kv{grid-template-columns:1fr}}
