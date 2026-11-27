@@ -71,8 +71,8 @@ function fill(){var box=d.querySelector('[data-month-end]');if(box)load(box);}
 var prior=w.SSMPDFinanceControls;
 if(prior&&prior.panel){w.SSMPDFinanceControls=Object.assign({},prior,{panel:function(tab,dd,h){if(tab!=='month-end')return prior.panel(tab,dd,h);setTimeout(fill,0);return '<div class="rse mea" data-month-end><p class="rse-note">جاري التحميل…</p></div>';}});}
 /* ---------- reception card ---------- */
-function cardHtml(r){var items=r.items||[];
- return '<section class="rse-card mea-card" data-mea-card aria-label="تحويلات ومعمل الأسنان"><div class="rse-head"><h4>تحويلات ومعمل الأسنان <small>— بتتحسب آخر الشهر</small></h4>'+
+function cardHtml(r){var items=r.items||[],live=items.filter(function(i){return !i.voided;}),th=live.filter(function(i){return i.party==='tahera';}).length;
+ return '<section class="rse-card mea-card" data-mea-card data-rht-count="'+live.length+'" data-rht-tahera="'+th+'" data-rht-lab="'+(live.length-th)+'" aria-label="تحويلات ومعمل الأسنان"><div class="rse-head"><h4>تحويلات ومعمل الأسنان <small>— بتتحسب آخر الشهر</small></h4>'+
   '<span><button type="button" class="btn" data-mea-tahera>+ تحويل لمركز الطاهرة</button> <button type="button" class="btn" data-mea-dental>+ فاتورة معمل أسنان</button></span></div>'+
   '<p class="rse-note">مفيش فلوس بتطلع أو تدخل الدرج هنا — بيتسجل بس، والحسابات بتسدد أو تحصّل آخر الشهر.</p>'+
   (items.length?'<ul class="rse-list">'+items.map(function(i){return '<li><span>'+(i.party==='tahera'?'الطاهرة':'معمل أسنان')+' — '+esc(i.ref)+' — '+esc(i.description)+'</span><b dir="ltr">'+money(i.amount)+'</b>'+(i.voided?'<em class="rdr-st done">اتلغى</em>':'')+'</li>';}).join('')+'</ul>':'')+'</section>';}
