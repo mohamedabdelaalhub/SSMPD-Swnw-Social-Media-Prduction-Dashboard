@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — «فروق الخزن» بشكل مفهوم</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:24px;display:grid;gap:16px}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+h1{margin:0;font-size:22px}.sub{margin:0;color:#5B6676;font-size:13px}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:18px 20px;display:grid;gap:12px}
+.explain{display:grid;gap:8px}.explain p{margin:0}
+.legend{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.legend div{border:1px solid #E3E8F2;border-radius:12px;padding:8px 10px;display:grid;gap:4px;font-size:12.5px;color:#3B4658}
+.st{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap;justify-self:start}
+.st.wait{background:#FFF1E8;color:#B8420F}.st.blue{background:#E8EEFB;color:#0F369D}.st.ok{background:#E6F4EC;color:#2F7D5C}.st.grey{background:#EEF1F6;color:#3B4658}
+.tools{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:10px 14px;display:flex;gap:10px 16px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between}
+.pills{display:flex;gap:6px;flex-wrap:wrap}.pills b{border:1px solid #D7DDEA;border-radius:10px;height:38px;display:inline-flex;align-items:center;padding:0 14px;font-size:13px;font-weight:400;background:#fff}.pills b.on{background:#16212E;color:#fff;border-color:#16212E}
+.search{border:1px solid #D7DDEA;border-radius:10px;height:38px;min-width:260px;display:flex;align-items:center;padding:0 12px;color:#98A2B3;background:#fff}
+.list{display:grid;gap:16px}
+.case{background:#fff;border:1px solid #E3E8F2;border-radius:14px;overflow:hidden}
+.row{display:grid;grid-template-columns:1.3fr 1fr .9fr 1fr auto 24px;gap:12px;align-items:center;padding:12px 16px}
+.row .who b{display:block}.row small{display:block;color:#5B6676;font-size:12px}
+.amt{font-weight:700;direction:ltr;text-align:right;unicode-bidi:isolate}.amt.pos{color:#2F7D5C}.amt.neg{color:#D0402A}
+.act{display:grid;gap:2px;justify-items:start}
+.btn{border:0;border-radius:10px;padding:7px 14px;font:inherit;font-weight:700;background:#0F369D;color:#fff;white-space:nowrap}.btn.orange{background:#F15A22}.btn.ghost{background:#fff;color:#0F369D;border:1px solid #0F369D}
+.chev{color:#5B6676;font-size:16px;text-align:center}
+.det{border-top:1px solid #EEF1F6;background:#FBFCFE;padding:14px 16px;display:grid;gap:12px}
+.det-h{display:flex;justify-content:space-between;align-items:center}.det-h b{font-size:15px}
+.x{border:1px solid #D7DDEA;background:#fff;border-radius:8px;width:32px;height:32px;font:inherit;font-weight:700;color:#16212E}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.facts div{border:1px solid #E3E8F2;border-radius:10px;padding:8px 10px;background:#fff}.facts small{display:block;color:#5B6676;font-size:12px}
+.steps{display:grid;gap:0;border-right:2px solid #E3E8F2;margin-right:8px}
+.step{position:relative;padding:4px 20px 10px 0}.step:before{content:"";position:absolute;right:-7px;top:9px;width:12px;height:12px;border-radius:50%;background:#2F7D5C}
+.step.todo:before{background:#fff;border:2px solid #F15A22}.step.off:before{background:#D7DDEA}
+.step b{display:block;font-size:13.5px}.step p{margin:2px 0 0;color:#3B4658;font-size:13px;max-width:70ch}.step small{color:#5B6676}
+.note{margin:0;font-size:12.5px;color:#5B6676}
+.ann{border:1px dashed #F15A22;background:#FFF7F2;border-radius:12px;padding:10px 14px;font-size:13px;display:grid;gap:4px}
+.ann b{color:#B8420F}
+@media (max-width:760px){.wrap{padding:12px}.legend,.facts{grid-template-columns:1fr 1fr}
+ .row{grid-template-columns:1fr auto;gap:6px 10px}.row .c-day{display:none}.row .chev{display:none}.row .act{grid-column:1/-1}.search{min-width:0;flex:1}}
+</style></head><body><div class="wrap">
+<div><span class="tag">تصور — مش شغال لسه</span><h1>فروق الخزن</h1><p class="sub">الحسابات › مراجعة · راجعت قرارات المالك · الأرقام إنجليزي</p></div>
+
+<div class="card explain">
+ <p><b>يعني إيه «فرق خزنة»؟</b> لما موظف يقفل ورديته والفلوس اللي في الدرج تطلع أكتر (زيادة) أو أقل (ناقص) من المسجّل في السيستم، السيستم بيفتح ملف للفرق ده علشان حد غير الموظف يشوفه ويقرّر. مفيش خصم من المرتب أوتوماتيك.</p>
+ <div class="legend">
+  <div><span class="st wait">مستني قرار</span>لسه حد لازم يراجع ويحدد المسؤولية ويقرّر.</div>
+  <div><span class="st blue">اتقرر</span>القرار اتاخد، وفاضل تسوية الفرق في الحسابات.</div>
+  <div><span class="st grey">مستني موافقة</span>حد طلب التسوية، ومستني شخص تاني يوافق.</div>
+  <div><span class="st ok">اتقفل</span>الملف خلص، مفيش حاجة مطلوبة.</div>
+ </div>
+</div>
+
+<div class="tools">
+ <div class="pills"><b class="on">الكل 4</b><b>مستني قرار 2</b><b>اتقرر 1</b><b>اتقفل 1</b></div>
+ <div class="search">🔎 دوّر باسم الخزنة أو الموظف…</div>
+</div>
+
+<div class="list">
+ <!-- 1: waiting, expanded -->
+ <div class="case">
+  <div class="row">
+   <div class="who"><b>خزينة مريم</b><small>مريم</small></div>
+   <div class="c-day"><b>24 نوفمبر</b><small>وردية 4:48 م</small></div>
+   <div><span class="amt pos">+2,280.00</span><small>زيادة</small></div>
+   <span class="st wait">مستني قرار</span>
+   <div class="act"><button class="btn">سجّل القرار</button><small>الخطوة الجاية: قرار الإدارة</small></div>
+   <div class="chev">▴</div>
+  </div>
+  <div class="det">
+   <div class="det-h"><b>تفاصيل الفرق</b><button class="x" aria-label="اقفل التفاصيل">✕</button></div>
+   <div class="facts">
+    <div><small>المعدود</small><b class="amt">1,190.00</b></div>
+    <div><small>المتوقع</small><b class="amt">-1,090.00</b></div>
+    <div><small>منها مرحّل من قبل</small><b class="amt">1,090.00</b></div>
+    <div><small>رصيد الخزنة دلوقتي</small><b class="amt">0.00</b></div>
+   </div>
+   <div class="steps">
+    <div class="step"><b>اتسجّل الفرق</b><small>24 نوفمبر 8:00 م — تلقائي عند قفل الوردية</small></div>
+    <div class="step"><b>المراجعة</b><small>محمود — 27 نوفمبر</small><p>الزيادة 1,190 فلوس اتسلمت قبل تسجيل إيصالاتها + 1,090 مرحّلة من وردية 22/11، واتسجّلوا في وردية 25/11 اللي اتقفلت مظبوطة 920. رصيد الدرج صفر.</p></div>
+    <div class="step"><b>المسؤولية</b><small>محمود — 27 نوفمبر</small><p>خطأ في الإجراءات أو التسجيل</p></div>
+    <div class="step todo"><b>القرار — لسه</b><p>اختار القرار (مثلاً «طلب تصحيح السجلات») واكتب السبب.</p></div>
+    <div class="step off"><b>التسوية</b><p>مش محتاجة: رصيد الخزنة صفر، فالملف هيتقفل بعد القرار.</p></div>
+   </div>
+  </div>
+ </div>
+
+ <!-- 2: waiting, collapsed -->
+ <div class="case"><div class="row">
+  <div class="who"><b>خزينة مريم</b><small>مريم</small></div>
+  <div class="c-day"><b>22 نوفمبر</b><small>وردية 5:10 م</small></div>
+  <div><span class="amt pos">+1,090.00</span><small>زيادة</small></div>
+  <span class="st wait">مستني قرار</span>
+  <div class="act"><button class="btn">سجّل المراجعة</button><small>الخطوة الجاية: مراجعة المستندات</small></div>
+  <div class="chev">▾</div>
+ </div></div>
+
+ <!-- 3: decided, needs settlement -->
+ <div class="case"><div class="row">
+  <div class="who"><b>خزينة الاستقبال 2</b><small>سارة</small></div>
+  <div class="c-day"><b>20 نوفمبر</b><small>وردية 9:00 ص</small></div>
+  <div><span class="amt neg">-100.00</span><small>ناقص</small></div>
+  <span class="st blue">اتقرر</span>
+  <div class="act"><button class="btn orange">سوّي الفرق</button><small>الخطوة الجاية: قيد التسوية (محتاج موافقة شخص تاني)</small></div>
+  <div class="chev">▾</div>
+ </div></div>
+
+ <!-- 4: closed, long note hidden -->
+ <div class="case"><div class="row">
+  <div class="who"><b>خزينة مازن</b><small>مازن</small></div>
+  <div class="c-day"><b>23 نوفمبر</b><small>وردية 4:00 م</small></div>
+  <div><span class="amt pos">+550.00</span><small>زيادة</small></div>
+  <span class="st ok">اتقفل</span>
+  <div class="act"><small>مفيش حاجة مطلوبة — دوس على الصف تشوف الملاحظة</small></div>
+  <div class="chev">▾</div>
+ </div></div>
+</div>
+
+<div class="ann">
+ <b>اللي اتغيّر عن الشاشة الحالية</b>
+ <span>1) كل ملف بقى صف مختصر: الخزنة والموظف، واليوم، والفرق بلون (أخضر زيادة / أحمر ناقص)، والحالة بكلمة واحدة.</span>
+ <span>2) الملاحظات الطويلة (نتيجة المراجعة، المسؤولية، القرار، رصيد الخزنة) بقت جوه «تفاصيل الفرق» وبتتفتح بس لما تدوس على الصف، وتتقفل بـ ✕.</span>
+ <span>3) «استكمال المسار» اتشال اسمه بس، وبقى الزرار باسم الخطوة نفسها: «سجّل المراجعة» / «حدّد المسؤولية» / «سجّل القرار» / «سوّي الفرق» / «راجع التسوية»، وتحته جملة الخطوة الجاية. لو مفيش خطوة، مفيش زرار.</span>
+ <span>4) فوق: شرح «فرق خزنة» يعني إيه ومعنى كل حالة، وفلتر بالحالة بعدّاد، وبحث بالكتابة باسم الخزنة أو الموظف.</span>
+ <span>نفس الخطوات ونفس الصلاحيات ونفس السيرفر — مفيش حاجة بتتشال. اللي بيقفل الوردية مايقدرش يقرّر في فرقه، زي دلوقتي.</span>
+</div>
+</div></body></html>
