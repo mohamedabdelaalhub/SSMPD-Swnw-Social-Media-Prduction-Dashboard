@@ -82,6 +82,10 @@ function draw(body,data,h,opts){
   need.push({bad:1,t:'تسليم ورديتك'+(rej?' اترفض':' محتاج إعادة جرد'),s:(rej?money(rej.amount)+' ج · '+(rej.review_note?'السبب: «'+rej.review_note+'»':'اترفض من غير سبب مكتوب'):(s.register_name||'')),a:btn('treasury-recount',s.id,'عِد الجرد وسلّم تاني')});});
  need=need.concat(advNeed(x,btn));
  html+=needHtml(need);
+ /* ---- «تحصيلاتي بالتفصيل» (owner 2026-11-27 «فين الشاشة اللي بيشوف منها موظف الريسبشن التحصيل بتاعه بالتفصيل … ومفيش عنده اوبشن يشوف الحسابات»):
+    the SAME approved «حركات الوردية بالتفصيل» + «حركات اليوم» (finance-shift-movements.js + finance-day-movements.js), mounted here for the
+    cashier's OWN shift. The RPCs scope a non-manager to his own shift; no accounting access is added. ---- */
+ if(own)html+='<section class="bcv-card bcv-mv" data-bcv-movements><h3>تحصيلاتي بالتفصيل</h3><p class="bcv-sub">ورديتك انت بس — كل إيصال، كل مريض، كل خصم.</p><div data-bcv-mv></div></section>';
  /* ---- handovers ---- */
  if(transfers.length)html+='<section class="bcv-card" data-bcv-handovers><h3>آخر التسليمات للرئيسية</h3><div class="bcv-list">'+transfers.map(function(t){
   var st=t.status==='approved'?['✓ اتسلّم','ok']:t.status==='rejected'?['✗ اترفض','bad']:['مستني الاستلام','warn'];
@@ -95,6 +99,7 @@ function draw(body,data,h,opts){
  body.querySelectorAll('[data-bcv-range]').forEach(function(b){if(opts.range===b.dataset.bcvRange)b.classList.add('is-on');b.onclick=function(){if(opts.onRange)opts.onRange(b.dataset.bcvRange);};});
  /* «اتحصّل في ورديتك» (#863): read-only, only my open shift; hidden when there is no shift or the function is not live */
  var slot=body.querySelector('[data-bcv-collections-slot]'),c=w.SSMPDDb&&w.SSMPDDb.client;
+ var mvh=body.querySelector('[data-bcv-mv]');if(mvh&&c&&w.SSMPDShiftMovements&&typeof w.SSMPDShiftMovements.mount==='function'){try{w.SSMPDShiftMovements.mount(mvh,{});}catch(_){var ms=mvh.closest('[data-bcv-movements]');if(ms)ms.remove();}}else if(mvh){var ms2=mvh.closest('[data-bcv-movements]');if(ms2)ms2.remove();}
  /* not gated on own: the RPC itself answers shift=null when there is no open shift */if(slot&&c)Promise.resolve(c.rpc('clinic_finance_my_collections',{})).then(function(r){if(r&&!r.error&&slot.isConnected)slot.innerHTML=collectionsHtml(r.data);}).catch(function(){});
 }
 /* «نسخ» on a booking reference — delegated so it also works inside string-rendered panels */

@@ -31,3 +31,7 @@
 .rd-sheet-list button:hover{background:#F7F9FE}
 @media(max-width:760px){.rd-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.rd-endb{margin-inline-start:0}}
 .rd-sheet-list button[hidden],[data-rd-home-slot][hidden],[data-rd-bar-slot][hidden]{display:none}
+
+/* «تحصيلاتي بالتفصيل» sheet (owner 2026-11-27): wide, the movements view inside */
+.rd-mine-box{width:min(1100px,100%);max-height:94vh}.rd-mine-box .rd-sheet-h small{color:#667085;font-size:12px;margin-inline-start:6px;flex:1}
+.rd-mine-box .mv-section{box-shadow:none;border:0;padding:0;background:transparent}
