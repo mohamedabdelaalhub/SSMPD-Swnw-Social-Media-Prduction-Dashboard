@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2045,
-    "labels": 1484,
+    "definitions": 2050,
+    "labels": 1487,
     "files": 166,
-    "groups": 1615
+    "groups": 1620
   },
   "fields": [
     {
@@ -10639,6 +10639,58 @@
       "tab": "production",
       "article": "month-end-accounts",
       "text_sha256": "a9253f7f65835cb24e2ff477add1e1b104449f86578657c743c6a485411ef676"
+    },
+    {
+      "file": "month-end-accounts.js",
+      "label": "الفترة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "tasks-guide",
+      "text_sha256": "abf2694f5a647f7163ae174e7092690b9a6338927b2686b8891854e4c5144714"
+    },
+    {
+      "file": "month-end-accounts.js",
+      "label": "المتفق عليه",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "platform-audit",
+      "text_sha256": "c6ee59c625c4f622088243e73835d95fa2b2be0c16b47032ee8b1b4864db6505"
+    },
+    {
+      "file": "month-end-accounts.js",
+      "label": "مثلاً: حجزين اتلغوا ومتحسبين عندهم",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "platform-audit",
+      "text_sha256": "4bd73d7f961d3c8ba61f459bf2bfb1b5002bbd844739a74cc988db33cdb9dacb"
+    },
+    {
+      "file": "month-end-accounts.js",
+      "label": "سبب الاتفاق",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "platform-audit",
+      "text_sha256": "90dbb3adc5d0ea02faed2b01512f08d10a66f043fde20f21e2461891b5a5562b"
+    },
+    {
+      "file": "month-end-accounts.js",
+      "label": "سبب الرفض",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "رفض المراجعة"
+      ],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "a21ad9d28e2191e6557244226e39fd526699de2cecda568291a4f8dceb372f43"
     },
     {
       "file": "my-contract.js",
