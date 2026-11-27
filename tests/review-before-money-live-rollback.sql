@@ -4,7 +4,8 @@
 -- Prints flags and counts only (no names, no amounts per patient). Output: one table (step, expected, actual, ok).
 -- Rows: 1 collect review for a live patient file (read only, keys present) · 2 doctor payout: an edit without a reason is refused
 -- before anything is written · 3 lower amount → still pending, reception_review kept, removed case stays payable (only if Mazen
--- can request now: open shift + a payable doctor; otherwise «skipped» with the reason) · 4 drawer «اتصرف» less than approved → paid
+-- can request now: open shift + a payable doctor; otherwise «skipped» with the reason) · 3b the approver (FM) sees reception_review and
+-- approves within the cases kept (as the approver's own auth sub) · 4 drawer «اتصرف» less than approved → paid
 -- with the lower amount, rest cancelled (a 2.00 incentive request approved INSIDE the txn; needs Mazen's open drawer with ≥ 1.00) ·
 -- 5 grants (authenticated yes, anon no) · 6 rollback body puts the previous functions back.
 do $$ begin
@@ -329,6 +330,30 @@ begin select * into f from rbm_fx;
   insert into rbm_live(step, expected, actual, ok) values ('3 payout lower amount', 'pending, gross = asked, review kept (computed, note)',
     err || ' · status ' || coalesce(q->>'status', '-') || ' · gross=asked ' || coalesce(((q->>'gross')::numeric = ask)::text, 'null') || ' · review ' || coalesce((q ? 'reception_review')::text, 'null'),
     err = 'ok' and q->>'status' = 'pending' and (q->>'gross')::numeric = ask and (q->'reception_review'->>'computed_full')::numeric = full_amt);
+end $$;
+
+-- 3b) the approver (financial manager, not Mazen) sees reception_review and approves within the cases kept
+do $$ declare f rbm_fx; err text := 'ok'; asub uuid; pl jsonb; it jsonb; q jsonb; qid uuid;
+begin select * into f from rbm_fx;
+  select q2.id into qid from clinic_finance.doctor_payouts q2 join clinic_finance.desk_payout_review r on r.payout_id = q2.id where q2.created_by = f.me and q2.status = 'pending' order by q2.created_at desc limit 1;
+  if qid is null then
+    insert into rbm_live(step, expected, actual, ok) values ('3b approver sees + approves', 'reception_review visible, approve ok', 'skipped: no edited request from row 3', true); return; end if;
+  select a.user_id into asub from public.admins a where a.id = f.approver;
+  if asub is null then insert into rbm_live(step, expected, actual, ok) values ('3b approver sees + approves', 'reception_review visible, approve ok', 'skipped: no approver account', true); return; end if;
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', asub, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', asub::text, true);
+  execute 'set local role authenticated';
+  begin
+    pl := public.clinic_reception_doctor_payout('pending_list', '{}'::jsonb, null);
+    select e into it from jsonb_array_elements(pl->'items') e where e->>'id' = qid::text;
+    q := public.clinic_reception_doctor_payout('approve', jsonb_build_object('id', qid), null);
+  exception when others then err := sqlerrm; end;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', f.sub, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', f.sub::text, true);
+  insert into rbm_live(step, expected, actual, ok) values ('3b approver sees + approves', 'reception_review in pending_list, approve ok (cash from Mazen shift)',
+    err || ' · review seen ' || coalesce((it ? 'reception_review')::text, 'null') || ' · status ' || coalesce(q->>'status', '-'),
+    (err = 'ok' and it ? 'reception_review' and q->>'status' = 'approved') or err like '%الكاش%' or err like '%رصيد الطبيب%');
 end $$;
 
 -- 4) drawer «اتصرف» less than approved (request approved inside the txn)
