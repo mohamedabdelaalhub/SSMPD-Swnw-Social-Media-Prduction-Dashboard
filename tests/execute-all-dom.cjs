@@ -39,7 +39,7 @@ const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/stri
  const errs=[...w.document.querySelectorAll('.rx-modal [data-field-err]')].map(x=>x.textContent);
  assert(errs.includes('اكتب قراءة العداد قبل وبعد'),'message under the empty counter: '+errs.join(' | '));
  assert(!calls.some(c=>c[0]==='execute'),'nothing sent');assert(!/راجع القيمة والوحدة والدقة/.test(q('.rx-modal').textContent));
- assert.equal(q('.rx-modal [data-last-reading]').hidden,true,'no reading yet on this device');
+ {const lr=q('.rx-modal [data-last-reading]');assert(lr.hidden||/مفيش قراية عداد متسجلة/.test(lr.textContent),'no reading yet on this device (20261127300000 shows the «مش عارف قراية العداد» hint)');}
  set('.rx-modal [name="meter_before"]','500');set('.rx-modal [name="meter_after"]','400');q('.rx-modal [type="submit"]').click();await new Promise(r=>setTimeout(r,30));
  assert(/قراءة بعد لازم تبقى أكبر من قراءة قبل/.test(q('.rx-modal').textContent));assert(!calls.some(c=>c[0]==='execute'));
  click('.rx-modal .modal-close');assert(!q('.rx-modal'),'✕ closes');
