@@ -14747,11 +14747,11 @@
       "reviewed": true
     },
     {
-      "title": "المبلغ المدفوع",
+      "title": "قيمة الخدمة في الباكج",
       "labels": [
-        "المبلغ المدفوع"
+        "قيمة الخدمة في الباكج"
       ],
-      "text": "المبلغ اللي المريض دفعه في الخدمة دي (كل الجلسات).",
+      "text": "قيمة الخدمة دي في الباكج (كل جلساتها). قيمة الجلسة = القيمة ÷ عدد الجلسات، وده اللي بيتخصم لما الجلسة تتعمل.",
       "article": "reception-legacy-package",
       "tabs": [
         "reception_services"
@@ -14792,6 +14792,20 @@
         "رقم الإيصال القديم أو صورته (لو موجود)"
       ],
       "text": "رقم أو مكان الإيصال الورق القديم — بيساعد اللي بيعتمد يراجع.",
+      "article": "reception-legacy-package",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً 2000",
+      "labels": [
+        "مثلاً 2000",
+        "المدفوع قبل كده في السيستم القديم (لو اتدفع كله سيبها فاضية)"
+      ],
+      "text": "لو المريض دفع جزء بس من الباكج قبل الداشبورد، اكتب اللي اتدفع. الباقي بيبقى فاتورة على الباكج تتحصّل عادي أو من رصيد المريض. لو اتدفع كله سيبها فاضية.",
       "article": "reception-legacy-package",
       "tabs": [
         "reception_services"
@@ -24551,9 +24565,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2116,
-    "labels": 1545,
+    "definitions": 2118,
+    "labels": 1547,
     "files": 175,
-    "groups": 1674
+    "groups": 1675
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
