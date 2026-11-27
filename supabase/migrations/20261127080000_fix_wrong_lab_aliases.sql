@@ -7,6 +7,7 @@
 -- one). The eight aliases are re-pointed to the right service, or removed when it does not exist, so later imports do not
 -- repeat the mistake. Every change is written to clinic_prices.audit. Refuses to run if anything looks different from what
 -- was found on the live server (no alias, an order already priced from the item, more than one candidate service).
+-- List names are compared with hamza forms folded (أ/إ/آ → ا), since live names are spelled both ways.
 -- Idempotent: once fixed, a second run finds nothing to do and changes nothing.
 begin;
 do $$
@@ -16,7 +17,7 @@ declare
 begin
   for pair in select * from (values
       ('aminogram', '^\s*aminogram\M.*\murine\M', 'CMV PCR Qualitative In Urine', '^\s*aminogram'),
-      ('troponin_i', '^\s*troponin\s*i\M.*\mqual', 'Troponin T', '^\s*troponin\s*i\M')) p(k, right_re, wrong_name, alias_re)
+      ('troponin_i', '^\s*troponine?\s*i\M.*\mqual', 'Troponin T', '^\s*troponine?\s*i\M')) p(k, right_re, wrong_name, alias_re)
   loop
     select count(*) into n from public.pricing_services where name = pair.wrong_name;
     if n = 0 then raise notice 'skip %: wrong service «%» not found', pair.k, pair.wrong_name; continue; end if;
@@ -27,7 +28,7 @@ begin
     select id into v_right from public.pricing_services where name ~* pair.right_re and coalesce(active, true);
 
     for l in select x.id, x.name, x.created_by from clinic_prices.lists x where x.deleted_at is null
-        and exists (select 1 from unnest(lists) s where x.name ilike '%' || s || '%')
+        and exists (select 1 from unnest(lists) s where translate(x.name, 'أإآ', 'ااا') ilike '%' || translate(s, 'أإآ', 'ااا') || '%')
         and exists (select 1 from clinic_prices.aliases a where a.list_id = x.id and a.service_id = v_wrong and a.external_name ~* pair.alias_re)
     loop
       v_actor := coalesce(public.my_admin_id(), l.created_by);

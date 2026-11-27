@@ -8,14 +8,14 @@ begin;
 create temp view tw as
   select l.name list, s.name service, i.id item_id, i.fixed_price, i.discount_percent, i.discount_amount
   from clinic_prices.items i join clinic_prices.lists l on l.id = i.list_id join public.pricing_services s on s.id = i.service_id
-  where s.name in ('CMV PCR Qualitative In Urine', 'Troponin T') or s.name ~* '^\s*aminogram|^\s*troponin\s*i\M';
+  where s.name in ('CMV PCR Qualitative In Urine', 'Troponin T') or s.name ~* '^\s*aminogram|^\s*troponine?\s*i\M';
 create temp view ta as
   select l.name list, a.external_name, s.name service from clinic_prices.aliases a join clinic_prices.lists l on l.id = a.list_id
-  join public.pricing_services s on s.id = a.service_id where a.external_name ~* '^\s*aminogram|^\s*troponin\s*i\M';
+  join public.pricing_services s on s.id = a.service_id where a.external_name ~* '^\s*aminogram|^\s*troponine?\s*i\M';
 select 'orders_on_wrong_items' part, count(*) from clinic_reception.orders o
   where exists (select 1 from clinic_prices.items i join public.pricing_services s on s.id = i.service_id
     where s.name in ('CMV PCR Qualitative In Urine', 'Troponin T') and o.snapshot::text like '%' || i.id::text || '%');
-select 'right_services' part, name, active from public.pricing_services where name ~* '^\s*aminogram|^\s*troponin\s*i\M';
+select 'right_services' part, name, active from public.pricing_services where name ~* 'aminogram|tropon';
 create temp table before_items as select * from tw; create temp table before_aliases as select * from ta;
 select 'before_items' part, * from tw order by 2, 3;
 select 'before_aliases' part, * from ta order by 2, 3;
