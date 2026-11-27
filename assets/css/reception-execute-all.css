@@ -1,0 +1,29 @@
+/* «تنفيذ الكل» + clear execute checks (owner 2026-11-27, mockup docs/ui-references/mockups/execute-all.html, help 331) */
+.rx-field-err{display:block;margin:-4px 0 6px;color:#D0402A;font-size:12.5px;font-weight:700}
+.rx-bad{border-color:#D0402A!important;box-shadow:0 0 0 2px rgba(208,64,42,.15)}
+.rv-xall-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 8px}
+.rv-modal .rv-btn.rv-xall,.rv-look .rv-btn.rv-xall{background:#0F369D;border-color:#0F369D;color:#fff;font-weight:800}
+.xall-modal .modal{width:min(780px,96vw)}
+.xall-sec{border:1px solid #e6ebf3;border-radius:14px;padding:12px;display:grid;gap:10px}
+.xall-sec h4{margin:0;font-size:14px;color:#0F369D}
+.xall-q{font:inherit;font-size:14px;padding:9px 12px;border:1px solid #D5DEEE;border-radius:10px;width:100%;box-sizing:border-box}
+.xall-list{display:grid;border:1px solid #e6ebf3;border-radius:12px;overflow:hidden;background:#fff}
+.xall-pick{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-top:1px solid #eef1f6;font-size:14px;cursor:pointer}
+.xall-pick:first-child{border-top:0}.xall-pick input{width:18px;height:18px}.xall-pick small{display:block;color:#667085;font-size:12px}
+.xall-f{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.xall-f label,.xall-sec>label{min-width:0;display:grid;gap:3px;font-size:12.5px;color:#3B4658}
+.xall-f input,.xall-f select,.xall-sec>label input,.xall-sec>label select{min-width:0;width:100%;box-sizing:border-box}
+.xall-split{display:grid;border:1px solid #e6ebf3;border-radius:12px;overflow:hidden;font-size:13px;background:#fff}
+.xall-r{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.6fr) minmax(0,1.3fr);gap:8px;padding:7px 10px;border-top:1px solid #eef1f6}
+.xall-r.h{border-top:0;background:#F1F4F8;font-weight:700;color:#475467;font-size:12px}
+.xall-pulse{background:#FFF8F4;border:1px solid #F7C9B3;border-radius:12px;padding:10px 12px;display:grid;gap:8px}
+.xall-mats{display:grid;border:1px solid #e6ebf3;border-radius:12px;overflow:hidden;background:#fff}
+.xall-mat{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 10px;border-top:1px solid #eef1f6;font-size:13.5px}
+.xall-mat:first-child{border-top:0}.xall-mat small{display:block;color:#667085;font-size:11.5px}
+.xall-qty{display:flex;align-items:center;gap:6px}.xall-qty button{width:32px;height:32px;border-radius:8px;border:1px solid #D5DEEE;background:#fff;font-size:16px;cursor:pointer}
+.xall-qty input{width:76px;text-align:center}
+@media(max-width:620px){.xall-f{grid-template-columns:1fr}.xall-r{grid-template-columns:minmax(0,1fr) auto}.xall-r>:nth-child(3){grid-column:1/-1}}
+/* «آخر قراءة» + «من / إلى» ↔ «عدد النبضات» (owner 2026-11-27) */
+.xall-last{display:block;margin:-4px 0 6px;color:#475467;font-size:12px}.xall-last.warn{color:#B4400F;font-weight:700}
+.xall-mode{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px;color:#3B4658;grid-column:1/-1}
+.xall-mode label{display:inline-flex;gap:5px;align-items:center;font-weight:700;color:#16212E}
