@@ -1,0 +1,3 @@
+/* type-to-search on big lists (select-search.js, owner rule 12) — the search box itself reuses .sss from service-select-search.css */
+select[data-ss][size]{padding:4px;border-radius:10px}
+.ss-box{min-width:0}
