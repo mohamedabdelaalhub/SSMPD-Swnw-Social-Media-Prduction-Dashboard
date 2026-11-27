@@ -100,38 +100,51 @@ insert into bday_live(step, expected, actual, ok) values
  ('(c) today() follows business_day(now())', 'equal', clinic_reception.today()::text || ' (now Cairo ' || to_char(now() at time zone 'Africa/Cairo', 'YYYY-MM-DD HH24:MI') || ')',
    clinic_reception.today() = clinic_reception.business_day(now())),
  ('(c) cairo_day (calendar, bookings) unchanged', '2026-11-28', clinic_reception.cairo_day('2026-11-27T23:30:00Z')::text, clinic_reception.cairo_day('2026-11-27T23:30:00Z') = date '2026-11-28');
-do $$ declare mazen uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; sa uuid; r jsonb; err text;
+grant select, insert on bday_live to authenticated;
+grant usage, select on sequence bday_live_n_seq to authenticated;
+do $$ declare mazen_sub uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; mazen_admin uuid; sa_sub uuid; sa_admin uuid; live boolean; r jsonb; err text;
 begin
-  if not exists (select 1 from public.admins where id = mazen) then
-    select a.id into mazen from public.admins a where a.role = 'reception' and a.active order by a.id limit 1; end if;
-  select a.id into sa from public.admins a where a.role = 'super_admin' and a.active and a.id <> mazen order by a.id limit 1;
+  -- lookups as postgres, BEFORE switching role. Live: admins.user_id = the auth sub; the PGlite harness has no user_id (test.admin = admin id)
+  live := exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'admins' and column_name = 'user_id');
+  if live then
+    execute 'select id from public.admins where user_id = $1 and active limit 1' into mazen_admin using mazen_sub;
+    execute 'select user_id, id from public.admins where role = ''super_admin'' and active and user_id is not null and user_id <> $1 order by id limit 1' into sa_sub, sa_admin using mazen_sub;
+  else
+    select a.id into mazen_admin from public.admins a where a.role = 'reception' and a.active order by a.id limit 1; mazen_sub := mazen_admin;
+    select a.id into sa_admin from public.admins a where a.role = 'super_admin' and a.active order by a.id limit 1; sa_sub := sa_admin;
+  end if;
   -- as Mazen (reception)
-  perform set_config('request.jwt.claims', jsonb_build_object('sub', mazen, 'role', 'authenticated')::text, true);
-  perform set_config('request.jwt.claim.sub', mazen::text, true);
-  perform set_config('test.admin', mazen::text, true);
+  perform set_config('request.jwt.claims', json_build_object('sub', mazen_sub, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', mazen_sub::text, true);
+  perform set_config('test.admin', coalesce(mazen_admin::text, ''), true);
+  execute 'set local role authenticated';
   begin r := public.clinic_reception_business_day('get', '{}'::jsonb); err := 'cutoff ' || (r->>'cutoff') || ', can_set ' || (r->>'can_set');
   exception when others then err := 'ERROR ' || sqlerrm; end;
   insert into bday_live(step, expected, actual, ok) values ('(c) Mazen get', 'cutoff 04:00, can_set false', err, err = 'cutoff 04:00, can_set false');
   begin perform public.clinic_reception_business_day('set', '{"cutoff":"03:00","reason":"تجربة"}'::jsonb); err := 'ACCEPTED';
   exception when others then err := sqlerrm; end;
   insert into bday_live(step, expected, actual, ok) values ('(c) Mazen set (must be refused)', 'refused: للسوبر أدمن أو المدير العام بس', err, err like '%للسوبر أدمن أو المدير العام بس%');
-  -- as a super admin
-  if sa is null then insert into bday_live(step, expected, actual, ok) values ('(c) super admin set', 'info', 'no active super_admin besides Mazen', true); return; end if;
-  perform set_config('request.jwt.claims', jsonb_build_object('sub', sa, 'role', 'authenticated')::text, true);
-  perform set_config('request.jwt.claim.sub', sa::text, true);
-  perform set_config('test.admin', sa::text, true);
+  execute 'reset role';
+  -- as a super admin (not Mazen)
+  if sa_sub is null then insert into bday_live(step, expected, actual, ok) values ('(c) super admin set', 'info', 'no active super_admin with a login besides Mazen', true); return; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', sa_sub, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', sa_sub::text, true);
+  perform set_config('test.admin', coalesce(sa_admin::text, ''), true);
+  execute 'set local role authenticated';
   begin r := public.clinic_reception_business_day('set', '{"cutoff":"03:00","reason":"تجربة الدراي رن"}'::jsonb); err := 'changed ' || (r->>'changed') || ' → ' || (r->>'cutoff');
   exception when others then err := 'ERROR ' || sqlerrm; end;
   insert into bday_live(step, expected, actual, ok) values ('(c) super admin set 03:00', 'changed true → 03:00', err, err = 'changed true → 03:00');
-  insert into bday_live(step, expected, actual, ok) select '(c) logged (old → new, reason)', '04:00 → 03:00',
-    to_char(c.cutoff_old, 'HH24:MI') || ' → ' || to_char(c.cutoff_new, 'HH24:MI') || ' · ' || c.reason, c.cutoff_old = time '04:00' and c.cutoff_new = time '03:00'
-    from clinic_reception.business_day_changes c order by c.id desc limit 1;
-  insert into bday_live(step, expected, actual, ok) values ('(c) 28/11 03:30 Cairo with 03:00 cutoff', '2026-11-28',
-    clinic_reception.business_day('2026-11-28T01:30:00Z')::text, clinic_reception.business_day('2026-11-28T01:30:00Z') = date '2026-11-28');
   begin r := public.clinic_reception_business_day('set', '{"cutoff":"09:00","reason":"تجربة"}'::jsonb); err := 'ACCEPTED';
   exception when others then err := sqlerrm; end;
   insert into bday_live(step, expected, actual, ok) values ('(c) 09:00 refused', 'refused: من 00:00 لحد 08:00', err, err like '%من 00:00 لحد 08:00%');
+  execute 'reset role';
   perform set_config('request.jwt.claims', '', true); perform set_config('request.jwt.claim.sub', '', true); perform set_config('test.admin', '', true);
+  -- checks as postgres
+  insert into bday_live(step, expected, actual, ok) select '(c) logged (old → new, reason)', '04:00 → 03:00',
+    coalesce((select to_char(c.cutoff_old, 'HH24:MI') || ' → ' || to_char(c.cutoff_new, 'HH24:MI') || ' · ' || c.reason from clinic_reception.business_day_changes c order by c.id desc limit 1), 'no log row'),
+    exists (select 1 from clinic_reception.business_day_changes c where c.cutoff_old = time '04:00' and c.cutoff_new = time '03:00');
+  insert into bday_live(step, expected, actual, ok) values ('(c) 28/11 03:30 Cairo with 03:00 cutoff', '2026-11-28',
+    clinic_reception.business_day('2026-11-28T01:30:00Z')::text, clinic_reception.business_day('2026-11-28T01:30:00Z') = date '2026-11-28');
 end $$;
 select step, expected, actual, ok from bday_live order by n;
 rollback;
