@@ -56,10 +56,14 @@ function wire(form,ctx){if(!form||(ctx&&ctx.appointment)||form.querySelector('[d
  box.querySelector('[data-vzp-open]').onclick=function(){panel.hidden=false;this.hidden=true;ta.focus();};
  box.querySelector('[data-vzp-close]').onclick=close;box.querySelector('[data-vzp-cancel]').onclick=close;
  function patientByPhone(ph){var k=phone10(ph);return k?(data.patients||[]).find(function(p){return phone10(p.phone)===k;}):null;}
- function dup(pt,prov,day){if(!pt||!prov||!day)return null;return (data.appointments||[]).find(function(a){return a.patient_id===pt.id&&a.provider_id===prov.id&&cairoDay(a.starts_at)===day&&a.status!=='cancelled'&&a.status!=='no_show';});}
+ /* the screen holds only the day on display: for an SMS on another day, read that day once from the server so the duplicate check still works */
+ var other={},otherBusy={};
+ function loadDay(day){var db=w.SSMPDDb,ws=data.workspace&&data.workspace.id;if(!day||other[day]||otherBusy[day]||!db||typeof db.receptionSnapshot!=='function'||!ws)return;otherBusy[day]=1;
+  Promise.resolve(db.receptionSnapshot(ws,day,day)).then(function(x){other[day]=(x&&x.appointments)||[];}).catch(function(){other[day]=[];}).then(function(){delete otherBusy[day];render();});}
+ function dup(pt,prov,day){if(!pt||!prov||!day)return null;return (data.appointments||[]).concat(other[day]||[]).find(function(a){return a.patient_id===pt.id&&a.provider_id===prov.id&&cairoDay(a.starts_at)===day&&a.status!=='cancelled'&&a.status!=='no_show';});}
  function render(){var r=cur;if(!r){out.innerHTML='';apply.disabled=true;return;}
   if(r.errors.indexOf('unreadable')>=0||r.errors.indexOf('empty')>=0){out.innerHTML='<p class="vzp-err">مش قادر أقرأ الرسالة — كمّل الحجز يدوي.</p>';apply.disabled=true;return;}
-  var cands=matchDoctors(r.doctor,data.providers),doc=pick||sure(cands),pt=patientByPhone(r.phone),d=doc&&dup(pt,doc,r.day),rows=[];
+  var cands=matchDoctors(r.doctor,data.providers),doc=pick||sure(cands),pt=patientByPhone(r.phone),d=doc&&dup(pt,doc,r.day),rows=[];if(pt&&doc&&r.day&&!d)loadDay(r.day);
   rows.push(['المصدر','<span class="vzp-pill on">فيزيتا</span>'+(r.shamel?' <span class="vzp-pill orange">شامل</span>':'')]);
   rows.push(['الدكتور',doc?'<span class="vzp-ok">✓ '+esc(doc.name)+'</span>':cands.length?'<span class="vzp-warn">«'+esc(r.doctor)+'» ينفع أكتر من دكتور — اختار:</span>':'<span class="vzp-warn">مش لاقي «'+esc(r.doctor)+'» — اختار الدكتور من الحجز تحت</span>']);
   rows.push(['المريض',pt?'<span class="vzp-ok">✓ ملف موجود</span> '+esc(pt.name)+(pt.file_no?' — '+esc(pt.file_no):''):'<span class="vzp-warn">مفيش ملف بالرقم ده</span> '+esc(r.patient)+' — <span dir="ltr">'+esc(r.phone)+'</span>']);
@@ -74,7 +78,8 @@ function wire(form,ctx){if(!form||(ctx&&ctx.appointment)||form.querySelector('[d
   var errs=[];if(r.errors.indexOf('branch')>=0)errs.push('الرسالة دي لفرع تاني — مش بتتحجز هنا.');if(r.errors.indexOf('past')>=0)errs.push('الحجز ده يومه عدّى — اتأكد من الرسالة.');if(r.errors.indexOf('day')>=0)errs.push('مش لاقي يوم الحجز في الرسالة.');if(r.errors.indexOf('phone')>=0)errs.push('مش لاقي رقم موبايل المريض في الرسالة.');
   if(errs.length)html+='<p class="vzp-err">'+errs.map(esc).join('<br>')+'</p>';
   if(d&&!dupOk)html+='<p class="vzp-err" data-vzp-dup>نفس الرقم محجوز مع '+esc(doc.name)+' يوم '+esc(dayAr(r.day))+' — '+esc(time12(cairoHM(d.starts_at)))+'.</p><div class="vzp-btns"><button type="button" class="btn btn-primary" data-vzp-open-existing="'+esc(d.id)+'">افتح الحجز الموجود</button><button type="button" class="btn" data-vzp-dup-ok>احجز تاني برضه</button></div>';
-  out.innerHTML=html;apply.disabled=!!errs.length||!doc||!!(d&&!dupOk);
+  var checking=!!(pt&&doc&&r.day&&!d&&otherBusy[r.day]);if(checking)html+='<p class="vzp-note" data-vzp-checking>بيتأكد إن مفيش حجز مكرر في اليوم ده…</p>';
+  out.innerHTML=html;apply.disabled=!!errs.length||!doc||!!(d&&!dupOk)||checking;
   out.querySelectorAll('input[name="vzp_doc"]').forEach(function(i){i.onchange=function(){pick=(data.providers||[]).find(function(p){return p.id===i.value;})||null;render();};});
   var dk=out.querySelector('[data-vzp-dup-ok]');if(dk)dk.onclick=function(){if(w.confirm('فيه حجز لنفس المريض مع نفس الدكتور في نفس اليوم. تحجز تاني برضه؟')){dupOk=true;render();}};
   var oe=out.querySelector('[data-vzp-open-existing]');if(oe)oe.onclick=function(){var id=oe.getAttribute('data-vzp-open-existing'),cancel=form.closest('.rx-modal')&&form.closest('.rx-modal').querySelector('[data-rx-cancel]');if(cancel)cancel.click();setTimeout(function(){var b=document.querySelector('[data-tl-open="'+id+'"]');if(b)b.click();},50);};}
