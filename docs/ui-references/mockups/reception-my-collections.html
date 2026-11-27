@@ -1,0 +1,64 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: تحصيلاتي بالتفصيل (الاستقبال)</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css"><link rel="stylesheet" href="../../../assets/css/finance-cash.css">
+<!-- MOCKUP (owner 2026-11-27 «فين الشاشة اللي بيشوف منها موظف الريسبشن التحصيل بتاعه بالتفصيل … ومفيش عنده اوبشن يشوف الحسابات»).
+     (A) «تحصيلاتي بالتفصيل» inside «خزينة الاستقبال والحجوزات» (reception tab, no accounting access): the SAME approved «حركات اليوم» view
+         (real finance-shift-movements.js + finance-day-movements.js, own shift only — the RPCs already scope a cashier to his own shift).
+     (B) «قبل ما تحصّل» inside «تسجيل تحصيل»: the patient's open visits (services → discount → payer → due) and his receipts in my shift.
+     FAKE names and numbers. #collect shows (B). -->
+<style>body{background:#f4f7fc;margin:0;padding:16px;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.page{max-width:1100px;margin:auto;display:grid;gap:16px}.ph{display:flex;align-items:center;gap:10px}.ph h2{margin:0;font-size:20px;flex:1}
+.ph .tabs{display:flex;gap:6px}.ph .tabs span{font-size:13px;padding:6px 12px;border-radius:999px;background:#fff;border:1px solid #D5DEEE}.ph .tabs .on{background:#0F369D;color:#fff;border-color:#0F369D}
+.sec{background:#fff;border:1px solid #e6ebf3;border-radius:16px;padding:16px;display:grid;gap:12px}.sec h3{margin:0;font-size:16px}.sec .sub{margin:0;font-size:12.5px;color:#667085}
+.new{font-size:10.5px;background:#F15A22;color:#fff;border-radius:6px;padding:1px 6px;margin-inline-start:6px;vertical-align:2px}
+.old{opacity:.55}.ov{position:fixed;inset:0;background:rgba(22,33,46,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.ov.on{display:flex}.md{width:min(720px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#fff;border-radius:18px;padding:16px;display:grid;gap:12px}
+.mh{display:flex;align-items:center;gap:8px}.mh h3{margin:0;flex:1;font-size:17px}.x{width:38px;height:38px;border-radius:10px;border:1px solid #D5DEEE;background:#fff;font-size:18px}
+.f{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.f label{display:grid;gap:3px;font-size:12px;color:#667085}.f input,.f select{font:inherit;font-size:14px;padding:9px 10px;border:1px solid #D5DEEE;border-radius:10px;color:#16212E;background:#fff}
+.before{border:1px solid #c7d6f5;background:#F5F8FF;border-radius:14px;padding:12px;display:grid;gap:10px}.before h4{margin:0;font-size:14px;color:#0F369D}
+.vl{display:grid;border:1px solid #e6ebf3;border-radius:12px;overflow:hidden;background:#fff}.vl .r{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:8px;padding:9px 12px;border-top:1px solid #eef1f6;font-size:13px;align-items:center}.vl .r:first-child{border-top:0;background:#F1F4F8;font-weight:700;color:#475467;font-size:12px}
+.tag{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EEF4FF;color:#0F369D}.tag.st{background:#ECF8F2;color:#2F7D5C}.tag.ins{background:#F4F0FF;color:#5B3CC4}
+.neg{color:#D0402A}.warn{color:#B4400F;font-weight:700}.tot{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px}.tot b{color:#16212E}
+.rc{font-size:12.5px;color:#475467}.btns{display:flex;gap:8px;flex-wrap:wrap}.btn{font:inherit;font-size:14px;font-weight:700;padding:9px 16px;border-radius:10px;border:1px solid #D5DEEE;background:#fff;color:#0F369D}.btn.pri{background:#0F369D;color:#fff;border-color:#0F369D}
+@media(max-width:760px){body{padding:12px}.f{grid-template-columns:1fr}.vl .r{grid-template-columns:minmax(0,1fr) auto}.vl .r>:nth-child(2),.vl .r>:nth-child(3){grid-column:1/-1}.ov{align-items:flex-end;padding:0}.md{border-radius:18px 18px 0 0}.ph{flex-wrap:wrap}}
+</style>
+<div class="page"><div class="ph"><h2>خزينة الاستقبال والحجوزات</h2><div class="tabs"><span>محتاج منك</span><span>مقدمات الحجز</span><span class="on">تحصيلاتي بالتفصيل</span></div></div>
+<section class="sec"><h3>تحصيلاتي بالتفصيل<span class="new">جديد</span></h3><p class="sub">ورديتك انت بس — كل إيصال، كل مريض، كل خصم. نفس «حركات اليوم» بالظبط، من غير ما تفتح الحسابات.</p><div id="h"></div></section></div>
+<div class="ov" id="ov"><div class="md" role="dialog" aria-modal="true"><div class="mh"><h3>تسجيل تحصيل</h3><button class="x" aria-label="قفل" onclick="location.hash=''">✕</button></div>
+<div class="f"><label>المريض<input value="سارة يوسف — P-2026-900330"></label><label>المبلغ<input value="200"></label></div>
+<div class="before"><h4>قبل ما تحصّل — حساب المريضة النهارده<span class="new">جديد</span></h4>
+<div class="vl"><div class="r"><span>الخدمة</span><span>السعر</span><span>الخصم</span><span>عليها</span></div>
+<div class="r"><span>كشف جلدية — د. سامح فؤاد <span class="tag">خاص</span></span><span>600 ج.م</span><span>—</span><span class="warn">200 ج.م باقي</span></div>
+<div class="r"><span>جلسة تقشير — د. سامح فؤاد <span class="tag">خاص</span></span><span>900 ج.م</span><span class="neg"><bdi dir="ltr">−90</bdi> ج.م <small>خاص 10٪ · اعتمده أ. وليد</small></span><span>اتدفعت ✓</span></div></div>
+<div class="tot"><span>إجمالي الزيارة: <b>1,410 ج.م</b></span><span>اتدفع: <b>1,210 ج.م</b></span><span>الباقي عليها: <b class="warn">200 ج.م</b></span><span>رصيد مقدم: <b>0</b></span></div>
+<div class="rc">إيصالاتها في ورديتك: RC-2026-000031 نقدي 400 (12:07) · RC-2026-000032 إنستا باي 810 (12:09)</div></div>
+<div class="f"><label>طريقة السداد<select><option>نقدي</option></select></label><label>رقم الإيصال / مرجع العملية<input></label></div>
+<div class="btns"><button class="btn pri">حفظ</button><button class="btn">إلغاء</button></div></div></div>
+<script src="../../../assets/js/latin-digits.js"></script><script src="../../../assets/js/swnw-print.js"></script><script src="../../../assets/js/finance-shift-movements.js"></script><script src="../../../assets/js/finance-day-movements.js"></script><script>const mv=[{at:'2026-11-26T08:16:00Z',direction:'in',kind:'self',title:'منى عادل',detail:'كشف جلدية',method:'cash',reference:'R-1',amount:600},
+ {at:'2026-11-26T09:42:00Z',direction:'in',kind:'self',title:'كريم ناصر',detail:'كشف باطنة',method:'pos',reference:'R-2',amount:360},
+ {at:'2026-11-26T10:07:00Z',direction:'in',kind:'self',title:'سارة يوسف',detail:'كشف',method:'cash',reference:'R-3',amount:400},
+ {at:'2026-11-26T10:09:00Z',direction:'in',kind:'self',title:'سارة يوسف',detail:'تقشير',method:'instapay',reference:'IP-1',amount:810},
+ {at:'2026-11-26T11:31:00Z',direction:'in',kind:'self',title:'أحمد رجب',detail:'كشف عظام',method:'cash',reference:'R-4',amount:500},
+ {at:'2026-11-26T12:05:00Z',direction:'out',kind:'out',title:'صرف أتعاب طبيب',detail:'د. هالة',method:'cash',reference:'E-1',amount:-180},
+ {at:'2026-11-26T13:20:00Z',direction:'out',kind:'out',title:'مصروف',detail:'أدوات نظافة',method:'cash',reference:'E-2',amount:-120}];
+const pay=(m,a,rc)=>[{method:m,amount:a,receipt_no:rc,reference:rc,at:'2026-11-26T08:00:00Z'}];
+const svc=(o)=>Object.assign({status:'completed',discount_percent:0,discount:0,claim:0,request:null,finance_invoice_id:null},o);
+const day={manager:false,shifts:[{id:'s1',register_name:'خزينة الاستقبال 1',cashier_name:'نهى',status:'open'}],channels:{'f-1':{name:'فيزيتا',kind:'external',payable:'none',platform_share:150},'f-4':{name:'ترشيح د. خارجي',kind:'external',payable:'commission',platform_share:50}},
+ visits:[
+  {id:'v1',at:'2026-11-26T08:15:00Z',patient:'منى عادل',file_no:'P-2026-900101',provider:'د. سامح فؤاد',provider_id:'p1',source:'whatsapp',discount_kind:'vezeeta',fixes:[],
+   services:[svc({id:'o1',name:'كشف جلدية',provider:'د. سامح فؤاد',provider_id:'p1',gross:600,due:600,collected_here:600,collected_total:600,doctor_fee:225,payments:pay('cash',600,'RC-1'),finance_invoice_id:'f-1'})]},
+  {id:'v2',at:'2026-11-26T09:40:00Z',patient:'كريم ناصر',file_no:'P-2026-900214',provider:'د. هالة منصور',provider_id:'p2',source:'phone',discount_kind:'special',discount_staff:true,discount_by:'نهى',fixes:[],
+   services:[svc({id:'o2',name:'كشف باطنة',provider:'د. هالة منصور',provider_id:'p2',gross:600,discount_percent:40,discount:240,due:360,collected_here:360,collected_total:360,doctor_fee:180,payments:pay('pos',360,'RC-2')})]},
+  {id:'v3',at:'2026-11-26T10:05:00Z',patient:'سارة يوسف',file_no:'P-2026-900330',provider:'د. سامح فؤاد',provider_id:'p1',source:'walk_in',fixes:[],
+   services:[svc({id:'o3',name:'كشف جلدية',provider:'د. سامح فؤاد',provider_id:'p1',gross:600,due:600,collected_here:400,collected_total:400,doctor_fee:300,payments:pay('cash',400,'RC-3')}),
+             svc({id:'o4',name:'جلسة تقشير',provider:'د. سامح فؤاد',provider_id:'p1',gross:900,discount_percent:10,discount:90,due:810,collected_here:810,collected_total:810,doctor_fee:405,payments:pay('instapay',810,'RC-4'),request:{percent:10,reason:'مريضة متكررة',by:'نهى',approved_by:'أ. وليد'}})]},
+  {id:'v4',at:'2026-11-26T11:30:00Z',patient:'أحمد رجب',file_no:'P-2026-900417',provider:'د. طارق لطفي',provider_id:'p3',source:'referral',
+   fixes:[{at:'2026-11-26T11:42:00Z',from:'pos',to:'cash',amount:500,by:'نهى'}],
+   services:[svc({id:'o5',name:'كشف عظام',provider:'د. طارق لطفي',provider_id:'p3',gross:500,due:500,collected_here:500,collected_total:500,doctor_fee:250,payments:pay('cash',500,'RC-5'),finance_invoice_id:'f-4'})]}],
+ payouts:[{id:'po1',at:'2026-11-26T12:05:00Z',provider_id:'p2',doctor_name:'د. هالة منصور',amount:180,reference:'E-1'}]};
+
+day.blind_count=false;day.shifts=[Object.assign({opening_book:500},day.shifts[0])];
+var rpc=function(n,a){return Promise.resolve(n==="clinic_finance_day_movements"?day:{shifts:day.shifts,movements:mv,manager:false});};
+var v=SSMPDShiftMovements.mount(document.getElementById("h"),{rpc:rpc});
+function route(){var h=location.hash.slice(1);document.getElementById("ov").classList.toggle("on",h==="collect");if(h&&h!=="collect"){var p=h.split("/");setTimeout(function(){var t=document.querySelector("[data-dm-tab="+p[0]+"]");if(t)t.click();if(p[1])v.openDetail(p[1]);},60);}}
+window.addEventListener("hashchange",route);setTimeout(route,80);
+</script></html>
