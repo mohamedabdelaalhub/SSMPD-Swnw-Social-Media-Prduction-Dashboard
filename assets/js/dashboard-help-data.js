@@ -1,6 +1,6 @@
 /* Reviewed operational help; no patient records, network calls or generated AI answers. */
 window.SSMPDHelpData={
-  "version": "20261127-350-business-day",
+  "version": "20261128-353-int",
   "articles": [
     {
       "id": "inventory-fixed-sale-price",
