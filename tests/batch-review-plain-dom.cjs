@@ -51,8 +51,10 @@ const row=(o)=>Object.assign({name:'بند',code:'',category:'',unit:'',price:10
  assert.equal(d.querySelector('[data-brp-tile="linked"] b').textContent,'3');assert.equal(d.querySelector('[data-brp-tile="left"] b').textContent,'0');
  d.querySelector('[data-pi=finish]').click();await t.tick();
  assert.deepEqual(t.calls,[],'nothing written before the price differences are seen');
- const box=d.querySelector('[data-brp-diffs]');assert.equal(box.hidden,false);
- assert(box.textContent.includes('1 سطر خدمتهم موجودة في اللايحة بسعر مختلف'));assert(box.textContent.includes('سعر مختلف — في الملف 100 · في اللايحة 150'));
+ let box=d.querySelector('[data-brp-diffs]');assert.equal(box.hidden,false);
+ assert(box.textContent.includes('1 سطر خدمتهم موجودة في اللايحة بسعر مختلف'));assert(box.textContent.includes('سعر مختلف ← سونار بطن — في الملف 100 · في اللايحة 150'));
+ box.querySelector('[data-pi=diff-open]').click();assert.equal(d.querySelector('[data-brr-pop]').dataset.brrPop,'1','«تفاصيل» opens that row');assert.equal(box.hidden,true);assert.deepEqual(t.calls,[]);d.querySelector('[data-brr-close]').click();
+ d.querySelector('[data-pi=finish]').click();await t.tick();box=d.querySelector('[data-brp-diffs]');assert.equal(box.hidden,false,'panel shows again');
  assert(!box.textContent.includes('نفس السعر'),'same price is not listed');
  box.querySelector('[data-pi=diffs-back]').click();assert.equal(box.hidden,true);assert.deepEqual(t.calls,[]);
  d.querySelector('[data-pi=finish]').click();await t.tick();d.querySelector('[data-pi=keep-prices]').click();await t.tick();
