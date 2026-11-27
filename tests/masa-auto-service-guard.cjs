@@ -40,6 +40,15 @@ await db.exec("alter table clinic_reception.services add column if not exists is
 for(const t of ${JSON.stringify(autoChain)})await db.exec(t.endsWith(';')?t:t+';');
 await db.exec(${JSON.stringify(v4)});
 await db.exec(require('fs').readFileSync(${JSON.stringify(M+'20261126050000_restricted_doctor_scope.sql')},'utf8'));
+// live auto-book entry points are not in this harness: stubs with the EXACT live anchors (picker migrations patch them)
+await db.exec(\`create table if not exists clinic_reception.external_bookings(id uuid primary key default gen_random_uuid(),source text not null,provider_id uuid,needed_service text,appointment_id uuid,public_patient_id uuid,created_at timestamptz not null default now(),day date not null default current_date,state text not null default 'pending',review_kind text,reason text,attempts int not null default 0,updated_at timestamptz not null default now());
+create or replace function clinic_reception.cairo_day(t timestamptz) returns date language sql stable as $f$ select (t at time zone 'Africa/Cairo')::date $f$;
+create function clinic_reception.auto_book_one(p_id uuid) returns uuid language plpgsql as $f$ declare ws uuid; b record; begin
+  select e.* into b from clinic_reception.external_bookings e where e.id = p_id; select workspace_id into ws from clinic_reception.providers where id = b.provider_id;
+  return clinic_reception.auto_time_service(ws, b.provider_id, b.needed_service); end $f$;
+create function clinic_reception.auto_book_place_day_only(p_id uuid, p_workspace uuid) returns uuid language plpgsql as $f$ declare b record; begin
+  select e.* into b from clinic_reception.external_bookings e where e.id = p_id;
+  return clinic_reception.auto_time_service(p_workspace, b.provider_id, b.needed_service); end $f$;\`);
 for(const f of ${JSON.stringify(later)})await db.exec(require('fs').readFileSync(${JSON.stringify(M)}+f,'utf8'));
 await as(1);
 const D=['باطنة','جلدية','امراض الدم','اطفال','علاج طبيعي','الاسنان'];
@@ -67,8 +76,14 @@ const TEXTS=['كشف جديد','كشف','استشارة','متابعة','كشف 
 const check=async(tag)=>{let picks=0;for(const p of all)for(const t of TEXTS){
   const v=(await q('select clinic_reception.auto_time_service($1,$2,$3) v',[live,p,t]))[0].v;if(!v)continue;picks++;
   assert(svc[v],'picked a fixture service');assert(await member(p,v),tag+': doctor '+p+' text «'+t+'» → «'+svc[v].name+'» ['+svc[v].dept+'] is OUTSIDE his departments');}
- assert(picks>=all.length,tag+': the picker still picks (not all NULL)');};
+ assert(picks>0,tag+': the picker still picks clear matches (not all NULL)');};
 await check('plain');
+// owner 2026-11-27: no clear match → NULL (staff choose); auto_book_pick then gives ONLY the doctor's department placeholder
+if(${JSON.stringify(later)}.length){await db.exec('reset role');for(const d of D)await db.query('select clinic_reception.service_later_id($1,$2)',[live,d]);await as(1);
+ for(const p of all)for(const t of TEXTS){const v=(await q('select clinic_reception.auto_book_pick($1,$2,$3) v',[live,p,t]))[0].v;if(!v)continue;
+  const r=(await q('select s.placeholder,s.department,(select department from clinic_reception.providers where id=$2) home from clinic_reception.services s where s.id=$1',[v,p]))[0];
+  if(r.placeholder)assert.equal(r.department,r.home,'auto_book_pick placeholder is the doctor\\'s own department');else assert(await member(p,v),'auto_book_pick outside the doctor\\'s departments');}
+ assert.equal((await q("select clinic_reception.auto_time_service($1,$2,'كشف جديد') v",[live,P['باطنة']]))[0].v,null,'two consults of his own → NULL (no guessing)');}
 // saved defaults pointing to another department must be ignored
 await db.exec('reset role');
 for(const p of Object.values(P))await db.query("insert into clinic_reception.auto_book_services(provider_id,service_code) values($1,$2) on conflict (provider_id) do update set service_code=excluded.service_code",[p,bloodCode]);
@@ -82,7 +97,7 @@ await check('most used = another department');
 assert.equal((await q("select clinic_reception.auto_time_service($1,$2,'كشف جديد') v",[live,scoped]))[0].v,bloodId,'explicit scope row honoured');
 assert.equal(svc[(await q("select clinic_reception.auto_time_service($1,$2,'كشف أخصائي أطفال') v",[live,extra]))[0].v].dept,'اطفال','extra department used');
 // (3) the live check SQL on this fixture: Masa rows for every doctor
-await db.exec('reset role');await db.exec("create table if not exists clinic_reception.external_bookings(id uuid primary key default gen_random_uuid(),source text not null,provider_id uuid,needed_service text,appointment_id uuid,public_patient_id uuid,created_at timestamptz not null default now())");
+await db.exec('reset role');
 for(const p of all)for(const t of TEXTS)await db.query("insert into clinic_reception.external_bookings(source,provider_id,needed_service) values('masa',$1,$2)",[p,t]);
 {const res=await db.exec(${JSON.stringify(LC)}),sum=res[res.length-2].rows;if(process.env.SHOW_LIVE)console.log(sum);
  assert.equal(sum.length,3,'live check rows');assert.deepEqual(sum.filter(r=>!r.ok),[],'live check: every row ok');
