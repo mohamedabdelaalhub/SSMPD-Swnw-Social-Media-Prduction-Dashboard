@@ -31,6 +31,18 @@ async function run(feed) {
     '## جهات متعاقدين معاها (تأمين/شركات/نقابات)', '- نقابة المهندسين — أسعار خاصة — على: الكشف والأشعة', '  - كشف باطنة: 300 جنيه', '  - سونار بطن: 250.5 جنيه',
     '  - و 3 خدمة تانية: اسأل الاستقبال عن سعرها', '- دار الارقم — خصم 40% — على: جميع خدمات', '- ميد شور — التأمين بيغطي 80%'];
   for (const w of want) assert(fed.includes(w), 'missing line: ' + w);
+  // mig 20261127110000: full list (no cap), «not in contract» line, graded consultations
+  const full = await run({ error: null, data: { as_of: '2026-11-27', offers: [], entities: [
+    { entity: 'ميد نت', billing: 'discount', coverage: 0, has_list: true, complete_list: true, more: 0,
+      lines: Array.from({ length: 120 }, (_, i) => ({ name: 'خدمة ' + (i + 1), price: 100 + i })),
+      consultations: [{ grade: 'أخصائي', price: 250 }, { grade: 'استشاري', not_in_contract: true }] },
+    { entity: 'دار الارقم', discount_percent: 40, services: 'جميع خدمات', billing: 'discount', coverage: 0, has_list: false, lines: [], more: 0,
+      consultations: [{ grade: 'أخصائي', price: 180 }, { grade: 'استشاري', price: 300 }] }] } });
+  for (const w of ['  - خدمة 120: 219 جنيه', '  - أي خدمة مش مكتوبة هنا مش في عقد ميد نت: الاستقبال هيأكد', '  - كشف أخصائي: 250 جنيه',
+                   '  - كشف استشاري: مش في العقد — الاستقبال هيأكد', '- دار الارقم — خصم 40% — على: جميع خدمات', '  - كشف استشاري: 300 جنيه'])
+    assert(full.includes(w), 'missing line: ' + w);
+  assert(!full.includes('خدمة تانية: اسأل'), 'no «more» line when the full list is sent');
+  assert(!full.includes('مش في عقد دار الارقم'), 'percent-only contracts get no «not in contract» line');
   assert(!/[٠-٩]/.test(fed), 'English digits only (rule 8)');
-  console.log('PASS clinic-knowledge: per-entity price lines, offer lists, insurer coverage, and the unchanged fallback');
+  console.log('PASS clinic-knowledge: full per-entity price lines, graded consultations, «not in contract», offer lists, insurer coverage, and the unchanged fallback');
 })().catch((e) => { console.error(e); process.exit(1); });
