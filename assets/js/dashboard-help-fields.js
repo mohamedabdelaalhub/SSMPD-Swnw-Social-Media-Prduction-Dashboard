@@ -14836,19 +14836,6 @@
       "reviewed": true
     },
     {
-      "title": "رقم موافقة التغطية *",
-      "labels": [
-        "رقم موافقة التغطية *"
-      ],
-      "text": "رقم الموافقة اللي الجهة أدتها للخدمة دي — إجباري، وبيروح على المطالبة.",
-      "article": "reception-payer-kind",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "نسبة تحمّل الجهة ٪ * ٪",
       "labels": [
         "نسبة تحمّل الجهة ٪ * ٪",
@@ -24406,6 +24393,6 @@
     "definitions": 2104,
     "labels": 1535,
     "files": 172,
-    "groups": 1663
+    "groups": 1662
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
