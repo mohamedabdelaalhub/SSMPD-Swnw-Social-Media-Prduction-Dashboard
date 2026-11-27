@@ -15,8 +15,8 @@
       var btns = Array.prototype.filter.call(sum.children, function (n) { return n.tagName === 'BUTTON'; });
       if (!btns.length) return;
       var menu = el('span', 'dcu-menu'); menu.hidden = true; menu.setAttribute('role', 'menu');
-      btns.forEach(function (b) { menu.appendChild(b); });
-      var more = el('button', 'dcu-more', '⋯'); more.type = 'button'; more.setAttribute('aria-haspopup', 'true'); more.setAttribute('aria-expanded', 'false'); more.setAttribute('aria-label', 'خيارات الدكتور'); more.title = 'خيارات الدكتور';
+      menu.appendChild(el('span', 'dcu-menu-h', 'خيارات متقدمة')); btns.forEach(function (b) { menu.appendChild(b); });
+      var more = el('button', 'dcu-more', '⋯'); more.type = 'button'; more.setAttribute('aria-haspopup', 'true'); more.setAttribute('aria-expanded', 'false'); more.setAttribute('aria-label', 'خيارات متقدمة'); more.title = 'خيارات متقدمة';
       sum.appendChild(more); sum.appendChild(menu);
     });
   }
@@ -91,6 +91,37 @@
     menus(view); rates(view); folds(view); alloc(view);
   }
   function schedule() { if (queued) return; queued = true; w.requestAnimationFrame(run); }
+
+  // ---- details popup: the group's contract tables move into a modal (✕ + back arrow), and return on close
+  var pop = null;
+  function closePop() {
+    if (!pop) return; var p = pop; pop = null;
+    var g = p.group; p.nodes.forEach(function (n) { if (g.isConnected) g.appendChild(n); });
+    g.open = false; if (p.el.parentNode) p.el.parentNode.removeChild(p.el);
+    if (p.opener && p.opener.isConnected) try { p.opener.focus(); } catch (e) {}
+  }
+  function openPop(group, opener) {
+    closePop();
+    var sum = group.querySelector(':scope > summary'); if (!sum) return;
+    var nodes = Array.prototype.filter.call(group.children, function (n) { return n !== sum; });
+    var name = ((sum.querySelector('strong,b') || sum.firstElementChild || sum).textContent || '').trim();
+    var back = d.documentElement.dir === 'ltr' || (d.documentElement.lang || '').indexOf('en') === 0 ? '→' : '←';
+    var wrap = el('div', 'modal-backdrop dcu-pop'); wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true');
+    var box = el('div', 'modal dcu-pop-box');
+    var head = el('div', 'modal-head dcu-pop-head');
+    var bk = el('button', 'dcu-pop-back', back); bk.type = 'button'; bk.setAttribute('aria-label', 'رجوع'); bk.title = 'رجوع'; bk.setAttribute('data-dcu-pop-back', '');
+    var ttl = el('h3', '', 'تفاصيل عقود الدكتور' + (name ? ' — ' + name : ''));
+    var x = el('button', 'modal-close dcu-pop-x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'إغلاق'); x.title = 'إغلاق'; x.setAttribute('data-dcu-pop-close', '');
+    head.appendChild(bk); head.appendChild(ttl); head.appendChild(x);
+    var body = el('div', 'dcu-pop-body'); nodes.forEach(function (n) { body.appendChild(n); });
+    box.appendChild(head); box.appendChild(body); wrap.appendChild(box); d.body.appendChild(wrap);
+    pop = { el: wrap, group: group, nodes: nodes, opener: opener };
+    wrap.addEventListener('click', function (e) {
+      if (e.target === wrap || e.target.closest('[data-dcu-pop-close],[data-dcu-pop-back]')) { closePop(); return; }
+      if (e.target.closest('[data-fin-action]')) setTimeout(closePop, 0);
+    });
+    x.focus();
+  }
   function start() {
     var v = d.getElementById('acc-sub-view') || d.querySelector('[data-fc-root]') || d.body;
     if (v !== view) { if (observer) observer.disconnect(); view = v; observer = new w.MutationObserver(schedule); observer.observe(view, { childList: true, subtree: true }); }
@@ -99,12 +130,14 @@
   if (!w.__dcuBound) {
     w.__dcuBound = true;
     d.addEventListener('click', function (e) {
+      var sm = e.target.closest && e.target.closest('.fc-doctor-group > summary');
+      if (sm && !e.target.closest('button, .dcu-menu, a, input, select')) { e.preventDefault(); e.stopPropagation(); openPop(sm.parentNode, sm); return; }
       var more = e.target.closest && e.target.closest('.dcu-more');
       d.querySelectorAll('.dcu-menu:not([hidden])').forEach(function (m) { if (!more || m.previousElementSibling !== more) { m.hidden = true; var b = m.previousElementSibling; if (b) b.setAttribute('aria-expanded', 'false'); } });
       if (more) { e.preventDefault(); e.stopPropagation(); var m = more.nextElementSibling; m.hidden = !m.hidden; more.setAttribute('aria-expanded', String(!m.hidden)); return; }
       if (e.target.closest && e.target.closest('.dcu-menu button')) { var mm = e.target.closest('.dcu-menu'); setTimeout(function () { mm.hidden = true; }, 0); }
     }, true);
-    d.addEventListener('keydown', function (e) { if (e.key === 'Escape') d.querySelectorAll('.dcu-menu:not([hidden])').forEach(function (m) { m.hidden = true; }); });
+    d.addEventListener('keydown', function (e) { if (e.key === 'Escape' && pop) { closePop(); return; } if (e.key === 'Escape') d.querySelectorAll('.dcu-menu:not([hidden])').forEach(function (m) { m.hidden = true; }); });
   }
-  w.SSMPDDoctorContractsUI = { setAlloc: function (rows) { allocRows = rows; }, start: start, run: function () { view = view || d.body; run(); } };
+  w.SSMPDDoctorContractsUI = { setAlloc: function (rows) { allocRows = rows; }, start: start, close: closePop, run: function () { view = view || d.body; run(); } };
 })(window, document);

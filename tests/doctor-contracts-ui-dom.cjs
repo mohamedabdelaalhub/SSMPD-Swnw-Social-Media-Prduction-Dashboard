@@ -30,6 +30,16 @@ const { JSDOM } = require(require.resolve('jsdom', { paths: [process.env.SSMPD_T
   const sum = view.querySelector('.fc-doctor-group > summary'); assert(sum.querySelector('.dcu-more'), '⋯ button'); const menu = sum.querySelector('.dcu-menu'); assert(menu.hidden, 'closed by default');
   assert(menu.querySelector('[data-fin-action="doctor-statement"]') && menu.querySelector('[data-fin-action="contract-marketing"]'), 'same buttons inside the menu');
   sum.querySelector('.dcu-more').click(); assert(!menu.hidden && sum.querySelector('.dcu-more').getAttribute('aria-expanded') === 'true', 'opens'); w.document.body.click(); assert(menu.hidden, 'closes on outside click');
+  // ---- details popup: click the summary text -> modal with rows + ✕ + back arrow; closing returns the nodes
+  const grp = sum.parentNode, rowsBefore = grp.querySelectorAll('[data-fin-action]').length, tblBefore = grp.querySelectorAll('table').length; assert(tblBefore > 0, 'group has tables');
+  assert(sum.querySelector('.dcu-menu-h').textContent === 'خيارات متقدمة' && sum.querySelector('.dcu-more').title === 'خيارات متقدمة', 'menu renamed');
+  sum.firstElementChild.click(); const pp = d.querySelector('.dcu-pop'); assert(pp, 'popup opens'); assert(!grp.open, 'details not left open');
+  assert(pp.querySelector('[data-dcu-pop-close]') && pp.querySelector('[data-dcu-pop-back]'), '✕ + back arrow'); assert.equal(pp.querySelectorAll('table').length, tblBefore, 'rows moved into the popup');
+  pp.querySelector('[data-dcu-pop-close]').click(); assert(!d.querySelector('.dcu-pop'), '✕ closes'); assert.equal(grp.querySelectorAll('table').length, tblBefore, 'tables returned'); assert.equal(grp.querySelectorAll('[data-fin-action]').length, rowsBefore, 'every button still there');
+  sum.firstElementChild.click(); d.querySelector('[data-dcu-pop-back]').click(); assert(!d.querySelector('.dcu-pop'), 'back arrow closes');
+  sum.firstElementChild.click(); d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); assert(!d.querySelector('.dcu-pop'), 'Esc closes');
+  sum.firstElementChild.click(); d.querySelector('.dcu-pop').click(); assert(!d.querySelector('.dcu-pop'), 'outside click closes');
+  grp.open = true; assert(grp.open, '«فتح الكل» (open attribute) still works');  grp.open = false;
   // ---- rates trimmed, folds, paging
   assert(!/\d\.00%/.test(sum.textContent), 'no trailing .00: ' + sum.textContent);
   assert(view.querySelector('[data-dcu-fold=settings] [data-sig-templates]'), 'contract texts folded'); assert(view.querySelector('[data-dcu-fold=needs] [data-da-needs]'), 'doctors without contract folded');
