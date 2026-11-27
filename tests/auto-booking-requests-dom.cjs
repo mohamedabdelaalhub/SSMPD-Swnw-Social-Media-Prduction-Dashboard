@@ -8,7 +8,7 @@ const tick = () => new Promise(r => setTimeout(r, 30));
   const fb = [
     { fallback_booking_id: 'f1', source: 'whatsapp', status: 'pending', reception_confirmed: false, customer_name: 'منى <b>x</b>', phone: '01000000001', doctor_name: 'د. سارة', appointment_date: today, appointment_time: '18:00', needed_service: 'كشف' },
     { fallback_booking_id: 'f2', source: 'whatsapp', status: 'replayed', reception_confirmed: true, customer_name: 'كريم', phone: '01000000002', doctor_name: 'د. سارة', appointment_date: '2099-01-01', appointment_time: '18:20' },
-    { fallback_booking_id: 'f3', source: 'website', status: 'conflict', reception_confirmed: true, customer_name: 'هدى', phone: '01000000003', doctor_name: 'د. علي', appointment_date: today, appointment_time: '19:00' },
+    { fallback_booking_id: 'f3', source: 'website', status: 'conflict', reception_confirmed: true, payment_mode: 'insurance', payer_entity_name: 'تأمين ب', approval_no: 'AP-303', customer_name: 'هدى', phone: '01000000003', doctor_name: 'د. علي', appointment_date: today, appointment_time: '19:00' },
     { fallback_booking_id: 'f4', source: 'whatsapp', status: 'cancelled', customer_name: 'ملغي', phone: '01000000004', appointment_date: today }];
   const cb = [{ id: 'c1', channel: 'whatsapp', customer_name: 'سلمى', phone: '01000000005', doctor_name: 'د. دينا', appointment_date: today, appointment_time: '20:00', status: 'confirmed', booking_reference: 'M-1' },
     // website form (2026-11-22): the agent mirrors it as channel 'other' + wa_id 'web:…'; a future 'website' channel counts too
@@ -50,6 +50,7 @@ const tick = () => new Promise(r => setTimeout(r, 30));
   btn('website').click();
   assert(panel().textContent.includes('هدى') && panel().textContent.includes('ياسمين') && panel().textContent.includes('رنا'), 'website list shows fallback + website-form bookings');
   assert(panel().textContent.includes('236100') && panel().textContent.includes('اتسجلت على ماسا'));
+  assert(panel().textContent.includes('تأمين ب') && panel().textContent.includes('AP-303'), 'parked website booking shows its payer and approval number');
   assert(!panel().textContent.includes('ملغي موقع') && !panel().textContent.includes('قناة تانية') && !panel().textContent.includes('سلمى'), 'cancelled / other-channel / whatsapp rows stay out of الموقع');
   // payment step (owner 2026-11-27): badge, entity name, approval number + time + copy, filters
   const wp = panel().textContent;

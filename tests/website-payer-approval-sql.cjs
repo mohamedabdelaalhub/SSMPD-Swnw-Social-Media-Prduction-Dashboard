@@ -53,6 +53,39 @@ const R = ['rollbacks/20261127250000_website_booking_attach_approval.rollback.sq
   assert.equal((await db.query("select has_function_privilege('anon','public.website_booking_attach_approval(text,text,text)','execute') a, has_function_privilege('authenticated','public.website_payer_options()','execute') b, has_function_privilege('service_role','public.website_payer_options()','execute') c")).rows[0].a, false, 'anon cannot call');
   const g = (await db.query("select has_function_privilege('authenticated','public.website_payer_options()','execute') b, has_function_privilege('service_role','public.website_payer_options()','execute') c")).rows[0];
   assert.equal(g.b, false); assert.equal(g.c, true);
+  // ---- outage path: parked (fallback) bookings carry the payer step (migration 260000)
+  await db.exec(`create schema clinic_reception;
+    create table clinic_reception.fallback_bookings(id uuid primary key default gen_random_uuid(), booking_request_id text unique, phone text, status text default 'pending', customer_name text);
+    create function clinic_reception.fallback_row(f clinic_reception.fallback_bookings) returns jsonb language sql stable as $$ select jsonb_build_object('fallback_booking_id', f.id, 'status', f.status) $$;
+    create function clinic_reception.fallback_api(p_op text, p jsonb) returns jsonb language plpgsql as $$ begin
+      if p_op = 'book' then insert into clinic_reception.fallback_bookings(booking_request_id, phone, customer_name) values (p->>'booking_request_id', p->>'phone', 'x') on conflict do nothing; return jsonb_build_object('ok', true, 'status', 'pending'); end if;
+      return jsonb_build_object('ok', true, 'op', p_op); end $$;`);
+  const F260 = 'migrations/20261127260000_fallback_bookings_payer.sql', R260 = 'rollbacks/20261127260000_fallback_bookings_payer.rollback.sql';
+  await db.exec(sql(F260));
+  const api = async (op, p) => (await db.query('select clinic_reception.fallback_api($1, $2::jsonb) r', [op, JSON.stringify(p)])).rows[0].r;
+  const E3 = '00000000-0000-0000-0000-000000000001';
+  assert.deepEqual(await api('status', { x: 1 }), { ok: true, op: 'status' }, 'other ops pass through');
+  assert.equal((await api('book', { booking_request_id: 'aaaaaaaa-1111-2222-3333-444444444444', phone: '01000005555' })).ok, true, 'booking without payer unchanged');
+  for (const bad of [{ payment_mode: 'cash' }, { payment_mode: 'insurance' }, { payment_mode: 'insurance', payer_entity_id: '99999999-9999-9999-9999-999999999999' }, { payment_mode: 'membership', payer_entity_id: E3, approval_no: 'AP-1234' }, { payment_mode: 'insurance', payer_entity_id: E3, approval_no: 'x;y' }, { payment_mode: 'direct', payer_entity_id: E3 }]) {
+    const r = await api('book', { booking_request_id: 'bbbbbbbb-1111-2222-3333-444444444444', phone: '01000006666', ...bad });
+    assert.deepEqual(r, { ok: false, error: 'invalid_payer' }, JSON.stringify(bad));
+  }
+  assert.equal((await db.query("select count(*)::int n from clinic_reception.fallback_bookings where booking_request_id like 'bbbbbbbb%'")).rows[0].n, 0, 'invalid payer: nothing parked');
+  assert.equal((await api('book', { booking_request_id: 'cccccccc-1111-2222-3333-444444444444', phone: '+20 100 000 7777', payment_mode: 'insurance', payer_entity_id: E3, approval_no: 'AP-777' })).ok, true);
+  const row = (await db.query("select clinic_reception.fallback_row(f) r from clinic_reception.fallback_bookings f where booking_request_id like 'cccccccc%'")).rows[0].r;
+  assert.equal(row.payment_mode, 'insurance'); assert.equal(row.payer_entity_name, 'تأمين أ'); assert.equal(row.approval_no, 'AP-777'); assert(row.approval_at && row.fallback_booking_id, 'row keeps its old fields and adds the payer ones');
+  await db.exec("insert into clinic_reception.fallback_bookings(booking_request_id, phone, customer_name, status, payment_mode, payer_entity_id) values ('dddddddd-1111-2222-3333-444444444444', '01000008888', 'y', 'pending', 'insurance', '" + E3 + "')");
+  assert.equal(await att('WEB-DDDDDDDD', '01000008888', 'AP-888'), true, 'approval after booking works for a parked booking (WEB- reference)');
+  assert.equal((await db.query("select approval_no from clinic_reception.fallback_bookings where booking_request_id like 'dddddddd%'")).rows[0].approval_no, 'AP-888');
+  assert.equal(await att('WEB-DDDDDDDD', '01099999999', 'AP-999'), false, 'wrong phone');
+  assert.equal(await att('WEB-EEEEEEEE', '01000008888', 'AP-999'), false, 'unknown parked reference');
+  assert.equal(await att('SW-1', '01000001111', 'AP-5566'), true, 'confirmed bookings still work');
+  assert.equal((await db.query("select has_function_privilege('anon','clinic_reception.fallback_api(text,jsonb)','execute') a, has_function_privilege('authenticated','clinic_reception.fallback_row(clinic_reception.fallback_bookings)','execute') b")).rows[0].a, false);
+  await assert.rejects(() => db.exec(sql(F260)), /من قبل/, 'double apply refused'); await db.exec('rollback');
+  await db.exec(sql(R260));
+  assert.deepEqual(await api('status', {}), { ok: true, op: 'status' }, 'rollback restores fallback_api');
+  assert.equal(Object.keys((await db.query("select clinic_reception.fallback_row(f) r from clinic_reception.fallback_bookings f limit 1")).rows[0].r).includes('payment_mode'), false, 'rollback restores fallback_row');
+  assert.equal(await att('WEB-DDDDDDDD', '01000008888', 'AP-1'), false, 'rollback: attach only matches customer_bookings again');
   for (const f of M) await assert.rejects(() => db.exec(sql(f)), /من قبل/, 'double apply refused: ' + f), await db.exec('rollback');
   for (const f of R) await db.exec(sql(f));
   assert.equal((await db.query("select count(*)::int n from information_schema.columns where table_name='customer_bookings' and column_name in ('payment_mode','payer_entity_id','approval_no','approval_at')")).rows[0].n, 0, 'rollback drops columns');

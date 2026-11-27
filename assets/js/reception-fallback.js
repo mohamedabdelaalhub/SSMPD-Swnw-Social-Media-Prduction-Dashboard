@@ -10,12 +10,14 @@
   function rpc(ws,action,payload){var c=window.SSMPDDb&&window.SSMPDDb.client;if(!c||typeof c.rpc!=='function')return Promise.reject(new Error('تعذر الاتصال'));
     return Promise.resolve(c.rpc('clinic_reception_fallback',{p_workspace:ws,p_action:action,p_payload:payload||{}})).then(function(r){if(r&&r.error)throw r.error;return r?r.data:null;});}
   function toast(m,k){if(window.SSMPDToast&&window.SSMPDToast.show)window.SSMPDToast.show(m,k||'success');}
+  var PAYK={insurance:'تأمين',membership:'عضوية',entity:'جهة متعاقدة'};
+  function payLine(b){if(!b.payment_mode||b.payment_mode==='direct')return '';return '<br><small>'+esc(PAYK[b.payment_mode]||'')+(b.payer_entity_name?' — '+esc(b.payer_entity_name):'')+(b.approval_no?' — موافقة <b dir="ltr">'+esc(b.approval_no)+'</b>':(b.payment_mode==='insurance'?' — لسه ما بعتش رقم الموافقة':''))+'</small>';}
   function row(b){var actions='';if(b.status==='pending'||b.status==='replayed'||b.status==='conflict'){
       if(!b.reception_confirmed&&b.status!=='conflict')actions+='<button type="button" class="btn" data-fb-act="confirm" data-id="'+esc(b.fallback_booking_id)+'">اتأكدت مع المريض</button>';
-      if(!b.slot_released)actions+='<button type="button" class="btn" data-fb-act="release" data-id="'+esc(b.fallback_booking_id)+'">سجّلته كموعد عادي — فكّ الحجز</button>';
+      if(!b.slot_released)actions+='<button type="button" class="btn" data-fb-act="release" data-id="'+esc(b.fallback_booking_id)+'"'+(b.approval_no?' data-approval="'+esc(b.approval_no)+'"':'')+'>سجّلته كموعد عادي — فكّ الحجز</button>';
       actions+='<button type="button" class="btn danger" data-fb-act="cancel" data-id="'+esc(b.fallback_booking_id)+'">إلغاء</button>';}
     return '<article class="rx-fb-row rx-fb-'+esc(b.status)+'"><div><strong>'+esc(b.customer_name)+'</strong> — <span dir="ltr">'+esc(b.phone)+'</span>'+(b.customer_age!=null?' — '+esc(b.customer_age)+' سنة':'')+
-      '<br>'+esc(b.doctor_name)+' ('+esc(b.department)+') — '+esc(b.appointment_date)+' الساعة '+esc(b.appointment_time)+' — '+esc(b.needed_service)+
+      '<br>'+esc(b.doctor_name)+' ('+esc(b.department)+') — '+esc(b.appointment_date)+' الساعة '+esc(b.appointment_time)+' — '+esc(b.needed_service)+payLine(b)+
       '<br><small>من '+esc(SOURCES[b.source]||b.source)+' — '+esc(LABELS[b.status]||b.status)+(b.reception_confirmed?' — اتأكد مع المريض':'')+(b.slot_released?' — الحجز المؤقت اتفك':'')+'</small></div>'+
       (actions?'<div class="rx-actions">'+actions+'</div>':'')+'</article>';}
   /* Owner 2026-11-22: one compact row per alert — patient · doctor · date/time + «افتح الحجز» + «راجعته» */
@@ -41,7 +43,8 @@
       if(a==='open_booking'){closeSheet();var q=document.querySelector('[data-tl-q]');if(q){q.value=btn.getAttribute('data-q')||'';q.dispatchEvent(new Event('input',{bubbles:true}));q.scrollIntoView({block:'center'});}else toast('افتح قسم المواعيد وابحث باسم المريض','error');return;}
       if(a==='cancel'){var reason=window.prompt('سبب الإلغاء؟');if(!reason||!reason.trim())return;p.reason=reason.trim();}
       if(a==='release'&&!window.confirm('هتفك الحجز المؤقت عشان تسجّل المريض كموعد عادي في نفس الوقت؟'))return;
-      btn.disabled=true;rpc(ws,a,p).then(function(){toast(a==='cancel'?'اتلغى الحجز':a==='release'?'اتفك الحجز المؤقت — سجّل الموعد دلوقتي':a==='alert_resolve'?'اتسجل إنك راجعته':'اتسجل التأكيد');closeSheet();return load(box,ws);})
+      var apr=a==='release'?btn.getAttribute('data-approval'):'';if(apr){try{window.navigator.clipboard.writeText(apr);}catch(e){/* clipboard not available */}}
+      btn.disabled=true;rpc(ws,a,p).then(function(){toast(a==='cancel'?'اتلغى الحجز':a==='release'?(apr?'اتفك الحجز المؤقت — رقم الموافقة '+apr+' اتنسخ، حطه في «رقم مرجع الموافقة» لما تسجّل الموعد':'اتفك الحجز المؤقت — سجّل الموعد دلوقتي'):a==='alert_resolve'?'اتسجل إنك راجعته':'اتسجل التأكيد');closeSheet();return load(box,ws);})
         .catch(function(e){btn.disabled=false;toast(e&&e.message||'تعذر الحفظ','error');});};});}
   function load(box,ws){return rpc(ws,'list').then(function(d){paint(box,ws,d||{});}).catch(function(){box.innerHTML='';box.hidden=true;});}
   function decorate(c,section){if(section!=='appointments'||!c||!c.host||!c.data||!c.data.workspace||c.data.workspace.mode!=='live')return;

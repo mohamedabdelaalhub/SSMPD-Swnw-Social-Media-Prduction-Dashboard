@@ -52,9 +52,9 @@
     if (b.payment_mode === "insurance") return '<span class="ab-pay ' + (b.approval_no ? "ok" : "wait") + '">' + (b.approval_no ? "تأمين · الموافقة وصلت" : "تأمين · مستنية موافقة") + '</span>';
     return '<span class="ab-pay">' + esc(PAY[b.payment_mode] || "") + '</span>';
   }
-  function payLine(b) {
+  function payLine(b, entName) {
     if (!b.payment_mode || b.payment_mode === "direct") return "";
-    var ent = (state.data && state.data.entities || {})[b.payer_entity_id] || "";
+    var ent = entName || (state.data && state.data.entities || {})[b.payer_entity_id] || "";
     return '<br><small>' + esc(ent) + (b.approval_no ? ' · موافقة <b dir="ltr">' + esc(b.approval_no) + '</b>' + (b.approval_at ? " (وصلت " + esc(hm(b.approval_at)) + ")" : "") + ' <button type="button" class="btn ghost sm" data-ab-copy="' + esc(b.approval_no) + '">نسخ</button>' :
       b.payment_mode === "insurance" ? " · لسه ما بعتتش رقم الموافقة" : (b.payment_mode === "direct" ? "" : " · السعر بيتحدد عند الحضور")) + '</small>';
   }
@@ -77,7 +77,7 @@
   }
   function fbRow(b) {
     return '<article class="ab-row' + (b.status === "conflict" ? " warn" : "") + '"><div><strong>' + esc(b.customer_name) + '</strong> <span dir="ltr">' + esc(b.phone) + '</span><br>' +
-      esc(b.doctor_name) + ' — ' + esc(b.appointment_date) + ' ' + esc(b.appointment_time) + ' — ' + esc(b.needed_service || "") +
+      esc(b.doctor_name) + ' — ' + esc(b.appointment_date) + ' ' + esc(b.appointment_time) + ' — ' + esc(b.needed_service || "") + ' ' + payBadge(b) + payLine(b, b.payer_entity_name) +
       '<br><small>' + esc(FB[b.status] || b.status) + (b.reception_confirmed ? " · اتأكد مع المريض" : " · محتاج تأكيد مع المريض") + '</small></div></article>';
   }
   function cbRow(b) {
