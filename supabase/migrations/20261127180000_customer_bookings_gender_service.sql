@@ -2,7 +2,7 @@
 -- and what only the dashboard needs (optional gender). booking-sync-ingest now keeps both on the customer booking.
 --   * public.customer_bookings.needed_service: the service / reason for the visit as the patient wrote it (also sent to Masa as NeededService).
 --   * public.customer_bookings.gender: 'male' | 'female', dashboard only (Masa never gets it); reception can use it when the patient file is made on arrival.
--- Additive and nullable: existing rows and writers are unaffected. Rollback: supabase/rollbacks/20261127130000_customer_bookings_gender_service.rollback.sql
+-- Additive and nullable: existing rows and writers are unaffected. Rollback: supabase/rollbacks/20261127180000_customer_bookings_gender_service.rollback.sql
 begin;
 do $$ begin
   if to_regclass('public.customer_bookings') is null then raise exception 'customer_bookings غير موجود'; end if;
