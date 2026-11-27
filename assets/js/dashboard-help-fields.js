@@ -15876,6 +15876,35 @@
       "reviewed": true
     },
     {
+      "title": "Dear Doctor …",
+      "labels": [
+        "Dear Doctor …",
+        "الصق رسالة فيزيتا (SMS) هنا"
+      ],
+      "text": "الصق رسالة الحجز اللي فيزيتا بعتها على تليفون المركز زي ما هي — السيستم يقرأ منها الدكتور والمريض واليوم والساعة.",
+      "article": "reception-vezeeta-paste",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "أول معاد فاضي مع الدكتور",
+      "labels": [
+        "أول معاد فاضي مع الدكتور",
+        "بدون معاد — بالدور",
+        "أختار الساعة بنفسي"
+      ],
+      "text": "رسالة فيزيتا شامل مفيهاش ساعة: اختار أول معاد فاضي مع الدكتور، أو بالدور (لو الحجز النهارده)، أو اختار الساعة بنفسك.",
+      "article": "reception-vezeeta-paste",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "السبب (اختياري)",
       "labels": [
         "السبب (اختياري)"
@@ -23802,9 +23831,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2048,
-    "labels": 1485,
-    "files": 166,
-    "groups": 1618
+    "definitions": 2053,
+    "labels": 1490,
+    "files": 167,
+    "groups": 1620
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
