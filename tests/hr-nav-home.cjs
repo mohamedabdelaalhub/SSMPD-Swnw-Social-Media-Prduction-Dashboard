@@ -23,7 +23,7 @@ const ws={hr_overtime:{to_review:[{id:'o1',person_name:'كريم محمود',day
  for(const f of ['workforce-prices','hr-payroll-workspace','hr-today-inbox','hr-navigation'])await page.addScriptTag({content:fs.readFileSync('assets/js/'+f+'.js','utf8')});
  await page.evaluate(()=>SSMPDHumanResources.render(document.getElementById('view-container')));await page.waitForSelector('[data-hrn-row=insurance]');
  // groups + home
- assert.deepEqual(await page.locator('[data-hr-group]').allInnerTexts().then(a=>a.map(x=>x.replace(/\d+/g,'').trim())),['النهارده','الناس','الوقت والإجازات','الفلوس','إنهاء الخدمة والإعدادات']);
+ assert.deepEqual(await page.locator('[data-hr-group]').allInnerTexts().then(a=>a.map(x=>x.replace(/\d+/g,'').trim())),['النهارده','شؤون الموظفين','الوقت والإجازات','الفلوس','إنهاء الخدمة والإعدادات']);
  assert.deepEqual(await page.locator('.hrn-subs button:visible').allInnerTexts(),['محتاج منك النهارده','الحضور اللحظي'],'only the open group\'s sections show');
  assert.equal(await page.locator('[data-hr-section=home] > h2').innerText(),'محتاج منك النهارده');
  const rows=await page.locator('[data-hrn-row]').evaluateAll(n=>n.map(x=>x.dataset.hrnRow+'='+x.querySelector('.hrn-n').textContent));
