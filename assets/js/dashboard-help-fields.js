@@ -1894,9 +1894,9 @@
       "reviewed": true
     },
     {
-      "title": "اسم الخدمة أو الكود أو القسم",
+      "title": "دوّر باسم الخدمة أو الكود أو القسم",
       "labels": [
-        "اسم الخدمة أو الكود أو القسم",
+        "دوّر باسم الخدمة أو الكود أو القسم",
         "بحث داخل سطور الدفعة"
       ],
       "text": "اكتب اسم خدمة أو كود أو قسم علشان تلاقي سطر معين في دفعة الاستيراد. البحث مابيغيرش السطور.",
@@ -12260,6 +12260,73 @@
         "production"
       ],
       "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الفترة",
+      "labels": [
+        "الفترة"
+      ],
+      "text": "حدد وحدة تكرار المهمة أو تاريخ إيقاف التكرار حسب الحقل. راجع العدد وموعد أول تنفيذ حتى لا ينشئ الجدول تكليفات في فترة غير مطلوبة.",
+      "article": "tasks-guide",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المتفق عليه",
+      "labels": [
+        "المتفق عليه"
+      ],
+      "text": "الرقم النهائي اللي اتفقنا عليه مع المنصة: مبلغ، أو نسبة من رقمنا. لو أقل من رقمنا الفرق «خصم مراجعة».",
+      "article": "platform-audit",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: حجزين اتلغوا ومتحسبين عندهم",
+      "labels": [
+        "مثلاً: حجزين اتلغوا ومتحسبين عندهم"
+      ],
+      "text": "اكتب سبب الاتفاق بوضوح — بيتحفظ مع المراجعة.",
+      "article": "platform-audit",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "سبب الاتفاق",
+      "labels": [
+        "سبب الاتفاق"
+      ],
+      "text": "ليه الرقم المتفق عليه مختلف (أو زي) رقمنا ورقمهم — بيتحفظ مع المراجعة.",
+      "article": "platform-audit",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "سبب الرفض",
+      "labels": [
+        "سبب الرفض"
+      ],
+      "text": "اشرح ما الذي منع اعتماد السجل أو الطلب بعد المراجعة، مع الخطوة المطلوبة لتصحيحه. لا ترفض سجلًا من غير مراجعة المستند وصلاحية القرار.",
+      "article": "patient-records",
+      "tabs": [
+        "production"
+      ],
+      "forms": [
+        "رفض المراجعة"
+      ],
       "reviewed": true
     },
     {
@@ -23749,9 +23816,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2044,
-    "labels": 1483,
+    "definitions": 2049,
+    "labels": 1486,
     "files": 167,
-    "groups": 1614
+    "groups": 1619
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
