@@ -1,0 +1,25 @@
+/* HR people list — Sonu Glass (docs/SONU-GLASS-STYLE.md), mockup hr-people-clear.html. 16px grid, 44px touch targets. */
+.hpl-card{background:var(--glass-fill,rgba(255,255,255,.66));border:1px solid var(--glass-line,rgba(15,54,157,.10));border-radius:16px;box-shadow:var(--glass-shadow,0 10px 30px rgba(15,54,157,.09)),inset 0 1px 0 var(--glass-edge,rgba(255,255,255,.85))}
+.hpl-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 16px}
+.hpl-tile{padding:16px;display:grid;grid-template-columns:44px 1fr;gap:4px 12px;align-items:center;text-align:start;font:inherit;color:inherit;cursor:pointer}.hpl-tile.on{border-color:#0F369D;box-shadow:0 0 0 2px #0F369D22,var(--glass-shadow,0 10px 30px rgba(15,54,157,.09))}
+.hpl-tile:focus-visible,.hpl-row:focus-visible{outline:2px solid #F15A22;outline-offset:2px}
+.hpl-ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;grid-row:span 2;font-size:20px;font-weight:800}.hpl-ico.i1{background:#EAF0FF;color:#0F369D}.hpl-ico.i2{background:#E6F3EC;color:#2F7D5C}.hpl-ico.i3{background:#FFF1E8;color:#F15A22}.hpl-ico.i4{background:#EEF0F4;color:#5b6b82}
+.hpl-tile small{color:#5b6b82;font-size:13px}.hpl-tile b{font-size:30px;font-weight:800;line-height:1.1;color:#0F369D}.hpl-tile.ok b{color:#2F7D5C}.hpl-tile.hot b{color:#F15A22}.hpl-tile.mute b{color:#5b6b82}
+.hpl-bar{padding:12px;display:grid;gap:12px;margin:0 0 16px}.hpl-r1{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}.hpl-search{flex:1 1 260px;min-width:0;margin:0}.hpl-search input{width:100%;min-height:44px}
+.hpl-add{min-height:44px;background:#0F369D;color:#fff;border-color:#0F369D;border-radius:12px;font-weight:700;padding:0 14px}
+.hpl-filters{display:flex;gap:8px;flex-wrap:wrap;margin:0}.hpl-filters label{min-width:140px;flex:1 1 140px}
+.hpl-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.hpl-chip{border:1px solid #0F369D;background:#EAF0FF;color:#0F369D;border-radius:999px;min-height:44px;padding:0 12px;font:inherit;font-weight:700;cursor:pointer}.hpl-clear{border:0;background:transparent;color:#5b6b82;min-height:44px;font:inherit;text-decoration:underline;cursor:pointer}
+.hpl-adv summary{cursor:pointer;display:inline-flex;align-items:center;list-style:none;min-height:44px}.hpl-advbody{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:12px;border-top:1px solid #E4E9F2}
+.wp-grid .hpl-row{width:100%;display:grid;grid-template-columns:44px minmax(0,1.3fr) minmax(0,1.5fr) auto;grid-template-areas:"av name dept chip" "av code dept chip";align-items:center;gap:0 12px;padding:12px 4px;border:0;border-top:1px solid #E4E9F2;border-radius:0;background:transparent;text-align:start;min-height:64px;cursor:pointer}
+.wp-grid{display:block}.hpl-row .hpl-av{grid-area:av;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:#EAF0FF;color:#0F369D;align-self:center}.hpl-row .hpl-av.dr{background:#EEE9FB;color:#5B3FB5}
+.hpl-row>b{grid-area:name;line-height:1.6}.hpl-row>span:not(.hpl-av){grid-area:code;color:#5b6b82;font-size:13px}.hpl-row>small{grid-area:dept;color:#3B4658}.hpl-row>.hrl-chip{grid-area:chip;justify-self:end}
+.hpl-pop{position:fixed;inset:0;z-index:2000;background:rgba(22,33,46,.45);display:flex;align-items:center;justify-content:center;padding:12px}
+.hpl-modal{background:#fff;border-radius:18px;width:min(860px,100%);max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(15,54,157,.25)}
+.hpl-head{background:linear-gradient(120deg,#0F369D,#1c4fc7);color:#fff;border-radius:14px;margin:8px;padding:14px 16px;display:flex;align-items:center;gap:12px}.hpl-head h3{margin:0;font-size:18px;flex:1;color:#fff}
+.hpl-x,.hpl-back{width:44px;height:44px;border-radius:12px;border:1px solid #ffffff45;background:#ffffff18;color:#fff;font-size:20px;cursor:pointer;flex:none}
+.hpl-body{padding:8px 16px 16px}.hpl-body .wp-detail{margin:0}
+@media(max-width:760px){.hpl-tiles{grid-template-columns:1fr 1fr}.hpl-tile{padding:10px;grid-template-columns:1fr}.hpl-ico{display:none}.hpl-tile b{font-size:24px}.wp-grid .hpl-row{grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"av name chip" "av code chip" "dept dept dept"}}
+@media(prefers-reduced-motion:reduce){.hpl-card *{transition:none!important}}
+@media(prefers-contrast:more){.hpl-card{background:#fff;box-shadow:none}}
+.hpl-row[hidden],.hpl-card[hidden],.hpl-pop[hidden]{display:none!important}
+.hpl-body .wp-detail>h2:first-child,.hpl-body .wp-detail>h3:first-child{display:none}
