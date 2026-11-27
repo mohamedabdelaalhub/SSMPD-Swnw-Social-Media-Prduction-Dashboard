@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     db.from("contracting_entities").select("id,name"),
     db.from("contracting_entity_contracts").select("entity_id,status,start_date,end_date,discount_percent,services")
   ]);
-  // Per-entity prices and offer price lists (mig 20261127020000). Optional: if the RPC is missing or fails, the
+  // Per-entity prices and offer price lists (mig 20261127030000). Optional: if the RPC is missing or fails, the
   // output below falls back to the one-line entity summary it always had.
   const feedRes = await db.rpc("clinic_knowledge_feed");
   const feed: any = feedRes.error ? null : feedRes.data;

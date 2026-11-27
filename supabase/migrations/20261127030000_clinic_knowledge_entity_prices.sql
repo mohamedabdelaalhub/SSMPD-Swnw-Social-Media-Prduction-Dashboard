@@ -13,7 +13,7 @@
 --  * offers: active offer lists (list_kind 'offer', status 'active', today within valid dates): name, valid_to and up to
 --    30 lines {name, price} at the offer's fixed price, plus more.
 -- Order: section name, then service name. Only customer-facing facts: no contract numbers, documents or codes.
--- Rollback: supabase/rollbacks/20261127020000_clinic_knowledge_entity_prices.rollback.sql
+-- Rollback: supabase/rollbacks/20261127030000_clinic_knowledge_entity_prices.rollback.sql
 begin;
 
 create or replace function public.clinic_knowledge_feed() returns jsonb

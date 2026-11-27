@@ -1,4 +1,4 @@
-// clinic-knowledge edge function: per-entity prices + offer price lists from clinic_knowledge_feed (mig 20261127020000),
+// clinic-knowledge edge function: per-entity prices + offer price lists from clinic_knowledge_feed (mig 20261127030000),
 // and the unchanged one-line fallback when the RPC is missing. Runs the real index.ts with Deno/Supabase mocked.
 const fs = require('fs'), assert = require('assert'), mod = require('module');
 const src = fs.readFileSync('supabase/functions/clinic-knowledge/index.ts', 'utf8').replace(/^import .*$/gm, '');
