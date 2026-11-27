@@ -1,5 +1,5 @@
 // help 300 (owner 2026-11-26): HR «الإجازات والطلبات» — no preselected employee (placeholder, button off, ended people never offered); «مراجعة السجل» summary line + standard ✕;
-// the folded «انتهت علاقتهم» list lives under «الناس» only. Real browser, real CSS, HR manager, 1280/390. Based on tests/hr-lists-look.cjs.
+// the folded «انتهت خدمتهم» list lives under «شؤون الموظفين» only. Real browser, real CSS, HR manager, 1280/390. Based on tests/hr-lists-look.cjs.
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict'),{chromium}=require('playwright');
 const people=[{id:'p1',admin_id:'hr',full_name:'منى أحمد السيد',code:'EMP-1',kind:'employee',department:'الاستقبال',status:'active',revision:2},{id:'p2',admin_id:'a2',full_name:'هالة مصطفى',code:'EMP-2',kind:'employee',status:'on_leave',revision:2},
  {id:'p4',admin_id:null,full_name:'ياسمين خالد',code:'EMP-4',kind:'employee',status:'ended',revision:1},{id:'p5',admin_id:null,full_name:'أ/ لينا الحسيني',code:'EMP-5',kind:'employee',status:'active',end_date:'2026-01-31',revision:1}];
@@ -21,10 +21,10 @@ const ins={can_manage:true,can_view_all:true,today:'2026-11-25',people:[{id:'p1'
  for(const f of ['workforce-prices','hr-payroll-workspace','hr-custody','hr-insurance','hr-navigation'])await page.addScriptTag({content:fs.readFileSync('assets/js/'+f+'.js','utf8')});
  await page.evaluate(()=>SSMPDHumanResources.render(document.getElementById('view-container')));await page.waitForSelector('[data-hr-group=money]');
 
- // ---- «النهارده»: the folded «انتهت علاقتهم» list is not above the today view any more
+ // ---- «اليوم»: the folded «انتهت خدمتهم» list is not above the today view any more
  assert.equal(await page.locator('.wp > details.hrl-ended').count(),0,'not a direct child of the workspace (it sat above every section)');
- assert.equal(await page.locator('[data-hr-section=home] details.hrl-ended').count(),0,'not in «النهارده»');
- assert.equal(await page.locator('[data-hr-section=people] details.hrl-ended').count(),1,'it lives under «الناس»');assert.equal(await page.evaluate(()=>document.querySelector('details.hrl-ended').open),false,'collapsed by default');
+ assert.equal(await page.locator('[data-hr-section=home] details.hrl-ended').count(),0,'not in «اليوم»');
+ assert.equal(await page.locator('[data-hr-section=people] details.hrl-ended').count(),1,'it lives under «شؤون الموظفين»');assert.equal(await page.evaluate(()=>document.querySelector('details.hrl-ended').open),false,'collapsed by default');
  // ---- «الإجازات والطلبات»: no preselected person, ended people never offered
  await page.click('[data-hr-group=time]');await page.click('[data-hr-open=requests]');await page.waitForSelector('[name=person_for_request]');
  const sel=page.locator('[name=person_for_request]');assert.equal(await sel.inputValue(),'','nobody preselected');
@@ -44,5 +44,5 @@ const ins={can_manage:true,can_view_all:true,today:'2026-11-25',people:[{id:'p1'
  await x.click();assert.equal(await page.locator('.wp-modal').count(),0,'✕ closes');
  const ov=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ov<=1,'no overflow '+ov);
  assert.deepEqual(errors,[]);await page.close();}
- console.log('PASS hr requests polish 1280/390: no preselected person (placeholder + button off), ended people not offered, review modal summary line + standard ✕, «انتهت علاقتهم» only under «الناس» (collapsed).');
+ console.log('PASS hr requests polish 1280/390: no preselected person (placeholder + button off), ended people not offered, review modal summary line + standard ✕, «انتهت خدمتهم» only under «شؤون الموظفين» (collapsed).');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});

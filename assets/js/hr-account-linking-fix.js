@@ -56,7 +56,7 @@ function enhance(select){
       var help=document.createElement('small');
       help.dataset.hrAccountHelp='1';
       help.style.display='block';help.style.marginTop='8px';help.style.lineHeight='1.6';help.style.color='#667085';
-      help.textContent='تظهر كل الحسابات النشطة. الحساب المرتبط بملف مبدئي يمكن استكماله، والحساب المرتبط بملف مكتمل يظهر للمعرفة فقط.';
+      help.textContent='تظهر كل الحسابات النشطة. الحساب المرتبط بملف ناقص يمكن استكماله، والحساب المرتبط بملف مكتمل يظهر للمعرفة فقط.';
       label.appendChild(help);
     }
   }).catch(function(){select.dataset.allHrAccounts='';});

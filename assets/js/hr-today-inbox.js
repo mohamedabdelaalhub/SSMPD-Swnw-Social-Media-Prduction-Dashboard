@@ -1,5 +1,5 @@
 (function(w){'use strict';
-// «محتاج منك النهارده» — the HR manager home (owner 2026-11-25, mockup hr-navigation-home).
+// «محتاج متابعتك» — the HR manager home (owner 2026-11-25, mockup hr-navigation-home).
 // Display only: it counts what is already waiting using the same read RPCs the HR sections use
 // (hr_workspace data already loaded + hr_overtime('workspace'), hr_shift_swaps_list, hr_offboarding_workspace,
 // hr_insurance_workspace). Every optional read fails quietly (its row is simply not shown). No writes here.
@@ -17,7 +17,7 @@ function syncRows(data,me){
   var rows=[];
   if(req.length)rows.push({id:'requests',sec:'requests',t:'طلبات إجازة وإذن مستنية مراجعتك',s:names(req.map(function(r){return{n:pn(r.person_id)+' ('+(words(r.from_date))+')'};}),'n'),n:req.length});
   if(att.length)rows.push({id:'attendance',sec:'attendance',t:'حضور يدوي مستني مراجعة',s:names(att.map(function(a){return{n:pn(a.person_id)+' يوم '+words(a.day)};}),'n'),n:att.length});
-  if(setup.length)rows.push({id:'setup',sec:'people',t:'ملفات ناقصة (ملف مبدئي)',s:names(setup,'full_name'),n:setup.length,calm:1});
+  if(setup.length)rows.push({id:'setup',sec:'people',t:'ملفات ناقصة',s:names(setup,'full_name'),n:setup.length,calm:1});
   if(uncl.length)rows.push({id:'unclassified',sec:'people',kind:'unclassified',t:'ملفات مش متصنفة (طبيب ولا موظف؟)',s:names(uncl,'full_name'),n:uncl.length,calm:1});
   return rows;}
 function asyncRows(me,month){
