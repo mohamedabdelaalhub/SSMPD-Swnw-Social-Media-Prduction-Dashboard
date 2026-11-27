@@ -1237,6 +1237,8 @@ frule('hr-mission.js','المدة بالدقايق','مدة الطريق بال�
 frule('finance-day-movements.js','دوّر باسم المريض أو رقم الملف أو الدكتور','بحث في التاب اللي انت فيه في «حركات اليوم»: اكتب جزء من اسم المريض أو رقم ملفه أو اسم الدكتور والقايمة بتتصفّى على طول.','finance-day-movements')
 frule('select-search.js','اكتب للبحث…','اكتب جزء من الاسم أو الكود أو التليفون أو رقم الملف والقايمة بتصغر على المطابق. بيتجاهل أ/إ/آ وة/ه وى/ي والتشكيل.','select-search')
 frule('select-search.js','بحث في القايمة','خانة بحث فوق القايمة الكبيرة. اكتب وهتلاقي المطابق، Enter يختار أول نتيجة، Esc يمسح.','select-search')
+frule('finance-doctors.js','القرار على كل العقود المعلّقة','اختار اعتماد الكل أو رفض الكل على كل العقود المعلّقة اللي تقدر تراجعها (من غير عقودك إنت).','doctor-contracts-layout')
+frule('finance-doctors.js','سبب القرار (مطلوب للرفض)','اكتب سبب القرار على كل العقود المعلّقة. لو الرفض، السبب إجباري. بيتسجّل مع القرار.','doctor-contracts-layout')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'
