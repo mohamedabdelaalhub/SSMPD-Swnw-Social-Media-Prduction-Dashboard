@@ -1,46 +1,52 @@
 <!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: الخزن والورديات — واضحة</title>
 <style>@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
-*{box-sizing:border-box}body{margin:0;padding:16px;background:#f4f7fc;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;font-size:14px}
+*{box-sizing:border-box}
+:root{--glass-fill:rgba(255,255,255,.66);--glass-edge:rgba(255,255,255,.85);--glass-line:rgba(15,54,157,.10);--glass-shadow:0 10px 30px rgba(15,54,157,.09);--ui-hero:linear-gradient(120deg,#0F369D,#1c4fc7)}
+body{margin:0;padding:16px;background:#F4F7FD;background-image:radial-gradient(900px 520px at 92% -6%,rgba(28,79,199,.10),transparent 60%),radial-gradient(700px 460px at 4% 8%,rgba(241,90,34,.06),transparent 60%);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;font-size:14px}
 .wrap{max-width:1040px;margin:auto;display:grid;gap:16px;min-width:0}.wrap>*{min-width:0}.bar>*{min-width:0}
-.btn{border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:0 14px;min-height:44px;font:inherit;color:#16212E;cursor:pointer}.pri{background:#0F369D;color:#fff;border-color:#0F369D}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.top h2{margin:0;font-size:20px}.top small{display:block;color:#5b6b82;font-size:13px;font-weight:400;margin-top:2px}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:8px}.tabs .btn{border-color:transparent;background:transparent}.tabs .on{background:#0F369D;color:#fff}
+.btn{border:1px solid #D5DEEE;background:#fff;border-radius:12px;padding:0 14px;min-height:44px;font:inherit;color:#16212E;cursor:pointer}.pri{background:#0F369D;color:#fff;border-color:#0F369D;font-weight:700}
+.go2{width:100%;min-height:44px;border:1px solid #0F369D;color:#0F369D;background:#fff;border-radius:12px;font:inherit;font-weight:700;cursor:pointer;white-space:normal}
+.hero{background:var(--ui-hero);color:#fff;border:1px solid #ffffff20;border-radius:18px;padding:20px 22px;box-shadow:0 8px 24px #0f369d20;display:flex;align-items:center;justify-content:space-between;gap:12px;background-image:radial-gradient(120% 160% at 88% -30%,rgba(255,255,255,.26),transparent 55%),var(--ui-hero)}
+.hero h2{margin:0;font-size:20px;color:#fff}.hero small{display:block;color:#E3EBFF;font-size:13px;font-weight:400;margin-top:2px}.hero .btn{background:#ffffff18;border-color:#ffffff45;color:#fff}
+.glass{background:var(--glass-fill);border:1px solid var(--glass-line);border-radius:16px;box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-edge)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;padding:8px}.tabs .btn{border-color:transparent;background:transparent}.tabs .on{background:#0F369D;color:#fff}
 .sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.tile{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px 16px;display:grid;gap:4px;text-align:start;font:inherit;color:inherit;cursor:pointer}
-.tile small{color:#5b6b82}.tile b{font-size:28px;line-height:1.1}.tile.blue b{color:#0F369D}.tile.hot b{color:#F15A22}.tile.ok b{color:#2F7D5C}
-.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:12px}.bar input{flex:1 1 220px;min-height:44px;border:1px solid #D5DEEE;border-radius:10px;padding:0 12px;font:inherit;background:#fff}
-.chip{border:1px solid #D5DEEE;background:#fff;border-radius:999px;min-height:44px;padding:0 14px;font:inherit;cursor:pointer}.chip.on{background:#EAF0FF;border-color:#0F369D;color:#0F369D;font-weight:700}
-.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px 16px;display:grid;gap:4px}
+.tile{padding:16px;display:grid;grid-template-columns:44px 1fr;gap:4px 12px;align-items:center;text-align:start;font:inherit;color:inherit;cursor:pointer}
+.ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;grid-row:span 2;font-size:20px;font-weight:800}.i1{background:#EAF0FF;color:#0F369D}.i2{background:#FFF1E8;color:#F15A22}.i3{background:#E6F3EC;color:#2F7D5C}
+.tile small{color:#5b6b82;font-size:13px}.tile b{font-size:30px;font-weight:800;line-height:1.1}.tile.blue b{color:#0F369D}.tile.hot b{color:#F15A22}.tile.ok b{color:#2F7D5C}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px}.bar input{flex:1 1 220px;min-height:44px;border:1px solid #D5DEEE;border-radius:12px;padding:0 12px;font:inherit;background:#fff}
+.chips{display:flex;gap:8px;flex-wrap:wrap;flex:1 1 100%}.chip{border:1px solid #D5DEEE;background:#fff;border-radius:999px;min-height:44px;padding:0 14px;font:inherit;cursor:pointer}.chip.on{background:#EAF0FF;border-color:#0F369D;color:#0F369D;font-weight:700}
+.card{padding:14px 16px;display:grid;gap:4px}
 .gh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px}.gh h4{margin:0;font-size:16px}.gh small{color:#5b6b82}
-.row{display:grid;grid-template-columns:minmax(0,1.3fr) auto minmax(0,1.4fr) auto;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #eef2fa}.row:first-of-type{border-top:0}
+.row{display:grid;grid-template-columns:minmax(0,1.3fr) auto minmax(0,1.4fr) auto;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #E4E9F2}.row:first-of-type{border-top:0}
 .who b{display:block;line-height:1.6}.who small{color:#5b6b82;line-height:1.6}
-.st{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700;white-space:nowrap}.st:before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
-.st.open{background:#EAF0FF;color:#0F369D}.st.sub{background:#FFF1E8;color:#C2410C}.st.done{background:#E8F5EE;color:#2F7D5C}
+.st{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.st.open{background:#EAF0FF;color:#0F369D}.st.sub{background:#FFF1E8;color:#C2410C}.st.done{background:#E6F3EC;color:#2F7D5C}
 .res{color:#16212E;line-height:1.7}.res small{display:block;color:#5b6b82}.diff{font-weight:700}.diff.z{color:#2F7D5C}.diff.p{color:#F15A22}.diff.n{color:#D0402A}
-.act .btn{width:100%;white-space:normal}.wait{display:block;text-align:center;color:#5b6b82;font-size:13px}.chips{display:flex;gap:8px;flex-wrap:wrap;flex:1 1 100%}
-details.tools{background:#fff;border:1px dashed #C5CDDB;border-radius:16px;padding:12px 16px}details.tools summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
-.tg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:8px}.tg section{border:1px solid #eef2fa;border-radius:12px;padding:12px;display:grid;gap:8px;align-content:start}.tg h5{margin:0;font-size:14px;color:#0F369D}.tg .btn{text-align:start;width:100%;white-space:normal}
+.act .btn{width:100%;white-space:normal}.wait{display:block;text-align:center;color:#5b6b82;font-size:13px}
+details.tools{border:1px dashed #C5CDDB;border-radius:16px;padding:12px 16px;background:rgba(255,255,255,.5)}details.tools summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.tg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:8px}.tg section{padding:12px;display:grid;gap:8px;align-content:start}.tg h5{margin:0;font-size:14px;color:#0F369D}.tg .btn{text-align:start;width:100%;white-space:normal}
 .note{font-size:12px;color:#8a4b00;background:#FFF3E0;border-radius:8px;padding:8px 12px}
-@media(max-width:760px){.tabs{flex-wrap:nowrap;overflow-x:auto}.tabs .btn{white-space:nowrap}.chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}.chip{white-space:nowrap}.bar .go{order:-1;flex:1 1 100%}.bar input{order:0}body{padding:10px}.sum{grid-template-columns:1fr 1fr 1fr;gap:8px}.tile{padding:10px}.tile b{font-size:22px}.row{grid-template-columns:1fr auto;gap:8px}.row .res{grid-column:1/-1}.row .act{grid-column:1/-1}.tg{grid-template-columns:1fr}.top h2{font-size:18px}}
+@media(max-width:760px){body{padding:10px}.hero{padding:16px}.sum{gap:8px}.tile{padding:10px;grid-template-columns:1fr}.ico{display:none}.tile b{font-size:22px}.row{grid-template-columns:1fr auto;gap:8px}.row .res,.row .act{grid-column:1/-1}.tg{grid-template-columns:1fr}.hero h2{font-size:18px}.tabs{flex-wrap:nowrap;overflow-x:auto}.tabs .btn{white-space:nowrap}.chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}.chip{white-space:nowrap}.bar .go{order:-1;flex:1 1 100%}}
 </style>
 <div class="wrap">
-<div class="top"><div><h2>الخزن والورديات<small>الاستقبال والخدمات · مازن أحمد علي</small></h2></div><button class="btn">رجوع للأقسام ←</button></div>
-<div class="tabs"><button class="btn">الحساب والفواتير</button><button class="btn">المستلزمات والمخزون</button><button class="btn on">الخزن والورديات</button><button class="btn">التعاقدات والتحصيلات</button><button class="btn">التقارير والتحليل</button></div>
-<div class="sum"><button class="tile blue"><small>ورديات مفتوحة</small><b>2</b></button><button class="tile hot"><small>مستنية مراجعة</small><b>2</b></button><button class="tile ok"><small>الفرق في كل الورديات</small><b dir="ltr">0.00 ج.م</b></button></div>
-<div class="bar"><input type="search" placeholder="دوّر باسم الخزينة…" aria-label="بحث"><button class="btn pri go">فتح وردية من الحسابات</button><div class="chips"><button class="chip on">الكل (6)</button><button class="chip">مفتوحة (2)</button><button class="chip">مستنية مراجعة (2)</button><button class="chip">اتراجعت (2)</button></div></div>
-<div class="card"><div class="gh"><h4>مفتوحة — محتاجة تسليم</h4><small>2 وردية</small></div>
-<div class="row"><div class="who"><b>خزينة مازن</b><small>وردية مفتوحة</small></div><span class="st open">مفتوحة</span><div class="res">العدّ بيتم عند الإغلاق<small>الفرق هيظهر بعد التسليم</small></div><div class="act"><button class="btn pri">تسليم الوردية في الحسابات</button></div></div>
-<div class="row"><div class="who"><b>خزينة مازن</b><small>وردية مفتوحة</small></div><span class="st open">مفتوحة</span><div class="res">العدّ بيتم عند الإغلاق<small>الفرق هيظهر بعد التسليم</small></div><div class="act"><button class="btn pri">تسليم الوردية في الحسابات</button></div></div></div>
-<div class="card"><div class="gh"><h4>مستنية مراجعة</h4><small>2 وردية</small></div>
-<div class="row"><div class="who"><b>خزينة مازن</b><small>اتسلمت — مستنية مراجعة مستقلة</small></div><span class="st sub">مستنية مراجعة</span><div class="res">الفعلي في الدرج: <b dir="ltr">450.00 ج.م</b><small>الفرق: <span class="diff z" dir="ltr">0.00 ج.م — مظبوطة</span></small></div><div class="act"><button class="btn pri">مراجعة مستقلة</button></div></div>
+<div class="hero"><div><h2>الخزن والورديات</h2><small>الاستقبال والخدمات · مازن أحمد علي</small></div><button class="btn">رجوع للأقسام ←</button></div>
+<div class="tabs glass"><button class="btn">الحساب والفواتير</button><button class="btn">المستلزمات والمخزون</button><button class="btn on">الخزن والورديات</button><button class="btn">التعاقدات والتحصيلات</button><button class="btn">التقارير والتحليل</button></div>
+<div class="sum"><button class="tile glass blue"><span class="ico i1">●</span><small>ورديات مفتوحة</small><b>2</b></button><button class="tile glass hot"><span class="ico i2">!</span><small>مستنية مراجعة</small><b>2</b></button><button class="tile glass ok"><span class="ico i3">✓</span><small>الفرق في كل الورديات</small><b dir="ltr">0.00 ج.م</b></button></div>
+<div class="bar glass"><input type="search" placeholder="دوّر باسم الخزينة…" aria-label="بحث"><button class="btn pri go">فتح وردية من الحسابات</button><div class="chips"><button class="chip on">الكل (6)</button><button class="chip">مفتوحة (2)</button><button class="chip">مستنية مراجعة (2)</button><button class="chip">اتراجعت (2)</button></div></div>
+<div class="card glass"><div class="gh"><h4>مفتوحة — محتاجة تسليم</h4><small>2 وردية</small></div>
+<div class="row"><div class="who"><b>خزينة مازن</b><small>وردية مفتوحة</small></div><span class="st open">مفتوحة</span><div class="res">العدّ بيتم عند الإغلاق<small>الفرق هيظهر بعد التسليم</small></div><div class="act"><button class="go2">تسليم الوردية في الحسابات</button></div></div>
+<div class="row"><div class="who"><b>خزينة مازن</b><small>وردية مفتوحة</small></div><span class="st open">مفتوحة</span><div class="res">العدّ بيتم عند الإغلاق<small>الفرق هيظهر بعد التسليم</small></div><div class="act"><button class="go2">تسليم الوردية في الحسابات</button></div></div></div>
+<div class="card glass"><div class="gh"><h4>مستنية مراجعة</h4><small>2 وردية</small></div>
+<div class="row"><div class="who"><b>خزينة مازن</b><small>اتسلمت — مستنية مراجعة مستقلة</small></div><span class="st sub">مستنية مراجعة</span><div class="res">الفعلي في الدرج: <b dir="ltr">450.00 ج.م</b><small>الفرق: <span class="diff z" dir="ltr">0.00 ج.م — مظبوطة</span></small></div><div class="act"><button class="go2">مراجعة مستقلة</button></div></div>
 <div class="row"><div class="who"><b>خزينة مازن</b><small>اتسلمت — مستنية مراجعة مستقلة</small></div><span class="st sub">مستنية مراجعة</span><div class="res">الفعلي: <b dir="ltr">0.00 ج.م</b><small>الفرق: <span class="diff z" dir="ltr">0.00 ج.م — مظبوطة</span></small></div><div class="act"><span class="wait">مستنية مراجعة من المدير المالي</span></div></div></div>
-<div class="card"><div class="gh"><h4>خلصت</h4><small>2 وردية</small></div>
+<div class="card glass"><div class="gh"><h4>خلصت</h4><small>2 وردية</small></div>
 <div class="row"><div class="who"><b>خزينة مازن</b><small>اتسلمت واتراجعت</small></div><span class="st done">اتراجعت</span><div class="res">الفعلي: <b dir="ltr">0.00 ج.م</b><small>الفرق: <span class="diff z" dir="ltr">0.00 ج.م — مظبوطة</span></small></div><div class="act"></div></div>
 
 <div class="row"><div class="who"><b>خزينة مازن</b><small>اتسلمت واتراجعت</small></div><span class="st done">اتراجعت</span><div class="res">الفعلي: <b dir="ltr">550.00 ج.م</b><small>الفرق: <span class="diff z" dir="ltr">0.00 ج.م — مظبوطة</span></small></div><div class="act"></div></div></div>
 <details class="tools"><summary>أدوات إضافية (9)</summary><div class="tg">
-<section><h5>طلبات الخدمة</h5><button class="btn">حالة كل طلبات الخدمة</button><button class="btn">تفاصيل طلب الخدمة (إحالة / تنفيذ / مزوّد)</button><button class="btn">لوحة المزوّدين الخارجيين</button></section>
-<section><h5>التأمين والتواصل</h5><button class="btn">طباعة مطالبة تأمينية</button><button class="btn">موافقة التواصل</button><button class="btn">ربط الليد بالحجز</button></section>
-<section><h5>التقارير والفريق</h5><button class="btn">نشر ومراجعة تقارير المؤشرات</button><button class="btn">تصدير مؤشرات مجمعة</button><button class="btn">إرسال مهمة لموديول الفريق</button></section></div></details>
-<div class="note">تصور بدون كود. كل الأزرار والسطور الحالية موجودة (لا شيء يُحذف). لو الداتا فيها وقت الفتح/التسليم بنظهره تحت اسم الخزينة.</div>
+<section class="glass"><h5>طلبات الخدمة</h5><button class="btn">حالة كل طلبات الخدمة</button><button class="btn">تفاصيل طلب الخدمة (إحالة / تنفيذ / مزوّد)</button><button class="btn">لوحة المزوّدين الخارجيين</button></section>
+<section class="glass"><h5>التأمين والتواصل</h5><button class="btn">طباعة مطالبة تأمينية</button><button class="btn">موافقة التواصل</button><button class="btn">ربط الليد بالحجز</button></section>
+<section class="glass"><h5>التقارير والفريق</h5><button class="btn">نشر ومراجعة تقارير المؤشرات</button><button class="btn">تصدير مؤشرات مجمعة</button><button class="btn">إرسال مهمة لموديول الفريق</button></section></div></details>
+<div class="note">تصور بدون كود، على ستايل سونو الزجاجي (هيدر متدرج، كروت زجاجية، ألوان الهوية، أيقونات مربعة زي كروت الاستقبال المعتمدة). كل الأزرار والسطور الحالية موجودة (لا شيء يُحذف). لو الداتا فيها وقت الفتح/التسليم بنظهره تحت اسم الخزينة.</div>
 </div>
