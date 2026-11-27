@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2096,
-    "labels": 1527,
-    "files": 171,
-    "groups": 1658
+    "definitions": 2098,
+    "labels": 1529,
+    "files": 172,
+    "groups": 1659
   },
   "fields": [
     {
@@ -14469,6 +14469,26 @@
       "tab": "reception_services",
       "article": "shift-expenses-review",
       "text_sha256": "7874f0f73a8de1334b8801d900f5617184950df9b3298a359ad5b06835da4a75"
+    },
+    {
+      "file": "reception-shifts-view.js",
+      "label": "بحث في الورديات",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-shifts-view",
+      "text_sha256": "f31727bc10db6d0b4972dac5a300ad81cd352b717f38fdbee4b1a0198fe497b7"
+    },
+    {
+      "file": "reception-shifts-view.js",
+      "label": "دوّر باسم الخزينة…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-shifts-view",
+      "text_sha256": "f31727bc10db6d0b4972dac5a300ad81cd352b717f38fdbee4b1a0198fe497b7"
     },
     {
       "file": "reception-vezeeta-paste.js",
