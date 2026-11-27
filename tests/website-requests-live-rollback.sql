@@ -10,7 +10,8 @@ begin
   if to_regclass('public.website_requests') is null then raise exception 'الملف لم يُطبَّق'; end if;
   select id into ws from clinic_reception.workspaces where mode = 'live' order by id limit 1;
   select user_id into rec from public.admins where active and role = 'reception' and user_id is not null order by id limit 1;
-  select user_id into other from public.admins where active and role in ('designer', 'page_manager') and user_id is not null order by id limit 1;
+  select a.user_id into other from public.admins a where a.active and a.role in ('designer', 'page_manager', 'approver') and a.user_id is not null
+     and not exists (select 1 from public.admin_extra_roles r where r.admin_id = a.id and r.role in ('reception', 'customer_service', 'general_manager', 'super_admin')) order by a.id limit 1;
   insert into wr_result values ('inputs', ws is not null and rec is not null, format('workspace=%s reception_user=%s other_user=%s', ws is not null, rec is not null, other is not null));
   if ws is null or rec is null then return; end if;
 

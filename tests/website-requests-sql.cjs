@@ -6,8 +6,9 @@ const sql = f => fs.readFileSync(path.join(__dirname, '..', 'supabase', f), 'utf
   const db = new PGlite();
   await db.exec(`create role anon nologin; create role authenticated nologin; create role service_role nologin; create schema clinic_reception;
     grant usage on schema public, clinic_reception to anon, authenticated, service_role;
+    create function public.has_role(r text) returns boolean language sql as $f$ select r = any(string_to_array(coalesce(current_setting('test.roles', true), ''), ',')) $f$;
     create function clinic_reception.access(p_workspace uuid, p_action text) returns uuid language plpgsql as $f$
-    begin if current_setting('test.role', true) is distinct from 'reception' then raise exception 'ممنوع'; end if;
+    begin if current_setting('test.role', true) not in ('reception', 'finance') then raise exception 'ممنوع'; end if;
       if p_action = 'book' and current_setting('test.can_book', true) is distinct from 'yes' then raise exception 'ممنوع'; end if;
       return '00000000-0000-0000-0000-0000000000aa'::uuid; end $f$;`);
   await db.exec(sql('migrations/20261127010000_website_requests.sql'));
@@ -39,9 +40,12 @@ const sql = f => fs.readFileSync(path.join(__dirname, '..', 'supabase', f), 'utf
     await db.exec('reset role');
   }
   // reception: list and mark; others refused
-  await db.exec("set role authenticated; set test.role = 'other'");
+  await db.exec("set role authenticated; set test.role = 'other'; set test.roles = 'designer'");
   await assert.rejects(() => db.query('select public.website_requests_list($1)', [W]), /ممنوع/);
-  await db.exec("set test.role = 'reception'");
+  // a finance viewer passes the base 'view' check of clinic_reception.access but is refused by the role gate
+  await db.exec("set test.role = 'finance'; set test.roles = 'accountant'");
+  await assert.rejects(() => db.query('select public.website_requests_list($1)', [W]), /ليس لديك صلاحية/, 'finance viewer is refused');
+  await db.exec("set test.role = 'reception'; set test.roles = 'reception'");
   let list = (await db.query('select public.website_requests_list($1) r', [W])).rows[0].r;
   assert.ok(list.length >= 2 && !('ip_hash' in list[0]) && !('request_id' in list[0]), 'no ip_hash / request_id in the list');
   assert.equal((await db.query("select public.website_requests_list($1,'new') r", [W])).rows[0].r.length, list.length);

@@ -5,7 +5,8 @@
 --     RLS on, no direct access for anon / authenticated.
 --   * public.website_request_ingest(...): service role only. Validates, rate limits (10 per IP-hash per hour), idempotent.
 --   * public.website_requests_list(workspace, status, limit) / website_requests_mark(workspace, id, status): reception / admin
---     through clinic_reception.access ('view' to read, 'book' to mark).
+--     through clinic_reception.access ('view' to read, 'book' to mark) AND an explicit role gate: reception / customer service / general manager / super admin only
+--     (the base 'view' also admits anyone with a finance view grant, which is wider than these messages need).
 -- Rollback: supabase/rollbacks/20261127010000_website_requests.rollback.sql
 begin;
 
@@ -64,6 +65,8 @@ create function public.website_requests_list(p_workspace uuid, p_status text def
 returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public as $$
 declare me uuid := clinic_reception.access(p_workspace, 'view');
 begin
+  if not (public.has_role('reception') or public.has_role('customer_service') or public.has_role('general_manager') or public.has_role('super_admin')) then
+    raise exception 'ليس لديك صلاحية طلبات الموقع' using errcode = '42501'; end if;
   if p_status is not null and p_status not in ('new', 'reviewed', 'done') then raise exception 'حالة غير صحيحة'; end if;
   return coalesce((select jsonb_agg(to_jsonb(x) order by x.created_at desc) from (
     select r.id, r.kind, r.fields, r.status, r.created_at, r.reviewed_at from public.website_requests r
@@ -76,6 +79,8 @@ create function public.website_requests_mark(p_workspace uuid, p_id uuid, p_stat
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
 declare me uuid := clinic_reception.access(p_workspace, 'book'); n integer;
 begin
+  if not (public.has_role('reception') or public.has_role('customer_service') or public.has_role('general_manager') or public.has_role('super_admin')) then
+    raise exception 'ليس لديك صلاحية طلبات الموقع' using errcode = '42501'; end if;
   if p_status is null or p_status not in ('new', 'reviewed', 'done') then raise exception 'حالة غير صحيحة'; end if;
   update public.website_requests set status = p_status, reviewed_by = case when p_status = 'new' then null else me end,
     reviewed_at = case when p_status = 'new' then null else now() end where id = p_id;
