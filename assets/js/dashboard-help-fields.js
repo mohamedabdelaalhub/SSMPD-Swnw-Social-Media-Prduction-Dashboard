@@ -23167,6 +23167,19 @@
       "reviewed": true
     },
     {
+      "title": "ابحث بالاسم أو الموبايل أو الرسالة",
+      "labels": [
+        "ابحث بالاسم أو الموبايل أو الرسالة"
+      ],
+      "text": "اكتب جزء من الاسم أو الموبايل أو نص الرسالة علشان تلاقي الطلب.",
+      "article": "website-requests",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الصفحة",
       "labels": [
         "الصفحة",
@@ -24403,9 +24416,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2104,
-    "labels": 1535,
-    "files": 172,
-    "groups": 1663
+    "definitions": 2105,
+    "labels": 1536,
+    "files": 173,
+    "groups": 1664
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

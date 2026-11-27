@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2104,
-    "labels": 1535,
-    "files": 172,
-    "groups": 1663
+    "definitions": 2105,
+    "labels": 1536,
+    "files": 173,
+    "groups": 1664
   },
   "fields": [
     {
@@ -21406,6 +21406,16 @@
       "tab": "production",
       "article": "personal",
       "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "website-requests.js",
+      "label": "ابحث بالاسم أو الموبايل أو الرسالة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "website-requests",
+      "text_sha256": "94ebeba91b6b2e36690d57228e3020d50b7c79a12901e8e4684e593ae65eccb8"
     },
     {
       "file": "weekly-plan.js",
