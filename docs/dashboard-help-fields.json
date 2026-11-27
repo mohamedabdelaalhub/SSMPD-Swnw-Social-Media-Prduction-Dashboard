@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2114,
-    "labels": 1544,
-    "files": 174,
-    "groups": 1672
+    "definitions": 2117,
+    "labels": 1546,
+    "files": 175,
+    "groups": 1674
   },
   "fields": [
     {
@@ -12682,6 +12682,16 @@
     },
     {
       "file": "reception-execute-all.js",
+      "label": "صورة شاشة الجهاز (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "laser-no-meter",
+      "text_sha256": "5e011c9b2aeca7ec609ad80611864ec9391351e96833c1a9d2149704df927749"
+    },
+    {
+      "file": "reception-execute-all.js",
       "label": "دوّر في الخدمات",
       "name": "",
       "kind": "aria",
@@ -12919,6 +12929,26 @@
       "tab": "reception_services",
       "article": "reception-booking-manual-time",
       "text_sha256": "9354853a0c7a6fc124574638ea46afeacce3249322816b439faa8e7d384e00a3"
+    },
+    {
+      "file": "reception-no-meter.js",
+      "label": "دوّر",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "laser-no-meter",
+      "text_sha256": "5fd5e84ef0a49619f754716823fb3a2b53bbdeac6ab6e35144ac0d377c073e0b"
+    },
+    {
+      "file": "reception-no-meter.js",
+      "label": "دوّر بالجهاز أو الموظف أو الخدمة أو رقم الملف",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "laser-no-meter",
+      "text_sha256": "5fd5e84ef0a49619f754716823fb3a2b53bbdeac6ab6e35144ac0d377c073e0b"
     },
     {
       "file": "reception-overbook.js",

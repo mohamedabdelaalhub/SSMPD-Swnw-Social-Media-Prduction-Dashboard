@@ -14548,6 +14548,19 @@
       "reviewed": true
     },
     {
+      "title": "صورة شاشة الجهاز (اختياري)",
+      "labels": [
+        "صورة شاشة الجهاز (اختياري)"
+      ],
+      "text": "صورة لشاشة جهاز الليزر كإثبات لعدد النبضات لما مش عارف قراية العداد. اختيارية، وبتظهر للمالك والمدير في كارت «جلسات ليزر من غير قراية عداد».",
+      "article": "laser-no-meter",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "دوّر في الخدمات",
       "labels": [
         "دوّر في الخدمات"
@@ -14790,6 +14803,20 @@
       ],
       "text": "اكتب تفاصيل الاتفاق مع الدكتور. إجبارية لو السبب «أخرى».",
       "article": "reception-booking-manual-time",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دوّر",
+      "labels": [
+        "دوّر",
+        "دوّر بالجهاز أو الموظف أو الخدمة أو رقم الملف"
+      ],
+      "text": "دوّر في جلسات الليزر اللي اتنفذت من غير قراية عداد.",
+      "article": "laser-no-meter",
       "tabs": [
         "reception_services"
       ],
@@ -24521,9 +24548,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2114,
-    "labels": 1544,
-    "files": 174,
-    "groups": 1672
+    "definitions": 2117,
+    "labels": 1546,
+    "files": 175,
+    "groups": 1674
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

@@ -22,24 +22,40 @@ function deviceOf(c,id){return ((c.data&&c.data.devices)||[]).filter(function(x)
 /* «آخر قراءة» on THIS device by anyone — always fresh from the server when a window opens / the device changes */
 function lastReading(ws,dev){var c=client();if(!c||!dev)return Promise.resolve(null);
  return Promise.resolve(c.rpc('clinic_reception_device_last_reading',{p_workspace:ws,p_device:dev})).then(function(r){if(r&&r.error)throw r.error;return r?r.data:null;}).catch(function(){return null;});}
+function uploadPhoto(file){var c=client();if(!c||!c.storage)return Promise.reject(new Error('مقدرتش أرفع الصورة — تقدر تكمّل من غيرها'));
+ if(file.size>8*1024*1024)return Promise.reject(new Error('الصورة أكبر من 8 ميجا'));
+ return Promise.resolve(c.auth&&c.auth.getUser?c.auth.getUser():null).then(function(u){var uid=u&&u.data&&u.data.user&&u.data.user.id;if(!uid)throw new Error('سجل الدخول تاني');
+  var ext=(String(file.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'jpg',pth=uid+'/laser-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
+  return Promise.resolve(c.storage.from('shift-expense-receipts').upload(pth,file,{upsert:false,contentType:file.type||undefined})).then(function(r){if(r&&r.error)throw r.error;return pth;});});}
 function when(v){try{return v?new Date(v).toLocaleString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):'';}catch(e){return '';}}
 /* counter tools on a form: «آخر قراءة» line + gap / overlap note under «قبل», and «من / إلى» ↔ «عدد النبضات» */
 function meterTools(root,c,f,opts){opts=opts||{};var before=f[opts.before||'meter_before'],after=f[opts.after||'meter_after'];if(!before||!after||before.__mt)return null;before.__mt=true;
  var bl=before.closest('label')||before,al=after.closest('label')||after,last=null;
  var info=d.createElement('small');info.className='xall-last';info.setAttribute('data-last-reading','');info.hidden=true;bl.parentNode.insertBefore(info,bl.nextSibling);
  var mode=d.createElement('div');mode.className='xall-mode';mode.setAttribute('data-meter-mode','');mode.setAttribute('data-wide','');mode.hidden=true;
- mode.innerHTML='<span>اكتب العداد:</span><label><input type="radio" name="'+(opts.modeName||'meter_mode')+'" value="range" checked> من / إلى</label><label><input type="radio" name="'+(opts.modeName||'meter_mode')+'" value="count"> عدد النبضات</label>';
+ mode.innerHTML='<span>اكتب العداد:</span><label><input type="radio" name="'+(opts.modeName||'meter_mode')+'" value="range" checked> من / إلى</label><label><input type="radio" name="'+(opts.modeName||'meter_mode')+'" value="count"> عدد النبضات</label><label><input type="radio" name="'+(opts.modeName||'meter_mode')+'" value="none" data-no-meter-opt> مش عارف قراية العداد</label>';
  bl.parentNode.insertBefore(mode,bl);
  var cl=d.createElement('label');cl.setAttribute('data-pulses-label','');cl.hidden=true;cl.innerHTML=(opts.countLabel||'عدد النبضات')+'<input name="'+(opts.countName||'pulses')+'" type="number" min="1" step="1" inputmode="numeric" disabled>';al.parentNode.insertBefore(cl,al.nextSibling);
  var count=cl.querySelector('input');
+ /* «مش عارف قراية العداد» (owner 2026-11-27 «موافق على النبضات من غير عداد مؤقتاً»): pulses only + an optional photo of the device screen */
+ var nm=d.createElement('div');nm.className='xall-nm';nm.setAttribute('data-no-meter-box','');nm.setAttribute('data-wide','');nm.hidden=true;
+ nm.innerHTML='<input type="hidden" name="'+(opts.noMeterName||'no_meter')+'" value="true" disabled><input type="hidden" name="'+(opts.evidenceName||'evidence')+'" value="" disabled>'+
+  '<p class="rbm-hint w">الجلسة هتتسجل «من غير قراية عداد» وهتظهر للمالك والمدير. السعر والخصم من باكج النبضات بيتحسبوا من عدد النبضات اللي هتكتبه.</p>'+
+  '<label class="xall-photo">صورة شاشة الجهاز (اختياري)<input type="file" accept="image/*" capture="environment" data-no-meter-photo></label><small class="xall-last" data-no-meter-photo-st hidden></small>';
+ cl.parentNode.insertBefore(nm,cl.nextSibling);
+ var nmFlag=nm.querySelector('input[name="'+(opts.noMeterName||'no_meter')+'"]'),evInp=nm.querySelector('input[name="'+(opts.evidenceName||'evidence')+'"]'),photo=nm.querySelector('[data-no-meter-photo]'),photoSt=nm.querySelector('[data-no-meter-photo-st]');
+ photo.onchange=function(){var file=photo.files&&photo.files[0];evInp.value='';if(!file)return;photoSt.hidden=false;photoSt.classList.remove('warn');photoSt.textContent='بيرفع الصورة…';
+  uploadPhoto(file).then(function(pth){evInp.value=pth;photoSt.textContent='الصورة اترفعت ✓';}).catch(function(e){photoSt.textContent=(e&&e.message)||'مقدرتش أرفع الصورة — تقدر تكمّل من غيرها';photoSt.classList.add('warn');photo.value='';});};
  function note(){if(last==null||before.value===''){info.textContent=last!=null?'آخر قراءة على الجهاز ده: '+num(last.meter_after)+(last.by?' — '+last.by:'')+(last.at?' · '+when(last.at):''):'';info.hidden=!info.textContent;info.classList.remove('warn');return;}
   var diff=+before.value-(+last.meter_after),base='آخر قراءة على الجهاز ده: '+num(last.meter_after)+(last.by?' — '+last.by:'')+(last.at?' · '+when(last.at):'');
   info.textContent=diff>0?base+' · فيه فجوة '+num(diff)+' عن آخر قراءة':diff<0?base+' · تداخل: أقل من آخر قراءة بـ '+num(-diff):base;info.classList.toggle('warn',diff!==0);info.hidden=false;}
- function setMode(m){var cnt=m==='count';al.hidden=cnt;after.disabled=cnt;cl.hidden=!cnt;count.disabled=!cnt;if(opts.onChange)opts.onChange();}
+ function setMode(m){var cnt=m==='count'||m==='none',none=m==='none';al.hidden=cnt;after.disabled=cnt;bl.hidden=none;before.disabled=none;cl.hidden=!cnt;count.disabled=!cnt;
+  nm.hidden=!none;nmFlag.disabled=!none;evInp.disabled=!none;if(none)info.hidden=true;else note();if(opts.onChange)opts.onChange();}
  mode.querySelectorAll('input').forEach(function(r){r.onchange=function(){setMode(r.value);};});
  before.addEventListener('input',note);
- function load(devId,show){mode.hidden=!show;if(!show){setMode('range');info.hidden=true;return Promise.resolve();}
-  return lastReading(c.workspace,devId).then(function(x){last=x&&x.meter_after!=null?x:null;if(last&&(before.value===''||before.__auto)){before.value=last.meter_after;before.__auto=true;before.dispatchEvent(new Event('input',{bubbles:true}));}note();});}
+ function load(devId,show){mode.hidden=!show;if(!show){var r0=mode.querySelector('input[value="range"]');if(r0)r0.checked=true;setMode('range');info.hidden=true;return Promise.resolve();}
+  return lastReading(c.workspace,devId).then(function(x){last=x&&x.meter_after!=null?x:null;if(last&&(before.value===''||before.__auto)){before.value=last.meter_after;before.__auto=true;before.dispatchEvent(new Event('input',{bubbles:true}));}note();
+   if(!last&&mode.querySelector('input:checked').value!=='none'){info.textContent='مفيش قراية عداد متسجلة للجهاز ده لسه — لو مش عارفها اختار «مش عارف قراية العداد».';info.hidden=false;info.classList.add('warn');}});}
  before.addEventListener('input',function(e){if(e.isTrusted)before.__auto=false;});
  return {load:load,count:count,mode:function(){var r=mode.querySelector('input:checked');return r?r.value:'range';},note:note};}
 
@@ -53,7 +69,8 @@ function blank(v){return v==null||String(v).trim()==='';}
 function checks(f,o,c,opt){opt=opt||{};var out=[],dev=f.device_id&&f.device_id.value?deviceOf(c,f.device_id.value):null;
  if(!dev&&o&&o.snapshot&&o.snapshot.requires_device&&f.device_id)out.push([f.device_id,'اختار الجهاز']);
  if(dev){var mn=f.minutes&&f.minutes.value;if(f.minutes&&(blank(mn)||!/^\s*\d+\s*$/.test(mn)||+mn<=0))out.push([f.minutes,'اكتب دقايق تشغيل الجهاز']);
-  if(dev.meter_kind&&dev.meter_kind!=='none'&&opt.count&&f.meter_before){var pc=f[opt.countName||'pulses'];
+  if(dev.meter_kind&&dev.meter_kind!=='none'&&opt.none){var pn=f[opt.countName||'pulses'];if(pn&&(blank(pn.value)||!(+pn.value>0)))out.push([pn,'اكتب عدد النبضات (أكبر من صفر)']);}
+  else if(dev.meter_kind&&dev.meter_kind!=='none'&&opt.count&&f.meter_before){var pc=f[opt.countName||'pulses'];
    if(blank(f.meter_before.value))out.push([f.meter_before,'اكتب قراءة العداد قبل']);if(pc&&(blank(pc.value)||!(+pc.value>0)))out.push([pc,'اكتب عدد النبضات (أكبر من صفر)']);}
   else if(dev.meter_kind&&dev.meter_kind!=='none'&&f.meter_before&&f.meter_after){var b=f.meter_before.value,a=f.meter_after.value;
    if(blank(b))out.push([f.meter_before,'اكتب قراءة العداد قبل وبعد']);if(blank(a))out.push([f.meter_after,'اكتب قراءة العداد قبل وبعد']);
@@ -69,7 +86,7 @@ function guard(root,c,o){if(!root||root.__xallGuard)return;root.__xallGuard=true
  if(dsel)dsel.addEventListener('change',sync);sync();
  root.addEventListener('submit',function(e){var f=form.elements;clearErr(root);
   var mat=Array.prototype.some.call(root.querySelectorAll('[data-rx-lines] [data-field="quantity"]'),function(q){return +q.value>0;});
-  var bad=checks(f,o,c,{hasMaterials:mat,count:mt&&mt.mode()==='count'});if(!bad.length)return;
+  var bad=checks(f,o,c,{hasMaterials:mat,count:mt&&mt.mode()==='count',none:mt&&mt.mode()==='none'});if(!bad.length)return;
   e.preventDefault();e.stopImmediatePropagation();bad.forEach(function(x){err(root,x[0],x[1]);});var st=root.querySelector('[data-rx-status]');if(st)st.textContent='كمّل الخانات اللي تحتها كلام بالأحمر.';
   if(bad[0][0]&&bad[0][0].focus)bad[0][0].focus();},true);
  form.addEventListener('input',function(e){var t=e.target,lab=t&&t.closest&&t.closest('label');if(t&&t.classList)t.classList.remove('rx-bad');var n=lab&&lab.nextSibling;if(n&&n.hasAttribute&&n.hasAttribute('data-field-err'))n.remove();});}
@@ -137,15 +154,15 @@ function draw(c,v,list,pulseCodes){var e=esc,data=c.data||{},ap=(data.appointmen
   var pulse=sel.filter(isPulse),rest=sel.filter(function(o){return !isPulse(o);}),own={};
   pulse.forEach(function(o){var x=root.querySelector('[data-xall-pc="'+o.id+'"]');own[o.id]=x?x.value:'';});
   var M=+f.minutes.value||0,mins=dev&&M>0?splitInt(M,sel.map(function(o){return +(o.snapshot&&o.snapshot.minutes)||1;})):[];
-  var cnt=mt&&mt.mode()==='count',B=+f.meter_before.value,total=cnt?+(f.session_pulses&&f.session_pulses.value):(+f.meter_after.value-B),
-   haveTotal=!blank(f.meter_before.value)&&(cnt?!blank(f.session_pulses&&f.session_pulses.value):!blank(f.meter_after.value)),
+  var nmode=mt&&mt.mode()==='none',cnt=mt&&(mt.mode()==='count'||nmode),B=nmode?0:+f.meter_before.value,total=cnt?+(f.session_pulses&&f.session_pulses.value):(+f.meter_after.value-B),
+   haveTotal=(nmode||!blank(f.meter_before.value))&&(cnt?!blank(f.session_pulses&&f.session_pulses.value):!blank(f.meter_after.value)),
    pulseUsed=pulse.reduce(function(t,o){return t+Math.max(0,+own[o.id]||0);},0),T=total-pulseUsed;
   var ch=meter&&haveTotal&&T>=0&&rest.length?chain(B,T,rest.map(function(o){return +(o.snapshot&&o.snapshot.minutes)||1;})):null;
   /* services priced per pulse start where the previous one stopped */
   var pc={},cur=B+(rest.length?Math.max(0,T):0);pulse.forEach(function(o){var n=+own[o.id]||0;pc[o.id]=[cur,cur+n];cur+=n;});
-  return {sel:sel,dev:dev,meter:meter,mins:mins,own:own,rest:rest,ch:ch,T:T,pulse:pulse,pc:pc,haveTotal:haveTotal,cnt:cnt,total:total};}
+  return {sel:sel,dev:dev,meter:meter,mins:mins,own:own,rest:rest,ch:ch,T:T,pulse:pulse,pc:pc,haveTotal:haveTotal,cnt:cnt,total:total,nm:nmode};}
  function paint(){var p=plan(),f=root.querySelector('form').elements;
-  root.querySelectorAll('[data-xall-dev]').forEach(function(x){x.hidden=!p.dev;});root.querySelectorAll('[data-xall-meter]').forEach(function(x){x.hidden=!p.meter||(x.hasAttribute('data-xall-after')&&p.cnt);});
+  root.querySelectorAll('[data-xall-dev]').forEach(function(x){x.hidden=!p.dev;});root.querySelectorAll('[data-xall-meter]').forEach(function(x){x.hidden=!p.meter||(x.hasAttribute('data-xall-after')&&p.cnt)||(!x.hasAttribute('data-xall-after')&&p.nm);});
   var pb=root.querySelector('[data-xall-pulse]');var have={};pb.querySelectorAll('[data-xall-pc]').forEach(function(x){have[x.getAttribute('data-xall-pc')]=x.value;});
   pb.innerHTML=p.meter?p.pulse.map(function(o){return '<div class="xall-pulse"><b>«'+e(nameOf(o))+'» سعره بعدد النبضات</b><div class="xall-f"><label>عدد نبضات البند ده<input type="number" min="1" step="1" inputmode="numeric" data-xall-pc="'+e(o.id)+'" value="'+e(have[o.id]||'')+'"></label></div><small class="rbm-hint">بيبدأ من الرقم اللي وقفت عنده الخدمة اللي قبله.</small></div>';}).join(''):'';
   pb.querySelectorAll('input').forEach(function(x){x.oninput=function(){paintSplit();};});paintSplit();
@@ -153,13 +170,14 @@ function draw(c,v,list,pulseCodes){var e=esc,data=c.data||{},ap=(data.appointmen
  function paintSplit(){var p=plan(),box=root.querySelector('[data-xall-split]'),h=root.querySelector('[data-xall-split-h]');
   var show=p.dev&&p.sel.length;box.hidden=!show;h.hidden=!show;if(!show){box.innerHTML='';return;}
   var ri=0;box.innerHTML='<div class="xall-r h"><span>الخدمة</span><span>الدقايق</span><span>العداد</span></div>'+p.sel.map(function(o,i){var m=p.mins[i]!=null?p.mins[i]:'—',cnt='—';
-   if(p.meter){if(isPulse(o)){cnt=p.haveTotal&&p.own[o.id]?num(p.pc[o.id][0])+' → '+num(p.pc[o.id][1])+' (بالنبضة)':'—';}else if(p.ch){var x=p.ch[ri++];cnt=num(x[0])+' → '+num(x[1]);}}
+   if(p.meter&&p.nm){if(isPulse(o))cnt=p.own[o.id]?num(p.own[o.id])+' نبضة (من غير عداد)':'—';else if(p.ch){var y=p.ch[ri++];cnt=num(y[1]-y[0])+' نبضة (من غير عداد)';}}
+   else if(p.meter){if(isPulse(o)){cnt=p.haveTotal&&p.own[o.id]?num(p.pc[o.id][0])+' → '+num(p.pc[o.id][1])+' (بالنبضة)':'—';}else if(p.ch){var x=p.ch[ri++];cnt=num(x[0])+' → '+num(x[1]);}}
    return '<div class="xall-r"><span>'+e(nameOf(o))+'</span><span>'+e(m)+'</span><span dir="ltr">'+e(cnt)+'</span></div>';}).join('');}
  function payload(){var p=plan(),f=root.querySelector('form').elements,bad=[];clearErr(root);
   if(p.sel.length<2)bad.push([root.querySelector('[data-xall-list]'),'اختار خدمتين على الأقل — لخدمة واحدة استخدم «تنفيذ»']);
   var needDev=p.sel.some(function(o){return o.snapshot&&o.snapshot.requires_device;});
   var hasMat=Object.keys(mats).some(function(k){return mats[k].qty>0;});
-  checks(f,needDev?{snapshot:{requires_device:true}}:null,c,{hasMaterials:hasMat,count:p.cnt,countName:'session_pulses'}).forEach(function(x){bad.push(x);});
+  checks(f,needDev?{snapshot:{requires_device:true}}:null,c,{hasMaterials:hasMat,count:p.cnt&&!p.nm,none:p.nm,countName:'session_pulses'}).forEach(function(x){bad.push(x);});
   if(p.meter&&p.pulse.length)p.pulse.forEach(function(o){var x=root.querySelector('[data-xall-pc="'+o.id+'"]');if(blank(x.value)||!(+x.value>0))bad.push([x,'اكتب عدد نبضات البند ده (أكبر من صفر)']);});
   if(p.meter&&p.haveTotal&&p.T<0)bad.push([p.cnt?f.session_pulses:f.meter_after,'إجمالي الجلسة أقل من نبضات البنود اللي بالنبضة']);
   var short=Object.keys(mats).some(function(k){var m=mats[k],bs=Object.keys(m.bom).reduce(function(t,x){return t+m.bom[x];},0);return bs>0&&m.qty<bs;});
@@ -174,10 +192,11 @@ function draw(c,v,list,pulseCodes){var e=esc,data=c.data||{},ap=(data.appointmen
    if(left>0){var tgt=ids[0]||p.sel[0].id,row=per[tgt].filter(function(x){return x.item_id===k;})[0];if(row)row.quantity=Math.round((row.quantity+left)*1000)/1000;else per[tgt].push({item_id:k,quantity:left});}});
   var ri=0,orders=p.sel.map(function(o,i){var dp=o.snapshot&&o.snapshot.department||'',doc=root.querySelector('[data-xall-doc="'+dp+'"]');
    var x={id:o.id,provider_id:doc?doc.value:o.provider_id,materials:per[o.id]};
-   if(p.dev){x.minutes=p.mins[i];if(p.meter){if(isPulse(o)){x.meter_before=p.pc[o.id][0];x.pulses=+p.own[o.id];x.own_meter=true;}else if(p.ch){var r=p.ch[ri++];x.meter_before=r[0];x.meter_after=r[1];}}}
+   if(p.dev){x.minutes=p.mins[i];if(p.meter&&p.nm){if(isPulse(o)){x.pulses=+p.own[o.id];x.own_meter=true;}else if(p.ch){var rr=p.ch[ri++];x.pulses=Math.round((rr[1]-rr[0])*1000)/1000;}}
+    else if(p.meter){if(isPulse(o)){x.meter_before=p.pc[o.id][0];x.pulses=+p.own[o.id];x.own_meter=true;}else if(p.ch){var r=p.ch[ri++];x.meter_before=r[0];x.meter_after=r[1];}}}
    return x;});
   var out={visit_id:v.id,orders:orders,location_id:f.location_id.value||null,material_note:f.material_note.value||null,additional_confirmed:f.additional_confirmed.value==='true'};
-  if(p.dev)out.device_id=f.device_id.value;return out;}
+  if(p.dev)out.device_id=f.device_id.value;if(p.meter&&p.nm){out.no_meter=true;var ev=root.querySelector('input[name="session_evidence"]');if(ev&&ev.value)out.evidence=ev.value;}return out;}
  var root=c.modal(title,body,function(vals,key){var pl;try{pl=payload();}catch(x){return Promise.reject(x);}return c.command('execute_many',pl,key);},function(r){if(w.SSMPDToast&&w.SSMPDToast.show)w.SSMPDToast.show('اتنفّذت '+((r&&r.executed)||'')+' خدمات','success');},{ok:'✓ نفّذ '+list.length+' خدمات'});
  if(!root)return null;root.classList.add('xall-modal');root.setAttribute('data-xall-modal','');
  var form=root.querySelector('form');
@@ -185,7 +204,7 @@ function draw(c,v,list,pulseCodes){var e=esc,data=c.data||{},ap=(data.appointmen
  var q=root.querySelector('[data-xall-q]');if(q)q.oninput=function(){var t=q.value.trim();root.querySelectorAll('[data-xall-row]').forEach(function(r){r.hidden=!!t&&r.textContent.indexOf(t)<0;});};
  var mt=null;
  ['device_id','minutes','meter_before','meter_after'].forEach(function(n){var el=form.elements[n];if(el){el.addEventListener('input',paint);el.addEventListener('change',paint);}});
- mt=meterTools(root,c,form.elements,{modeName:'session_mode',countName:'session_pulses',countLabel:'عدد نبضات الجلسة كلها',onChange:function(){paint();}});
+ mt=meterTools(root,c,form.elements,{modeName:'session_mode',countName:'session_pulses',countLabel:'عدد نبضات الجلسة كلها',noMeterName:'session_no_meter',evidenceName:'session_evidence',onChange:function(){paint();}});
  if(form.elements.session_pulses)form.elements.session_pulses.addEventListener('input',paint);
  var syncDev=function(){var dv=form.elements.device_id.value?deviceOf(c,form.elements.device_id.value):null;if(mt)mt.load(form.elements.device_id.value,!!(dv&&dv.meter_kind&&dv.meter_kind!=='none')).then(paint);};
  form.elements.device_id.addEventListener('change',syncDev);
