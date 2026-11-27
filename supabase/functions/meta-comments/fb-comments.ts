@@ -11,7 +11,7 @@ export type FbThread = { comment: any; replies: any[] };
 
 export async function readFbThreads(gget: Gget, postId: string, token: string, errors: string[], label: string): Promise<{ ok: boolean; threads: FbThread[]; permanent?: boolean }> {
   const r = await gget(`${postId}/comments`, { fields: TOP_FIELDS, filter: "toplevel", order: "reverse_chronological", limit: "50", access_token: token });
-  if (!r.ok) { errors.push(`${label} facebook: ${r.error}`); return { ok: false, threads: [], permanent: isPermanentGraphError(r.error) }; }
+  if (!r.ok) { errors.push(`${label} facebook ${postId}: ${r.error}`); return { ok: false, threads: [], permanent: isPermanentGraphError(r.error) }; }
   const tops: any[] = r.data?.data || [];
   // Replies are read with up to 4 requests in flight (they used to be read one after another).
   const replyLists = await mapPool(tops, 4, async (c) => {

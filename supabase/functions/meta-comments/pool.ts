@@ -15,4 +15,5 @@ export async function mapPool<T, R>(items: T[], limit: number, fn: (item: T, ind
 }
 
 // Errors that will not go away by retrying every run (deleted post, no access): the post is marked as read for a while.
-export const isPermanentGraphError = (e: unknown): boolean => /does not exist|Unsupported get request|missing permissions|cannot be loaded/i.test(String(e ?? ""));
+// "(#100) Tried accessing nonexisting field (comments)" = the id is an object that has no comments connection (e.g. a Page or a reel id): it never will.
+export const isPermanentGraphError = (e: unknown): boolean => /does not exist|Unsupported get request|missing permissions|cannot be loaded|nonexisting field/i.test(String(e ?? ""));
