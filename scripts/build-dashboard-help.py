@@ -1114,6 +1114,8 @@ frule('reception-booking-discount.js','اسم النقابة|مثلاً نقاب
 frule('reception-booking-discount.js','رقم الكارنيه','رقم كارنيه النقابة أو النادي — إجباري.','reception-booking-discount')
 frule('reception-booking-discount.js','الكارنيه ساري لحد','آخر يوم الكارنيه ساري فيه. لازم يكون يوم الزيارة أو بعده، ولو خلص قبل الحضور تسجيل الحضور بيقف.','reception-booking-discount')
 frule('reception-booking-discount.js','سبب الخصم|مثلاً قريب موظف','سبب الخصم الخاص — إجباري.','reception-booking-discount')
+frule('reception-vezeeta-paste.js',r'الصق رسالة فيزيتا \(SMS\) هنا|Dear Doctor …','الصق رسالة الحجز اللي فيزيتا بعتها على تليفون المركز زي ما هي — السيستم يقرأ منها الدكتور والمريض واليوم والساعة.','reception-vezeeta-paste')
+frule('reception-vezeeta-paste.js','أول معاد فاضي مع الدكتور|بدون معاد — بالدور|أختار الساعة بنفسي','رسالة فيزيتا شامل مفيهاش ساعة: اختار أول معاد فاضي مع الدكتور، أو بالدور (لو الحجز النهارده)، أو اختار الساعة بنفسك.','reception-vezeeta-paste')
 frule('reception-booking-discount.js',r'الموظف \(المريض نفسه أو قريبه من الدرجة الأولى\)','«خصم العاملين بالمركز»: الموظف الشغال في الموارد البشرية — المريض نفسه (نفس رقم التليفون) أو قريبه من الدرجة الأولى المربوط في «أفراد العيلة». لو مفيش، الخصم ده مش متاح للمريض.','reception-staff-discount')
 frule('reception-booking-discount.js','القريب','اختار ملف القريب اللي هيتربط بالمريض في «كارت العيلة». الربط بيتعمل مرة واحدة بمستند إثبات القرابة.','reception-booking-discount')
 frule('reception-booking-discount.js','عدد زيارات كارت العيلة اللي العيلة خدتها على السيستم القديم','عدد زيارات كارت العيلة اللي العيلة كلها خدتها قبل الداشبورد (رقم صحيح ٠ أو أكتر). بيتحسب في خطوة الخصم بعد اعتماد السوبر أدمن أو المدير المالي بس.','reception-family-legacy-visits')
