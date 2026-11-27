@@ -66,7 +66,8 @@ function draw(body,data,h,opts){
  if(d.can_create&&d.treasury_main)acts.push(btn('treasury-transfer','','طلب تسليم للرئيسية'));
  if(x.can_create)acts.push(btn('advance-receive','','مقدم حجز جديد'));
  if(!own)(x.shifts||[]).filter(function(s){return s.status==='open'&&!s.ended_at;}).forEach(function(s){acts.push(btn('booking-close',s.id,'جرد وتسليم «'+(s.register_name||'')+'»'));});
- if(x.can_create&&!own)acts.push(btn('booking-open','','فتح وردية استقبال'));
+ /* owner 2026-11-27: a shift already handed over (ended_at set, waiting for the main treasury receipt) never blocks a new one — the server allows it (20261123100000) */
+ if(x.can_create&&(!own||own.ended_at))acts.push(btn('booking-open','','فتح وردية استقبال'));
  var tiles=[];
  tiles.push('<div><small>تسليمات مستنية الاستلام</small><b>'+pendingMine.length+'</b></div>');
  tiles.push('<div><small>مقدمات في الفترة</small><b>'+(x.advances||[]).length+'</b></div>');

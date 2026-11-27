@@ -33,8 +33,11 @@ try{for(const width of [1280,390]){const page=await browser.newPage({viewport:{w
  await page.evaluate(async()=>{SNAP.active_shifts[0].ended_at=new Date().toISOString();SNAP.treasury_transfers[1].from_shift=SNAP.active_shifts[0].id;});await page.click('[data-bcv-range="month"]');await page.waitForSelector('[data-bcv-need] [data-fin-action="treasury-recount"]');
  const need=await page.locator('[data-bcv-need]').innerText();assert.match(need,/تسليم ورديتك اترفض[\s\S]*السبب: «التسليم ناقص تحصيل 1200 جنيه»/);assert.match(need,/رسالة لسه ماتبعتتش/);
  assert.equal(await page.locator('[data-ft-peer]').count(),0,'shift ended: no hand-over button');
+ // owner 2026-11-27 «يفتح وردية بعد تسليم الوردية القديمة من غير انتظار الاعتماد»: handed-over shift → «فتح وردية استقبال» shows and opens its modal
+ await page.click('.bcv [data-fin-action="booking-open"]');await page.waitForSelector('.fc-modal select[name="register_id"]');await page.evaluate(()=>{const m=document.querySelector('.fc-modal');if(m)m.remove();});
  await page.click('[data-bcv-need] [data-fin-action="treasury-recount"]');await page.waitForSelector('.fc-modal');await page.click('.fc-modal [data-fc-close],.fc-modal button[type="button"]').catch(()=>{});await page.evaluate(()=>{const m=document.querySelector('.fc-modal');if(m)m.remove();});
  await page.evaluate(()=>{delete SNAP.active_shifts[0].ended_at;SNAP.treasury_transfers[1].from_shift='x';});await page.click('[data-bcv-range="month"]');await page.waitForSelector('[data-ft-peer]');
+ assert.equal(await page.locator('.bcv [data-fin-action="booking-open"]').count(),0,'open shift still running: no second open button');
  // handovers: readable kind + drawer, colored status, diff chip only when it exists, reason under rejected
  const rows=await page.$$eval('[data-bcv-handovers] .bcv-it',x=>x.map(e=>e.innerText.replace(/\s+/g,' ')));
  assert.match(rows[0],/آخر وردية — خزينة منار[\s\S]*1,500\.00 ج[\s\S]*✓ اتسلّم/);assert.match(rows[1],/السبب: التسليم ناقص[\s\S]*ناقص 20\.00 ج[\s\S]*✗ اترفض/);
