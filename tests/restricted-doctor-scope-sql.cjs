@@ -32,6 +32,8 @@ const dalia=(await cmd(live,'provider',{name:'د. داليا تجريبية',dep
 await cmd(live,'availability',{provider_id:otherProvider,starts_at:date+'T06:00Z',ends_at:date+'T22:00Z'});
 await q("insert into clinic_reception.provider_departments(provider_id,department) values($1,'الاسنان')",[dalia]);
 await cmd(live,'availability',{provider_id:dalia,starts_at:date+'T06:00Z',ends_at:date+'T22:00Z'});
+// the live dry-run looks for a free slot from 1 hour ahead: give her tomorrow too, so the test does not fail late at night (UTC ≥ 21:00)
+{const t2=new Date(Date.parse(date+'T12:00:00Z')+86400000).toISOString().slice(0,10);await cmd(live,'availability',{provider_id:dalia,starts_at:t2+'T06:00Z',ends_at:t2+'T22:00Z'});}
 let slot=6*60;const at=()=>{slot+=20;return date+'T'+String(Math.floor(slot/60)).padStart(2,'0')+':'+String(slot%60).padStart(2,'0')+':00Z';};
 const book=(p,s,o={})=>cmd(live,'book',{patient_id:pat,provider_id:p,service_id:s,starts_at:at(),same_day_ok:true,...o}).then(r=>r.id);
 const serves=async(p,code,dept=null)=>(await q('select clinic_reception.provider_serves_code($1,$2,$3,null) v',[p,dept,code]))[0].v;
