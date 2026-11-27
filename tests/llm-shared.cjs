@@ -14,7 +14,10 @@ const openaiBody = (text) => ({ model: "gpt-5.6-sol", output_text: text, usage: 
 const res = (status, body) => ({ ok: status < 400, status, json: async () => body });
 (async () => {
   // provider switch
-  assert.equal(L.providerFor("meta-comments", envOf({})), "openai", "default stays OpenAI");
+  assert.equal(L.providerFor("meta-comments", envOf({})), "openai", "no key, no setting: OpenAI as today");
+  assert.equal(L.providerFor("meta-comments", envOf({ OPENAI_API_KEY: "o" })), "openai");
+  assert.equal(L.providerFor("meta-comments", envOf({ ANTHROPIC_API_KEY: "a", OPENAI_API_KEY: "o" })), "claude", "owner decision: Claude primary once its key exists");
+  assert.equal(L.providerFor("meta-comments", envOf({ ANTHROPIC_API_KEY: "a", AI_PROVIDER_META_COMMENTS: "openai" })), "openai", "can be held on OpenAI per function");
   assert.equal(L.providerFor("meta-comments", envOf({ AI_PROVIDER: "claude" })), "claude");
   assert.equal(L.providerFor("meta-comments", envOf({ AI_PROVIDER: "claude", AI_PROVIDER_META_COMMENTS: "openai" })), "openai", "per function wins");
   assert.equal(L.providerFor("meta-comments-review", envOf({ AI_PROVIDER_META_COMMENTS_REVIEW: "claude" })), "claude");
@@ -61,7 +64,7 @@ const res = (status, body) => ({ ok: status < 400, status, json: async () => bod
   assert.equal(calls[0].url, "https://api.openai.com/v1/responses"); assert.equal(calls[0].headers.Authorization, "Bearer k-oa");
   assert.deepEqual(calls[0].body, { model: "gpt-5.6-sol", instructions: "RULES TEXT", input: '{"text":"بكام الكشف؟"}', text: { format: { type: "json_schema", name: "reply_decision", strict: true, schema: SCHEMA } } });
   // OpenAI fails (credit out) and a Claude key exists -> Claude answers (this is the incident that stopped every reply on 22 Nov)
-  r = await L.llmJson(base({ env: envOf({ OPENAI_API_KEY: "o", ANTHROPIC_API_KEY: "a" }), record: () => {}, fetchImpl: async (url) => (String(url).includes("openai") ? res(429, { error: { message: "insufficient_quota" } }) : res(200, claudeBody('{"category":"general","reply":"من Claude"}'))) }));
+  r = await L.llmJson(base({ env: envOf({ AI_PROVIDER: "openai", OPENAI_API_KEY: "o", ANTHROPIC_API_KEY: "a" }), record: () => {}, fetchImpl: async (url) => (String(url).includes("openai") ? res(429, { error: { message: "insufficient_quota" } }) : res(200, claudeBody('{"category":"general","reply":"من Claude"}'))) }));
   assert.equal(r.ok, true); assert.equal(r.provider, "claude"); assert.equal(r.fellBack, true);
   // the DB usage sink: one POST to /rest/v1/ai_usage_log with the service key, row without content; failures ignored
   const posts = [];
@@ -71,5 +74,5 @@ const res = (status, body) => ({ ok: status < 400, status, json: async () => bod
   assert.deepEqual(Object.keys(posts[0].body).sort(), ["cache_read_tokens", "cache_write_tokens", "error_kind", "fallback", "fn", "input_tokens", "model", "ms", "ok", "output_tokens", "provider"]);
   // wiring: meta-comments uses the helper, no direct OpenAI call left there
   for (const f of ["ai.ts", "review.ts"]) { const t = fs.readFileSync("supabase/functions/meta-comments/" + f, "utf8"); assert(t.includes('from "../_shared/llm.ts"') && !t.includes("api.openai.com"), f); }
-  console.log("PASS shared llm: provider switch (default OpenAI), Claude structured-output request without forced tool_choice/sampling, cached system, retries, refusal/truncation/HTTP -> automatic fallback both ways, OpenAI request unchanged, usage rows without content.");
+  console.log("PASS shared llm: provider switch (Claude primary once its key exists, else OpenAI), Claude structured-output request without forced tool_choice/sampling, cached system, retries, refusal/truncation/HTTP -> automatic fallback both ways, OpenAI request unchanged, usage rows without content.");
 })().catch((e) => { console.error(e); process.exit(1); });

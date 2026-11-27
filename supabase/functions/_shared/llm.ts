@@ -1,8 +1,9 @@
 // One place for the AI text calls of the edge functions: Claude (Anthropic Messages API) and OpenAI (Responses API) behind a switch,
 // with automatic fallback to the other one, a one-line usage log (tokens, function, model; NEVER content) and a usage row in ai_usage_log.
 //
-// Switch (edge env, flipped per function after a live check; default stays OpenAI):
-//   AI_PROVIDER=claude|openai            global default (openai when unset)
+// Owner decision (docs/OWNER-DECISIONS.md): all AI on Claude, OpenAI only as the backup. So: with no setting at all, Claude is the
+// primary as soon as ANTHROPIC_API_KEY exists, otherwise OpenAI (nothing changes until the key is added). Explicit switch:
+//   AI_PROVIDER=claude|openai            global (to hold a function on OpenAI set AI_PROVIDER_<FN>=openai)
 //   AI_PROVIDER_<FN>=claude|openai       per function, FN upper-cased with non-letters as "_" (meta-comments -> AI_PROVIDER_META_COMMENTS)
 //   AI_FALLBACK=off                      no automatic fallback to the other provider (default: on, only when the other key exists)
 //   CLAUDE_MODEL_<FN>, CLAUDE_MODEL      Claude model override (otherwise the model the caller passes)
@@ -42,7 +43,8 @@ const envKey = (fn: string) => fn.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
 
 export function providerFor(fn: string, env: (n: string) => string | undefined = denoEnv): Provider {
   const v = (env(`AI_PROVIDER_${envKey(fn)}`) || env("AI_PROVIDER") || "").trim().toLowerCase();
-  return v === "claude" ? "claude" : "openai";
+  if (v === "claude" || v === "openai") return v;
+  return env("ANTHROPIC_API_KEY") ? "claude" : "openai"; // unset: Claude primary once its key exists
 }
 
 function usageRow(o: LlmJsonOptions, provider: Provider, model: string, ms: number, r: { ok: boolean; kind?: string; usage?: LlmUsage }, fallback: boolean): UsageRow {
