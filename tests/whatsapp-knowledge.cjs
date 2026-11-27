@@ -81,7 +81,7 @@ assert.match(legacy, /الخدمات: Hearing/);
   };
   const knowledge = load(['clinic-knowledge/index.ts'], {
     Deno: { env: { get: k => k === 'WHATSAPP_ALERT_SECRET' ? 'test-secret' : k === 'SUPABASE_SERVICE_ROLE_KEY' ? 'test-service' : k === 'SUPABASE_URL' ? 'https://example.supabase.co' : undefined }, serve: fn => handler = fn },
-    createClient: () => ({ from: table => {
+    createClient: () => ({ rpc: async () => ({ data: null, error: { message: 'feed not deployed' } }), from: table => {
       const q = { select: fields => { selects.push({ table, fields }); return q; }, eq: () => q, order: () => q,
         maybeSingle: () => q, then: (resolve, reject) => Promise.resolve({ data: tableRows[table], error: broken && table === 'clinic_faqs' ? { message: 'db down' } : null }).then(resolve, reject) };
       return q;
