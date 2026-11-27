@@ -16,6 +16,7 @@
 .brp .brp-finish,.brp .brp-go{width:100%;padding:14px 16px;font-size:16px;font-weight:700;border-radius:12px;border:0;color:#fff;white-space:normal}
 .brp .brp-finish{background:#F15A22}.brp .brp-go{background:#0F369D}
 .brp-hint{margin:0;font-size:12px;color:#5b6577;line-height:1.8}
+.brp-diffs{margin-top:10px;padding:12px;border:1px solid #F15A22;border-radius:12px;background:#fff7f2}.brp-diffs[hidden]{display:none}.brp-diff-list{margin:6px 0 10px;padding-inline-start:18px;max-height:220px;overflow:auto;font-size:13px;line-height:1.9}
 .brp-adv{display:grid;gap:8px;padding:10px 12px}
 .brp-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border-top:1px solid #EEF1F6;padding-top:8px}
 .brp-row:first-child{border-top:0;padding-top:0}
