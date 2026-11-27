@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2065,
-    "labels": 1501,
-    "files": 168,
-    "groups": 1631
+    "definitions": 2066,
+    "labels": 1502,
+    "files": 169,
+    "groups": 1632
   },
   "fields": [
     {
@@ -5338,6 +5338,16 @@
       "tab": "accounting",
       "article": "requests",
       "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "finance-day-movements.js",
+      "label": "دوّر باسم المريض أو رقم الملف أو الدكتور",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "accounting",
+      "article": "finance-day-movements",
+      "text_sha256": "dc366ff4ea8992795a2c7da9c5f367833a7472c75298a980d711c971a6050236"
     },
     {
       "file": "finance-doctor-accounts.js",

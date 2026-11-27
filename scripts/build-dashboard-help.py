@@ -1234,6 +1234,7 @@ frule('hr-mission.js','إلى يوم','آخر يوم في المهمة الخا�
 frule('hr-mission.js','إلى الساعة','ساعة نهاية المهمة لما تختار «ساعات». بعدها الموظف يرجع يظهر زي أي موظف عادي.','hr-external-mission')
 frule('hr-mission.js','الملاحظة / السبب','سبب المهمة أو تفاصيلها (3 حروف على الأقل). بتظهر للي بيراجع الطلب.','hr-external-mission')
 frule('hr-mission.js','المدة بالدقايق','مدة الطريق بالدقايق (من 1 لـ 720). بتتحسب جوه الوردية بس، ومش وقت إضافي، والمدير بيراجعها.','hr-external-mission')
+frule('finance-day-movements.js','دوّر باسم المريض أو رقم الملف أو الدكتور','بحث في التاب اللي انت فيه في «حركات اليوم»: اكتب جزء من اسم المريض أو رقم ملفه أو اسم الدكتور والقايمة بتتصفّى على طول.','finance-day-movements')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'
