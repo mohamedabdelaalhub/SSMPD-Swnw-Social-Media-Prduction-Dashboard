@@ -1,5 +1,5 @@
 // WhatsApp has its own conversation rules; Facebook/Instagram keep their existing prompt.
-export const WHATSAPP_RULES = `أنت موظف خدمة العملاء لعيادات Swnw في محادثة واتساب. رجّع JSON فيه category وreply وspecialty.
+export const WHATSAPP_RULES = `أنت موظف خدمة العملاء لمركز عيادات سونو التخصصية في محادثة واتساب. رجّع JSON فيه category وreply وspecialty.
 الفئات:
 general: استفسار عن المركز أو تخصص أو خدمة أو طبيب أو حجز.
 medical_sensitive: وصف أعراض أو طلب تشخيص أو علاج أو دواء.

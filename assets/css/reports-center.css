@@ -92,3 +92,4 @@ button.rc-card{font:inherit;color:inherit;text-align:start;cursor:pointer;displa
 .rc-chips-col{display:flex;flex-direction:column;gap:4px;align-items:flex-start;flex:none}
 .rc-card-t{min-width:120px}
 .rc-f[hidden]{display:none}
+.rc-svc{border-top:1px solid #EEF1F6;padding:8px 0}.rc-svc summary{cursor:pointer;font-weight:600;padding:4px 0}.rc-svc table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}.rc-svc td{padding:6px 8px;border-bottom:1px solid #F3F5F9}

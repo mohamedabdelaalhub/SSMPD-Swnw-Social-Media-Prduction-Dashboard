@@ -7,7 +7,7 @@ var installed=false,dirty=false;
 function loadCallsLayer(){
  if(window.__SWNWTodayOperationsCalls||document.querySelector('script[data-today-operations-calls]'))return;
  var s=document.createElement('script');
- s.src='assets/js/today-operations-calls.js?v=journey-sandbox-20261031-1';
+ s.src='assets/js/today-operations-calls.js?v=today-shortcuts-20261122-1';
  s.async=false;
  s.dataset.todayOperationsCalls='1';
  document.head.appendChild(s);
@@ -15,7 +15,7 @@ function loadCallsLayer(){
 function loadServiceRequestV3(){
  if(window.__SWNWJourneyServiceRequestV3||document.querySelector('script[data-journey-service-request-v3]'))return;
  var s=document.createElement('script');
- s.src='assets/js/today-operations-service-request-v3.js?v=patient-journey-v3-20261031-1';
+ s.src='assets/js/today-operations-service-request-v3.js?v=service-search-20261123-1';
  s.async=false;
  s.dataset.journeyServiceRequestV3='1';
  document.head.appendChild(s);
@@ -23,7 +23,7 @@ function loadServiceRequestV3(){
 function loadV2(){
  if(window.__SWNWTodayOperationsUXV2||document.querySelector('script[data-today-operations-v2]'))return;
  var s=document.createElement('script');
- s.src='assets/js/today-operations-v2.js?v=confirm-20261122-1';
+ s.src='assets/js/today-operations-v2.js?v=supplies-20261125-1';
  s.async=false;
  s.dataset.todayOperationsV2='1';
  document.head.appendChild(s);

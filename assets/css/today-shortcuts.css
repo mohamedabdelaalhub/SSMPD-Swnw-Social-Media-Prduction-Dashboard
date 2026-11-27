@@ -1,0 +1,106 @@
+/* «تشغيل اليوم» shortcut tiles + sheets + «حجوزات آلية» + doctor cards (owner 2026-11-22, mockup today-shortcuts-*). */
+.tds-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tds-tiles:empty{display:none}
+@media (min-width:900px){.tds-tiles{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.tds-tile{position:relative;font:inherit;text-align:start;background:#fff;border:1px solid #D5DEEE;border-radius:14px;padding:9px 10px;display:grid;gap:2px;min-height:62px;color:#16212E;cursor:pointer}
+.tds-tile:hover{border-color:#0F369D}
+.tds-tile:focus-visible{outline:3px solid rgba(15,54,157,.35);outline-offset:2px}
+.tds-tile .tds-n{font-size:20px;font-weight:700;color:#0F369D;line-height:1.1;font-variant-numeric:tabular-nums}
+.tds-tile .tds-l{font-size:12px;color:#3B4658;line-height:1.35}
+.tds-tile .tds-l small{color:#5b6577}
+.tds-tile.is-att{border-color:#F15A22;background:#FFF6F1}.tds-tile.is-att .tds-n{color:#F15A22}
+.tds-tile.is-on{box-shadow:0 0 0 2px #0F369D inset;border-color:#0F369D}
+.tds-dot{position:absolute;top:8px;inset-inline-end:8px;width:8px;height:8px;border-radius:99px;background:#F15A22}
+
+/* panels: hidden until their tile opens them; the board takes the full width */
+[data-journey-root] .journey-layout{grid-template-columns:minmax(0,1fr)!important}
+[data-journey-root] .journey-layout>aside{display:contents}
+[data-journey-root] .tds-panel{display:none!important}
+[data-journey-root] [data-qr-part="agent"]{display:none!important}
+[data-journey-root][data-tds-open="doctors"] .tds-panel[data-tds-panel~="doctors"],
+[data-journey-root][data-tds-open="rooms"] .tds-panel[data-tds-panel~="rooms"],
+[data-journey-root][data-tds-open="admin"] .tds-panel[data-tds-panel~="admin"],
+[data-journey-root][data-tds-open="auto"] .tds-panel[data-tds-panel~="auto"],
+[data-journey-root][data-tds-open="calls"] .tds-panel[data-tds-panel~="calls"],
+[data-journey-root][data-tds-open="outbox"] .tds-panel[data-tds-panel~="outbox"]{
+  display:block!important;position:fixed;inset-inline:0;bottom:0;top:auto;z-index:95;max-height:88vh;overflow:auto;overscroll-behavior:contain;
+  margin:0;background:#fff;border-radius:22px 22px 0 0;border:1px solid #D5DEEE;border-bottom:0;padding:12px 14px calc(16px + env(safe-area-inset-bottom));
+  box-shadow:0 -12px 30px rgba(22,33,46,.18)}
+[data-journey-root][data-tds-open="rooms"] [data-qr-part="admin"],
+[data-journey-root][data-tds-open="admin"] [data-qr-part="rooms"]{display:none}
+[data-journey-root][data-tds-open="admin"] details[data-qr-mgr]>summary{display:none}
+@media (min-width:900px){
+  [data-journey-root][data-tds-open] .tds-panel[data-tds-panel]{inset-inline:auto 0;inset-inline-start:auto;left:0;right:auto;top:0;bottom:0;width:min(480px,92vw);max-height:none;border-radius:0;border:0;border-inline-start:1px solid #D5DEEE;box-shadow:-12px 0 30px rgba(15,54,157,.10)}
+}
+.tds-veil{position:fixed;inset:0;z-index:94;background:rgba(22,33,46,.38)}
+@media (min-width:900px){.tds-veil{background:rgba(22,33,46,.12)}}
+html.tds-locked{overflow:hidden}
+@media (min-width:900px){html.tds-locked{overflow:auto}}
+.tds-panel .journey-section-head{display:flex;align-items:center;gap:8px;position:sticky;top:-12px;background:#fff;padding:8px 0;z-index:2}
+.tds-panel .journey-section-head h3{flex:1;margin:0}
+.tds-panel .journey-section-head h3 small{color:#8a93a3;font-weight:400;font-size:13px}
+.tds-close{width:36px;height:36px;border-radius:99px;border:1px solid #D5DEEE;background:#fff;font:inherit;cursor:pointer;flex:none}
+.tds-hint{font-size:12px;color:#5b6577;margin:6px 0 0}
+
+/* doctors */
+.tds-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px}
+.tds-tab{font:inherit;font-size:12px;border:1px solid #D5DEEE;border-radius:99px;padding:5px 10px;background:#fff;color:#16212E;cursor:pointer}
+.tds-tab.is-on{background:#16212E;color:#fff;border-color:#16212E}
+.tds-docgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:900px){.tds-docgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tds-doc{position:relative;border:1px solid #E3E8F2;border-radius:14px;padding:10px;display:grid;gap:4px;background:#fff;min-width:0}
+.tds-doc.is-done{opacity:.6}
+.tds-doc-main{font:inherit;text-align:start;background:none;border:0;padding:0;display:grid;gap:3px;color:#16212E;cursor:pointer;min-width:0}
+.tds-doc-main b{font-size:14px;overflow-wrap:anywhere}
+.tds-doc-sp{font-size:12px;color:#5b6577}.tds-doc-hr{font-size:12px;color:#3B4658;text-align:right}
+.tds-doc-ft{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
+.tds-doc-cnt{font-size:12px;color:#3B4658;white-space:nowrap}
+.tds-ds{font-size:11px;border-radius:99px;padding:2px 8px;font-weight:700;white-space:nowrap;background:#F1F4F8;color:#3B4658}
+.tds-ds-arrived,.tds-ds-on_the_way{background:#E6F4EC;color:#2F7D5C}.tds-ds-started{background:#E8EEFB;color:#0F369D}
+.tds-ds-delayed{background:#FFF3E9;color:#8A3A12}.tds-ds-ended,.tds-ds-cancelled{background:#EEF0F3;color:#8a93a3}
+.tds-doc .journey-more{position:absolute;top:6px;inset-inline-end:6px}
+
+/* «حجوزات آلية» */
+.tds-srcgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tds-src{font:inherit;text-align:start;background:#fff;border:1px solid #D5DEEE;border-radius:14px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ic n" "l l" "sub sub";gap:2px 8px;align-items:center;color:#16212E;cursor:pointer}
+.tds-src:hover{border-color:#0F369D}
+.tds-src.is-att{border-color:#F15A22;background:#FFF6F1}
+.tds-ic{grid-area:ic;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:14px}
+.tds-src-n{grid-area:n;font-size:22px;font-weight:700;color:#0F369D;text-align:end;font-variant-numeric:tabular-nums}
+.tds-src-l{grid-area:l;font-weight:700}.tds-src-sub{grid-area:sub;font-size:12px;color:#5b6577}
+.tds-ic-whatsapp{background:#E6F4EC;color:#2F7D5C}.tds-ic-facebook{background:#E8EEFB;color:#0F369D}.tds-ic-instagram{background:#FBEDE6;color:#B4471A}
+.tds-ic-website{background:#EEF1F6;color:#16212E}.tds-ic-portal{background:#F1ECFA;color:#5B3FA0}
+.tds-listhead{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.tds-back{width:34px;height:34px;border-radius:99px;border:1px solid #D5DEEE;background:#fff;font:inherit;cursor:pointer}
+.tds-src-chip{font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px}
+.tds-bk{border:1px solid #E3E8F2;border-radius:14px;padding:10px 12px;display:grid;gap:8px;margin-bottom:8px;background:#fff}
+.tds-bk.is-test{border-style:dashed;border-color:#F3C7BF;background:#FFFBFA}
+.tds-bk-top{display:flex;align-items:center;gap:8px}
+.tds-tm{font-weight:700;font-size:18px;color:#0F369D}
+.tds-stc{font-size:11px;border-radius:99px;padding:2px 8px;background:#F1F4F8;color:#3B4658;margin-inline-start:auto;white-space:nowrap}
+.tds-stc-no_answer,.tds-stc-rescheduled{background:#FFF3E9;color:#8A3A12}.tds-stc-arrived{background:#E6F4EC;color:#2F7D5C}
+.tds-stc-cancelled,.tds-stc-no_show{background:#FDE7E3;color:#D0402A}
+.tds-testtag{font-size:11px;background:#FDE7E3;color:#D0402A;border-radius:99px;padding:2px 8px;font-weight:700}
+.tds-who{display:grid;gap:2px}.tds-who b{font-size:15px}.tds-who span{font-size:12px;color:#5b6577}
+.tds-tries{font-size:12px;color:#8A3A12;background:#FFF3E9;border-radius:8px;padding:4px 8px}
+.tds-why{font-size:12px;color:#3B4658;background:#F4F7FC;border-radius:8px;padding:4px 8px}
+.tds-masa{font-size:12px;background:#FFF3E9;color:#8A3A12;border-radius:10px;padding:8px 10px;margin:0;line-height:1.7}
+.tds-ok{font-size:12px;color:#2F7D5C;margin:0}
+.tds-lbl{font-size:12px;color:#5b6577}
+.tds-seg{display:flex;border:1px solid #D5DEEE;border-radius:12px;overflow:hidden}
+.tds-seg button{flex:1;font:inherit;font-size:12px;padding:8px 2px;border:0;border-inline-start:1px solid #E3E8F2;background:#fff;color:#16212E;white-space:nowrap;cursor:pointer;min-height:36px}
+.tds-seg button:first-child{border-inline-start:0}
+.tds-seg button.is-on{background:#0F369D;color:#fff;font-weight:700}
+.tds-seg button.is-r{color:#D0402A}.tds-seg button.is-r.is-on{background:#D0402A;color:#fff}
+.tds-seg button:disabled{color:#b6bcc7;cursor:not-allowed}
+.tds-acts{display:flex;gap:6px;flex-wrap:wrap}
+.tds-acts .btn.sm{padding:6px 10px;font-size:13px}
+.btn-danger-soft{color:#D0402A;border-color:#F3C7BF}
+.tds-reasons{display:grid;gap:6px;border:0;padding:0;margin:0 0 8px}
+.tds-reasons legend{font-size:13px;color:#3B4658;margin-bottom:4px}
+@media (prefers-reduced-motion:no-preference){[data-journey-root][data-tds-open] .tds-panel[data-tds-panel]{animation:tds-up .18s ease-out}}
+@keyframes tds-up{from{transform:translateY(16px);opacity:.6}to{transform:none;opacity:1}}
+/* Masa day-only bookings (owner 2026-11-23) */
+.tds-masa-alert{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;background:#FFF1EC;color:#8A3A12;border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:13px;line-height:1.7}
+.tds-masa-alert b{color:#16212E}.tds-masa-full{font-weight:700;color:#D0402A}
+.tds-masa-alert .btn{margin-inline-start:auto}

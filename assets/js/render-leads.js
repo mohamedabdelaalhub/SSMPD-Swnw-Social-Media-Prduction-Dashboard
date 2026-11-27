@@ -38,6 +38,10 @@
   // الاستقبال — الإقفال الفعلي بقى بس عند "تم إجراء الخدمة" أو أي حالة رفض/عدم رد
   var CLOSED_STATUSES = ["service_done", "rejected", "no_response", "invalid_number"];
 
+  // Name taken from the customer's Facebook/Instagram profile (Messenger bot): small tag so reception confirms it on the call.
+  function nameHtml(l) {
+    return escapeHtml(l.customer_name) + (l.customer_name_source === 'facebook' ? ' <span title="الاسم من فيسبوك — أكده في المكالمة" style="font-size:10px;background:#EAF0FF;color:#0F369D;padding:1px 6px;border-radius:8px;white-space:nowrap;">من فيسبوك</span>' : '');
+  }
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
@@ -59,6 +63,9 @@
   function isCS() { return !!(me && (window.SSMPDRoles.hasRole(me, "customer_service") || isManager())); }
   // صلاحية حذف الليد: سوبر أدمن دايماً، أو أي مستخدم مفعّلة له can_delete_leads
   // صراحة من لوحة "المستخدمون والصلاحيات" (نفس نمط has_archive_access)
+  // owner 2026-11-25 «الليدز تشوف كلها»: an active admin with «أرشيف الليدز» (has_leads_archive_access) sees and works ALL
+  // leads (server: leads-* edge functions + RLS 20261125150000) — so «أرشيف الليدز», «الحجوزات الفعلية» and «تحويلات الأطباء» show too
+  function hasLeadsGrant() { return !!(me && me.active !== false && me.has_leads_archive_access === true); }
   function canDeleteLead() { return !!(me && (window.SSMPDRoles.isSuperAdmin(me) || me.can_delete_leads)); }
 
   var SUB_SCREENS = [
@@ -87,12 +94,13 @@
 
   function visibleSubScreens() {
     return SUB_SCREENS.filter(function (s) {
-      if (s.key === "reception") return isReception();
+      if (s.key === "reception") return isReception() || isCS(); // owner 2026-11-24: customer service gets the intake form without the reception role (leads-create already allows customer_service)
       if (s.key === "cs") return isCS();
       if (s.key === "experience_ratings") return isCS() || isManager();
       if (s.key === "bulk") return isReception();
       if (s.key === "dashboard") return isManager() || isCS();
       if (s.key === "missing_data") return isReception() || isCS() || isManager();
+      if (s.key === "archive" || s.key === "booked" || s.key === "referrals") return isManager() || hasLeadsGrant();
       return isManager();
     });
   }
@@ -117,6 +125,7 @@
     if (!state.subTab || !subs.some(function (s) { return s.key === state.subTab; })) {
       if (isReception() && !isManager()) state.subTab = "reception";
       else if (isCS() && !isManager()) state.subTab = "cs";
+      else if (hasLeadsGrant() && !isManager()) state.subTab = "archive";
       else state.subTab = subs[0] ? subs[0].key : "dashboard";
     }
 
@@ -184,7 +193,7 @@
         if (!leads.length) { box.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش ليدز لسه.</p>'; return; }
         box.innerHTML = "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>" +
           leads.map(function (l) {
-            return '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+            return '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
               '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
               '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
               '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td></tr>';
@@ -261,7 +270,7 @@
       } else {
         html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>معاد متابعة</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
-          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+          html += '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + (l.next_follow_up_date ? fmtDateOnly(l.next_follow_up_date) : "—") + '</td>' +
@@ -407,6 +416,7 @@
   }
 
   function exportExperienceRatingsExcel(rows) {
+    logExport("ratings_xlsx", (rows || []).length, {}).catch(function () {});
     if (typeof XLSX === "undefined") { T.show("مكتبة الإكسيل لسه مش متحمّلة — جرب ريفريش للصفحة", "error"); return; }
     var questions = window.SSMPDExperienceQuestions || [];
     var header = ["المريض", "الهاتف", "التاريخ"].concat(questions).concat(["المتوسط", "ملاحظات"]);
@@ -427,12 +437,13 @@
   }
 
   function exportExperienceRatingsPdf(rows) {
+    logExport("ratings_pdf", (rows || []).length, {}).catch(function () {});
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
     var html = '<!doctype html><html><head><meta charset="utf-8"><title>تقييمات تجربة المريض</title>' +
       '<style>body{font-family:sans-serif;padding:24px;direction:rtl;}table{width:100%;border-collapse:collapse;margin:12px 0 24px;}' +
       'td,th{border:1px solid #ccc;padding:6px 10px;text-align:right;font-size:12px;}h1{font-size:20px;}</style></head><body>';
-    html += '<h1>تقييمات تجربة المريض — مركز عيادات Swnw</h1>';
+    html += '<h1>تقييمات تجربة المريض — مركز عيادات سونو التخصصية</h1>';
     html += '<p>تاريخ التقرير: ' + new Date().toLocaleDateString("ar-EG-u-nu-latn") + ' — إجمالي التقييمات: ' + rows.length + '</p>';
     html += "<table><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th>المتوسط</th><th> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA-->ملاحظات</th></tr>";
     rows.forEach(function (r) {
@@ -448,7 +459,72 @@
     setTimeout(function () { win.print(); }, 500);
   }
 
+  // «محتاجة متابعة عاجلة» — ONE definition shared by «داشبورد الإدارة» and the «أرشيف الليدز» tiles (owner 2026-11-24: the numbers must match):
+  // leads still «جديد» (no contact attempt yet) older than the SLA hours in app_settings (default 24), from the same 50-row list the dashboard always used.
+  function loadOverdueLeads() {
+    return Promise.all([
+      window.SSMPDDb.listLeads({ status: "new", page_size: 50 }),
+      window.SSMPDDb.getAppSettings().catch(function () { return null; })
+    ]).then(function (r) {
+      var newLeads = (r[0] && r[0].leads) || [], slaHours = (r[1] && r[1].leads_sla_hours) || 24, slaMs = slaHours * 3600000, nowTs = Date.now();
+      return { slaHours: slaHours, leads: newLeads.filter(function (l) { return l.created_at && (nowTs - new Date(l.created_at).getTime()) > slaMs; }) };
+    });
+  }
+  // Start of today in Cairo as a UTC instant (Egypt has summer time, so the offset is read, not assumed).
+  function cairoDayStartIso(now) {
+    now = now || new Date();
+    var parts = {}; new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(now).forEach(function (x) { parts[x.type] = x.value; });
+    var wall = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute, +parts.second), offset = wall - Math.floor(now.getTime() / 1000) * 1000;
+    return new Date(Date.UTC(+parts.year, +parts.month - 1, +parts.day) - offset).toISOString();
+  }
+
   // ============ ٣) داشبورد الإدارة ============
+  // ============ حركة الموظفين على الليدز (owner 2026-11-25 «اي حركة بيعملها عندنا تقرير منها») — managers only ============
+  var ACTIVITY_LABELS = { status: "تغيير حالة", booking: "حجز", attempt: "محاولة / مكالمة", field_edit: "تعديل بيانات", assignment: "إسناد",
+    invoice: "فاتورة", complete_missing_data: "إكمال بيانات ناقصة", delete: "حذف ليد", export: "تصدير" };
+  var ACTIVITY_COLS = ["status", "booking", "attempt", "field_edit", "assignment", "invoice", "complete_missing_data", "delete", "export"];
+  function fmtDateTime(iso) { try { return new Date(iso).toLocaleString("en-GB", { timeZone: "Africa/Cairo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) { return iso || ""; } }
+  function activityRpc(name, args) {
+    var c = window.SSMPDDb && window.SSMPDDb.client;
+    if (!c || typeof c.rpc !== "function") return Promise.reject(new Error("تعذر الاتصال"));
+    return Promise.resolve().then(function () { return c.rpc(name, args); }).then(function (r) { if (r && r.error) throw new Error(r.error.message || "خطأ"); return r ? r.data : null; });
+  }
+  function renderActivityReport(box, d) {
+    if (!box) return;
+    box.innerHTML = '<h3>حركة الموظفين على الليدز</h3><p class="loading">بيحمّل…</p>';
+    activityRpc("leads_activity_report", { p_from: d.from || null, p_to: d.to || null }).then(function (res) {
+      if (!box.isConnected) return;
+      var rows = (res && res.rows) || [];
+      var html = '<h3>حركة الموظفين على الليدز</h3><p style="font-size:12px;color:var(--c-muted);margin:0 0 8px;">كل حركة على أي ليد بتتسجّل باسم اللي عملها ووقتها' +
+        (d.from || d.to ? "" : " — آخر 30 يوم (غيّر الفترة من فوق)") + '. دوس «تفاصيل» عشان تشوف حركات الموظف واحدة واحدة.</p>';
+      if (!rows.length) { box.innerHTML = html + '<p style="font-size:13px;color:var(--c-muted);">مفيش حركة في الفترة دي.</p>'; return; }
+      html += '<div style="overflow:auto"><table class="simple" data-activity-table><thead><tr><th>الموظف</th>' + ACTIVITY_COLS.map(function (k) { return "<th>" + ACTIVITY_LABELS[k] + "</th>"; }).join("") +
+        '<th>الإجمالي</th><th>آخر حركة</th><th></th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          return '<tr data-activity-row="' + escapeHtml(r.admin_id || "") + '"><td>' + escapeHtml(r.name) + (r.has_grant ? ' <span class="tag" title="عنده صلاحية أرشيف الليدز">أرشيف الليدز</span>' : "") + "</td>" +
+            ACTIVITY_COLS.map(function (k) { return "<td>" + fmtNum(r[k]) + "</td>"; }).join("") + "<td><b>" + fmtNum(r.total) + "</b></td><td>" + escapeHtml(fmtDateTime(r.last_at)) + "</td>" +
+            '<td>' + (r.admin_id ? '<button class="btn ghost sm" data-activity-open="' + escapeHtml(r.admin_id) + '" data-activity-name="' + escapeHtml(r.name) + '">تفاصيل</button>' : "") + "</td></tr>";
+        }).join("") + "</tbody></table></div>";
+      box.innerHTML = html;
+      box.querySelectorAll("[data-activity-open]").forEach(function (b) {
+        b.onclick = function () { openActivityFeed(b.getAttribute("data-activity-open"), b.getAttribute("data-activity-name"), d); };
+      });
+    }).catch(function (e) { if (box.isConnected) box.innerHTML = '<h3>حركة الموظفين على الليدز</h3><div class="err-msg">خطأ: ' + escapeHtml(e.message) + "</div>"; });
+  }
+  function openActivityFeed(adminId, name, d) {
+    var bd = document.createElement("div"); bd.className = "modal-backdrop"; bd.setAttribute("data-activity-feed", "");
+    bd.innerHTML = '<div class="modal" style="max-width:860px;"><h3>حركات ' + escapeHtml(name) + '</h3><div data-activity-feed-body><p class="loading">بيحمّل…</p></div>' +
+      '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" data-activity-close>قفل</button></div></div>';
+    document.body.appendChild(bd);
+    bd.onclick = function (e) { if (e.target === bd || e.target.closest("[data-activity-close]")) bd.remove(); };
+    activityRpc("leads_activity_feed", { p_admin: adminId, p_from: d.from || null, p_to: d.to || null, p_limit: 300 }).then(function (list) {
+      var body = bd.querySelector("[data-activity-feed-body]"); list = list || [];
+      body.innerHTML = !list.length ? '<p style="color:var(--c-muted);">مفيش حركات.</p>' : '<div style="max-height:60vh;overflow:auto"><table class="simple"><thead><tr><th>الوقت</th><th>الحركة</th><th>العميل</th><th>التفاصيل</th></tr></thead><tbody>' +
+        list.map(function (x) { return "<tr><td>" + escapeHtml(fmtDateTime(x.at)) + "</td><td>" + escapeHtml(ACTIVITY_LABELS[x.action] || x.action) + "</td><td>" + escapeHtml(x.customer_name || (x.action === "delete" || x.action === "export" ? "—" : "ليد اتحذف")) + "</td><td>" + escapeHtml(x.detail || "") + "</td></tr>"; }).join("") +
+        "</tbody></table></div>";
+    }).catch(function (e) { bd.querySelector("[data-activity-feed-body]").innerHTML = '<div class="err-msg">خطأ: ' + escapeHtml(e.message) + "</div>"; });
+  }
+
   function renderDashboardScreen(view, container) {
     var d = state.dashboard;
     view.innerHTML = '<div class="section" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">' +
@@ -457,7 +533,7 @@
       "<button class=\"btn sm\" id=\"ld-dash-apply\"> <!--ssmpd-i18n:%D8%AA%D8%B7%D8%A8%D9%8A%D9%82-->تطبيق</button>" +
       (d.from || d.to ? "<button class=\"btn ghost sm\" id=\"ld-dash-clear\"> <!--ssmpd-i18n:%D9%85%D8%B3%D8%AD%20%D8%A7%D9%84%D9%81%D9%84%D8%AA%D8%B1-->مسح الفلتر</button>" : '') +
       '<span style="font-size:11px;color:var(--c-muted);">الفلتر بيأثر على: توزيع الحالة، تصنيف عضوي/إعلان، والدخل. أما "مفتوحة/مغلقة/تم الحجز" فبتفضل الحالة اللحظية دايماً.</span>' +
-      "</div><div id=\"ld-dash-body\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div>";
+      "</div><div id=\"ld-dash-body\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div>" + (isManager() ? '<div id="ld-activity" class="section"></div>' : "");
 
     document.getElementById("ld-dash-apply").onclick = function () {
       d.from = document.getElementById("ld-dash-from").value;
@@ -467,20 +543,15 @@
     var clearBtn = document.getElementById("ld-dash-clear");
     if (clearBtn) clearBtn.onclick = function () { d.from = ""; d.to = ""; renderDashboardScreen(view, container); };
 
+    if (isManager()) renderActivityReport(document.getElementById("ld-activity"), d);
     var body = document.getElementById("ld-dash-body");
     Promise.all([
       window.SSMPDDb.getLeadsStats({ from: d.from, to: d.to }),
-      window.SSMPDDb.listLeads({ status: "new", page_size: 50 }),
-      window.SSMPDDb.getAppSettings().catch(function () { return null; })
+      loadOverdueLeads()
     ]).then(function (results) {
       var res = results[0];
-      var newLeads = (results[1] && results[1].leads) || [];
-      var slaHours = (results[2] && results[2].leads_sla_hours) || 24;
-      var slaMs = slaHours * 60 * 60 * 1000;
-      var nowTs = Date.now();
-      var overdueLeads = newLeads.filter(function (l) {
-        return l.created_at && (nowTs - new Date(l.created_at).getTime()) > slaMs;
-      });
+      var slaHours = results[1].slaHours;
+      var overdueLeads = results[1].leads;
 
       var html = '<div style="text-align:left;margin-bottom:10px;">' +
         '<button class="btn ghost sm" id="ld-export-xlsx">⬇ تصدير إكسيل</button> ' +
@@ -561,6 +632,7 @@
 
   // ---------- تصدير داشبورد الليدز: إكسيل (SheetJS) أو PDF (نافذة طباعة) ----------
   function exportDashboardExcel(res, d) {
+    logExport("dashboard_xlsx", 0, { from: (d && d.from) || "", to: (d && d.to) || "" }).catch(function () {});
     if (typeof XLSX === "undefined") { T.show("مكتبة الإكسيل لسه مش متحمّلة — جرب ريفريش للصفحة", "error"); return; }
     var wb = XLSX.utils.book_new();
     var acq = res.by_acquisition_type || {};
@@ -593,13 +665,14 @@
   }
 
   function exportDashboardPdf(res, d) {
+    logExport("dashboard_pdf", 0, { from: (d && d.from) || "", to: (d && d.to) || "" }).catch(function () {});
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
     var acq = res.by_acquisition_type || {};
     var html = '<!doctype html><html><head><meta charset="utf-8"><title>تقرير الليدز</title>' +
       '<style>body{font-family:sans-serif;padding:24px;direction:rtl;}table{width:100%;border-collapse:collapse;margin:12px 0 24px;}' +
       'td,th{border:1px solid #ccc;padding:6px 10px;text-align:right;font-size:13px;}h1{font-size:20px;}h2{font-size:15px;margin-top:20px;}</style></head><body>';
-    html += '<h1>تقرير داشبورد الليدز — مركز عيادات Swnw</h1>';
+    html += '<h1>تقرير داشبورد الليدز — مركز عيادات سونو التخصصية</h1>';
     html += '<p>تاريخ التقرير: ' + new Date().toLocaleDateString("ar-EG-u-nu-latn") + (d.from || d.to ? ' — الفترة: ' + (d.from || "—") + ' إلى ' + (d.to || "—") : '') + '</p>';
     html += "<table><tr><td> <!--ssmpd-i18n:%D9%84%D9%8A%D8%AF%D8%B2%20%D9%85%D9%81%D8%AA%D9%88%D8%AD%D8%A9-->ليدز مفتوحة</td><td>" + (res.open || 0) + '</td></tr>' +
       "<tr><td> <!--ssmpd-i18n:%D9%84%D9%8A%D8%AF%D8%B2%20%D9%85%D8%BA%D9%84%D9%82%D8%A9-->ليدز مغلقة</td><td>" + (res.closed || 0) + '</td></tr>' +
@@ -650,7 +723,7 @@
       } else {
         html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th>رقم الحجز</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%AD%D8%AC%D8%B2-->تاريخ الحجز</th><th>أنهى الحجز</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
-          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+          html += '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + escapeHtml(l.booking_reference || "—") + '</td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDateOnly(l.booking_date) + '</td>' +
             '<td style="font-size:11px;">' + escapeHtml(employeeName(l.booked_by)) + '</td>' +
@@ -697,19 +770,80 @@
       }
       view.querySelectorAll('[data-registrar]').forEach(function (cell) { cell.textContent = registrarName(cell.getAttribute('data-registrar'), cell.getAttribute('data-source')); });
       var period = s.dateFrom || s.dateTo ? 'الفترة ' + (s.dateFrom || 'البداية') + ' — ' + (s.dateTo || 'اليوم') : 'كل الفترات';
-      var html = "<div style=\"display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px;\"><div><h3 style=\"margin:0;\"> <!--ssmpd-i18n:%D8%AA%D8%B3%D8%AC%D9%8A%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->تسجيل الليدز حسب الموظف</h3><p style=\"font-size:12px;color:var(--c-muted);margin:4px 0;\">" + escapeHtml(period) + ' · إجمالي التسجيلات ' + fmtNum(stats.total) + "</p></div><button class=\"btn ghost sm\" id=\"ar-refresh-stats\"> <!--ssmpd-i18n:%D8%AA%D8%AD%D8%AF%D9%8A%D8%AB-->تحديث</button></div>";
-      html += '<p style="font-size:12px;color:var(--c-muted);">كل ليد يُحسب مرة واحدة لمسجله، سواء إدخال يدوي أو رفع إكسيل. المؤشرات تشمل كل الحالات؛ فلتر الموظف والبحث يغيّران القائمة فقط.</p>';
-      if (!stats.employees.length) html += '<p>لا توجد تسجيلات في هذه الفترة.</p>';
+      // Owner 2026-11-24 («طبقه», mockup docs/ui-references/mockups/leads-archive-tiles.html): the staff table became one tile; three more tiles
+      // (new today / open / urgent follow-up) sit next to it, and every tile opens its details in a popup.
+      var L = function (ar) { return window.SSMPDI18n && window.SSMPDI18n.textHtml ? window.SSMPDI18n.textHtml(ar) : escapeHtml(ar); };
+      var empTable;
+      if (!stats.employees.length) empTable = '<p>لا توجد تسجيلات في هذه الفترة.</p>';
       else {
-        html += "<div style=\"overflow-x:auto;\"><table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->الموظف</th><th>الليدز المسجلة</th><th>نسبته من الإجمالي</th><th>آخر تسجيل</th><th></th></tr></thead><tbody>";
+        empTable = '<p style="font-size:12px;color:var(--c-muted);margin-top:0;">كل ليد يُحسب مرة واحدة لمسجله، سواء إدخال يدوي أو رفع إكسيل. المؤشرات تشمل كل الحالات؛ فلتر الموظف والبحث يغيّران القائمة فقط.</p>';
+        empTable += "<div style=\"overflow-x:auto;\"><table class=\"simple\"><thead><tr><th>" + L('الموظف') + "</th><th>الليدز المسجلة</th><th>نسبته من الإجمالي</th><th>آخر تسجيل</th><th></th></tr></thead><tbody>";
         stats.employees.forEach(function (e) {
-          html += '<tr><td>' + escapeHtml(e.employee_name) + (e.employee_id && !e.active ? '<small style="display:block;color:var(--c-muted);">حساب غير نشط</small>' : '') + '</td><td>' + fmtNum(e.count) + '</td><td style="min-width:130px;">' + e.percentage.toFixed(1) + '%<div style="height:4px;background:var(--c-border);border-radius:4px;margin-top:5px;"><div style="height:4px;background:var(--c-primary,#0F369D);border-radius:4px;width:' + Math.min(100, e.percentage) + '%;"></div></div></td><td style="font-size:11px;">' + fmtDate(e.last_registered_at) + '</td><td><button class="btn ghost sm" data-registrar-filter="' + escapeHtml(e.employee_id || '__unrecorded__') + '">عرض الليدز</button></td></tr>';
+          empTable += '<tr><td>' + escapeHtml(e.employee_name) + (e.employee_id && !e.active ? '<small style="display:block;color:var(--c-muted);">حساب غير نشط</small>' : '') + '</td><td>' + fmtNum(e.count) + '</td><td style="min-width:130px;">' + e.percentage.toFixed(1) + '%<div style="height:5px;background:var(--c-border);border-radius:9px;margin-top:4px;"><div style="height:100%;width:' + Math.max(1, e.percentage) + '%;background:var(--c-primary);border-radius:9px;"></div></div></td><td style="font-size:11px;color:var(--c-muted);">' + fmtDate(e.last_registered_at) + '</td><td><button class="btn ghost sm" data-registrar-filter="' + escapeHtml(e.employee_id || '__unrecorded__') + '">عرض الليدز</button></td></tr>';
         });
-        html += '</tbody></table></div>';
+        empTable += '</tbody></table></div>';
       }
+      var ICONS = {
+        emp: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.7 3.1 2.5 3.5 5.2"/></svg>',
+        today: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M12 13v4M10 15h4"/></svg>',
+        open: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+        urgent: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/></svg>'
+      };
+      var tile = function (k, value, label) { return '<button type="button" class="la-tile la-' + k + '" data-la-tile="' + k + '"><i>' + ICONS[k] + '</i><span class="la-txt"><b data-la-count="' + k + '">' + value + '</b><span>' + L(label) + '</span></span><em aria-hidden="true">‹</em></button>'; };
+      var html = '<div class="la-head"><div><h3 style="margin:0;">' + L('ملخص الليدز') + '</h3><p style="font-size:12px;color:var(--c-muted);margin:4px 0 0;">' + escapeHtml(period) + ' · دوس على أي مربع يفتح التفاصيل</p></div><button class="btn ghost sm" id="ar-refresh-stats">' + L('تحديث') + '</button></div>' +
+        '<div class="la-tiles">' + tile('emp', fmtNum(stats.total), 'تسجيل الليدز حسب الموظف') + tile('today', '…', 'ليدز جديدة النهارده') + tile('open', '…', 'ليدز مفتوحة') + tile('urgent', '…', 'محتاجة متابعة عاجلة') + '</div>';
       panel.innerHTML = html;
       panel.querySelector('#ar-refresh-stats').onclick = function () { renderArchiveScreen(view, container, true); };
-      panel.querySelectorAll('[data-registrar-filter]').forEach(function (button) { button.onclick = function () { s.bookedBy = button.getAttribute('data-registrar-filter'); s.search = ''; s.status = ''; s.page = 1; renderArchiveScreen(view, container); }; });
+
+      // live figures — same sources as «داشبورد الإدارة»
+      var live = { today: null, open: null, urgent: null };
+      var setCount = function (k, v) { var b = panel.querySelector('[data-la-count="' + k + '"]'); if (b) b.textContent = v; };
+      window.SSMPDDb.listLeads({ date_from: cairoDayStartIso(), page_size: 50 }).then(function (r) { live.today = r || { leads: [], total: 0 }; setCount('today', fmtNum(live.today.total || 0)); }).catch(function () { setCount('today', '—'); });
+      window.SSMPDDb.getLeadsStats({}).then(function (r) { live.open = (r && r.open) || 0; setCount('open', fmtNum(live.open)); }).catch(function () { setCount('open', '—'); });
+      loadOverdueLeads().then(function (r) { live.urgent = r; setCount('urgent', fmtNum(r.leads.length)); }).catch(function () { setCount('urgent', '—'); });
+
+      var leadRows = function (list, late) {
+        if (!list.length) return '<p class="la-empty">مفيش ليدز هنا دلوقتي.</p>';
+        return '<div class="la-list">' + list.map(function (l) {
+          var hours = late && l.created_at ? Math.floor((Date.now() - new Date(l.created_at).getTime()) / 3600000) : 0;
+          return '<div class="la-row"><div class="la-nm"><b>' + nameHtml(l) + '</b><small><span dir="ltr">' + escapeHtml(l.phone_raw || l.phone_normalized || '—') + '</span> · ' + fmtDate(l.created_at) + '</small></div>' +
+            (late ? '<span class="status-pill revision">متأخر ' + hours + ' س</span>' : '<span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || 'draft') + '">' + (STATUS_LABELS[l.current_status] || escapeHtml(l.current_status)) + '</span>') +
+            '<button type="button" class="btn ghost sm" data-la-open="' + escapeHtml(l.id) + '">' + L('فتح') + '</button></div>';
+        }).join('') + '</div>';
+      };
+      var more = function (shown, total) { return total > shown ? '<p class="la-empty">معروض أحدث ' + fmtNum(shown) + ' من ' + fmtNum(total) + ' — الباقي في قائمة الأرشيف تحت.</p>' : ''; };
+      var popup = function (title, sub, body) {
+        var old = document.querySelector('[data-la-popup]'); if (old) old.remove();
+        var bd = document.createElement('div'); bd.className = 'modal-backdrop'; bd.setAttribute('data-la-popup', '1');
+        bd.innerHTML = '<div class="modal la-pop" role="dialog" aria-modal="true" aria-label="' + escapeHtml(title) + '"><button type="button" class="la-x" data-la-close aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button><header class="la-ph"><h3>' + escapeHtml(title) + '</h3><small>' + escapeHtml(sub) + '</small></header><div data-la-body>' + body + '</div></div>';
+        document.body.appendChild(bd);
+        var close = function () { bd.remove(); document.removeEventListener('keydown', onKey); };
+        var onKey = function (e) { if (e.key === 'Escape') close(); };
+        document.addEventListener('keydown', onKey);
+        bd.onclick = function (e) {
+          if (e.target === bd || e.target.closest('[data-la-close]')) { close(); return; }
+          var o = e.target.closest('[data-la-open]');
+          if (o) { close(); openLeadModal(view, container, o.getAttribute('data-la-open'), function () { renderArchiveScreen(view, container, true); }); return; }
+          var f = e.target.closest('[data-registrar-filter]');
+          if (f) { close(); s.bookedBy = f.getAttribute('data-registrar-filter'); s.search = ''; s.status = ''; s.page = 1; renderArchiveScreen(view, container); }
+        };
+        var x = bd.querySelector('[data-la-close]'); if (x) x.focus();
+        return bd;
+      };
+      var waitMsg = '<p class="la-empty">لسه بيحمّل… جرّب تاني بعد ثانية.</p>';
+      panel.querySelectorAll('[data-la-tile]').forEach(function (b) {
+        b.onclick = function () {
+          var k = b.getAttribute('data-la-tile');
+          if (k === 'emp') { popup('تسجيل الليدز حسب الموظف', period + ' · إجمالي التسجيلات ' + fmtNum(stats.total), empTable); return; }
+          if (k === 'today') { popup('ليدز جديدة النهارده', 'اتسجلت النهارده من 12:00 ص لحد دلوقتي' + (live.today ? ' · ' + fmtNum(live.today.total || 0) : ''), live.today ? leadRows(live.today.leads || [], false) + more((live.today.leads || []).length, live.today.total || 0) : waitMsg); return; }
+          if (k === 'urgent') { popup('محتاجة متابعة عاجلة', live.urgent ? 'جديدة من غير أي رد لأكتر من ' + live.urgent.slaHours + ' ساعة · ' + fmtNum(live.urgent.leads.length) : '', live.urgent ? '<p class="la-hint">نفس قائمة التنبيه في «داشبورد الإدارة». أول محاولة تواصل بتشيل الليد من هنا تلقائياً.</p>' + leadRows(live.urgent.leads, true) : waitMsg); return; }
+          var pop = popup('ليدز مفتوحة', 'نفس رقم «داشبورد الإدارة»' + (live.open != null ? ' · ' + fmtNum(live.open) : ''), '<p class="loading">بيحمّل…</p>');
+          window.SSMPDDb.listLeads({ open_only: true, page_size: 50 }).then(function (r) {
+            var body = pop.querySelector('[data-la-body]'); if (!body) return;
+            body.innerHTML = leadRows((r && r.leads) || [], false) + more(((r && r.leads) || []).length, (r && r.total) || 0);
+          }).catch(function (e) { var body = pop.querySelector('[data-la-body]'); if (body) body.innerHTML = '<p class="err-msg">تعذر التحميل: ' + escapeHtml(e.message) + '</p>'; });
+        };
+      });
     }).catch(function (error) {
       if (!view.isConnected || view.querySelector('#ar-registration-stats') !== panel) return;
       panel.innerHTML = "<h3> <!--ssmpd-i18n:%D8%AA%D8%B3%D8%AC%D9%8A%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->تسجيل الليدز حسب الموظف</h3><p class=\"err-msg\">تعذر تحميل المؤشرات: " + escapeHtml(error.message) + '</p><button class="btn ghost sm" id="ar-refresh-stats">إعادة المحاولة</button>';
@@ -751,7 +885,7 @@
       } else {
         html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>مسجل الليد</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->تاريخ الإضافة</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
-          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+          html += '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
             '<td data-registrar="' + escapeHtml(l.received_by || '') + '" data-source="' + escapeHtml(l.source || '') + '">' + escapeHtml(registrarName(l.received_by, l.source)) + '</td>' +
@@ -796,6 +930,14 @@
     }).catch(function (e) { if (state.archiveRequest !== request || !view.isConnected) return; view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
   }
 
+  // owner 2026-11-25: every leads export is logged with who + when (public.log_leads_export, 20261125150000) BEFORE the file is written
+  function logExport(kind, rows, filters) {
+    var c = window.SSMPDDb && window.SSMPDDb.client;
+    if (!c || typeof c.rpc !== "function") return Promise.reject(new Error("تعذر تسجيل التصدير"));
+    return Promise.resolve(c.rpc("log_leads_export", { p_kind: kind, p_rows: rows || 0, p_filters: filters || {} })).then(function (r) {
+      if (r && r.error) throw new Error("تعذر تسجيل التصدير: " + (r.error.message || ""));
+    });
+  }
   // ---------- تصدير كل الليدز المطابقة لفلتر أرشيف الليدز (بيدور على كل الصفحات، ٥٠ في المرة) ----------
   function exportLeadsArchiveExcel(filters, total) {
     if (typeof XLSX === "undefined") { T.show("مكتبة الإكسيل لسه مش متحمّلة — جرب ريفريش للصفحة", "error"); return Promise.reject(new Error("XLSX غير متاحة")); }
@@ -815,9 +957,11 @@
           (STATUS_LABELS[l.current_status] || l.current_status), registrarName(l.received_by, l.source), fmtDate(l.created_at), l.booking_reference || ""
         ]);
       });
-      var wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "أرشيف الليدز");
-      XLSX.writeFile(wb, "أرشيف_الليدز_" + new Date().toISOString().slice(0, 10) + ".xlsx");
+      return logExport("archive", allLeads.length, filters).then(function () {
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "أرشيف الليدز");
+        XLSX.writeFile(wb, "أرشيف_الليدز_" + new Date().toISOString().slice(0, 10) + ".xlsx");
+      });
     });
   }
 
@@ -850,7 +994,7 @@
       } else {
         html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>تاريخ التحويل</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
-          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+          html += '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td>' +
             '<td><button class="btn ghost sm" data-open="' + l.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button></td></tr>";
@@ -901,7 +1045,7 @@
       } else {
         html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->تاريخ الإضافة</th><th></th></tr></thead><tbody>";
         pending.forEach(function (l) {
-          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+          html += '<tr><td>' + nameHtml(l) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td>' +
             '<td><button class="btn ghost sm" data-complete="' + l.id + '">استكمال بيانات</button></td></tr>';
@@ -1022,6 +1166,61 @@
     renderPreview();
   }
 
+  // ============ رسالة افتتاحية جاهزة لموظف خدمة العملاء (ليدز الإعلانات) ============
+  // نص جاهز يتعدّل ويتنسخ أو يتفتح في واتساب (بيجهّز الرسالة بس — الموظف هو اللي بيدوس إرسال هناك). مفيش حاجة بتتبعت من الداشبورد.
+  var OPENER_LABELS = { laser: "ليزر", physio: "علاج طبيعي" };
+  var OPENER_BODY = {
+    laser: "معاك {staff} من مركز عيادات سونو التخصصية، فرع حدائق الأهرام.\nوصلنا طلب حضرتك على إعلان الليزر، وحابين نرتبلك موعد استشارة.\nإيه الوقت المناسب لحضرتك للزيارة أو للمكالمة؟ وأنهي منطقة جسم حضرتك مهتمة بيها؟",
+    physio: "معاك {staff} من مركز عيادات سونو التخصصية، فرع حدائق الأهرام.\nشفنا استفسار حضرتك عن العلاج الطبيعي، وحابين نساعد حضرتك ونحجزلك كشف مع الدكتور المختص.\nإيه الوقت المناسب لحضرتك؟ ولو تحب تكتبلنا باختصار الشكوى اللي محتاجة علاج، يبقى أحسن."
+  };
+  function openerKind(lead) {
+    var svc = lead.interested_service || "", msg = String(lead.message_text || "");
+    if (svc === "cosmetic_laser" || /ليزر/.test(msg)) return "laser";
+    if (svc === "physiotherapy" || /علاج طبيعي|علاج طبيعى/.test(msg)) return "physio";
+    return lead.source === "facebook_form" ? "laser" : "physio"; // فورم الليزر على فيسبوك، وماسنجر للعلاج الطبيعي
+  }
+  function openerText(kind, lead, staffName) {
+    var nm = String(lead.customer_name || "").trim();
+    // اسم من فيسبوك أو اسم افتراضي: مش مؤكد، فمنكتبوش في الرسالة
+    if (!nm || lead.customer_name_source === "facebook" || nm === "عميل ماسنجر") nm = "";
+    var greet = "أهلاً بحضرتك" + (nm ? " " + nm : "") + (kind === "laser" ? " 🌸" : "،");
+    return greet + "\n" + OPENER_BODY[kind].replace("{staff}", String(staffName || "").trim() || "[اسم الموظف]");
+  }
+  function staffNameNow() { var a = me || (window.SSMPDAuth && window.SSMPDAuth.currentAdmin) || {}; return a.name || ""; }
+  function openerWaDigits(lead) {
+    var d = String(lead.phone_normalized || lead.phone_raw || "").replace(/\D/g, "");
+    if (/^01\d{9}$/.test(d)) d = "2" + d;
+    return /^\d{8,15}$/.test(d) ? d : "";
+  }
+  function openerHtml(lead) {
+    var kind = openerKind(lead), staff = staffNameNow();
+    return '<div class="field" style="border-top:1px solid var(--c-border);padding-top:14px;" data-opener>' +
+      '<label>رسالة افتتاحية جاهزة</label>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;"><select id="op-kind">' +
+      Object.keys(OPENER_LABELS).map(function (k) { return '<option value="' + k + '"' + (k === kind ? " selected" : "") + '>' + OPENER_LABELS[k] + '</option>'; }).join("") + '</select>' +
+      '<small style="color:var(--c-muted);">عدّل الرسالة براحتك قبل ما تبعتها</small></div>' +
+      '<textarea id="op-text" rows="6" style="width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--c-border);padding:10px 12px;line-height:1.9;">' + escapeHtml(openerText(kind, lead, staff)) + '</textarea>' +
+      (lead.customer_name_source === "facebook" ? '<p style="font-size:12px;color:var(--c-muted);margin:6px 0 0;">الاسم ده من فيسبوك ومش مكتوب في الرسالة — اسأل العميل عن اسمه.</p>' : '') +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"><button type="button" class="btn ghost sm" id="op-copy">انسخ الرسالة</button>' +
+      '<button type="button" class="btn sm" id="op-wa"' + (openerWaDigits(lead) ? "" : " disabled") + '>افتح واتساب بالرسالة</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:6px 0 0;">فتح واتساب بيجهّز الرسالة بس — لازم تدوس إرسال هناك. الرد الحر على واتساب مسموح خلال 24 ساعة من آخر رسالة من العميل؛ لو ما كتبش، اتصل بيه أو ابعت من واتساب الأعمال على الموبايل.</p></div>';
+  }
+  function wireOpener(root, lead) {
+    var box = root.querySelector("[data-opener]");
+    if (!box) return;
+    var kindSel = box.querySelector("#op-kind"), txt = box.querySelector("#op-text");
+    kindSel.onchange = function () { txt.value = openerText(kindSel.value, lead, staffNameNow()); };
+    box.querySelector("#op-copy").onclick = function () {
+      var done = function () { if (T && T.show) T.show("اتنسخت الرسالة"); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt.value).then(done, function () { txt.select(); document.execCommand("copy"); done(); });
+      else { txt.select(); document.execCommand("copy"); done(); }
+    };
+    box.querySelector("#op-wa").onclick = function () {
+      var d = openerWaDigits(lead); if (!d) return;
+      window.open("https://wa.me/" + d + "?text=" + encodeURIComponent(txt.value), "_blank", "noopener");
+    };
+  }
+
   // ============ مودال تفاصيل الليد (مشترك بين كل الشاشات) ============
   function openLeadModal(view, container, leadId, onChange) {
     var backdrop = document.createElement("div");
@@ -1049,7 +1248,7 @@
 
     function renderLeadModal(backdrop, view, container, data, onChange) {
       var lead = data.lead, attempts = data.attempts, statusLog = data.statusLog, invoices = data.invoices;
-      var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(lead.customer_name) + '</h3>' +
+      var html = '<div class="modal"><div class="modal-head"><h3>' + nameHtml(lead) + '</h3>' +
         (canDeleteLead() ? '<button class="btn danger sm" id="lm-delete" style="margin-inline-end:8px;">حذف الليد</button>' : '') +
         '<button class="modal-close">×</button></div>';
       html += '<div class="status-pill ' + (STATUS_PILL_CLASS[lead.current_status] || "draft") + '" id="lm-pill" style="margin-bottom:12px;">' + (STATUS_LABELS[lead.current_status] || lead.current_status) + '</div>';
@@ -1064,6 +1263,8 @@
         (lead.assigned_to ? ('مُسند لـ: ' + escapeHtml(employeeName(lead.assigned_to)) + '<br>') : '') +
         'تاريخ الاستلام: ' + fmtDate(lead.created_at) +
         '</p>';
+
+      html += openerHtml(lead);
 
       // تحديث الحالة والأولوية وتفاصيل الحجز
       html += '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">' +
@@ -1160,6 +1361,7 @@
       }
       if(window.SSMPDSharedReception)window.SSMPDSharedReception.append(backdrop.querySelector('.modal'),{context:'lead',id:lead.id});if(window.SSMPDReception&&window.SSMPDRoles.canSeeTab(window.SSMPDAuth.currentAdmin,'reception_services')){var bookingButton=document.createElement('button');bookingButton.className='btn btn-primary';bookingButton.type='button';bookingButton.textContent='احجز للمريض';backdrop.querySelector('.modal').appendChild(bookingButton);bookingButton.onclick=async function(){bookingButton.disabled=true;try{await window.SSMPDReception.openForLead(lead.id);backdrop.remove();}catch(err){T.show(err.message,'error');}finally{bookingButton.disabled=false;}};}
       backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+      wireOpener(backdrop, lead);
 
       var deleteBtn = document.getElementById("lm-delete");
       if (deleteBtn) {
@@ -1247,7 +1449,7 @@
     state.archive.search = term;
   }
 
-  window.SSMPDRenderLeads = { render: render, openSearch: openSearch, openLeadById: function (id) { openLeadModal(null, null, id, function () {}); } };
+  window.SSMPDRenderLeads = { nativeArchiveGrant: true, render: render, openSearch: openSearch, openLeadById: function (id) { openLeadModal(null, null, id, function () {}); } };
 })();
 
 

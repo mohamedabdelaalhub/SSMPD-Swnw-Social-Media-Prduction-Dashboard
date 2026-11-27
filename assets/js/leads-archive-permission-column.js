@@ -122,6 +122,7 @@
   function patchLeadsRenderer() {
     var api = window.SSMPDRenderLeads;
     if (!api || typeof api.render !== "function" || typeof api.openSearch !== "function") return false;
+    if (api.nativeArchiveGrant) return true; // render-leads.js shows «أرشيف الليدز» to grant holders itself (2026-11-25)
     if (api.render.__leadsArchiveGrantWrapped) return true;
     var originalRender = api.render;
     var wrapped = function (container) {

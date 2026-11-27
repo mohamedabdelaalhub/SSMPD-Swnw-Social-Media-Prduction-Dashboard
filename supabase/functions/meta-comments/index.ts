@@ -2,6 +2,12 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decideReply, clinicInfo, withContact } from "./ai.ts";
 import { syncMessages, sendManualMessage, suggestMessage } from "./messages.ts";
+import { cleanText, saveCommentRows, releaseStuckSending, sendApprovedComments } from "./comment-store.ts";
+import { readFbThreads } from "./fb-comments.ts";
+import { gget, gpost } from "./graph.ts";
+import { createRunLog } from "./run-log.ts";
+import { mapPool, isPermanentGraphError } from "./pool.ts";
+import { isWhatsApp, queueText, queueTemplate, queueReturn, listTemplates, outboxStatus, submitTemplate, listTemplateRequests } from "./whatsapp.ts";
 
 // Meta Comments & Messages — inbox + autopilot replies.
 //
@@ -11,12 +17,13 @@ import { syncMessages, sendManualMessage, suggestMessage } from "./messages.ts";
 // fixed templates for sensitive medical / emergency / complaint (which also raise a red dashboard alert).
 // Every reply ends with the booking contact block. Staff may call it to sync, suggest or send — including a manual
 // Messenger / Instagram Direct reply inside Meta's 24h window (action send_message, logged with sent_by).
+// WhatsApp (send_message / send_template / return_to_bot / list_templates / outbox_status) is queued for the swnw-agent (whatsapp.ts).
 // Page tokens stay in Edge Function secrets; nothing token-related is logged or returned.
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const CRON_SECRET = Deno.env.get("META_PUBLISH_CRON_SECRET");
-const GRAPH = "https://graph.facebook.com/v26.0/";
 const MAX_POST_AGE_DAYS = 30;
+const RUN_BUDGET_MS = Number(Deno.env.get("META_COMMENTS_BUDGET_MS")) || 90000; // soft ceiling; a 70 s run finishes fine, this only stops a run that keeps growing
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
@@ -36,19 +43,6 @@ function pageToken(brand: string): string | null {
 function reply(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 }
-async function gget(path: string, params: Record<string, string>) {
-  const u = new URL(GRAPH + path);
-  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
-  const r = await fetch(u.toString());
-  const d = await r.json().catch(() => ({}));
-  return { ok: r.ok && !d.error, data: d, error: d.error?.message as string | undefined };
-}
-async function gpost(path: string, params: Record<string, string>) {
-  const r = await fetch(GRAPH + path, { method: "POST", body: new URLSearchParams(params) });
-  const d = await r.json().catch(() => ({}));
-  return { ok: r.ok && !d.error, data: d, error: d.error?.message as string | undefined };
-}
-
 type Row = Record<string, unknown>;
 
 async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: any) {
@@ -59,6 +53,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     const me = await gget(cfg.instagram_business_account_id, { fields: "username", access_token: token });
     igUsername = me.ok ? me.data.username : null;
   }
+  await RUN_LOG?.step(`ig-username`);
   // Watch every post of the last 60 days on the page/Instagram (not only dashboard posts), but only
   // re-read comments of a post when its comment count changed — keeps Graph calls low every 2 minutes.
   const since = Math.floor((Date.now() - 60 * 864e5) / 1000).toString();
@@ -73,6 +68,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       if (!byFb.has(p.id)) byFb.set(p.id, { id: null, content_id: null, facebook_post_id: p.id });
     }
   }
+  await RUN_LOG?.step(`fb-posts ${counts.size}`);
   if (cfg?.instagram_business_account_id) {
     const r = await gget(`${cfg.instagram_business_account_id}/media`, { fields: "id,permalink,timestamp,comments_count", limit: "40", access_token: token });
     if (!r.ok) report.errors.push(`${brand} instagram media: ${r.error}`);
@@ -84,10 +80,14 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       else byIg.set(m.id, { id: null, content_id: null, instagram_media_id: m.id, instagram_permalink: m.permalink || null });
     }
   }
+  await RUN_LOG?.step(`ig-media ${counts.size}`);
   const { data: watched } = await db.from("social_comment_watch").select("post_ref,last_count,checked_at").eq("brand", brand);
   const watch = new Map((watched || []).map((w: any) => [w.post_ref, w]));
+  await RUN_LOG?.step(`watch ${watch.size}`);
+  const PERMANENT = -2; // watch marker: the post cannot be read (deleted / no access); skipped for 6 hours, then tried again
   const stale = (ref: string) => {
     const w: any = watch.get(ref), c = counts.get(ref);
+    if (w && w.last_count === PERMANENT) return Date.now() - Date.parse(w.checked_at) > 6 * 3600e3;
     if (!w || c === undefined || c < 0 || w.last_count !== c) return true;
     return Date.now() - Date.parse(w.checked_at) > 6 * 3600e3; // safety re-read every 6 hours
   };
@@ -101,23 +101,25 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     watchRows.push({ post_ref: ref, platform: j.facebook_post_id ? "facebook" : "instagram", brand, last_count: counts.get(ref) ?? null, checked_at: new Date().toISOString() });
   }
   report.checked = (report.checked || 0) + jobs.length;
+  await RUN_LOG?.step(`jobs ${jobs.length}`);
   const rows: Row[] = [];
   const failed = new Set<string>();
   const pageReplied = new Set<string>();
-  for (const job of jobs) {
+  // Posts are read with up to 5 requests in flight (one after another a brand took ~50 s and the run was cut off).
+  // A post that fails for a permanent reason (deleted, no access) is still marked as read so it is not retried every run.
+  const permanent = new Set<string>();
+  const results = await mapPool(jobs, 5, async (job) => {
+    const out = { rows: [] as Row[], replied: [] as string[], failedRef: null as string | null, permanentRef: null as string | null };
     if (job.facebook_post_id) {
-      const r = await gget(`${job.facebook_post_id}/comments`, {
-        fields: "id,message,from{id,name},created_time,permalink_url,comments.limit(50){id,message,from{id,name},created_time,permalink_url}",
-        filter: "toplevel", order: "reverse_chronological", limit: "50", access_token: token
-      });
-      if (!r.ok) { report.errors.push(`${brand} facebook: ${r.error}`); failed.add(job.facebook_post_id); }
-      else for (const c of r.data.data || []) {
+      const t = await readFbThreads(gget, job.facebook_post_id, token, report.errors, brand);
+      if (!t.ok) { if (t.permanent) out.permanentRef = job.facebook_post_id; else out.failedRef = job.facebook_post_id; }
+      else for (const { comment: c, replies } of t.threads) {
         const isPage = c.from?.id === cfg?.facebook_page_id;
-        rows.push(fbRow(brand, job, c, null, isPage));
-        for (const s of c.comments?.data || []) {
+        out.rows.push(fbRow(brand, job, c, null, isPage));
+        for (const s of replies) {
           const sIsPage = s.from?.id === cfg?.facebook_page_id;
-          if (sIsPage) pageReplied.add(`facebook:${c.id}`);
-          rows.push(fbRow(brand, job, s, c.id, sIsPage));
+          if (sIsPage) out.replied.push(`facebook:${c.id}`);
+          out.rows.push(fbRow(brand, job, s, c.id, sIsPage));
         }
       }
     }
@@ -125,23 +127,32 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       const r = await gget(`${job.instagram_media_id}/comments`, {
         fields: "id,text,username,timestamp,replies{id,text,username,timestamp}", limit: "50", access_token: token
       });
-      if (!r.ok) { report.errors.push(`${brand} instagram: ${r.error}`); failed.add(job.instagram_media_id); }
+      if (!r.ok) { report.errors.push(`${brand} instagram: ${r.error}`); if (isPermanentGraphError(r.error)) out.permanentRef = job.instagram_media_id; else out.failedRef = job.instagram_media_id; }
       else for (const c of r.data.data || []) {
         const isPage = !!igUsername && c.username === igUsername;
-        rows.push(igRow(brand, job, c, null, isPage));
+        out.rows.push(igRow(brand, job, c, null, isPage));
         for (const s of c.replies?.data || []) {
           const sIsPage = !!igUsername && s.username === igUsername;
-          if (sIsPage) pageReplied.add(`instagram:${c.id}`);
-          rows.push(igRow(brand, job, s, c.id, sIsPage));
+          if (sIsPage) out.replied.push(`instagram:${c.id}`);
+          out.rows.push(igRow(brand, job, s, c.id, sIsPage));
         }
       }
     }
+    return out;
+  });
+  for (const r of results) {
+    rows.push(...r.rows);
+    for (const id of r.replied) pageReplied.add(id);
+    if (r.failedRef) failed.add(r.failedRef);
+    if (r.permanentRef) permanent.add(r.permanentRef);
   }
+  await RUN_LOG?.step(`threads-read rows ${rows.length}`);
   if (rows.length) {
     // New comments only; existing rows keep their drafts/status.
-    const ins = await db.from("social_comments").upsert(rows, { onConflict: "id", ignoreDuplicates: true });
-    if (ins.error) { report.errors.push(`${brand} save: ${ins.error.message}`); report.saveFailed = true; }
-    else report.seen += rows.length;
+    const sv = await saveCommentRows(db, rows, report, brand);
+    report.seen += sv.saved;
+    for (const ref of sv.failedRefs) failed.add(ref); // posts with an unsaved row are not marked as read: retried next run
+    await RUN_LOG?.step(`saved ${sv.saved}/${rows.length}`);
     // Rows saved before links were collected: fill comment/author links once.
     const ids = rows.map((r) => r.id as string);
     const missing: any[] = [];
@@ -155,8 +166,10 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       if (r?.comment_url) await db.from("social_comments").update({ comment_url: r.comment_url, author_url: r.author_url }).eq("id", m.id);
     }
   }
+  await RUN_LOG?.step(`links-filled`);
   const okWatch = watchRows.filter((w) => !failed.has(w.post_ref as string));
-  if (okWatch.length && !report.saveFailed) await db.from("social_comment_watch").upsert(okWatch, { onConflict: "post_ref" });
+  for (const w of okWatch) if (permanent.has(w.post_ref as string)) w.last_count = PERMANENT;
+  if (okWatch.length) await db.from("social_comment_watch").upsert(okWatch, { onConflict: "post_ref" });
   // Answered directly on Facebook/Instagram → no longer waiting in the dashboard.
   // In chunks: a single request with hundreds of ids is too long and fails silently.
   const answered = [...pageReplied];
@@ -168,16 +181,16 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
 function fbRow(brand: string, job: any, c: any, parent: string | null, isPage: boolean): Row {
   return {
     id: `facebook:${c.id}`, platform: "facebook", platform_comment_id: c.id, brand, content_id: job.content_id, job_id: job.id,
-    post_ref: job.facebook_post_id, parent_comment_id: parent, author_name: c.from?.name || null, author_is_page: isPage,
-    message: c.message || "", commented_at: c.created_time || null, status: isPage ? "replied" : "new",
+    post_ref: job.facebook_post_id, parent_comment_id: parent, author_name: c.from?.name ? cleanText(c.from.name) : null, author_is_page: isPage,
+    message: cleanText(c.message), commented_at: c.created_time || null, status: isPage ? "replied" : "new",
     comment_url: c.permalink_url || null, author_url: null
   };
 }
 function igRow(brand: string, job: any, c: any, parent: string | null, isPage: boolean): Row {
   return {
     id: `instagram:${c.id}`, platform: "instagram", platform_comment_id: c.id, brand, content_id: job.content_id, job_id: job.id,
-    post_ref: job.instagram_media_id, parent_comment_id: parent, author_name: c.username || null, author_is_page: isPage,
-    message: c.text || "", commented_at: c.timestamp || null, status: isPage ? "replied" : "new",
+    post_ref: job.instagram_media_id, parent_comment_id: parent, author_name: c.username ? cleanText(c.username) : null, author_is_page: isPage,
+    message: cleanText(c.text), commented_at: c.timestamp || null, status: isPage ? "replied" : "new",
     comment_url: job.instagram_permalink || null, author_url: c.username ? `https://www.instagram.com/${c.username}/` : null
   };
 }
@@ -249,13 +262,23 @@ async function postContext(db: any, c: any): Promise<string> {
 async function suggestReply(db: any, id: string): Promise<{ ok: boolean; text?: string; error?: string }> {
   const { data: c } = await db.from("social_comments").select("*").eq("id", id).maybeSingle();
   if (!c || c.author_is_page || ["replied", "sending", "approved"].includes(c.status)) return { ok: false, error: "التعليق غير متاح" };
-  const d = await decideReply({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: await clinicInfo() });
+  const d = await safeDecide({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: await clinicInfo() });
   if (!d.ok) return { ok: false, error: d.error };
   if (!d.reply) return { ok: false, error: "التعليق ده شكله سبام — مفيش رد مناسب" };
   await db.from("social_comments").update({
     suggested_reply: d.reply, category: d.category, status: c.status === "new" || c.status === "failed" ? "drafted" : c.status, updated_at: new Date().toISOString()
   }).eq("id", id).in("status", ["new", "drafted", "failed"]);
   return { ok: true, text: d.reply };
+}
+// Hub alert (dashboard notification to super admins) at most once every 2 hours, so a failing AI call can't stay silent.
+async function raiseAiAlert(db: any, text: string) {
+  try {
+    const { data } = await db.from("social_settings").select("value").eq("key", "ai_alert").maybeSingle();
+    const last = Date.parse(data?.value?.at || "") || 0;
+    if (Date.now() - last < 2 * 3600e3) return;
+    await db.rpc("messenger_flow_notify", { p_message: text, p_role: "super_admin" });
+    await db.from("social_settings").upsert({ key: "ai_alert", value: { at: new Date().toISOString(), text }, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  } catch { /* alerting must never break the run */ }
 }
 // Autopilot: answer waiting comments directly (owner's decision). Complaints/emergencies get the fixed
 // templates and a red alert in the dashboard; spam is ignored.
@@ -266,10 +289,19 @@ async function autopilotComments(db: any, report: any) {
     .or(`auto_checked.eq.true,commented_at.lt.${new Date(Date.now() - 7 * 864e5).toISOString()}`)
     .order("commented_at", { ascending: false }).limit(8);
   const info = await clinicInfo();
+  let consecutive = 0, lastError = "";
   for (const c of data || []) {
-    const d = await decideReply({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: info });
+    const d = await safeDecide({ brand: c.brand, channel: "comment", text: c.message, post: await postContext(db, c), clinicInfo: info });
     const now = new Date().toISOString();
-    if (!d.ok) { report.errors.push(`autopilot ${c.id}: ${d.error}`); break; }
+    if (!d.ok) {
+      // One bad comment must not block the queue: record why, skip it, try the next. 3 failures in a row = real outage.
+      report.errors.push(`autopilot ${c.id}: ${d.error}`);
+      lastError = String(d.error || "decideReply failed");
+      await db.from("social_comments").update({ last_error: lastError.slice(0, 300), updated_at: now }).eq("id", c.id).in("status", ["new", "drafted"]);
+      if (++consecutive >= 3) { await raiseAiAlert(db, `الرد الآلي على التعليقات واقف: ${lastError}`.slice(0, 280)); break; }
+      continue;
+    }
+    consecutive = 0;
     if (d.category === "spam" || !d.reply) {
       await db.from("social_comments").update({ status: "ignored", category: d.category, updated_at: now }).eq("id", c.id).in("status", ["new", "drafted"]);
       continue;
@@ -298,6 +330,16 @@ async function autoSuggest(db: any, report: any) {
   }
 }
 
+// One stage throwing must not skip the stages after it (a thrown error used to abort the whole run silently).
+let RUN_LOG: ReturnType<typeof createRunLog> | null = null; // set per run in runSync (trace of the last run in social_settings)
+async function stage(report: any, name: string, fn: () => Promise<unknown>) {
+  if (RUN_LOG) return RUN_LOG.run(name, report, fn);
+  try { await fn(); } catch (e) { report.errors.push(`${name} threw: ${String((e as any)?.message || e).slice(0, 200)}`); }
+}
+// decideReply wrapped so a thrown error (network, bad JSON) is a normal failure we can record.
+async function safeDecide(input: Parameters<typeof decideReply>[0]) {
+  try { return await decideReply(input); } catch (e) { return { ok: false as const, error: `decideReply threw: ${String((e as any)?.message || e).slice(0, 200)}` }; }
+}
 async function runSync(db: any, report: any) {
   const cutoff = new Date(Date.now() - MAX_POST_AGE_DAYS * 864e5).toISOString();
   const { data: jobs, error } = await db.from("meta_publish_jobs")
@@ -309,41 +351,38 @@ async function runSync(db: any, report: any) {
   for (const c of cfgs || []) byBrand[c.brand] ||= [];
   for (const j of jobs || []) (byBrand[j.brand] ||= []).push(j);
   const auto = await autopilotSettings(db);
-  for (const [brand, list] of Object.entries(byBrand)) {
+  RUN_LOG = createRunLog(db);
+  const t0 = Date.now(), over = () => Date.now() - t0 > RUN_BUDGET_MS;
+  // The edge runtime cuts a run off after about a minute, so: (1) replies staff already approved go out first (cheap, also releases stuck
+  // «sending»), (2) the brands rotate every run so none is always last, (3) before each later stage the run checks its time budget and
+  // skips the rest (they run on the next call) instead of being killed half-way.
+  const all = Object.entries(byBrand), rot = all.length ? Math.floor(Date.now() / 300000) % all.length : 0;
+  const brands = all.slice(rot).concat(all.slice(0, rot));
+  const budgeted = async (name: string, fn: () => Promise<unknown>) => {
+    if (over()) { report.errors.push(`skipped ${name}: run time budget used`); return; }
+    await stage(report, name, fn);
+  };
+  await stage(report, "sendApproved", () => sendApproved(db, report));
+  for (const [brand, list] of brands) {
     const cfg = (cfgs || []).find((c: any) => c.brand === brand);
-    await syncBrand(db, brand, cfg, list, report);
-    const token = pageToken(brand);
-    if (token) await syncMessages(db, brand, cfg, token, report, auto.messages);
+    await budgeted(`${brand} syncBrand`, () => syncBrand(db, brand, cfg, list, report));
   }
-  await autoReply(db, report);
-  if (auto.comments) await autopilotComments(db, report);
-  await sendApproved(db, report);
+  // Replies to comments come BEFORE the heavy private-message sync: with the message sync first (~40 s) autoReply/autopilot were skipped every run.
+  await budgeted("autoReply", () => autoReply(db, report));
+  if (auto.comments) {
+    await budgeted("autopilotComments", () => autopilotComments(db, report));
+    await budgeted("sendApproved (autopilot)", () => sendApproved(db, report)); // replies the autopilot just approved go out in this run
+  }
+  for (const [brand] of brands) {
+    const cfg = (cfgs || []).find((c: any) => c.brand === brand);
+    const token = pageToken(brand);
+    if (token) await budgeted(`${brand} syncMessages`, () => syncMessages(db, brand, cfg, token, report, auto.messages));
+  }
 }
 
 async function sendApproved(db: any, report: any, onlyId?: string) {
-  let q = db.from("social_comments").select("*").eq("status", "approved").limit(20);
-  if (onlyId) q = q.eq("id", onlyId);
-  const { data } = await q;
-  for (const c of data || []) {
-    // Claim the row so two runs never send the same reply twice.
-    const claim = await db.from("social_comments").update({ status: "sending", updated_at: new Date().toISOString() })
-      .eq("id", c.id).eq("status", "approved").select("id");
-    if (!claim.data?.length) continue;
-    const token = pageToken(c.brand);
-    const target = c.parent_comment_id || c.platform_comment_id; // reply in the same thread
-    const message = withContact(c.final_reply);
-    const r = !token ? { ok: false, error: "no page token", data: {} as any }
-      : c.platform === "facebook"
-        ? await gpost(`${target}/comments`, { message, access_token: token })
-        : await gpost(`${target}/replies`, { message, access_token: token });
-    if (r.ok) {
-      await db.from("social_comments").update({ status: "replied", final_reply: message, reply_platform_id: r.data.id || null, replied_at: new Date().toISOString(), last_error: null, updated_at: new Date().toISOString() }).eq("id", c.id);
-      report.sent++;
-    } else {
-      await db.from("social_comments").update({ status: "failed", last_error: String(r.error || "send failed").slice(0, 300), updated_at: new Date().toISOString() }).eq("id", c.id);
-      report.errors.push(`send ${c.id}: ${r.error}`);
-    }
-  }
+  await releaseStuckSending(db).catch(() => {});
+  await sendApprovedComments(db, report, { pageToken, gpost, withContact }, { onlyId });
 }
 
 Deno.serve(async (req) => {
@@ -361,9 +400,12 @@ Deno.serve(async (req) => {
     const user = await db.auth.getUser(jwt);
     if (user.error || !user.data.user) return reply({ ok: false, error: "AUTH_REQUIRED" }, 401);
     // admin_extra_roles has two FKs to admins (admin_id, added_by), so it is read separately.
-    const { data: admin } = await db.from("admins").select("id,role").eq("user_id", user.data.user.id).eq("active", true).maybeSingle();
-    const { data: extra } = admin ? await db.from("admin_extra_roles").select("role").eq("admin_id", admin.id) : { data: [] };
-    const roles = admin ? [admin.role, ...(extra || []).map((r: any) => r.role)] : [];
+    // An account can have more than one active admins row (maybeSingle() then fails and the person was refused with 403): take all
+    // active rows, the first is the acting admin, and union their roles and extra roles.
+    const { data: adminRows } = await db.from("admins").select("id,role").eq("user_id", user.data.user.id).eq("active", true).order("created_at", { ascending: true }).limit(5);
+    const admin = (adminRows || [])[0] || null;
+    const { data: extra } = admin ? await db.from("admin_extra_roles").select("role").in("admin_id", (adminRows || []).map((a: any) => a.id)) : { data: [] };
+    const roles = admin ? [...(adminRows || []).map((a: any) => a.role), ...(extra || []).map((r: any) => r.role)] : [];
     if (!roles.some((r: string) => ["page_manager", "approver", "general_manager", "super_admin"].includes(r))) return reply({ ok: false, error: "FORBIDDEN" }, 403);
     if (body.action === "suggest") {
       if (typeof body.id !== "string") return reply({ ok: false, error: "id required" }, 400);
@@ -373,8 +415,30 @@ Deno.serve(async (req) => {
     // Manual Messenger / Instagram Direct reply (same roles as approving comment replies; 24h window enforced in messages.ts).
     if (body.action === "send_message") {
       if (typeof body.conversation_id !== "string" || typeof body.text !== "string") return reply({ ok: false, error: "conversation_id + text required" }, 400);
+      // WhatsApp: queued for the swnw-agent (whatsapp.ts); Messenger/Instagram: sent here.
+      if (isWhatsApp(body.conversation_id)) return reply(await queueText(db, { conversationId: body.conversation_id, text: body.text, adminId: admin!.id }));
       const r = await sendManualMessage(db, { conversationId: body.conversation_id, text: body.text, adminId: admin!.id, token: pageToken });
       return reply(r);
+    }
+    // WhatsApp only (see whatsapp.ts): approved templates outside the 24h window, «رجّع للبوت», and the queued command's result.
+    if (body.action === "list_templates") return reply(await listTemplates(db));
+    if (body.action === "send_template") {
+      if (!isWhatsApp(body.conversation_id) || typeof body.name !== "string" || typeof body.language !== "string") return reply({ ok: false, error: "conversation_id + name + language required" }, 400);
+      return reply(await queueTemplate(db, { conversationId: body.conversation_id, name: body.name, language: body.language, adminId: admin!.id }));
+    }
+    // Template requests: owner (super_admin) only — each use is the owner's own submission to Meta; the agent does the POST.
+    if (body.action === "wa_template_submit" || body.action === "wa_template_requests") {
+      if (!roles.includes("super_admin")) return reply({ ok: false, error: "FORBIDDEN" }, 403);
+      if (body.action === "wa_template_requests") return reply(await listTemplateRequests(db));
+      return reply(await submitTemplate(db, { adminId: admin!.id, category: String(body.category || ""), text: String(body.text || "") }));
+    }
+    if (body.action === "return_to_bot") {
+      if (!isWhatsApp(body.conversation_id)) return reply({ ok: false, error: "conversation_id required" }, 400);
+      return reply(await queueReturn(db, { conversationId: body.conversation_id, adminId: admin!.id }));
+    }
+    if (body.action === "outbox_status") {
+      if (typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return reply({ ok: false, error: "id required" }, 400);
+      return reply(await outboxStatus(db, body.id));
     }
     if (body.action === "suggest_message") {
       if (typeof body.conversation_id !== "string") return reply({ ok: false, error: "conversation_id required" }, 400);
@@ -392,6 +456,7 @@ Deno.serve(async (req) => {
 
   const report = { seen: 0, sent: 0, errors: [] as string[] };
   await runSync(db, report);
-  if (!(await autopilotSettings(db)).comments) await autoSuggest(db, report);
+  if (!(await autopilotSettings(db)).comments) await stage(report, "autoSuggest", () => autoSuggest(db, report));
+  if (report.errors.length) console.log("meta-comments run errors:", JSON.stringify(report.errors.slice(0, 20))); // visible in function logs
   return reply({ ok: true, ...report });
 });

@@ -17,8 +17,11 @@
     psychology_specialist: "أخصائي نفسية",
     contract_manager: "مسؤول التعاقدات",
     accountant: "محاسب",
-    financial_manager: "مدير مالي"
+    financial_manager: "مدير مالي",
+    ai_assistant: "مساعد إنستنكت (ذكاء اصطناعي)"
   };
+  // «مساعد إنستنكت» (المالك 2026-11-24): الاستقبال، خدمة العملاء، فريق المحتوى، الحسابات، الإدارة — وحساب إنستنكت نفسه
+  var INSTINCT_ROLES = ["reception", "customer_service", "page_manager", "designer", "approver", "accountant", "financial_manager", "general_manager", "super_admin", "ai_assistant"];
 
   // كل تاب: مين يشوفه — المدير العام يشوف كل حاجة زي السوبر أدمن ما عدا تاب المستخدمين
   // تاب "النشر" يشوفه الكل ما عدا المصمم (مش شغلته)
@@ -53,7 +56,8 @@
     accounting: ["general_manager", "super_admin"],
     tasks: ["page_manager", "designer", "approver", "general_manager", "super_admin", "reception", "customer_service", "nursing", "head_nursing", "sono_doctor", "contract_manager", "doctor_assistant"],
     contracting_entities: ["contract_manager", "general_manager", "super_admin"],
-    inventory: ["general_manager", "super_admin", "nursing", "reception", "sono_doctor"]
+    inventory: ["general_manager", "super_admin", "nursing", "reception", "sono_doctor"],
+    instinct: INSTINCT_ROLES
   };
 
   // بياخد صف admin كامل أو رول كـ string لوحده (توافق مع كود/اختبارات قديمة)
@@ -122,8 +126,12 @@
       return Roles.hasAnyRole(a, ["nursing", "head_nursing", "doctor_assistant"]) && !Roles.hasAnyRole(a, ["super_admin", "general_manager", "reception", "customer_service", "accountant", "financial_manager", "sono_doctor"]);
     },
 
+    // حساب إنستنكت (برنامج ذكاء اصطناعي): تاب «مساعد إنستنكت» بس — ومفيش أي موديول تاني (السيرفر بيقفله كمان)
+    isInstinctOnly: function (a) { return Roles.hasRole(a, "ai_assistant"); },
+
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
+      if (Roles.isInstinctOnly(admin)) return tab === "instinct" && admin.active !== false;
       if(tab==='reception_services'&&Roles.isNursingDayOnly(admin))return true;
       if(tab==='human_resources')return admin.active!==false&&!!(admin.id||admin.role);
       if(tab==='training_evaluation')return admin.active!==false&&!!(admin.id||admin.role);
@@ -145,6 +153,7 @@
 
     defaultTab: function (adminOrRole) {
       var admin = normalizeAdmin(adminOrRole);
+      if (Roles.isInstinctOnly(admin)) return "instinct";
       if(Roles.isPsychologySpecialist(admin))return "home";
       if (Roles.isControlledFinance(admin)) {
         var tabs=["accounting","contracting_entities","tasks"];
@@ -188,6 +197,11 @@
     // بس (زي سياسة RLS "managers write media_buyer_plans/actions" بالظبط)
     canDeleteContractingEntity: function (adminOrRole) {
       return Roles.canModuleAction(adminOrRole,"contracting_entities","delete");
+    },
+    // تفعيل عقود الجهات واعتماد قوائم أسعارها — السوبر أدمن أو المدير المالي بس (المالك 2026-11-23)،
+    // زي public.can_approve_contracts() في القاعدة. معتمد واحد كفاية.
+    canApproveContracts: function (adminOrRole) {
+      return Roles.hasAnyRole(adminOrRole, ["super_admin", "financial_manager"]);
     },
 
     canApproveMediaBuyer: function (adminOrRole) {

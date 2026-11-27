@@ -440,6 +440,18 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .acc-totals-strip{margin-top:12px; padding:12px 14px; background:var(--c-bg); border-radius:10px; font-size:13px; display:flex; flex-wrap:wrap; gap:14px; align-items:center;}
 .acc-totals-strip b{font-variant-numeric:tabular-nums; direction:ltr; unicode-bidi:embed; display:inline-block;}
 .acc-totals-strip .acc-final-line{color:var(--c-primary); font-weight:700; font-size:14.5px;}
+.acc-totals-strip .acc-saving{color:#2F7D5C; font-weight:700;}
+/* Fixed package price (owner 2026-11-25) */
+.acc-price-seg{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;}
+.acc-price-seg button{font:inherit; border:1.5px solid #CBD5E1; background:#fff; border-radius:12px; padding:8px 6px; font-size:13px; font-weight:700; line-height:1.4; color:#16212E; cursor:pointer;}
+.acc-price-seg button small{display:block; font-weight:400; font-size:11px; color:#5b6577;}
+.acc-price-seg button.on{border-color:#0F369D; background:#EAF0FF; color:#0F369D;}
+.acc-price-note{font-size:12px; color:#5b6577; margin:4px 0 0; line-height:1.7;}
+.acc-fixed-warn{font-size:12px; background:#FFF6E5; color:#8A5A00; border-radius:10px; padding:8px 10px; margin:8px 0 0; line-height:1.7;}
+.acc-price-mode{display:inline-block; border-radius:999px; padding:2px 9px; font-size:11px; font-weight:700; background:#F1F3F7; color:#5b6577;}
+.acc-price-mode.is-fixed{background:#EAF0FF; color:#0F369D;}
+.modal input#pk-margin:disabled{background:#F1F3F7; color:#8a93a3;}
+.acc-days-presets{display:inline-flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
 
 /* Content creation: orange primary action and quieter manual import. */
 .content-ai-actions{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0 18px;}
@@ -767,6 +779,7 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .peer-form label.peer-mode{display:flex;align-items:center;gap:8px;font-weight:500}
 .peer-form input,.peer-form select{min-height:40px;padding:6px 10px;border:1px solid #cfd6e4;border-radius:10px;font:inherit}
 .peer-form .fc-counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px}
+.peer-form [hidden]{display:none}.peer-form .fc-counts label{min-width:0}.peer-form .fc-counts input{min-width:0;width:100%;box-sizing:border-box}
 .peer-pending{margin:0 0 12px;padding:8px 10px;border-radius:12px;background:rgba(241,90,34,.08)}
 .peer-pending p{margin:0;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .peer-status{min-height:1.4em;margin:8px 0 0 !important;color:#D0402A !important;font-size:14px !important;text-align:center}
@@ -819,7 +832,7 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .dp-badge b{display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:12px;background:#F15A22;color:#fff;font-size:13px}
 .dp-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9200;padding:10px 18px;border-radius:12px;background:#2F7D5C;color:#fff;font-weight:700}.dp-toast.is-bad{background:#D0402A}
 /* Owner 2026-11-18: «الساعات الإضافية» (hr-overtime.js). */
-.ot{display:grid;gap:14px}
+.ot{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0}.ot-card{min-width:0}
 .ot-lead{margin:0;font-size:14px;line-height:1.8;color:#3B4658}.ot-on{color:#2F7D5C}.ot-off{color:#D0402A}
 .ot-card{padding:16px;border:1px solid rgba(22,33,46,.1);border-radius:14px;background:#fff;display:grid;gap:10px}
 .ot-card h3{margin:0;font-size:16px;font-weight:800;color:#16212E}
@@ -827,6 +840,8 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .ot-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}
 .ot-form label{display:grid;gap:4px;font-size:12.5px;color:#3B4658}.ot-form .ot-wide{grid-column:1/-1}
 .ot-form input,.ot-form select,.ot-head input{min-height:40px;padding:0 10px;border:1px solid rgba(22,33,46,.18);border-radius:10px;font:inherit;background:#fff}
+/* fix 2026-11-26 (owner screenshot): a long option text / the native date and month inputs pushed the form wider than the card on phones */
+.ot-form label,.ot-head label{min-width:0}.ot-form input,.ot-form select,.ot-head input{width:100%;max-width:100%;min-width:0;box-sizing:border-box;text-overflow:ellipsis}.ot-head label{flex:1 1 220px}
 .ot-switch{display:flex!important;align-items:center;gap:8px;font-size:14px!important;font-weight:700;color:#16212E!important}
 .ot-table{width:100%;border-collapse:collapse;font-size:13px}.ot-table th,.ot-table td{padding:8px 6px;border-bottom:1px solid rgba(22,33,46,.08);text-align:start;vertical-align:top}
 .ot-table th{color:#7A8496;font-weight:700}.ot-table tr.is-flag td{background:#FEF3EE}
@@ -848,3 +863,6 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .po-note{margin-top:6px}
 .po-hint{display:block;margin-top:4px;color:#D0402A}
 .po-tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11px;background:#E8EEFB;color:#0F369D;margin-inline-start:6px;vertical-align:middle}
+/* «تسليم» choice (owner 2026-11-24): الخزينة الرئيسية / زميل */
+.peer-choice{display:grid;gap:4px;margin:6px 0 10px}.peer-choice .btn{width:100%;justify-content:center}.peer-choice small{color:#5b6577;font-size:12px;line-height:1.6;margin:0 2px 6px}
+.peer-choice .btn[disabled]{opacity:.55;cursor:not-allowed}

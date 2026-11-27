@@ -1008,7 +1008,7 @@ function openAgentImportModal(parentBackdrop) {
         hook_text: valueOrNull("cf-hook"),
         content_angle: valueOrNull("cf-angle"),
         script_text: valueOrNull("cf-script"),
-        caption_text: valueOrNull("cf-caption") || (dailyBrief?"مواعيد العيادات اليومية بعيادات سونو التخصصية.\nتفاصيل الأطباء والمواعيد موضحة في التصميم.":null),
+        caption_text: valueOrNull("cf-caption") || (dailyBrief?"مواعيد العيادات اليومية بمركز عيادات سونو التخصصية.\nتفاصيل الأطباء والمواعيد موضحة في التصميم.":null),
         cta_type: valueOrNull("cf-cta-type"),
         cta_text: valueOrNull("cf-cta-text"),
         target_duration_min_seconds: durationMin,

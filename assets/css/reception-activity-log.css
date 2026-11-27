@@ -1,0 +1,51 @@
+/* «سجل نشاط الاستقبال» — mockup docs/ui-references/mockups/reception-activity-log-* */
+.ral{display:grid;gap:12px;color:#16212E}
+.ral-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ral-top h3{margin:0;color:#0F369D;font-size:20px;flex:1;min-width:200px}
+.ral-sub{font-size:12px;color:#5b6577;line-height:1.7;margin:0}
+.ral-err{color:#D0402A;background:#FBE9E6;border-radius:10px;padding:8px 10px;margin:0}
+.ral-empty{color:#5b6577;margin:8px 0}
+.ral-card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;min-width:0}
+.ral-hd{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.ral-hd h4{margin:0;font-size:15px;color:#0F369D}
+.ral-filters{display:grid;gap:8px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.ral-f{display:grid;gap:4px;font-size:12px;color:#5b6577;min-width:0}
+.ral-f select,.ral-f input{font:inherit;font-size:13px;min-height:40px;border:1px solid #BFCBE3;border-radius:10px;padding:4px 10px;background:#fff;color:#16212E;min-width:0;width:100%;box-sizing:border-box}
+.ral-dates{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ral-seg{display:flex;gap:6px;flex-wrap:wrap}
+.ral-lbl{font-size:12px;color:#5b6577;margin-inline-end:4px;align-self:center}
+.ral-chip{font:inherit;font-size:12px;border:1px solid #D5DEEE;border-radius:99px;padding:5px 12px;background:#fff;color:#16212E;cursor:pointer;min-height:34px}
+.ral-chip.on{background:#0F369D;border-color:#0F369D;color:#fff}
+.ral-tw{overflow-x:auto}
+.ral-sum{width:100%;border-collapse:collapse;font-size:13px}
+.ral-sum th,.ral-sum td{padding:8px 10px;text-align:start;border-bottom:1px solid #EEF1F6;white-space:nowrap}
+.ral-sum th{font-size:12px;color:#5b6577;font-weight:600;background:#F7F9FC}
+.ral-sum td.n{font-variant-numeric:tabular-nums;font-weight:700}
+.ral-sum tr.auto td{color:#5b6577;background:#FAFBFC}
+.ral-sum tr.tot td{font-weight:700;background:#F4F7FC}
+.ral-why{display:block;font-size:11px;font-weight:400;color:#5b6577}
+.ral-name{font:inherit;font-weight:700;color:#0F369D;background:none;border:0;padding:0;cursor:pointer;text-align:start}
+.ral-act{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:2px 9px;background:#EEF3FF;color:#0F369D}
+.ral-act.visit{background:#E6F2EC;color:#2F7D5C}.ral-act.pay{background:#FFF6E5;color:#8A5A00}.ral-act.void{background:#FBE9E6;color:#D0402A}.ral-act.auto{background:#F1F4F8;color:#5b6577}
+.ral-log{display:grid}
+.ral-day{font-size:12px;font-weight:700;color:#5b6577;padding:8px 6px 4px}
+.ral-row{display:grid;grid-template-columns:64px 130px 120px minmax(0,1fr) 140px 90px;gap:10px;align-items:center;padding:9px 6px;border-bottom:1px solid #EEF1F6;font-size:13px}
+.ral-row .t{font-weight:700;font-variant-numeric:tabular-nums}
+.ral-row .amt{font-weight:700;text-align:end;font-variant-numeric:tabular-nums}
+.ral-row .det{color:#3B4658;overflow-wrap:anywhere}
+.ral-note{display:block;margin-top:4px;font-size:12px;color:#16212E;background:#F6F8FC;border-inline-start:3px solid #0F369D;border-radius:6px;padding:3px 8px}
+.ral-note.x{border-color:#F15A22}
+.ral-more{justify-self:center}
+@media(max-width:760px){
+ .ral-filters{grid-template-columns:1fr 1fr}
+ .ral-row{grid-template-columns:52px minmax(0,1fr) auto;grid-template-areas:"t who amt" "t act act" "t det det";gap:2px 8px}
+ .ral-row .t{grid-area:t;align-self:start}.ral-row .who{grid-area:who}.ral-row .a{grid-area:act}.ral-row .det{grid-area:det;font-size:12px}.ral-row .amt{grid-area:amt}.ral-row .doc{display:none}
+ .ral-sum thead{display:none}
+ .ral-sum,.ral-sum tbody,.ral-sum tr,.ral-sum td{display:block}
+ .ral-sum tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 8px;border:1px solid #EEF1F6;border-radius:12px;padding:8px 10px;margin-bottom:6px}
+ .ral-sum td{border:0;padding:2px 0;white-space:normal;font-size:13px}
+ .ral-sum td:first-child{grid-column:1/-1;font-size:14px}
+ .ral-sum tr.tot,.ral-sum tr.auto{background:#F4F7FC}
+ .ral-sum tr.tot td,.ral-sum tr.auto td{background:none}
+ .ral-sum td.n::before{content:attr(data-l);display:block;font-size:11px;font-weight:400;color:#5b6577}
+}

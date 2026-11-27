@@ -1,0 +1,48 @@
+/* «عقود الأطباء» look (owner 2026-11-25 «طبق الكل», mockup docs/ui-references/mockups/doctor-contracts-look.html). Visual only. */
+.dc-lead{margin:0 0 8px;color:#475467}
+.dc-how{background:#F5F8FF;border:1px solid #DCE5F7;border-radius:16px;padding:10px 14px;margin:0 0 12px}
+.dc-how>summary{cursor:pointer;font-weight:700;color:#0F369D;min-height:32px;display:flex;align-items:center}
+.dc-how ul{margin:8px 0 0;padding-inline-start:20px;line-height:1.9;color:#344054;font-size:13px}
+.dc-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.dc-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.dc-v{background:#E6F4EC;color:#2F7D5C}.dc-o{background:#FFF1E8;color:#B54708}.dc-r{background:#FDECEA;color:#D0402A}.dc-b{background:#EAF0FF;color:#0F369D}.dc-g{background:#F2F4F7;color:#667085}
+.dc-pills{display:inline-flex;gap:6px;flex-wrap:wrap;vertical-align:middle}
+.fc-doctor-group>summary .dc-pills{flex:0 1 auto}.fc-doctor-group>summary .dc-pills .dc-pill{flex:none;font-size:12px}
+.dc-dates{display:block;color:#667085;font-size:12px;margin-top:4px;white-space:nowrap}
+.fc-doctor-group .dc-sep{display:inline-block;width:1px;height:22px;background:#E6EBF3;margin:0 6px;vertical-align:middle}
+.btn.dc-danger{color:#D0402A;border-color:#F4C7BF}.btn.dc-danger:hover{background:#D0402A;color:#fff;border-color:#D0402A}
+.dc-oldbtn{margin:8px auto;display:block}
+.fc-doctor-group td{vertical-align:middle}
+/* create-contract form */
+.dc-form .dc-grp{border:1px solid #E6EBF3;border-radius:16px;padding:12px 14px;margin:0 0 4px;display:grid;gap:12px;min-width:0}
+.dc-form .dc-grp>legend{font-weight:800;color:#0F369D;padding:0 6px}
+.dc-req{color:#D0402A}
+.dc-bad input,.dc-bad select{border-color:#D0402A!important;background:#FFF8F6!important}
+.dc-err{display:block;color:#D0402A;font-size:12px;margin-top:4px}
+/* phones: every contract becomes a card */
+@media (max-width:600px){
+ .fc-doctor-group .fc-table{border:0;overflow:visible}
+ .fc-doctor-group .fc-table table{min-width:0}
+ .fc-doctor-group thead{display:none}
+ .fc-doctor-group table,.fc-doctor-group tbody{display:block;width:100%}
+ .fc-doctor-group tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;border:1px solid #E6EBF3;border-radius:14px;padding:10px 12px;margin:0 0 10px;background:#fff}
+ .fc-doctor-group tbody tr[hidden]{display:none}
+ .fc-doctor-group tbody td{display:block;border:0;padding:0;max-width:none;min-width:0}
+ .fc-doctor-group tbody td:nth-child(1){grid-column:1}
+ .fc-doctor-group tbody td:nth-child(2){grid-column:2;grid-row:1;font-size:20px;font-weight:800;color:#0F369D;text-align:end;white-space:nowrap}
+ .fc-doctor-group tbody td:nth-child(3){grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+ .fc-doctor-group tbody td:nth-child(3)::before{content:"الحالة";font-size:12px;color:#667085;min-width:52px}
+ .fc-doctor-group tbody td:nth-child(4){grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+ .dc-terms{flex-direction:column;gap:4px}
+ .fc-doctor-group summary{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+}
+
+/* Refinements (owner 2026-11-25 «طبقه», mockup doctor-contracts-refine): closed list, attention first, terms once, one empty line. */
+.dc-grp{margin:14px 4px 6px;font-size:12px;font-weight:700;color:#667085}
+.dc-grp[hidden]{display:none}
+.fc-doctor-group.dc-attn{border-inline-start:4px solid #F15A22}
+.dc-terms{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:#344054;background:#fff;border:1px dashed #CFDCF8;border-radius:12px;padding:8px 12px;margin:10px 12px}
+.dc-terms .dc-tl{color:#667085;font-weight:600;font-size:12px}
+.dc-diff{display:inline-block;margin-top:4px;font-size:11px;background:#FFF1E0;color:#9A4E00;border-radius:8px;padding:2px 8px}
+.dc-noname{display:block;color:#9A4E00;font-size:11px;margin-top:2px}
+.dc-stm-empty{border:1px solid #E6EBF3;border-radius:14px;padding:12px 14px;background:#fff;color:#667085;margin-top:14px}

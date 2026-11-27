@@ -48,6 +48,12 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   assert(m.querySelector('[data-dues-sum]').textContent.includes('ضريبة 10.03') , m.querySelector('[data-dues-sum]').textContent);
   assert.equal(f.elements.shift_id.disabled, true, 'shift only for cash'); f.elements.method.value = 'cash'; f.elements.method.dispatchEvent(new w.Event('change')); assert.equal(f.elements.shift_id.disabled, false);
   f.elements.method.value = 'bank'; f.elements.method.dispatchEvent(new w.Event('change'));
+  // «مرجع السداد»: cash prefills «نقدي-DD-MM-YYYY» (editable), switching back clears the auto value; a typed one is kept
+  assert.equal(f.elements.reference.getAttribute('minlength'), '2'); assert(m.querySelector('[data-ref-hint]'), 'reference hint shown');
+  f.elements.method.value = 'cash'; f.elements.method.dispatchEvent(new w.Event('change')); assert.match(f.elements.reference.value, /^نقدي-\d{2}-\d{2}-\d{4}$/);
+  f.elements.method.value = 'bank'; f.elements.method.dispatchEvent(new w.Event('change')); assert.equal(f.elements.reference.value, '');
+  f.elements.reference.value = 'TRX-9'; f.elements.method.value = 'cash'; f.elements.method.dispatchEvent(new w.Event('change')); assert.equal(f.elements.reference.value, 'TRX-9', 'typed reference kept');
+  f.elements.method.value = 'bank'; f.elements.method.dispatchEvent(new w.Event('change')); f.elements.reference.value = '';
 
   // submit carries ids (not an amount)
   await submit(vals({ tax_pct: '5' }), 'tok-1');
@@ -57,6 +63,8 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   // nothing ticked -> refused, no request
   boxes()[1].checked = false; sent = null;
   await assert.rejects(async () => submit(vals(), 'tok-3'), /فاتورة واحدة/); assert.equal(sent, null);
+  // one-character reference → clear message before any request
+  boxes()[1].checked = true; await assert.rejects(async () => submit(vals({ reference: '1' }), 'tok-r'), /مرجع السداد لازم يكون حرفين/); assert.equal(sent, null); boxes()[1].checked = false;
   // over the available cap -> refused
   DUES.dues.available_now = 100; boxes()[0].checked = true; boxes()[0].dispatchEvent(new w.Event('change', { bubbles: true }));
   await assert.rejects(async () => submit(vals(), 'tok-4'), /أكبر من المتاح/); assert.equal(sent, null); assert(m.querySelector('[data-dues-sum]').textContent.includes('أكبر من المتاح'));

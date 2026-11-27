@@ -11,17 +11,38 @@ function candidates(ws,patient,service){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c)
  return Promise.resolve(c.rpc('clinic_reception_continuation_candidates',{p_workspace:ws,p_patient:patient,p_service:service})).then(function(r){if(r.error)throw r.error;return r.data||[];});}
 var nurseCache={},nurseNames={};
 function nurses(ws){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c)return Promise.resolve([]);if(!nurseCache[ws])nurseCache[ws]=Promise.resolve(c.rpc('clinic_reception_nurses',{p_workspace:ws})).then(function(r){if(r.error)throw r.error;(r.data||[]).forEach(function(n){nurseNames[n.id]=n.name;});return r.data||[];}).catch(function(e){delete nurseCache[ws];throw e;});return nurseCache[ws];}
-var MODES=[['doctor','الطبيب'],['nurse_alone','ممرض/ة لوحده'],['nurse_with_doctor','ممرض/ة مع طبيب']];
+var MODES=[['doctor','الطبيب'],['nurse_alone','ممرض/ة لوحده'],['nurse_with_doctor','ممرض/ة مع طبيب']],TRAVEL=[30,60,90,120];
+/* owner 2026-11-26: a «كشف منزلي» (clinic_reception.home_visit_split, listed in the snapshot) always goes with the doctor and books
+   the visit + «وقت الطريق (رايح وجاي)» (default 60); the server refuses «ممرض/ة لوحده» and adds the travel to the slot */
+function splitOf(D,sid){return (D&&D.home_visit_split||[]).find(function(x){return x.service_id===sid;})||null;}
 function performer(form,ctx,after){var ap=ctx.appointment||null,box=document.createElement('div');box.className='rbp-perf';box.setAttribute('data-wide','');box.setAttribute('data-rbp-perf','');
  box.innerHTML='<span class="rbp-lbl" id="rbp-perf-l">مين اللي هينفّذ؟</span><div class="rbp-seg" role="radiogroup" aria-labelledby="rbp-perf-l">'+MODES.map(function(m){return '<button type="button" role="radio" data-rbp-mode="'+m[0]+'" aria-checked="false">'+m[1]+'</button>';}).join('')+'</div><input type="hidden" name="performer_mode" value="doctor">'+
-  '<label class="rbp-nurse" data-rbp-nurse hidden>الممرض/ة<select name="nurse_admin_id"><option value="">اختار الممرض/ة</option></select></label><p class="rbp-hint" data-rbp-nurse-hint hidden></p>';
+  '<label class="rbp-nurse" data-rbp-nurse hidden>الممرض/ة<select name="nurse_admin_id"><option value="">اختار الممرض/ة</option></select></label><p class="rbp-hint" data-rbp-nurse-hint hidden></p>'+
+  '<p class="rbp-hint" data-rbp-split-note hidden>الكشف المنزلي لازم يكون معاه الطبيب — «ممرض/ة لوحده» مش متاحة للخدمة دي.</p>'+
+  '<label class="rbp-nurse" data-rbp-travel hidden>وقت الطريق (رايح وجاي)<select name="travel_minutes" disabled>'+TRAVEL.map(function(n){return '<option value="'+n+'">'+n+' دقيقة</option>';}).join('')+'</select></label>';
  after.after(box);var hid=form.elements.performer_mode,sel=form.elements.nurse_admin_id,lab=box.querySelector('[data-rbp-nurse]'),hint=box.querySelector('[data-rbp-nurse-hint]'),want=ap&&ap.nurse_admin_id||'';
  function set(m){hid.value=m;box.querySelectorAll('[data-rbp-mode]').forEach(function(b){b.setAttribute('aria-checked',String(b.getAttribute('data-rbp-mode')===m));});var on=m!=='doctor';lab.hidden=!on;sel.required=on;if(!on)sel.value='';
   hint.hidden=m!=='nurse_alone';hint.textContent='الممرض/ة لوحده: اختار في «الطبيب» جدول «التمريض المنزلي» (أو جدول الزيارة)، والممرض/ة من هنا. الحجز بياخد وقت الممرض/ة فمينفعش يتحجز في زيارتين في نفس الوقت.';
   if(on&&sel.options.length<2)load();}
  function load(){sel.disabled=true;nurses(ctx.workspace).then(function(list){if(!form.isConnected)return;sel.innerHTML='<option value="">'+(list.length?'اختار الممرض/ة':'مفيش موظفين تمريض متسجلين')+'</option>'+list.map(function(n){return '<option value="'+esc(n.id)+'">'+esc(n.name)+(n.code?' — '+esc(n.code):'')+'</option>';}).join('');sel.disabled=false;if(want){sel.value=want;want='';}},function(e){sel.disabled=false;hint.hidden=false;hint.textContent=e&&e.message||'تعذر تحميل موظفين التمريض';});}
  box.querySelectorAll('[data-rbp-mode]').forEach(function(b){b.onclick=function(){set(b.getAttribute('data-rbp-mode'));};});
- set(ap&&ap.performer_mode&&ap.performer_mode!=='doctor'?ap.performer_mode:'doctor');}
+ set(ap&&ap.performer_mode&&ap.performer_mode!=='doctor'?ap.performer_mode:'doctor');
+ /* owner 2026-11-23: «مين اللي هينفّذ؟» stays closed until «زيارة منزلية» is ticked (a booking already on a nurse keeps it open) */
+ /* in-center nursing (a nursing service or a nursing schedule, e.g. «تعليق محلول») keeps it open too */
+ var homeCb=form.elements.x_home,stick=!!(ap&&ap.performer_mode&&ap.performer_mode!=='doctor'),D=ctx.data||{};
+ function nursing(){var sv=form.elements.service_id&&form.elements.service_id.value,pv=form.elements.provider_id&&form.elements.provider_id.value,
+   s=(D.services||[]).find(function(x){return x.id===sv;}),p=(D.providers||[]).find(function(x){return x.id===pv;});
+   return /تمريض/.test([s&&s.department,s&&s.name,p&&p.department,p&&p.name].join(' '));}
+ var alone=box.querySelector('[data-rbp-mode="nurse_alone"]'),note=box.querySelector('[data-rbp-split-note]'),trl=box.querySelector('[data-rbp-travel]'),trs=trl.querySelector('select'),wasSplit=null;
+ function split(){return splitOf(D,form.elements.service_id&&form.elements.service_id.value);}
+ function splitGate(){var sp=split();alone.hidden=!!sp;alone.disabled=!!sp;note.hidden=!sp;trl.hidden=!sp;trs.disabled=!sp;
+  if(sp&&hid.value==='nurse_alone')set('doctor');
+  if(sp&&wasSplit!==sp.service_id){trs.value=String(ap&&ap.travel_minutes&&ap.service_id===sp.service_id?ap.travel_minutes:(sp.travel_minutes||60));}
+  var changed=(wasSplit||'')!==(sp?sp.service_id:'');wasSplit=sp?sp.service_id:null;if(changed)form.dispatchEvent(new Event('rbp-travel'));}
+ trs.addEventListener('change',function(){form.dispatchEvent(new Event('rbp-travel'));});
+ function gate(){splitGate();if(!homeCb)return;var on=homeCb.checked||stick||nursing()||!!split();box.hidden=!on;if(!on&&hid.value!=='doctor')set('doctor');}
+ if(homeCb){box.style.order='6';homeCb.addEventListener('change',gate);form.addEventListener('rxe-home',gate);}
+ form.addEventListener('change',function(e){if(e.target&&(e.target.name==='service_id'||e.target.name==='provider_id'))gate();});gate();}
 function enhance(form,ctx){if(!form||form.querySelector('[data-rbp]'))return;var field=form.querySelector('.rx-combo-field');if(!field||!form.elements.service_id)return;
  var data=ctx.data||{},ap=ctx.appointment||null,live=ctx.mode!=='trial';
  var row=document.createElement('div');row.className='rbp-row';row.setAttribute('data-rbp','');row.setAttribute('data-wide','');field.parentNode.insertBefore(row,field);row.appendChild(field);
@@ -62,6 +83,7 @@ function cardBits(a,tlTime){a=a||{};var name='',line='';
  if(+a.quantity>1)line+=' <b class="rbp-x">× '+(+a.quantity)+'</b>';
  if(a.continuation_of)line+=' <span class="rbp-cont-tag">استكمال</span>';
  if(a.nurse_admin_id&&a.performer_mode&&a.performer_mode!=='doctor')line+=' <span class="rbp-nurse-tag">🩺 '+(a.performer_mode==='nurse_alone'?'ممرض/ة':'مع ممرض/ة')+(nurseNames[a.nurse_admin_id]?': '+esc(nurseNames[a.nurse_admin_id]):'')+'</span>';
+ if(+a.travel_minutes>0)line+=' <span class="rbp-nurse-tag">🚗 وقت الطريق '+(+a.travel_minutes)+' دقيقة</span>';
  return {name:name,line:line};}
 w.SSMPDReceptionBookingPlus={enhance:enhance,cardBits:cardBits,nurses:nurses,_t:{times:times}};
 })(window);

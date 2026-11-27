@@ -10,7 +10,12 @@ const tick = () => new Promise(r => setTimeout(r, 30));
     { fallback_booking_id: 'f2', source: 'whatsapp', status: 'replayed', reception_confirmed: true, customer_name: 'كريم', phone: '01000000002', doctor_name: 'د. سارة', appointment_date: '2099-01-01', appointment_time: '18:20' },
     { fallback_booking_id: 'f3', source: 'website', status: 'conflict', reception_confirmed: true, customer_name: 'هدى', phone: '01000000003', doctor_name: 'د. علي', appointment_date: today, appointment_time: '19:00' },
     { fallback_booking_id: 'f4', source: 'whatsapp', status: 'cancelled', customer_name: 'ملغي', phone: '01000000004', appointment_date: today }];
-  const cb = [{ id: 'c1', channel: 'whatsapp', customer_name: 'سلمى', phone: '01000000005', doctor_name: 'د. دينا', appointment_date: today, appointment_time: '20:00', status: 'confirmed', booking_reference: 'M-1' }];
+  const cb = [{ id: 'c1', channel: 'whatsapp', customer_name: 'سلمى', phone: '01000000005', doctor_name: 'د. دينا', appointment_date: today, appointment_time: '20:00', status: 'confirmed', booking_reference: 'M-1' },
+    // website form (2026-11-22): the agent mirrors it as channel 'other' + wa_id 'web:…'; a future 'website' channel counts too
+    { id: 'c2', channel: 'other', wa_id: 'web:1a2b3c4d', customer_name: 'ياسمين', phone: '01000000006', doctor_name: 'د. شريف', appointment_date: today, appointment_time: '21:00', status: 'confirmed', booking_reference: '236100' },
+    { id: 'c3', channel: 'website', wa_id: 'web:5e6f7a8b', customer_name: 'رنا', phone: '01000000007', doctor_name: 'د. شريف', appointment_date: '2099-01-02', appointment_time: '21:20', status: 'confirmed', booking_reference: '236101' },
+    { id: 'c4', channel: 'other', wa_id: 'web:99999999', customer_name: 'ملغي موقع', phone: '01000000008', appointment_date: today, status: 'cancelled' },
+    { id: 'c5', channel: 'other', wa_id: '201000000009', customer_name: 'قناة تانية', phone: '01000000009', appointment_date: today, status: 'confirmed' }];
   const portal = [{ id: 'p1', status: 'pending', requested_date: today }, { id: 'p2', status: 'confirmed', requested_date: today }, { id: 'p3', status: 'cancelled_by_staff', requested_date: today }];
   let portalRendered = 0;
   const q = { select() { return q; }, gte() { return q; }, order() { return q; }, limit() { return Promise.resolve({ data: cb }); } };
@@ -28,9 +33,10 @@ const tick = () => new Promise(r => setTimeout(r, 30));
   assert(!d.getElementById('portal-booking-requests-rx'), 'old portal card not mounted');
   const btn = k => card.querySelector('[data-ab-open="' + k + '"]');
   assert.deepEqual(['whatsapp', 'website', 'portal'].map(k => btn(k).querySelector('.ab-name').textContent), ['واتساب', 'الموقع', 'بوابة المرضى']);
-  assert.deepEqual(['whatsapp', 'website', 'portal'].map(k => btn(k).querySelector('.ab-total').textContent), ['3', '1', '3']);
+  assert.deepEqual(['whatsapp', 'website', 'portal'].map(k => btn(k).querySelector('.ab-total').textContent), ['3', '3', '3']);
   assert(btn('whatsapp').textContent.includes('1 محتاج إجراء') && btn('whatsapp').textContent.includes('النهارده 2'));
-  assert(btn('website').textContent.includes('1 محتاج إجراء') && btn('website').textContent.includes('النهارده 1'), 'conflict needs action');
+  assert(btn('website').textContent.includes('1 محتاج إجراء') && btn('website').textContent.includes('النهارده 2'), 'conflict needs action; website-form booking counted today');
+  assert.deepEqual(cb.map(b => w.SSMPDAutoBookings.mirrorChannel(b)), ['whatsapp', 'website', 'website', 'website', 'other']);
   assert(btn('portal').textContent.includes('1 محتاج إجراء') && btn('portal').textContent.includes('النهارده 2'));
   btn('whatsapp').click();
   const panel = () => card.querySelector('[data-ab-panel]');
@@ -38,10 +44,15 @@ const tick = () => new Promise(r => setTimeout(r, 30));
   assert(!panel().querySelector('b'), 'escaped');
   let went = 0; d.querySelector('[data-rx-section="appointments"]').onclick = () => went++;
   panel().querySelector('[data-ab-goto]').click(); assert.equal(went, 1, 'jumps to المواعيد');
+  btn('website').click();
+  assert(panel().textContent.includes('هدى') && panel().textContent.includes('ياسمين') && panel().textContent.includes('رنا'), 'website list shows fallback + website-form bookings');
+  assert(panel().textContent.includes('236100') && panel().textContent.includes('اتسجلت على ماسا'));
+  assert(!panel().textContent.includes('ملغي موقع') && !panel().textContent.includes('قناة تانية') && !panel().textContent.includes('سلمى'), 'cancelled / other-channel / whatsapp rows stay out of الموقع');
+  btn('whatsapp').click(); assert(!panel().textContent.includes('ياسمين'), 'website-form bookings stay out of واتساب');
   btn('portal').click(); assert.equal(portalRendered, 1); assert(panel().textContent.includes('شاشة البوابة'));
   btn('portal').click(); assert(panel().hidden, 'second tap closes');
   // redraw of the reception host keeps the card without refetching
   card.remove(); w.SSMPDAutoBookings.decorate({ data: { workspace: { mode: 'live' } }, workspace: 'ws1', host });
   assert.equal(d.getElementById('auto-booking-requests-rx').querySelector('[data-ab-open="whatsapp"] .ab-total').textContent, '3');
-  console.log('PASS auto booking requests: one card, 3 channel buttons with totals / needs action / today, lists per channel, portal screen reused, old card hidden, trial ignored.');
+  console.log('PASS auto booking requests: website-form mirror rows (other + web:) counted under الموقع; one card, 3 channel buttons with totals / needs action / today, lists per channel, portal screen reused, old card hidden, trial ignored.');
 })().catch(e => { console.error(e); process.exit(1); });

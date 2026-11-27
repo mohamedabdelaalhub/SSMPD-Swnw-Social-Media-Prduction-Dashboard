@@ -1,0 +1,33 @@
+/* «مواعيد العمل والإجازات والراحات» — month calendar (mockup docs/ui-references/mockups/hr-work-schedule.html). Swnw colours only. */
+dialog.hws{border:0;border-radius:18px;padding:16px;width:min(520px,calc(100vw - 20px));max-height:calc(100dvh - 20px);overflow:auto;color:#16212E;background:#fff;box-shadow:0 20px 50px rgba(15,54,157,.22);font-family:inherit}
+dialog.hws::backdrop{background:rgba(22,33,46,.45)}
+.hws-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.hws-top h2{font-size:17px;margin:0}.hws-top small{color:#6B7688}
+.hws-x{width:44px;height:44px;border:0;border-radius:12px;background:#EEF1F6;color:#16212E;display:grid;place-items:center;cursor:pointer;flex:none}
+.hws-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.hws-bar button{width:44px;height:44px;border:1px solid #E1E6EF;border-radius:12px;background:#fff;display:grid;place-items:center;cursor:pointer;color:#0F369D}
+.hws-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.hws-chips button{border:0;border-radius:12px;padding:8px 6px;font:inherit;font-size:13px;cursor:pointer;min-height:44px;color:#16212E}
+.hws-chips b{font-size:18px;display:block}
+.hws-chips .work{background:#E5ECFD}.hws-chips .rest{background:#EEF1F6}.hws-chips .leave{background:#E4F2EB}
+.hws-head7,.hws-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.hws-head7 span{text-align:center;font-size:11px;color:#6B7688;padding:4px 0}
+.hws-c{position:relative;aspect-ratio:1/1;min-height:44px;border:1px solid transparent;border-radius:10px;background:#fff;font:inherit;cursor:pointer;display:grid;place-items:center;padding:0;color:#16212E}
+.hws-c.blank{visibility:hidden;cursor:default}
+.hws-c.work{background:#E5ECFD}.hws-c.rest{background:#EEF1F6;color:#6B7688}.hws-c.leave{background:#E4F2EB;color:#2F7D5C}
+.hws-c.pending{background:#FFF4EE;border:1px dashed #F15A22}.hws-c.absent{background:#FCE9E5;color:#D0402A}.hws-c.none{background:#fff;border-color:#EEF1F6}
+.hws-c.future{opacity:.6}.hws-c.today{outline:2px solid #0F369D}.hws-c.sel{box-shadow:0 0 0 2px #F15A22}
+.hws-dot{display:inline-block;width:7px;height:7px;border-radius:50%}.hws-c .hws-dot{position:absolute;bottom:5px;inset-inline-start:50%;margin-inline-start:-3px}
+.hws-dot.late{background:#F15A22}.hws-dot.miss{background:#D0402A}
+.hws-leg{list-style:none;display:flex;flex-wrap:wrap;gap:6px 12px;margin:10px 0 4px;padding:0;font-size:12px;color:#6B7688}
+.hws-leg li{display:flex;align-items:center;gap:5px}.hws-leg .sw{width:12px;height:12px;border-radius:4px;display:inline-block}
+.hws-leg .sw.work{background:#E5ECFD}.hws-leg .sw.rest{background:#EEF1F6}.hws-leg .sw.leave{background:#E4F2EB}.hws-leg .sw.pending{border:1px dashed #F15A22;background:#FFF4EE}
+.hws-note{font-size:12px;color:#6B7688;margin:6px 0}
+.hws-msg{padding:20px;text-align:center}.hws-msg.err{color:#D0402A}
+.hws-sheet{margin-top:10px;background:#F6F8FC;border-radius:14px;padding:12px}
+.hws-sheet header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}.hws-sheet h3{font-size:15px;margin:0}
+.hws-sheet dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0}.hws-sheet dt{color:#6B7688;font-size:13px}.hws-sheet dd{margin:0;font-weight:600;min-width:0}
+.hws-list{list-style:none;margin:0;padding:0}.hws-list li{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #E1E6EF}.hws-list em{font-style:normal;font-size:13px}
+.hws-list em.a{color:#D0402A}.hws-list em.l{color:#F15A22}.hws-list em.r{color:#6B7688}
+.hws-bal{background:#E4F2EB;border-radius:12px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.hws-lv{background:#fff;border-radius:12px;padding:10px;margin-bottom:8px}

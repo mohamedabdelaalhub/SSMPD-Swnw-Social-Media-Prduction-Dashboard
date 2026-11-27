@@ -38,10 +38,10 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  assert(!/[٠-٩]/.test(q('.journey-day-text').textContent),'English digits in the date');
  assert(q('.journey-date-nav [data-journey-day]'),'hidden date input still there');assert(!q('.journey-date-nav [data-journey-action="refresh"]'),'⟳ left the date row');
  assert(q('.journey-tools [data-journey-action="refresh"]')&&q('.journey-tools [data-journey-action="pick_day"]'),'«تحديث» + «تغيير اليوم» in ⋯');
- assert(q('.journey-docline').textContent.includes('د. سارة')&&q('.journey-docline-late').textContent==='متأخر 15 د','doctors summary line');
- assert(q('section.journey-doctors').hidden,'doctor cards collapsed by default');assert.equal(q('section.journey-doctors').getAttribute('data-doctor-pay-workspace'),'ws1','payout hook stays on the cards');
- q('[data-journey-docs-toggle]').click();assert(!q('section.journey-doctors').hidden&&q('[data-journey-docs-toggle]').textContent.includes('⌃'),'«تفاصيل» opens the cards');assert(q('.journey-doctor [data-doctor-pay="d1"]'),'payout slot inside the cards');
- q('[data-journey-docs-toggle]').click();assert(q('section.journey-doctors').hidden);
+ /* Owner 2026-11-22 (today-shortcuts): doctors are cards inside the «الأطباء» sheet, opened from the tiles row. */
+ {const dp=q('section[data-tds-panel="doctors"]');assert(dp&&dp.textContent.includes('د. سارة'),'doctor card');assert(q('.tds-ds-delayed').textContent.includes('متأخر 15 د'),'late status on the card');
+  assert.equal(dp.getAttribute('data-doctor-pay-workspace'),'ws1','payout hook stays on the cards');assert(q('.tds-doc [data-doctor-pay="d1"]'),'payout slot inside the cards');assert(q('[data-tds-tiles]'),'tiles row host under the filters');
+  assert.equal(q('[data-tds-panel="outbox"] h3').textContent,'رسائل في انتظار الإرسال للمرضى','outbox renamed');assert(q('[data-today-auto-host]'),'auto bookings panel host');}
  assert.equal(qa('.journey-alert').length,1,'one alert line (delayed doctor only in the doctors line)');
  assert(q('.journey-alert').textContent.includes('كريم مستني مستني 35 دقيقة — د. سارة'));assert.equal(q('.journey-alert [data-journey-action]').dataset.journeyAction,'call');assert.equal(q('.journey-alert .btn').textContent,'نادي');
  assert(!q('.journey-action-center'),'no «يحتاج تدخل» side box');

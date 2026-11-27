@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var state = { filter: "pending", brand: "", platform: "", section: "inbox", mfilter: "all", q: "", category: "", postRef: "", open: { inbox: "", messages: "" }, info: true, sheet: false, drafts: {} };
+  var state = { filter: "pending", brand: "", platform: "", section: "inbox", mfilter: "all", q: "", category: "", postRef: "", open: { inbox: "", messages: "" }, info: true, sheet: false, drafts: {}, waTemplates: null, waReq: null, waForm: null, leads: {} };
   var BRANDS = { sono: "سونو", dr_dina: "د. دينا" };
   var STATUS = {
     "new": "محتاج رد", drafted: "رد مقترح", approved: "في الطريق", sending: "بيتنشر",
@@ -117,9 +117,30 @@
     return on.length ? "الرد التلقائي شغال على: " + on.join(" و") + "." : "الرد التلقائي متوقف — الردود بتستنى اعتماد.";
   }
   // تنبيهات حمرا: شكاوى/طوارئ اترد عليها تلقائياً ولسه محدش من الفريق اتعامل معاها.
+  // Meta hides most Facebook commenters' names from the page (Standard Access): show a clear label instead of an empty name.
+  function commenterName(c) {
+    return c.author_name || (c.platform === 'instagram' ? 'زائر انستجرام' : 'زائر فيسبوك');
+  }
+  // supabase-js returns data = null and r.error for ANY non-2xx answer or network failure, so the server's own reason (expired session, no
+  // permission) used to be replaced by the generic fallback. Read the response body and say what really happened.
+  function failText(r, fallback) {
+    var e = r && r.error, d = (r && r.data) || {};
+    if (!e) return Promise.resolve(d.message || d.error || fallback);
+    var ctx = e.context, status = ctx && ctx.status;
+    var body = ctx && typeof ctx.json === "function" ? ctx.json().catch(function () { return {}; }) : Promise.resolve({});
+    return body.then(function (b) {
+      b = b || {};
+      if (status === 401 || b.error === "AUTH_REQUIRED") return "الجلسة انتهت — حدّث الصفحة (F5) وسجّل دخول تاني وجرّب";
+      if (status === 403 || b.error === "FORBIDDEN") return "حسابك مالوش صلاحية الرد من هنا — كلّم المدير";
+      if (b.message) return b.message;
+      if (b.error) return b.error;
+      if (!ctx) return "مفيش اتصال بالسيرفر دلوقتي أو الطلب اتأخر — جرّب تاني بعد شوية";
+      return fallback + " (كود " + (status || "؟") + ")";
+    });
+  }
   function alertList(data) {
     var out = [];
-    data.comments.forEach(function (c) { if (c.alert && !c.alert_resolved_at) out.push({ kind: "comment", id: c.id, platform: c.platform, brand: c.brand, who: c.author_name, text: c.message, reply: c.final_reply, at: c.commented_at, url: c.comment_url, category: c.category }); });
+    data.comments.forEach(function (c) { if (c.alert && !c.alert_resolved_at) out.push({ kind: "comment", id: c.id, platform: c.platform, brand: c.brand, who: commenterName(c), text: c.message, reply: c.final_reply, at: c.commented_at, url: c.comment_url, category: c.category }); });
     var seen = {};
     data.messages.forEach(function (m) {
       if (!m.alert || m.alert_resolved_at || seen[m.conversation_id]) return;
@@ -136,7 +157,7 @@
         '<div class="cm-meta"><span class="cm-badge danger">' + (CATEGORY[a.category] || "تنبيه") + "</span>" +
         '<span class="cm-badge ' + a.platform + '">' + (PLAT[a.platform] || a.platform) + " · " + (a.kind === "comment" ? "تعليق" : "رسالة") + "</span>" +
         '<span class="cm-badge">' + (BRANDS[a.brand] || a.brand) + "</span></div>" +
-        '<div class="cm-msg"><b>' + esc(a.who || "مستخدم") + '</b> <span class="muted">' + when(a.at) + " · " + ago(a.at) + "</span>" +
+        '<div class="cm-msg"><b>' + esc(a.who || "عميل") + '</b> <span class="muted">' + when(a.at) + " · " + ago(a.at) + "</span>" +
         (a.url ? ' <a class="cm-open" href="' + esc(a.url) + '" target="_blank" rel="noopener">' + (a.platform === "whatsapp" ? "كلّمه على واتساب" : "افتح " + (a.kind === "comment" ? "التعليق" : "المحادثة")) + " ↗</a>" : "") +
         "<p>" + rich(a.text) + "</p></div>" +
         (a.reply ? '<div class="cm-reply page"><b>ردنا التلقائي</b><p>' + rich(a.reply) + "</p></div>" : "") +
@@ -202,7 +223,7 @@
       var thread = byParent[c.platform_comment_id] || [], last = thread.length ? thread[thread.length - 1] : null;
       var lastAt = last && new Date(last.commented_at) > new Date(c.replied_at || 0) ? last.commented_at : (c.replied_at || c.commented_at);
       var preview = c.status === "replied" && c.final_reply && (!last || new Date(c.replied_at) >= new Date(last.commented_at)) ? "أنت: " + c.final_reply : last ? (last.author_is_page ? "أنت: " : "") + last.message : c.message;
-      return { key: "c:" + c.id, kind: "comment", c: c, thread: thread, name: c.author_name || "مستخدم", platform: c.platform, brand: c.brand,
+      return { key: "c:" + c.id, kind: "comment", c: c, thread: thread, name: commenterName(c), platform: c.platform, brand: c.brand,
         pending: isPending(c), status: c.status, at: lastAt, preview: preview, sensitive: !!c.sensitive, url: c.comment_url, post: data.titles[c.content_id] || "بوست",
         search: [c.author_name, c.message, c.final_reply, data.titles[c.content_id]].concat(thread.map(function (r) { return r.message; })).join(" ").toLowerCase() };
     }).filter(function (it) {
@@ -220,9 +241,10 @@
       var waiting = c.list.slice(lastPageIdx + 1).filter(function (m) { return !m.is_page && ["new", "failed"].indexOf(m.status) !== -1; }).length;
       var lastShown = c.list.filter(function (m) { return !sysText(m.message); }).slice(-1)[0] || c.last;
       return { key: "m:" + c.id, kind: "message", conv: c, lastCust: lastCust, name: lastCust.sender_name || "عميل", platform: c.last.platform, brand: c.last.brand,
-        pending: waiting > 0, unread: waiting, status: lastCust.status, at: c.last.sent_at, preview: (lastShown.is_page ? "أنت: " : "") + (lastShown.message || ""),
+        pending: waiting > 0, unread: waiting, status: lastCust.status, at: c.last.sent_at, preview: (lastShown.is_page ? (c.last.platform === "whatsapp" && !lastShown.sent_by ? "البوت: " : "أنت: ") : "") + (lastShown.message || ""),
         sensitive: !!(lastCust.alert && !lastCust.alert_resolved_at), url: c.last.conversation_url,
         open24: !!lastCust.sent_at && Date.now() - new Date(lastCust.sent_at).getTime() <= WINDOW_MS,
+        bot: (c.list.filter(function (m) { return m.bot_state; }).slice(-1)[0] || {}).bot_state || "",
         search: [lastCust.sender_name].concat(c.list.map(function (m) { return m.message; })).join(" ").toLowerCase() };
     }).filter(function (it) {
       var q = state.q.trim().toLowerCase();
@@ -232,19 +254,32 @@
       return true;
     });
   }
+  // Chat look approved by the owner 2026-11-22 («طبقه», mockup docs/ui-references/mockups/chat-inbox-v2.html): line icons.
+  var SVG = function (d) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + "</svg>"; };
+  var ICON = { user: SVG('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'), facebook: SVG('<path d="M4 20 8 8l5 6 3-4"/>'),
+    instagram: SVG('<rect x="5" y="5" width="14" height="14" rx="4"/>'), whatsapp: SVG('<path d="M6 18l1-3a6 6 0 1 1 2 2z"/>'),
+    clock: SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'), send: SVG('<path d="M19 12H5M11 6l-6 6 6 6"/>'),
+    ext: SVG('<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'),
+    phone: SVG('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1"/>') };
+  function windowChip(it) {
+    if (it.kind !== "message" || !it.lastCust || !it.lastCust.sent_at) return "";
+    var left = Math.ceil((WINDOW_MS - (Date.now() - new Date(it.lastCust.sent_at).getTime())) / 3600e3);
+    if (left <= 0) return '<span class="cm-win late">' + ICON.clock + "عدّت الـ 24 ساعة</span>";
+    return '<span class="cm-win' + (left <= 4 ? " late" : "") + '">' + ICON.clock + "باقي " + left + " " + (left === 1 ? "ساعة" : left <= 10 ? "ساعات" : "ساعة") + " للرد</span>";
+  }
   function avatar(it) {
     var p = it.platform;
-    return '<span class="cm-av cm-av-' + esc(p) + '" aria-hidden="true">' + esc(initial(it.name)) + '<i class="cm-av-pl">' + (p === "facebook" ? "f" : p === "instagram" ? "◎" : p === "whatsapp" ? "✆" : "") + "</i></span>";
+    return '<span class="cm-av cm-av-' + esc(p) + '" aria-hidden="true">' + ICON.user + '<i class="cm-av-pl">' + (ICON[p] || "") + "</i></span>";
   }
   function convCard(it, open) {
     return '<button type="button" class="cm-conv' + (open ? " on" : "") + (it.sensitive ? " sensitive" : "") + '" data-open-conv="' + esc(it.key) + '" aria-pressed="' + open + '"' + (it.kind === "comment" ? ' data-id="' + esc(it.c.id) + '"' : "") + ">" + avatar(it) +
-      '<span class="cm-conv-mid"><span class="cm-conv-name"><b>' + esc(it.name) + '</b><span class="cm-conv-brand">' + esc(BRANDS[it.brand] || it.brand || "") + "</span></span>" +
+      '<span class="cm-conv-mid"><span class="cm-conv-name"><b>' + esc(it.name) + '</b>' + (it.brand && it.brand !== "sono" ? '<span class="cm-conv-brand">' + esc(BRANDS[it.brand] || it.brand) + "</span>" : "") + "</span>" +
       '<span class="cm-conv-prev">' + esc(String(it.preview || "").split("\n")[0]) + "</span></span>" +
       '<span class="cm-conv-end"><span class="cm-conv-time">' + esc(listWhen(it.at)) + "</span>" +
       (it.pending ? '<span class="cm-conv-unread" title="محتاج رد">' + (it.unread || 1) + "</span>" : '<span class="cm-conv-done" aria-hidden="true"></span>') + "</span></button>";
   }
   function bubble(side, text, at, who, extraCls) {
-    return '<div class="cm-b ' + side + (extraCls ? " " + extraCls : "") + '">' + (who ? '<span class="cm-b-who">' + esc(who) + "</span>" : "") + "<p>" + rich(text) + "</p><time>" + esc(tm(at)) + "</time></div>";
+    return '<div class="cm-b ' + side + (extraCls ? " " + extraCls : "") + '"><p>' + rich(text) + '</p><span class="cm-b-meta">' + (who ? '<span class="cm-b-who">' + esc(who) + "</span> · " : "") + "<time>" + esc(tm(at)) + "</time></span></div>";
   }
   function withDays(items) {
     var out = "", prev = "";
@@ -252,47 +287,160 @@
     return out;
   }
   function staffName(id, data) { if (!id) return ""; var me = window.SSMPDAuth && window.SSMPDAuth.currentAdmin; return me && me.id === id ? "أنت" : (data.staff[id] || "موظف"); }
+  // One bar: text + buttons; the note (and secondary buttons like «تجاهل» / «رجّع للبوت») underneath.
+  function composer(key, placeholder, value, buttons, hint, extra) {
+    return '<div class="cm-composer"><div class="cm-cbar"><textarea class="cm-input" rows="1" data-draft="' + esc(key) + '" placeholder="' + esc(placeholder) + '">' + esc(value) + "</textarea>" + buttons + "</div>" +
+      '<div class="cm-composer-row"><span class="cm-hint">' + esc(hint) + "</span>" + (extra || "") + "</div></div>";
+  }
   function commentChat(it, data) {
     var c = it.c, items = [{ at: c.commented_at, html: bubble("them", c.message, c.commented_at) }];
-    it.thread.forEach(function (r) { items.push({ at: r.commented_at, html: r.author_is_page ? bubble("me", r.message, r.commented_at, "الصفحة") : bubble("them", r.message, r.commented_at, r.author_name || "مستخدم") }); });
+    it.thread.forEach(function (r) { items.push({ at: r.commented_at, html: r.author_is_page ? bubble("me", r.message, r.commented_at, "الصفحة") : bubble("them", r.message, r.commented_at, commenterName(r)) }); });
     if (c.status === "replied" && c.final_reply && !it.thread.some(function (r) { return r.author_is_page && r.message === c.final_reply; }))
-      items.push({ at: c.replied_at, html: bubble("me", c.final_reply, c.replied_at, c.handled_by ? staffName(c.handled_by, data) : "رد تلقائي", c.handled_by ? "" : "auto") });
+      items.push({ at: c.replied_at, html: bubble("me", c.final_reply, c.replied_at, c.handled_by ? staffName(c.handled_by, data) : "رد تلقائي", c.handled_by ? "staff" : "auto") });
     items.sort(function (a, b) { return new Date(a.at) - new Date(b.at); });
     var canAnswer = ["new", "drafted", "failed"].indexOf(c.status) !== -1;
     var foot = c.status === "failed" && c.last_error ? '<div class="err-msg">' + esc(c.last_error) + "</div>" : "";
-    if (canAnswer) foot += '<div class="cm-composer"><textarea class="cm-input" rows="2" data-draft="' + esc(it.key) + '" placeholder="اكتب الرد على التعليق…">' + esc(state.drafts[it.key] != null ? state.drafts[it.key] : (c.suggested_reply || "")) + "</textarea>" +
-      '<div class="cm-composer-row"><span class="cm-hint">بيانات الحجز (العنوان + التليفون + الواتساب) بتتضاف لوحدها في آخر الرد لو مش موجودة.</span>' +
-      '<button type="button" class="btn ghost sm" data-suggest="' + esc(c.id) + '">✨ ' + (c.suggested_reply ? "اقترح رد تاني" : "اقترح رد") + "</button>" +
-      '<button type="button" class="btn ghost sm" data-ignore="' + esc(c.id) + '">تجاهل</button>' +
-      '<button type="button" class="btn sm cm-send" data-approve="' + esc(c.id) + '">اعتمد وانشر</button></div></div>';
+    if (canAnswer) foot += composer(it.key, "اكتب الرد على التعليق…", state.drafts[it.key] != null ? state.drafts[it.key] : (c.suggested_reply || ""),
+      '<button type="button" class="btn ghost sm cm-sug" data-suggest="' + esc(c.id) + '">✨ <span>' + (c.suggested_reply ? "اقترح رد تاني" : "اقترح رد") + "</span></button>" +
+      '<button type="button" class="btn sm cm-send" data-approve="' + esc(c.id) + '">اعتمد وانشر</button>',
+      "بيانات الحجز (العنوان + التليفون + الواتساب) بتتضاف لوحدها في آخر الرد لو مش موجودة.",
+      '<button type="button" class="btn ghost sm" data-ignore="' + esc(c.id) + '">تجاهل</button>');
     else if (c.status === "approved" || c.status === "sending") foot += '<div class="cm-closed">الرد في الطريق للنشر…</div>';
     else if (c.status === "ignored") foot += '<div class="cm-closed">التعليق ده اتجاهل.</div>';
-    return '<div class="cm-msgs" data-cm-msgs><div class="cm-post-ref"><span class="cm-post-thumb" aria-hidden="true"></span><span><small>تعليق على بوست</small><b>' + esc(it.post) + "</b></span></div>" + withDays(items) + "</div>" + foot;
+    return '<div class="cm-msgs pl-' + esc(it.platform) + '" data-cm-msgs><div class="cm-post-ref"><span class="cm-post-thumb" aria-hidden="true"></span><span><small>تعليق على بوست</small><b>' + esc(it.post) + "</b></span></div>" + withDays(items) + "</div>" + foot;
+  }
+  // WhatsApp (owner 2026-11-22): the swnw-agent answers the number; staff sends are queued for it (meta-comments → outbox).
+  function botChip(it) {
+    if (it.kind !== "message" || it.platform !== "whatsapp" || !it.bot) return "";
+    return it.bot === "human" ? '<span class="cm-bot human">موظف ماسك المحادثة</span>' : '<span class="cm-bot ai">البوت شغّال</span>';
+  }
+  // WhatsApp template requests (owner only): the dashboard queues them, the WhatsApp agent submits to Meta, statuses come back here.
+  var TPL_STATUS = { QUEUED: "في الطابور", LEASED: "بيتقدّم لميتا", PENDING: "بانتظار مراجعة ميتا", APPROVED: "معتمد", REJECTED: "مرفوض", FAILED: "فشل التقديم" };
+  function isOwner() {
+    var a = window.SSMPDAuth && window.SSMPDAuth.currentAdmin;
+    if (!a) return false;
+    return window.SSMPDRoles && window.SSMPDRoles.hasRole ? !!window.SSMPDRoles.hasRole(a, "super_admin") : a.role === "super_admin";
+  }
+  function tplTextError(text) {
+    var t = String(text || "").trim();
+    if (t.length < 10) return "نص القالب قصير — اكتب جملة كاملة";
+    if (t.length > 1024) return "نص القالب طويل — الحد 1024 حرف";
+    if (/\{\{|\}\}/.test(t)) return "القوالب من غير متغيرات {{ }} في الإصدار ده";
+    var digits = t.replace(/[٠-٩]/g, function (d) { return "٠١٢٣٤٥٦٧٨٩".indexOf(d); }).replace(/[\s\-.()+/]/g, "");
+    if (/[0-9]{8,}/.test(digits)) return "ممنوع أرقام تليفون أو أرقام ملفات في القالب";
+    return "";
+  }
+  function tplAdmin() {
+    if (!isOwner()) return "";
+    var f = state.waForm, h = '<div class="cm-tpl-admin"><div class="cm-tpl-admin-row"><button type="button" class="btn ghost sm" data-wa-new-tpl>+ قالب جديد</button>' +
+      '<button type="button" class="btn ghost sm" data-wa-req-load>حالة القوالب</button></div>';
+    if (f) h += '<div class="cm-tpl-form" data-wa-form><label>نص القالب (بالعربي، من غير متغيرات)<textarea class="cm-input" data-wa-form-text rows="4" maxlength="1024">' + esc(f.text) + '</textarea></label>' +
+      '<small class="muted" data-wa-count>' + String(f.text.length) + ' / 1024</small>' +
+      '<div class="cm-tpl-cat"><label><input type="radio" name="wa-cat" value="UTILITY"' + (f.cat === "UTILITY" ? " checked" : "") + '> خدمي</label>' +
+      '<label><input type="radio" name="wa-cat" value="MARKETING"' + (f.cat === "MARKETING" ? " checked" : "") + '> تسويقي</label></div>' +
+      '<p class="cm-hint">الخدمي: متابعة حجز أو زيارة فعلية. التسويقي: عروض أو إعادة تواصل — ومحتاج موافقة العميل على الرسايل التسويقية.</p>' +
+      '<p class="cm-warn">ممنوع كتابة بيانات مريض أو أرقام تليفون أو أرقام ملفات في القالب.</p>' +
+      '<div class="cm-tpl-preview" data-wa-preview>' + esc(f.text || "معاينة الرسالة هتظهر هنا") + '</div>' +
+      '<p class="err-msg" data-wa-form-err hidden></p>' +
+      '<div class="cm-composer-row"><button type="button" class="btn sm" data-wa-form-send>تقديم لميتا</button><button type="button" class="btn ghost sm" data-wa-form-cancel>إلغاء</button></div>' +
+      '<small class="muted">الاسم بيتولّد تلقائي (sono_…_ar)، واللغة عربي.</small></div>';
+    var r = state.waReq;
+    if (r === "loading") h += '<span class="cm-hint">بيجيب حالة القوالب…</span>';
+    else if (r && r.length) h += '<div class="cm-reqs">' + r.map(function (x) {
+      return '<div class="cm-req"><div><b>' + esc(x.name) + '</b> <span class="cm-badge st-' + esc(x.status) + '">' + esc(TPL_STATUS[x.status] || x.status) + '</span> <small class="muted">' + esc(x.category === "UTILITY" ? "خدمي" : "تسويقي") + '</small></div>' +
+        '<p>' + esc(x.text) + '</p>' + (x.reason ? '<p class="err-msg">' + esc(x.reason) + '</p>' : '') +
+        '<small class="muted">قدّمه ' + esc(x.submitted_by || "—") + ' · ' + when(x.submitted_at) + '</small></div>';
+    }).join("") + '</div>';
+    else if (r) h += '<span class="cm-hint">لسه ما قدّمتش قوالب من الداشبورد.</span>';
+    return h + "</div>";
+  }
+  function whatsappFoot(it) {
+    var id = it.conv.id, back = it.bot === "human" ? '<button type="button" class="btn ghost sm" data-wa-return="' + esc(id) + '">رجّع للبوت</button>' : "";
+    if (!it.open24) {
+      var t = state.waTemplates;
+      var list = !t ? '<button type="button" class="btn sm" data-wa-load-tpl>اختار قالب معتمد</button>'
+        : t === "loading" ? '<span class="cm-hint">بيجيب القوالب…</span>'
+        : !t.length ? '<span class="cm-hint">مفيش قوالب معتمدة من غير بيانات لسه.</span>'
+        : t.map(function (x) { return '<button type="button" class="cm-tpl" data-wa-tpl="' + esc(x.name) + '" data-wa-lang="' + esc(x.language) + '"><b>' + esc(x.name) + "</b>" + (x.text ? "<span>" + esc(x.text) + "</span>" : "") + "</button>"; }).join("");
+      return '<div class="cm-closed cm-wa-closed" data-window-closed data-wa-conv="' + esc(id) + '"><p>عدّى 24 ساعة من آخر رسالة للعميل — ميتا مش بتسمح بالرد إلا بقالب معتمد.</p><div class="cm-tpls">' + list + "</div>" + tplAdmin() + (back ? '<div class="cm-composer-row">' + back + "</div>" : "") + "</div>";
+    }
+    return composer(it.key, "اكتب رسالة واتساب…", state.drafts[it.key] || "",
+      '<button type="button" class="btn ghost sm cm-sug" data-msuggest="' + esc(id) + '">✨ <span>اقترح رد</span></button>' +
+      '<button type="button" class="btn sm cm-send" data-msend="' + esc(id) + '">إرسال' + ICON.send + "</button>",
+      (it.bot === "human" ? "البوت ساكت في المحادثة دي — بيرجع لوحده بعد فترة من غير رد من الفريق." : "أول ما تبعت، البوت بيسكت في المحادثة دي لحد ما ترجّعه."), back);
+  }
+  // A queued WhatsApp command: wait (up to ~60s) for the agent to send it, then tell the person what happened.
+  function waitOutbox(id) {
+    var tries = 0;
+    return new Promise(function (resolve) {
+      (function tick() {
+        db().functions.invoke("meta-comments", { body: { action: "outbox_status", id: id } }).then(function (r) {
+          var d = r.data || {};
+          if (d.ok && ["sent", "failed", "window_closed"].indexOf(d.status) !== -1) return resolve(d);
+          if (++tries >= 20) return resolve({ status: "queued" });
+          setTimeout(tick, 3000);
+        }).catch(function () { if (++tries >= 20) resolve({ status: "queued" }); else setTimeout(tick, 3000); });
+      })();
+    });
   }
   function messageChat(it, data) {
     var c = it.conv, items = [];
     c.list.forEach(function (m) {
       var sys = m.is_page && sysText(m.message);
       if (sys) { items.push({ at: m.sent_at, html: '<div class="cm-sys">' + esc(sys) + " · " + esc(tm(m.sent_at)) + "</div>" }); return; }
-      items.push({ at: m.sent_at, html: m.is_page ? bubble("me", m.message, m.sent_at, m.sent_by ? staffName(m.sent_by, data) : "الصفحة") : bubble("them", m.message, m.sent_at) });
+      items.push({ at: m.sent_at, html: m.is_page ? bubble("me", m.message, m.sent_at, m.sent_by ? staffName(m.sent_by, data) : it.platform === "whatsapp" ? "البوت" : "الصفحة", m.sent_by ? "staff" : it.platform === "whatsapp" ? "auto" : "") : bubble("them", m.message, m.sent_at) });
     });
     var lc = it.lastCust;
     if (lc.status === "replied" && lc.reply_text && !c.list.some(function (m) { return m.is_page && new Date(m.sent_at) >= new Date(lc.sent_at); }))
-      items.push({ at: lc.replied_at, html: bubble("me", lc.reply_text, lc.replied_at, lc.sent_by ? staffName(lc.sent_by, data) : "رد تلقائي", lc.sent_by ? "" : "auto") });
+      items.push({ at: lc.replied_at, html: bubble("me", lc.reply_text, lc.replied_at, lc.sent_by ? staffName(lc.sent_by, data) : "رد تلقائي", lc.sent_by ? "staff" : "auto") });
     var foot = lc.status === "failed" && lc.last_error ? '<div class="err-msg">' + esc(lc.last_error) + "</div>" : "";
-    if (it.platform !== "facebook" && it.platform !== "instagram") foot += '<div class="cm-closed">الرد على ' + esc(PLAT[it.platform] || it.platform) + " بيكون من التطبيق نفسه" + (it.url ? ' — <a href="' + esc(it.url) + '" target="_blank" rel="noopener">افتح المحادثة ↗</a>' : "") + ".</div>";
+    if (it.platform === "whatsapp") foot += whatsappFoot(it);
+    else if (it.platform !== "facebook" && it.platform !== "instagram") foot += '<div class="cm-closed">الرد على ' + esc(PLAT[it.platform] || it.platform) + " بيكون من التطبيق نفسه" + (it.url ? ' — <a href="' + esc(it.url) + '" target="_blank" rel="noopener">افتح المحادثة ↗</a>' : "") + ".</div>";
     else if (!it.open24) foot += '<div class="cm-closed" data-window-closed>' + WINDOW_NOTE + (it.url ? ' — <a href="' + esc(it.url) + '" target="_blank" rel="noopener">افتح المحادثة على ميتا ↗</a>' : "") + "</div>";
-    else foot += '<div class="cm-composer"><textarea class="cm-input" rows="2" data-draft="' + esc(it.key) + '" placeholder="اكتب رسالة…">' + esc(state.drafts[it.key] || "") + "</textarea>" +
-      '<div class="cm-composer-row"><span class="cm-hint">ميتا بتسمح بالرد خلال 24 ساعة من آخر رسالة من العميل.</span>' +
-      '<button type="button" class="btn ghost sm" data-msuggest="' + esc(c.id) + '">✨ اقترح رد</button>' +
-      '<button type="button" class="btn sm cm-send" data-msend="' + esc(c.id) + '">إرسال</button></div></div>';
-    return '<div class="cm-msgs" data-cm-msgs>' + withDays(items) + "</div>" + foot;
+    else foot += composer(it.key, "اكتب رسالة…", state.drafts[it.key] || "",
+      '<button type="button" class="btn ghost sm cm-sug" data-msuggest="' + esc(c.id) + '">✨ <span>اقترح رد</span></button>' +
+      '<button type="button" class="btn sm cm-send" data-msend="' + esc(c.id) + '">إرسال' + ICON.send + "</button>", "ميتا بتسمح بالرد خلال 24 ساعة من آخر رسالة من العميل.");
+    return '<div class="cm-msgs pl-' + esc(it.platform) + '" data-cm-msgs>' + withDays(items) + "</div>" + foot;
+  }
+  // The lead behind a chat (owner 2026-11-22: «يظهرلي علي الشمال انه اتعمله ليد وتفاصيل الليد وحالته ولما ادوس عليه يفتحلي الليد»).
+  // RPC social_conversation_lead (migration 20261122180000): limited summary for inbox staff; can_open = the leads module would open it.
+  var LEAD_STATUS = { new: "جديد", in_progress: "قيد المتابعة", booked: "تم الحجز", booked_on_system: "تم الحجز على سيستم المركز", service_done: "تم إجراء الخدمة",
+    interested_undecided: "مهتم لسه مقررش", rejected: "مرفوض", no_response: "لا يوجد رد", invalid_number: "رقم غير صحيح", missing_data: "ناقص بيانات" };
+  var LEAD_TONE = { new: "new", in_progress: "soon", missing_data: "soon", interested_undecided: "soon", booked: "ok", booked_on_system: "ok", service_done: "ok", rejected: "old", no_response: "old", invalid_number: "late" };
+  var LEAD_SOURCE = { whatsapp: "واتساب", messenger: "ماسنجر", instagram: "انستجرام", facebook_form: "فورم فيسبوك", phone: "تليفون", clinic: "المركز", doctor_referral: "تحويل دكتور" };
+  var ATTEMPT = { answered: "رد", no_answer: "مردش", busy: "مشغول", call_back_later: "يتكلم بعدين", other: "أخرى" };
+  function shortDate(v) { if (!v) return ""; var d = new Date(v); return isNaN(d) ? "" : d.toLocaleDateString("ar-EG-u-nu-latn", { day: "numeric", month: "long" }); }
+  function leadCard(convId) {
+    var st = state.leads[convId];
+    if (!st || st.loading && !st.lead) return '<div class="cm-lead cm-lead-wait"><b>الليد</b><span>بيدوّر على الليد…</span></div>';
+    if (st.error) return '<div class="cm-lead"><b>الليد</b><span class="cm-lead-note">' + esc(st.error) + "</span></div>";
+    var l = st.lead;
+    if (!l) return '<div class="cm-lead cm-lead-none"><b>الليد</b><span class="cm-lead-note">مفيش ليد للمحادثة دي لسه.</span>' +
+      '<button type="button" class="btn sm cm-send" data-lead-create="' + esc(convId) + '"' + (st.busy ? " disabled" : "") + ">" + (st.busy ? "بيتعمل…" : "اعمل ليد") + "</button></div>";
+    var rows = [["الاسم", l.name], ["التليفون", l.phone ? '<span dir="ltr">' + esc(l.phone) + "</span>" : "", true], ["المصدر", (LEAD_SOURCE[l.source] || l.source || "") + (l.campaign ? " · حملة " + l.campaign : l.acquisition === "ad" ? " · إعلان" : "")],
+      ["المسؤول", l.assigned || "لسه متوزعش"], ["اتعمل", shortDate(l.created_at)],
+      ["آخر محاولة", l.last_attempt ? shortDate(l.last_attempt.at) + " · " + (ATTEMPT[l.last_attempt.result] || l.last_attempt.result || "") : "لسه محدش كلّمه"]];
+    var body = '<span class="cm-lead-head"><b>الليد</b><span class="cm-lead-st st-' + esc(LEAD_TONE[l.status] || "old") + '">' + esc(LEAD_STATUS[l.status] || l.status || "") + "</span></span>" +
+      '<dl class="cm-lead-facts">' + rows.filter(function (r) { return r[1]; }).map(function (r) { return "<div><dt>" + r[0] + "</dt><dd>" + (r[2] ? r[1] : esc(r[1])) + "</dd></div>"; }).join("") + "</dl>";
+    return l.can_open ? '<button type="button" class="cm-lead cm-lead-open" data-lead-open="' + esc(l.id) + '" aria-label="افتح الليد">' + body + '<span class="cm-lead-go">افتح الليد ←</span></button>'
+      : '<div class="cm-lead">' + body + '<span class="cm-lead-note">تفاصيل الليد بتتفتح لخدمة العملاء والإدارة.</span></div>';
+  }
+  function stopLeadWatch() {
+    var w = state.leadWatch; if (!w) return;
+    clearInterval(w.timer);
+    if (w.ch) { try { db().removeChannel(w.ch); } catch (e) {} }
+    state.leadWatch = null;
   }
   function infoHtml(it, data) {
     var isC = it.kind === "comment", stLabel = isC ? (STATUS[it.status] || it.status) : (MSTATUS[it.status] || it.status), cat = isC ? it.c.category : it.lastCust.category;
     var first = isC ? it.c.commented_at : (it.conv.list[0] || {}).sent_at;
     var h = '<div class="cm-info">' + avatar(it) + "<h3>" + esc(it.name) + '</h3><p class="cm-info-sub">' + esc(platLabel(it.kind, it.platform)) + " · " + esc(BRANDS[it.brand] || it.brand || "") + "</p>";
-    if (it.url) h += '<a class="btn ghost sm cm-open" href="' + esc(it.url) + '" target="_blank" rel="noopener">' + (it.platform === "whatsapp" ? "كلّمه على واتساب" : isC ? "افتح التعليق" : "افتح المحادثة") + " ↗</a>";
+    var acts = "";
+    if (it.url) acts += '<a class="cm-act" href="' + esc(it.url) + '" target="_blank" rel="noopener"><span>' + ICON.ext + "</span>" + (it.platform === "whatsapp" ? "فتح واتساب" : "فتح في ميتا") + "</a>";
+    var wa = !isC && it.platform === "whatsapp" ? String(it.conv.id).replace(/^whatsapp:/, "") : "";
+    if (/^\d{8,15}$/.test(wa)) acts += '<a class="cm-act" href="tel:+' + esc(wa) + '"><span>' + ICON.phone + "</span>اتصال</a>";
+    if (acts) h += '<div class="cm-acts">' + acts + "</div>";
+    if (!isC) h += '<div class="cm-lead-box" data-cm-lead="' + esc(it.conv.id) + '">' + leadCard(it.conv.id) + "</div>";
     if (it.sensitive) h += '<span class="cm-badge danger">' + esc(CATEGORY[cat] || "تنبيه") + '</span><button type="button" class="btn sm cm-send" data-resolve="' + (isC ? "comment|" + esc(it.c.id) : "message|" + esc(it.lastCust.id)) + '">تم التعامل</button>';
     h += '<dl class="cm-facts"><div><dt>الحالة</dt><dd><span class="cm-badge st-' + esc(it.status) + '">' + esc(stLabel) + "</span></dd></div>" +
       (cat ? "<div><dt>التصنيف</dt><dd>" + esc(CATEGORY[cat] || cat) + "</dd></div>" : "") +
@@ -317,12 +465,12 @@
     var list = '<div class="cm-convs">' + (items.length ? items.map(function (x) { return convCard(x, x.key === openKey); }).join("") : '<p class="empty">' + (isC ? "مفيش تعليقات بالفلتر ده." : "مفيش رسايل بالفلتر ده.") + "</p>") + "</div>";
     var chat = it ? '<div class="cm-chat-head"><button type="button" class="cm-ibtn cm-back" data-cm-back aria-label="رجوع للقايمة">→</button>' + avatar(it) +
       '<span class="cm-chat-title"><b>' + esc(it.name) + "</b><small>" + esc(platLabel(it.kind, it.platform)) + " · " + esc(BRANDS[it.brand] || it.brand || "") + "</small></span>" +
-      '<span class="cm-badge st-' + esc(it.status) + '">' + esc(isC ? (STATUS[it.status] || it.status) : (MSTATUS[it.status] || it.status)) + "</span>" +
+      '<span class="cm-badge st-' + esc(it.status) + '">' + esc(isC ? (STATUS[it.status] || it.status) : (MSTATUS[it.status] || it.status)) + "</span>" + botChip(it) + windowChip(it) +
       (it.url ? '<a class="cm-ibtn" href="' + esc(it.url) + '" target="_blank" rel="noopener" title="افتح على ميتا" aria-label="افتح على ميتا">↗</a>' : "") +
       '<button type="button" class="cm-ibtn" data-cm-info aria-label="بيانات العميل" aria-pressed="' + state.info + '">ⓘ</button></div>' + (isC ? commentChat(it, data) : messageChat(it, data))
       : '<div class="cm-chat-empty"><b>اختار ' + (isC ? "تعليق" : "محادثة") + " من القايمة</b><p>هتفتح هنا زي شات واتساب.</p></div>";
     var showInfo = it && (state.info || state.sheet);
-    return (isC ? "" : '<p class="muted cm-messages-intro">رسايل ماسنجر وانستجرام دايركت. تقدر ترد من هنا خلال 24 ساعة من آخر رسالة من العميل.</p>') +
+    return (isC ? "" : '<p class="muted cm-messages-intro">رسايل ماسنجر وانستجرام دايركت وواتساب. تقدر ترد من هنا خلال 24 ساعة من آخر رسالة من العميل — وعلى واتساب بعد كده بقالب معتمد.</p>') +
       '<div class="cm-inbox' + (showInfo ? "" : " no-info") + (openKey ? " open" : "") + (state.sheet ? " sheet" : "") + '" data-cm-inbox="' + section + '">' +
       '<section class="cm-pane cm-list-pane" aria-label="المحادثات">' + head + list + "</section>" +
       '<section class="cm-pane cm-chat-pane" aria-label="المحادثة">' + chat + "</section>" +
@@ -352,11 +500,11 @@
       (c.sensitive ? '<span class="cm-badge danger">حساس — راجعه بنفسك</span>' : "") + autoNote +
       (isOverdue(c) ? '<span class="cm-badge danger">متأخر ' + ago(c.commented_at).replace("من ", "") + "</span>" : "") +
       '<span class="muted cm-post">على: ' + esc(title) + "</span></div>" +
-      '<div class="cm-msg"><b>' + link(c.author_url, esc(c.author_name || "مستخدم")) + '</b> <span class="muted">' + when(c.commented_at) + " · " + ago(c.commented_at) + "</span>" +
+      '<div class="cm-msg"><b>' + link(c.author_url, esc(commenterName(c))) + '</b> <span class="muted">' + when(c.commented_at) + " · " + ago(c.commented_at) + "</span>" +
       (c.comment_url ? ' <a class="cm-open" href="' + esc(c.comment_url) + '" target="_blank" rel="noopener">افتح على ' + (c.platform === "facebook" ? "فيسبوك" : "انستجرام") + " ↗</a>" : "") +
       "<p>" + rich(c.message) + "</p></div>";
     thread.forEach(function (r) {
-      h += '<div class="cm-reply' + (r.author_is_page ? " page" : "") + '"><b>' + esc(r.author_is_page ? "رد الصفحة" : (r.author_name || "مستخدم")) + "</b> <span class=\"muted\">" + when(r.commented_at) + "</span><p>" + rich(r.message) + "</p></div>";
+      h += '<div class="cm-reply' + (r.author_is_page ? " page" : "") + '"><b>' + esc(r.author_is_page ? "رد الصفحة" : commenterName(r)) + "</b> <span class=\"muted\">" + when(r.commented_at) + "</span><p>" + rich(r.message) + "</p></div>";
     });
     if (c.status === "replied" && c.final_reply) {
       h += '<div class="cm-reply page"><b>ردنا</b> <span class="muted">' + when(c.replied_at) + "</span><p>" + rich(c.final_reply) + "</p></div>";
@@ -462,13 +610,148 @@
         b.disabled = true; b.textContent = "بيتبعت…";
         db().functions.invoke("meta-comments", { body: { action: "send_message", conversation_id: b.dataset.msend, text: text } }).then(function (r) {
           var d = r.data || {};
-          if (r.error || !d.ok) throw new Error(d.message || d.error || "تعذر إرسال الرسالة");
+          if (r.error || !d.ok) return failText(r, "تعذر إرسال الرسالة").then(function (m) { throw new Error(m); });
           state.drafts["m:" + b.dataset.msend] = "";
+          if (d.queued) return waOutcome(d.id, b);
           if (window.SSMPDToast && window.SSMPDToast.show) window.SSMPDToast.show("اتبعتت الرسالة");
           again();
         }).catch(function (e) { b.disabled = false; b.textContent = "إرسال"; fail(e); });
       };
     });
+    // WhatsApp: the agent sends queued commands; wait for its answer, then redraw (realtime brings the message row).
+    var toast = function (m) { if (window.SSMPDToast && window.SSMPDToast.show) window.SSMPDToast.show(m); };
+    function waOutcome(id, b) {
+      if (b) b.textContent = "بيتبعت عن طريق الواتساب…";
+      return waitOutbox(id).then(function (d) {
+        if (d.status === "sent") toast("اتبعتت على واتساب");
+        else if (d.status === "queued") toast("الرسالة لسه في الطابور — هتظهر أول ما الوكيل يبعتها");
+        else alert(d.error || "الرسالة ما اتبعتتش");
+        again();
+      });
+    }
+    var waCmd = function (b, body, label) {
+      b.disabled = true; var old = b.textContent; b.textContent = label;
+      db().functions.invoke("meta-comments", { body: body }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || !d.ok) return failText(r, "تعذر التنفيذ").then(function (m) { throw new Error(m); });
+        return waOutcome(d.id, b);
+      }).catch(function (e) { b.disabled = false; b.textContent = old; fail(e); });
+    };
+    q("[data-wa-load-tpl]").forEach(function (b) {
+      b.onclick = function () {
+        state.waTemplates = "loading"; redraw();
+        db().functions.invoke("meta-comments", { body: { action: "list_templates" } }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || !d.ok) throw new Error(d.error || "تعذر جلب القوالب");
+          state.waTemplates = d.templates || [];
+        }).catch(function (e) { state.waTemplates = null; fail(e); }).then(redraw);
+      };
+    });
+    // Owner only: «+ قالب جديد» (queue a template for Meta's review) and «حالة القوالب».
+    var loadReq = function () {
+      state.waReq = "loading"; redraw();
+      return db().functions.invoke("meta-comments", { body: { action: "wa_template_requests" } }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || !d.ok) throw new Error(d.error || "تعذر جلب حالة القوالب");
+        state.waReq = d.requests || [];
+      }).catch(function (e) { state.waReq = null; fail(e); }).then(redraw);
+    };
+    q("[data-wa-req-load]").forEach(function (b) { b.onclick = loadReq; });
+    q("[data-wa-new-tpl]").forEach(function (b) {
+      b.onclick = function () { state.waForm = state.waForm ? null : { text: "", cat: "UTILITY" }; redraw(); };
+    });
+    q("[data-wa-form]").forEach(function (form) {
+      var txt = form.querySelector("[data-wa-form-text]"), err = form.querySelector("[data-wa-form-err]");
+      txt.oninput = function () {
+        state.waForm.text = txt.value;
+        form.querySelector("[data-wa-count]").textContent = txt.value.length + " / 1024";
+        form.querySelector("[data-wa-preview]").textContent = txt.value || "معاينة الرسالة هتظهر هنا";
+        err.hidden = true;
+      };
+      form.querySelectorAll('input[name="wa-cat"]').forEach(function (r) { r.onchange = function () { if (r.checked) state.waForm.cat = r.value; }; });
+      form.querySelector("[data-wa-form-cancel]").onclick = function () { state.waForm = null; redraw(); };
+      form.querySelector("[data-wa-form-send]").onclick = function (ev) {
+        var f = state.waForm, bad = tplTextError(f.text);
+        if (bad) { err.textContent = bad; err.hidden = false; return; }
+        if (!confirm("تأكيد: تقديم القالب ده لميتا باسم حضرتك؟ بعد التقديم ميتا بتراجعه وممكن ترفضه.")) return;
+        var b = ev.currentTarget; b.disabled = true; b.textContent = "بيتقدّم…";
+        db().functions.invoke("meta-comments", { body: { action: "wa_template_submit", category: f.cat, text: f.text.trim() } }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || !d.ok) throw new Error(d.error || "تعذر تقديم القالب");
+          state.waForm = null; toast("القالب اتحط في الطابور — الوكيل بيقدّمه لميتا وبعدها بيبان «بانتظار مراجعة ميتا»");
+          return loadReq();
+        }).catch(function (e) { b.disabled = false; b.textContent = "تقديم لميتا"; err.textContent = e.message || "تعذر تقديم القالب"; err.hidden = false; });
+      };
+    });
+    q("[data-wa-tpl]").forEach(function (b) {
+      b.onclick = function () {
+        var conv = b.closest("[data-wa-conv]").dataset.waConv;
+        if (!confirm("تأكيد: إرسال القالب «" + b.dataset.waTpl + "» للعميل على واتساب؟")) return;
+        waCmd(b, { action: "send_template", conversation_id: conv, name: b.dataset.waTpl, language: b.dataset.waLang }, "بيتبعت…");
+      };
+    });
+    q("[data-wa-return]").forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm("تأكيد: رجّع البوت يرد على العميل ده؟")) return;
+        waCmd(b, { action: "return_to_bot", conversation_id: b.dataset.waReturn }, "بيرجّع البوت…");
+      };
+    });
+    // «الليد» card: load (and keep fresh) the lead behind the open conversation, create one, open it in the leads module.
+    var leadBox = container.querySelector("[data-cm-lead]");
+    function paintLead(conv) {
+      var box = container.querySelector('[data-cm-lead="' + (window.CSS && CSS.escape ? CSS.escape(conv) : conv) + '"]');
+      if (!box) return;
+      box.innerHTML = leadCard(conv);
+      var o = box.querySelector("[data-lead-open]");
+      if (o) o.onclick = function () {
+        if (window.SSMPDRenderLeads && window.SSMPDRenderLeads.openLeadById) window.SSMPDRenderLeads.openLeadById(o.dataset.leadOpen);
+        else alert("قسم الليدز مش متاح لحسابك");
+      };
+      var c = box.querySelector("[data-lead-create]");
+      if (c) c.onclick = function () {
+        var it = (state.leads[conv] || {}), wa = /^whatsapp:/.test(conv), phone = null;
+        var name = (container.querySelector(".cm-info h3") || {}).textContent || "العميل";
+        if (wa) { if (!confirm("تأكيد: اعمل ليد لـ «" + name + "» برقم الواتساب بتاعه؟")) return; }
+        else { phone = prompt("تأكيد: اعمل ليد لـ «" + name + "»\nاكتب رقم تليفونه لو بعته في الشات (اختياري — من غيره الليد هيبقى «ناقص بيانات»):", ""); if (phone === null) return; }
+        state.leads[conv] = { lead: null, busy: true }; paintLead(conv);
+        db().rpc("social_conversation_lead_create", { p_conversation_id: conv, p_phone: phone || null, p_service: null }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || !d.ok) throw new Error(d.error || (r.error && r.error.message) || "تعذر عمل الليد");
+          state.leads[conv] = { lead: d.lead, at: Date.now() }; paintLead(conv); watchLead(conv);
+          toast(d.existing ? "المحادثة اتربطت بليد مفتوح بنفس الرقم" : "اتعمل ليد واتوزع على خدمة العملاء");
+        }).catch(function (e) { state.leads[conv] = it.lead !== undefined ? { lead: it.lead } : { lead: null }; paintLead(conv); fail(e); });
+      };
+    }
+    function loadLead(conv) {
+      var cur = state.leads[conv];
+      state.leads[conv] = { lead: cur ? cur.lead : undefined, loading: true };
+      if (!cur) paintLead(conv);
+      return db().rpc("social_conversation_lead", { p_conversation_id: conv }).then(function (r) {
+        if (r.error) throw r.error;
+        state.leads[conv] = { lead: (r.data || {}).lead || null, at: Date.now() };
+      }).catch(function () { state.leads[conv] = cur && cur.lead ? { lead: cur.lead } : { error: "ما قدرناش نجيب الليد دلوقتي" }; }).then(function () { paintLead(conv); watchLead(conv); });
+    }
+    // Live: realtime on the lead (roles that may read it) + a 30s refresh while the chat is open (inbox-only roles).
+    function watchLead(conv) {
+      var l = (state.leads[conv] || {}).lead, key = conv + "|" + (l ? l.id : "");
+      if (state.leadWatch && state.leadWatch.key === key) return;
+      stopLeadWatch();
+      var w = state.leadWatch = { key: key, timer: setInterval(function () { if (container.querySelector('[data-cm-lead]')) loadLead(conv); else stopLeadWatch(); }, 30000) };
+      var c = db();
+      if (l && l.can_open && c.channel) {
+        try {
+          w.ch = c.channel("cm-lead-" + l.id)
+            .on("postgres_changes", { event: "*", schema: "public", table: "leads", filter: "id=eq." + l.id }, function () { loadLead(conv); })
+            .on("postgres_changes", { event: "*", schema: "public", table: "lead_attempts", filter: "lead_id=eq." + l.id }, function () { loadLead(conv); })
+            .subscribe();
+        } catch (e) { w.ch = null; }
+      }
+    }
+    if (leadBox) {
+      var lc = leadBox.dataset.cmLead, ls = state.leads[lc];
+      paintLead(lc);
+      if (ls && ls.at && Date.now() - ls.at < 15000) watchLead(lc); else loadLead(lc);
+    } else stopLeadWatch();
     q("[data-ignore]").forEach(function (b) {
       b.onclick = function () { db().rpc("social_comment_ignore", { p_id: b.dataset.ignore }).then(function (r) { if (r.error) throw r.error; again(); }).catch(fail); };
     });

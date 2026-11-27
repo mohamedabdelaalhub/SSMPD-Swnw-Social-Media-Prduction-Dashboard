@@ -1,0 +1,12 @@
+/* «حسابات آخر الشهر» — reuses the shift-expenses card (.rse-*) */
+.mea-card{margin-top:.75rem}
+.mea-card .rse-head span{display:flex;gap:.4rem;flex-wrap:wrap}
+.mea .rdr-st,.mea-card .rdr-st,.mea-modal .rdr-st{font-style:normal;font-size:.8rem;padding:.1rem .5rem;border-radius:999px;background:#eef1f6;color:#16212E}
+.mea .rdr-st.ok{background:#e3f2ea;color:#2F7D5C}
+.mea .rdr-st.bad{background:#fbe7e3;color:#D0402A}
+.mea .rdr-st.wait{background:#fdeee6;color:#b0461a}
+.mea-modal .modal{max-width:760px}
+/* booking platforms — period audit (help 306) */
+.mea .mea-pos{color:#2F7D5C;font-weight:700}
+.mea .mea-neg{color:#D0402A;font-weight:700}
+.mea .rdr-st.mea-plat{background:#EFE5FF;color:#6600FF}

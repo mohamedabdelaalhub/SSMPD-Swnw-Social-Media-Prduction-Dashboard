@@ -35,10 +35,13 @@
       if (!st) throw new Error('البيانات لسه بتتحمل');
       var ids = [].map.call(document.querySelectorAll('.fc-modal [data-dues-row]:checked'), function (x) { return x.value; });
       if (!ids.length) throw new Error('اختر فاتورة واحدة على الأقل');
+      if (String(v.reference == null ? '' : v.reference).trim().length < 2) throw new Error('مرجع السداد لازم يكون حرفين على الأقل (مثلاً رقم الإيصال أو التحويل)');
       var total = ids.reduce(function (sum, i) { return sum + cents(st.fee[i]); }, 0) / 100;
       if (total > Number(st.dues.available_now) + 0.004) throw new Error('المحدد (' + m(total) + ') أكبر من المتاح للصرف حسب رصيد الدكتور (' + m(st.dues.available_now) + ')');
       return db.financePayoutInvoices(id, ids, Number(v.tax_pct), Number(v.withholding_pct), v.method, v.method === 'cash' ? (v.shift_id || null) : null, v.reference, from, to, k);
     });
+    // Owner 2026-11-25 («طبقه», mockup docs/ui-references/mockups/doctor-dues-popup-fit.html): this window is wide enough for the whole invoice table, and on phones each invoice is a card.
+    var shell = document.querySelector('.fc-modal'); if (shell) shell.classList.add('fc-dues-modal');
     var form = document.querySelector('.fc-modal form'), box = form && form.querySelector('[data-dues-body]');
     Promise.resolve(db.financeDoctorDues(id, from, to)).then(function (r) {
       if (!box || !box.isConnected) return;
@@ -62,8 +65,11 @@
       html += '<div class="fc-st-cards"><div class="fc-st-card ok"><span>إجمالي المحدد</span><strong data-dues-total>0.00</strong></div></div>' +
         f('tax_pct', 'نسبة الضريبة %', 'number', '0', 'required min="0" max="100" step="0.01"') + f('withholding_pct', 'نسبة الاستقطاع %', 'number', '0', 'required min="0" max="100" step="0.01"') +
         '<p class="fc-note" data-dues-sum></p>' + s('method', 'طريقة الصرف', [['bank', 'تحويل بنكي'], ['cash', 'نقدي'], ['instapay', 'إنستا باي']]) +
-        s('shift_id', 'الوردية النقدية', (d.active_shifts || []).map(function (x) { return [x.id, x.register_name]; })) + f('reference', 'مرجع السداد أو التحويل');
+        s('shift_id', 'الوردية النقدية', (d.active_shifts || []).map(function (x) { return [x.id, x.register_name]; })) + f('reference', 'مرجع السداد أو التحويل', 'text', '', 'required minlength="2" maxlength="120" placeholder="مثلاً رقم الإيصال أو التحويل"') + '<p class="fc-note" data-ref-hint>المرجع حرفين على الأقل — في النقدي بيتملى لوحده «نقدي-التاريخ» وتقدر تغيّره.</p>';
       box.innerHTML = html;
+      // label every cell so the phone layout can stack each invoice as a card (visual only)
+      var COLS = ['pick', 'date', 'ref', 'svc', 'num', 'st', 'det'];
+      [].forEach.call(box.querySelectorAll('[data-dues-list] tbody tr'), function (tr) { [].forEach.call(tr.children, function (td, i) { if (COLS[i]) td.classList.add('dd-' + COLS[i]); }); });
       var fm = box.closest('form'), all = box.querySelector('[data-dues-all]');
       function rows() { return [].slice.call(box.querySelectorAll('[data-dues-row]')); }
       function recalc() {
@@ -76,7 +82,7 @@
       if (all) all.onchange = function () { rows().forEach(function (x) { x.checked = all.checked; }); recalc(); };
       box.addEventListener('change', function (ev) { if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-dues-row')) recalc(); });
       fm.elements.tax_pct.addEventListener('input', recalc); fm.elements.withholding_pct.addEventListener('input', recalc);
-      function sync() { var cash = fm.elements.method.value === 'cash'; fm.elements.shift_id.disabled = !cash; fm.elements.shift_id.required = cash; fm.elements.shift_id.closest('label').hidden = !cash; }
+      function sync() { var cash = fm.elements.method.value === 'cash'; fm.elements.shift_id.disabled = !cash; fm.elements.shift_id.required = cash; fm.elements.shift_id.closest('label').hidden = !cash; if (window.SSMPDPayoutRef) window.SSMPDPayoutRef.cash(fm); }
       fm.elements.method.onchange = sync; sync(); recalc();
     }).catch(function () {
       if (box && box.isConnected) box.innerHTML = '<p>تعذر تحميل فواتير الدكتور. الميزة تحتاج تطبيق تحديث قاعدة البيانات أولًا.</p>';

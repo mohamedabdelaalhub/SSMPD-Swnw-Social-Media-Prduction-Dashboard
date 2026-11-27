@@ -24,7 +24,15 @@ function enhance(form,ctx){var sel=form&&form.elements.starts_at;if(!sel||form.q
  function sync(){var on=cb.checked;body.hidden=!on;body.disabled=!on;lab.hidden=on;box.classList.toggle('is-suggest',!on&&!!sel.options.length&&empty());
   var other=(box.querySelector('[name=manual_reason_kind]:checked')||{}).value==='other';note.required=on&&other;note.minLength=other?3:0;
   if(on){custom();return;}if(!ready)return;var mine=sel.querySelector('option[data-mt]');if(mine)mine.remove();if(sel.value==='__custom__'||mine){sel.value='';sel.dispatchEvent(new Event('change',{bubbles:true}));}}
- cb.addEventListener('change',sync);box.addEventListener('change',function(e){if(e.target&&e.target.name==='manual_reason_kind')sync();});
+ cb.addEventListener('change',sync);
+ /* hotfix 2026-11-23: a day with no doctor time (or beyond the generated schedule, e.g. a follow-up months ahead) left the
+    time list empty and «حفظ» stuck on the browser's «Please select an item». Instead: switch to the manual time, explain, and
+    put the cursor in the time box. Nothing is saved until the time is typed and «حفظ» is pressed again. */
+ sel.addEventListener('invalid',function(e){if(cb.checked||!empty())return;e.preventDefault();cb.checked=true;sync();
+  var msg=box.querySelector('[data-mt-auto]');if(!msg){msg=document.createElement('p');msg.className='rx-mt-auto';msg.setAttribute('data-mt-auto','');msg.setAttribute('role','alert');box.insertBefore(msg,body);}
+  msg.textContent='الدكتور مالوش مواعيد متسجلة في اليوم ده، فاتفتح «حجز بميعاد يدوي». اكتب الساعة اللي متفق عليها مع الدكتور واضغط «حفظ» تاني.';
+  var t=form.elements.custom_time;setTimeout(function(){if(t&&t.focus)t.focus();},0);});
+ cb.addEventListener('change',function(){if(!cb.checked){var m=box.querySelector('[data-mt-auto]');if(m)m.remove();}});box.addEventListener('change',function(e){if(e.target&&e.target.name==='manual_reason_kind')sync();});
  if(w.MutationObserver)new MutationObserver(function(){if(cb.checked)custom();else box.classList.toggle('is-suggest',!!sel.options.length&&empty());}).observe(sel,{childList:true});
  if(appt&&appt.manual_time)cb.checked=true;
  sync();ready=true;}

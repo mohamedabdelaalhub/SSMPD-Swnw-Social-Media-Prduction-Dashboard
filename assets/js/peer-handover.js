@@ -35,21 +35,21 @@
     return Promise.all([rpc("options"), rpc("inbox")]).then(function (r) {
       var o = r[0] || {}, mine = (r[1] && r[1].outgoing) || [];
       if (!o.shift) { var b0 = shell("تسليم تحصيل لزميل", '<p>لازم تكون فاتح وردية تحصيل علشان تسلّم منها.</p><div class="shift-reminder-actions"><button type="button" class="btn" data-peer-close>تمام</button></div>', "data-peer-send"); b0.querySelector("[data-peer-close]").onclick = function () { close(b0); }; return; }
-      var cols = o.colleagues || [], main = o.main || null;
+      var cols = opts.only === "main" ? [] : (o.colleagues || []), main = opts.only === "peer" ? null : (o.main || null);
       var body = '<p>من وردية «' + esc(o.shift.register) + '» — الكاش المتاح للتسليم: <b>' + money(o.shift.available) + '</b>. الفلوس مش هتتنقل غير لما زميلك يعدّها ويدوس «استلمت».</p>' +
         (mine.length ? '<div class="peer-pending">' + mine.map(function (h) { return '<p>تسليم معلّق لـ ' + esc(h.to_name) + ': <b>' + money(h.amount) + '</b> <button type="button" class="btn" data-peer-cancel="' + esc(h.id) + '">إلغاء التسليم</button></p>'; }).join("") + '</div>' : '') +
-        (main ? '' : '<p class="peer-main-off">وردية الخزينة الرئيسية مش مفتوحة دلوقتي، فمش هتظهر في القايمة. لو عايز تسلّم للرئيسية خلّي المسؤول يفتح ورديتها الأول.</p>') +
-        (cols.length || main ? '<form data-peer-form class="peer-form"><label>سلّم لـ<select name="to" required><option value="">اختار زميلك أو الخزينة الرئيسية</option>' +
+        (main || opts.only === "peer" ? '' : '<p class="peer-main-off">وردية الخزينة الرئيسية مش مفتوحة دلوقتي، فمش هتظهر في القايمة. لو عايز تسلّم للرئيسية خلّي المسؤول يفتح ورديتها الأول.</p>') +
+        (cols.length || main ? '<form data-peer-form class="peer-form" autocomplete="off"><label>سلّم لـ<select name="to" required><option value="">اختار زميلك أو الخزينة الرئيسية</option>' +
           (main ? '<option value="main">' + esc(main.register || 'الخزينة الرئيسية') + ' — ' + esc(main.name) + '</option>' : '') + cols.map(function (c) { return '<option value="' + esc(c.shift_id) + '">' + esc(c.name) + ' — ' + esc(c.register) + '</option>'; }).join("") + '</select></label>' +
           '<p class="peer-main-hint" data-peer-main-hint hidden>التسليم للخزينة الرئيسية بيروح لـ ' + esc(main ? main.name : '') + '، وهو اللي يعدّ ويضغط «استلمت النقد فعليًا — اعتماد» من «الخزائن والورديات». الفلوس بتفضل في عهدتك لحد ما يعتمد.</p>' +
           '<label class="peer-mode"><input type="radio" name="mode" value="part" checked> جزء من التحصيل (وأكمّل ورديتي)</label>' +
           '<label class="peer-mode"><input type="radio" name="mode" value="end"> إنهاء ورديتي وتسليم كل الكاش</label>' +
           '<label data-peer-amount>المبلغ<input name="amount" type="number" min="0.01" step="0.01" max="' + esc(o.shift.available) + '"></label>' +
-          '<div data-peer-counts hidden><p>عدّ الكاش اللي معاك فئة فئة:</p><div class="fc-counts">' + DEN.map(function (n) { return '<label>فئة ' + n + '<input name="c' + n + '" type="number" min="0" step="1" value="0"></label>'; }).join("") + '</div><p data-peer-total></p></div>' +
-          '<label>ملاحظة (اختياري)<input name="note" maxlength="500"></label>' +
+          '<div data-peer-counts hidden><p>عدّ الكاش اللي معاك فئة فئة:</p><div class="fc-counts">' + DEN.map(function (n) { return '<label>فئة ' + n + '<input name="c' + n + '" type="number" min="0" step="1" value="0"></label>'; }).join("") + '</div><p data-peer-total></p><p class="fc-note" data-peer-zero hidden>الدرج فاضي؟ ينفع تقفل بصفر للخزينة الرئيسية بس — اكتب السبب في الملاحظة، والفرق بيروح للمراجعة من غير خصم.</p></div>' +
+          '<label><span data-peer-note-label>ملاحظة (اختياري)</span><input name="note" maxlength="500"></label>' +
           '<div class="shift-reminder-actions"><button type="submit" class="btn btn-primary">سلّم</button><button type="button" class="btn" data-peer-close>إلغاء</button></div></form>'
           : '<p>مفيش زميل فاتح وردية دلوقتي. زميلك لازم يفتح ورديته الأول.</p><div class="shift-reminder-actions"><button type="button" class="btn" data-peer-close>تمام</button></div>');
-      var box = shell("تسليم تحصيل لزميل", body, "data-peer-send");
+      var box = shell(opts.only === "main" ? "تسليم للخزينة الرئيسية" : opts.only === "peer" ? "تسليم التحصيل لزميل" : "تسليم تحصيل لزميل", body, "data-peer-send");
       Array.prototype.forEach.call(box.querySelectorAll("[data-peer-close]"), function (b) { b.onclick = function () { close(box); }; });
       Array.prototype.forEach.call(box.querySelectorAll("[data-peer-cancel]"), function (b) {
         b.onclick = function () { b.disabled = true; rpc("cancel", { id: b.getAttribute("data-peer-cancel") }, uuid()).then(function () { close(box); toast("اتلغى التسليم"); openSend(); }, function (e) { b.disabled = false; status(box, e.message); }); };
@@ -60,26 +60,39 @@
         var end = f.elements.mode.value === "end"; f.querySelector("[data-peer-counts]").hidden = !end; f.querySelector("[data-peer-amount]").hidden = end;
         f.elements.amount.required = !end; f.querySelector("[data-peer-total]").textContent = "الإجمالي: " + money(total());
         f.querySelector("[data-peer-main-hint]").hidden = f.elements.to.value !== "main";
+        var zero = end && f.elements.to.value === "main" && !(total() > 0); f.querySelector("[data-peer-zero]").hidden = !zero;
+        f.querySelector("[data-peer-note-label]").textContent = zero ? "السبب (إجباري لو الدرج فاضي)" : "ملاحظة (اختياري)";
       }
-      if (opts.to === "main" && main) f.elements.to.value = "main";   // opened from a «سلّم الكاش» nudge
+      if ((opts.to === "main" || opts.only === "main") && main) f.elements.to.value = "main";   // opened from a «سلّم الكاش» nudge / «تسليم للخزينة الرئيسية»
+      else if (opts.only === "peer" && cols.length === 1) f.elements.to.value = cols[0].shift_id;
       f.addEventListener("change", sync); f.addEventListener("input", sync); sync();
       var token = uuid();
       f.onsubmit = function (e) {
         e.preventDefault(); if (state.busy) return; var end = f.elements.mode.value === "end", p = { from_shift: o.shift.id, to_shift: f.elements.to.value, note: f.elements.note.value };
-        if (end) { var counts = {}; DEN.forEach(function (k) { counts[k] = Math.max(0, Math.floor(+f.elements["c" + k].value || 0)); }); p.end_shift = true; p.counts = counts; if (!(total() > 0)) { status(box, "اكتب الكاش اللي معاك"); return; } }
+        if (end) { var counts = {}; DEN.forEach(function (k) { counts[k] = Math.max(0, Math.floor(+f.elements["c" + k].value || 0)); }); p.end_shift = true; p.counts = counts; if (!(total() > 0)) {
+            /* owner «اعمل تعديل التسليم بصفر» 2026-11-25: an EMPTY drawer can end its shift to the main treasury with 0 + a written reason
+               (server end_shift already handles 0: shift → submitted, the difference goes to «فروق الخزينة», no transfer). Never to a colleague. */
+            if (f.elements.to.value !== "main") { status(box, "اكتب الكاش اللي معاك — ولو الدرج فاضي اختار «الخزينة الرئيسية» واكتب السبب"); return; }
+            if ((p.note || "").trim().length < 5) { status(box, "الدرج فاضي؟ اكتب السبب في الملاحظة (مثلاً: الفلوس اتسلمت قبل كده) وبعدين دوس سلّم"); f.elements.note.focus(); return; }
+          } }
         else p.amount = Number(f.elements.amount.value);
+        /* 20261125110000 «جرد الوردية»: review the count + blind «عدّ تاني» before ending the shift */
+        if (end && w.SSMPDCountCheck && !p.__cc) { state.busy = true; w.SSMPDCountCheck.gate(o.shift.id, p.counts, p.note).then(function (n) { p.note = n; p.__cc = true; state.busy = false; proceed(); }, function (e2) { state.busy = false; status(box, e2.message); }); return; }
+        proceed();
+        function proceed() { delete p.__cc;
         state.busy = true; status(box, "جاري التسليم…");
         if (f.elements.to.value === "main") {
           var cmd = end ? ["end_shift", { shift_id: o.shift.id, counts: p.counts, note: p.note }]
             : ["transfer_request", { from_shift: o.shift.id, to_register: main.register_id, amount: p.amount, reference: "HO-" + new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ""), reason: (p.note || "").trim().length >= 3 ? p.note.trim() : "تسليم تحصيل للخزينة الرئيسية" }];
           Promise.resolve(w.SSMPDDb.financeTreasuryCommand(cmd[0], cmd[1], token)).then(function (r) {
-            close(box); toast("اتبعت للخزينة الرئيسية — مستني " + main.name + " يعدّ ويأكد الاستلام" + (end ? " (" + money(total()) + ")" : " (" + money(p.amount) + ")"));
+            close(box); toast(end && !(total() > 0) ? "ورديتك اتقفلت بصفر — الفرق راح للمراجعة في «فروق الخزينة»، ومحدش بيتخصم منه تلقائي" : "اتبعت للخزينة الرئيسية — مستني " + main.name + " يعدّ ويأكد الاستلام" + (end ? " (" + money(total()) + ")" : " (" + money(p.amount) + ")"));
             if (w.SSMPDShiftReminder) w.SSMPDShiftReminder.refresh();
           }, function (err) { status(box, (err && err.message) || "تعذر التسليم"); }).then(function () { state.busy = false; });
           return;
         }
         rpc("request", p, token).then(function (h) { close(box); toast("اتبعت لـ " + h.to_name + " — مستني يأكد الاستلام (" + money(h.amount) + ")"); if (w.SSMPDShiftReminder) w.SSMPDShiftReminder.refresh(); },
           function (err) { status(box, err.message); }).then(function () { state.busy = false; });
+        }
       };
     }).catch(function (e) { toast(e.message || "تعذر فتح التسليم"); });
   }
@@ -127,7 +140,30 @@
       };
     }).catch(function () {});
   }
-  w.SSMPDPeerHandover = { openSend: openSend, poll: function () { poll(true); } };
+
+  /* «تسليم» (owner 2026-11-24): one button on the shift safe → «تسليم للخزينة الرئيسية» or «تسليم التحصيل لزميل».
+     Each option is enabled only when its target has an open shift (else disabled with the reason); both reuse openSend. */
+  function openChoice() {
+    if (d.querySelector("[data-peer-choice]") || d.querySelector("[data-peer-send]")) return Promise.resolve();
+    return Promise.all([rpc("options"), rpc("inbox")]).then(function (res) {
+      var o = res[0] || {}, out = (res[1] && res[1].outgoing) || [], pend = o.main_pending || null;
+      if (!o.shift) { var b0 = shell("تسليم", '<p>لازم تكون فاتح وردية تحصيل علشان تسلّم منها.</p><div class="shift-reminder-actions"><button type="button" class="btn" data-peer-close>تمام</button></div>', "data-peer-choice"); b0.querySelector("[data-peer-close]").onclick = function () { close(b0); }; return; }
+      var main = o.main || null, cols = o.colleagues || [], peerOk = cols.length && !pend;
+      var box = shell("تسليم", '<p>الكاش المتاح للتسليم من وردية «' + esc(o.shift.register) + '»: <b>' + money(o.shift.available) + '</b>. تسلّم لمين؟</p>' +
+        '<div class="peer-choice">' +
+        '<button type="button" class="btn btn-primary" data-peer-choice-main' + (main ? '' : ' disabled') + '>تسليم للخزينة الرئيسية</button>' +
+        '<small>' + (main ? esc(main.register || 'الخزينة الرئيسية') + ' — ' + esc(main.name) + ' بيعدّ ويأكد الاستلام.' : 'وردية الخزينة الرئيسية مش مفتوحة دلوقتي — خلّي المسؤول يفتحها الأول.') + '</small>' +
+        '<button type="button" class="btn" data-peer-choice-peer' + (peerOk ? '' : ' disabled') + '>تسليم التحصيل لزميل</button>' +
+        '<small data-peer-choice-peer-why>' + (pend ? 'فيه تسليم للخزينة الرئيسية معلّق على ورديتك (' + money(pend.amount) + ') — استنى المسؤول يستلمه الأول.' : cols.length ? cols.map(function (c) { return esc(c.name); }).join("، ") + ' فاتح وردية دلوقتي.' : 'مفيش زميل فاتح وردية تحصيل دلوقتي.') + '</small>' +
+        (out.length ? '<small data-peer-choice-out>عندك تسليم معلّق لزميل: ' + out.map(function (h) { return esc(h.to_name) + ' ' + money(h.amount); }).join("، ") + '.</small>' : '') +
+        '</div><div class="shift-reminder-actions"><button type="button" class="btn" data-peer-close>إلغاء</button></div>', "data-peer-choice");
+      box.querySelector("[data-peer-close]").onclick = function () { close(box); };
+      box.querySelector("[data-peer-choice-main]").onclick = function () { close(box); openSend({ only: "main" }); };
+      box.querySelector("[data-peer-choice-peer]").onclick = function () { close(box); openSend({ only: "peer" }); };
+      (box.querySelector(".peer-choice button:not([disabled])") || box.querySelector("[data-peer-close]")).focus();
+    }).catch(function (e) { toast(e.message || "تعذر فتح التسليم"); });
+  }
+  w.SSMPDPeerHandover = { openSend: openSend, openChoice: openChoice, poll: function () { poll(true); } };
   w.setInterval(function () { poll(false); }, 15000);
   w.setTimeout(function () { poll(true); }, 4000);
 })(window, document);

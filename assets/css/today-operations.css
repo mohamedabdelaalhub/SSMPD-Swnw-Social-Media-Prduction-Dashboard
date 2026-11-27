@@ -212,3 +212,12 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-v3 .journey-top{margin:0 0 -4px;padding:8px 0 4px;gap:10px;border-bottom:0;box-shadow:0 1px 0 rgba(15,54,157,.10)}
 .journey-v3 [data-journey-root]{gap:10px}
 .journey-v3 [data-journey-staff-host]:empty{display:none}
+/* Owner 2026-11-22 (phone screenshot): a long name + «متأخر 157 د» made the pill wider than the screen, so the whole page
+   scrolled sideways and the sticky top slid over the cards. The card and pill may shrink; the name shortens with «…». */
+.journey-v3 .journey-hour .journey-card.is-compact{min-width:0}
+.journey-v3 .journey-hour .journey-card.is-compact .journey-chip{min-width:0;max-width:100%}
+.journey-v3 .journey-hour .journey-card.is-compact .journey-chip-name{flex:0 1 auto}
+.journey-v3 .journey-hour-names>*{min-width:0;max-width:100%}
+/* Owner 2026-11-23 (phone screenshot): on phones the top part (title, date, search, filters, chips, tiles) no longer stays pinned while
+   scrolling — it scrolls away with the page so the patients get the whole screen. Same look; desktop/tablet keep the sticky top. */
+@media (max-width:640px){.journey-v3 .journey-top{position:static;backdrop-filter:none;-webkit-backdrop-filter:none}}

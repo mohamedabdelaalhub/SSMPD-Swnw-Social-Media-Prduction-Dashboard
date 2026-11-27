@@ -1,0 +1,34 @@
+/* «صرف مستحقات بالفواتير» window (owner 2026-11-25 «طبقه», mockup docs/ui-references/mockups/doctor-dues-popup-fit.html):
+   wide enough for the whole invoice table on desktop (no sideways scroll); each invoice becomes a card on phones. Visual only. */
+.fc-dues-modal .modal{width:min(1100px,96vw);max-width:min(1100px,96vw)}
+.fc-dues-modal .fc-form{grid-template-columns:minmax(0,1fr)}
+.fc-dues-modal .fc-form>*,.fc-dues-modal [data-dues-body]>*{min-width:0}
+.fc-dues-modal [data-dues-body]{display:grid;gap:12px;min-width:0}
+.fc-dues-modal .fc-st-cards{margin:0}
+.fc-dues-modal .fc-st-card strong{font-size:22px}
+.fc-dues-modal [data-dues-list] .fc-table{overflow:visible}
+.fc-dues-modal [data-dues-list] .fc-table table{min-width:0;width:100%}
+.fc-dues-modal [data-dues-list] th{white-space:nowrap}
+.fc-dues-modal [data-dues-list] td{max-width:none;vertical-align:middle}
+.fc-dues-modal [data-dues-list] td.dd-date,.fc-dues-modal [data-dues-list] td.dd-num,.fc-dues-modal [data-dues-list] td.dd-st{white-space:nowrap}
+.fc-dues-modal [data-dues-list] td.dd-num{font-weight:700;direction:ltr;text-align:end}
+.fc-dues-modal [data-dues-list] td.dd-ref small{display:block;color:var(--c-muted,#667085);font-size:12px;margin-top:2px}
+.fc-dues-modal [data-dues-list] td.dd-det{color:var(--c-muted,#667085);font-size:12.5px}
+.fc-dues-modal [data-dues-list] input[type=checkbox],.fc-dues-modal [data-dues-all]{width:20px;height:20px}
+@media (max-width:760px){
+ .fc-dues-modal .modal{width:100%;max-width:100%}
+ .fc-dues-modal .fc-st-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fc-dues-modal .fc-st-cards .fc-st-card:nth-child(3){grid-column:1/-1}
+ .fc-dues-modal [data-dues-list] .fc-table{border:0;border-radius:0}
+ .fc-dues-modal [data-dues-list] thead{display:none}
+ .fc-dues-modal [data-dues-list] table,.fc-dues-modal [data-dues-list] tbody{display:block;width:100%}
+ .fc-dues-modal [data-dues-list] tr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center;border:1px solid var(--c-border,#E6EBF3);border-radius:14px;padding:10px 12px;margin-bottom:10px;background:#fff}
+ .fc-dues-modal [data-dues-list] td{display:block;border:0;padding:0;min-width:0}
+ .fc-dues-modal [data-dues-list] td.dd-pick{grid-row:1/3;grid-column:1}
+ .fc-dues-modal [data-dues-list] td.dd-ref{grid-column:2;grid-row:1}
+ .fc-dues-modal [data-dues-list] td.dd-date{grid-column:3;grid-row:1;text-align:end;color:var(--c-muted,#667085);font-size:12px}
+ .fc-dues-modal [data-dues-list] td.dd-svc{grid-column:2;grid-row:2;color:#475467;font-size:13px}
+ .fc-dues-modal [data-dues-list] td.dd-num{grid-column:3;grid-row:2}
+ .fc-dues-modal [data-dues-list] td.dd-st,.fc-dues-modal [data-dues-list] td.dd-det{grid-column:2/4}
+ .fc-dues-modal [data-dues-list] td.dd-st{white-space:normal}
+}

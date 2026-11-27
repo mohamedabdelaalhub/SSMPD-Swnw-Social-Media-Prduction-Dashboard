@@ -27,7 +27,8 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
   assert.deepEqual(calls[0], ['EMP-1', '2026-08-10', '2026-11-08'], 'last 90 days up to today');
   const txt = d.querySelector('.fc-modal form').textContent;
-  for (const s of ['إجمالي المستحق', '700.00', 'مستحق الصرف الآن', '250.00', 'بانتظار التحصيل', '450.00', 'INV-1', 'حشو', 'مستحق للصرف الآن (1)', 'غير مستحق بعد (3)', 'بانتظار دفعة التأمين (شركة ب) — متبقي 300.00', 'آجل — لم يُسدَّد شيء', 'مدفوعة جزئيًا — متبقي 150.00', 'متبقي للتحصيل 650.00']) assert(txt.includes(s), 'statement shows ' + s);
+  /* help 279: 3 cards + one explaining line; plain section titles */
+  for (const s of ['إجمالي اللي ليه', 'يتصرف له دلوقتي', '250.00', 'مستني فلوس المريض أو التأمين', '450.00', 'INV-1', 'حشو', 'يتصرف دلوقتي (1)', 'مستني فلوس (3)', 'بانتظار دفعة التأمين (شركة ب) — متبقي 300.00', 'آجل — لم يُسدَّد شيء', 'مدفوعة جزئيًا — متبقي 150.00', 'متبقي للتحصيل 650.00']) assert(txt.includes(s), 'statement shows ' + s);
   const secs = [...d.querySelectorAll('.fc-modal form .fc-st-h')]; assert.equal(secs.length, 2, 'two sections');
   const tabs = [...d.querySelectorAll('.fc-modal form table')]; assert.equal(tabs[0].querySelectorAll('tbody tr').length, 1, 'paid section: INV-1 only'); assert.equal(tabs[1].querySelectorAll('tbody tr').length, 3, 'not-yet section: 3 invoices');
   assert(tabs[0].textContent.includes('INV-1') && !tabs[0].textContent.includes('INV-2'), 'paid rows are not in the waiting table'); assert(tabs[1].textContent.includes('INV-2') && !tabs[1].textContent.includes('INV-1'));
@@ -46,23 +47,34 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   let detCalls = 0; w.SSMPDDb.financeDoctorStatementDetail = async (k, f, t) => { detCalls++; return DET; }; w.SSMPDDb.financeDoctorStatement = async () => STMT;
   d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
   const dt = d.querySelector('.fc-modal form').textContent; assert.equal(detCalls, 1, 'detail RPC preferred');
-  for (const s2 of ['بانتظار حصة المريض — متبقي 150.00', 'بانتظار التأمين (شركة ب) — متبقي 300.00', 'بانتظار التأمين (شركة ج) — متبقي 300.00', 'خدمات بدون عقد ساري (2)', 'مفيش عقد ساري يغطي الخدمة', 'العقد بيبدأ بعد تاريخ التنفيذ', 'تحليل', '360.00', 'أوردرات الاستقبال']) assert(dt.includes(s2), 'detail shows ' + s2);
+  for (const s2 of ['بانتظار حصة المريض — متبقي 150.00', 'بانتظار التأمين (شركة ب) — متبقي 300.00', 'بانتظار التأمين (شركة ج) — متبقي 300.00', 'اتعملت ومالهاش عقد (2)', 'مفيش عقد ساري يغطي الخدمة', 'العقد بيبدأ بعد تاريخ التنفيذ', 'تحليل', '360.00', 'طلبات الاستقبال']) assert(dt.includes(s2), 'detail shows ' + s2);
   assert(!dt.includes('بانتظار حصة المريض — متبقي 0.00'), 'a closed part is not shown'); assert.equal((dt.match(/بانتظار حصة المريض/g) || []).length, 1, 'patient part only where it is open');
   // doctor without an active contract: no uncovered section
-  DET.uncovered = null; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); assert(!d.querySelector('.fc-modal form').textContent.includes('بدون عقد ساري'));
+  assert(!dt.includes('(L-1)'),'no service codes');assert(!dt.includes('ماعندوش عقد فعّال'));
+  DET.uncovered = null; DET.has_active_contract = false; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); { const t0 = d.querySelector('.fc-modal form').textContent; assert(!t0.includes('ومالهاش عقد')); assert(t0.includes('الدكتور ماعندوش عقد فعّال — الخدمات اللي اتعملت مش بتتحسب'), 'no-contract note'); } DET.has_active_contract = true;
   DET.uncovered = []; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); assert(d.querySelector('.fc-modal form').textContent.includes('مفيش خدمات منفذة من غير عقد ساري'));
   // detail RPC not applied yet -> base statement still works
   w.SSMPDDb.financeDoctorStatementDetail = async () => { throw new Error('404'); }; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
   assert(d.querySelector('.fc-modal form').textContent.includes('INV-1') && !d.querySelector('.fc-modal form').textContent.includes('بدون عقد ساري'), 'fallback to the base statement');
   delete w.SSMPDDb.financeDoctorStatementDetail; d.querySelectorAll('.fc-modal').forEach(x => x.remove());
+  // finance chat 2026-11-26: clinic_finance_doctor_dues preferred (reception invoices RX-…), dues_status mapped; falls back when it fails
+  let duesCalls = 0; w.SSMPDDb.financeDoctorDues = async (k, f, t) => { duesCalls++; return { summary: { balance: 900, paid_out: 200, other_credits: 0 }, dues: { payable_total: 300, waiting_total: 400, available_now: 300 }, invoices: [
+    { invoice_id: 'r1', reference: 'RX-11', patient_ref: 'P-1', patient_name: 'سارة', date: '2026-11-20', fee: 300, net: 600, collected: 600, dues_status: 'payable', lines: [{ service_name: 'كشف', amount: 600, rate: 50 }] },
+    { invoice_id: 'r2', reference: 'RX-12', date: '2026-11-21', fee: 400, net: 800, collected: 0, patient_open: 800, dues_status: 'waiting_patient', lines: [{ service_name: 'أشعة', amount: 800, rate: 50 }] },
+    { invoice_id: 'r3', reference: 'RX-13', date: '2026-11-22', fee: 200, net: 400, collected: 400, dues_status: 'paid_out', lines: [] }, { invoice_id: 'r4', reference: 'RX-14', date: '2026-11-23', fee: 50, net: 100, collected: 100, dues_status: 'requested', lines: [] }] }; };
+  w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); { const t2 = d.querySelector('.fc-modal form').textContent; assert.equal(duesCalls, 1, 'dues RPC preferred');
+    for (const s3 of ['يتصرف دلوقتي (1)', 'سارة', 'مستني فلوس (1)', 'في طلب صرف أو اتصرفت (2)', 'اتصرف', 'في طلب صرف', '300.00']) assert(t2.includes(s3), 'dues view shows ' + s3); }
+  d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDDb.financeDoctorDues = async () => ({ summary: {}, dues: {}, invoices: [] }); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
+  assert(d.querySelector('.fc-modal form').textContent.includes('لازم تتسجل إنها «اتنفذت» في الاستقبال'), 'empty: executed hint');
+  d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDDb.financeDoctorDues = async () => { throw new Error('denied'); }; w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
+  assert(d.querySelector('.fc-modal form').textContent.includes('INV-1'), 'dues failure falls back to the statement'); delete w.SSMPDDb.financeDoctorDues; d.querySelectorAll('.fc-modal').forEach(x => x.remove());
   // ---- contracts status filter
   d.body.append(box);
   const fd = Object.assign({}, data, { doctor_contracts: [mk('f1', 'active'), mk('f2', 'pending'), Object.assign(mk('f3', 'rejected'), { doctor_key: 'EMP-2', doctor_name: 'د. ب' })] });
   box.innerHTML = w.SSMPDFinanceControls.panel('doctors', fd, h); await tick();
-  const chips = [...box.querySelectorAll('[data-fc-filter]')].map(x => x.dataset.fcFilter); assert.deepEqual(chips, ['all', 'pending', 'active', 'rejected'], 'chips only for statuses that exist');
+  const chips = [...box.querySelectorAll('[data-fc-filter]')].map(x => x.dataset.fcFilter); assert.deepEqual(chips, ['live', 'pending', 'all'], 'owner 2026-11-25: «سارية + قيد الاعتماد» first; «بتنتهي قريب» only when it has contracts');
   const groups = () => [...box.querySelectorAll('.fc-doctor-group')].filter(g => !g.hidden).length;
-  assert.equal(groups(), 2);
-  box.querySelector('[data-fc-filter="rejected"]').click(); assert.equal(groups(), 1, 'only the doctor with a rejected contract'); assert(box.querySelector('.fc-chip.active').dataset.fcFilter === 'rejected');
+  assert.equal(groups(), 1, 'default view hides a doctor whose only contract is rejected (old history)'); assert(box.querySelector('.fc-chip.active').dataset.fcFilter === 'live');
   box.querySelector('[data-fc-filter="pending"]').click(); assert.equal(groups(), 1); assert.equal([...box.querySelectorAll('.fc-doctor-group tbody tr')].filter(r => !r.hidden).length, 1, 'only the pending row shows');
   box.querySelector('[data-fc-filter="all"]').click(); assert.equal(groups(), 2);
   const inp = box.querySelector('[data-fc-name]'); inp.value = 'EMP-2'; inp.dispatchEvent(new w.Event('input', { bubbles: true })); assert.equal(groups(), 1, 'name search'); inp.value = ''; inp.dispatchEvent(new w.Event('input', { bubbles: true }));

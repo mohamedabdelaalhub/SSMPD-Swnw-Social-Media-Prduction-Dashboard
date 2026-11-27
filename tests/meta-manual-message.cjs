@@ -5,7 +5,9 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),ts=require('typescript');
 const src=fs.readFileSync('supabase/functions/meta-comments/messages.ts','utf8').replace(/^import .*$/gm,'');
 const js=ts.transpileModule(src,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-function load(fetchImpl){const sb={exports:{},module:{},fetch:fetchImpl,URL,JSON,Date,String,Number,Set,Promise,console,
+const gjs=ts.transpileModule(fs.readFileSync('supabase/functions/meta-comments/graph.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+function load(fetchImpl){const gsb={exports:{},module:{},fetch:fetchImpl,URL,URLSearchParams,JSON,String,Number,Promise,AbortSignal,Error,Math};gsb.module.exports=gsb.exports;vm.runInNewContext(gjs,gsb);
+ const sb={exports:{},module:{},fetch:fetchImpl,gget:gsb.exports.gget,gpostJson:gsb.exports.gpostJson,URL,JSON,Date,String,Number,Set,Promise,console,
  decideReply:async()=>({ok:true,reply:'رد مقترح'}),clinicInfo:async()=>'',advance:()=>({}),serviceLabel:x=>x,reviewHandoffs:async()=>{}};sb.module.exports=sb.exports;vm.runInNewContext(js,sb);return sb.exports;}
 function fakeDb(rows){const writes=[];const q=(table)=>{const st={table,filters:{}};const api={select(){return api;},eq(k,v){st.filters[k]=v;return api;},order(){return api;},limit(){return api;},in(k,v){st.in=[k,v];return api;},
   maybeSingle(){return Promise.resolve({data:table==='meta_brand_config'?{facebook_page_id:'PAGE1'}:null,error:null});},
@@ -21,7 +23,7 @@ const conv=(plat,lastH)=>[{id:plat+':a',conversation_id:'C',platform:plat,brand:
  let m=load(okFetch),f=fakeDb(conv('facebook',2));
  let r=await m.sendManualMessage(f.db,{conversationId:'C',text:'  الكشف 400 جنيه  ',adminId:'ADM1',token:b=>b==='sono'?'TOKEN':null,now:NOW});
  assert.equal(r.ok,true,JSON.stringify(r));assert.equal(calls.length,1);
- assert.match(calls[0].url,/\/v26\.0\/PAGE1\/messages\?access_token=TOKEN$/);assert.deepEqual(JSON.parse(JSON.stringify(calls[0].body)),{recipient:{id:'U9'},messaging_type:'RESPONSE',message:{text:'الكشف 400 جنيه'}});
+ assert.match(calls[0].url,/\/v26\.0\/PAGE1\/messages\?access_token=TOKEN$/);assert.deepEqual(JSON.parse(JSON.stringify(calls[0].body)),{recipient:{id:'U9'},messaging_type:'RESPONSE',message:{text:'الكشف 400 جنيه',metadata:'swnw-dashboard:ADM1'}});
  const up=f.writes.find(w=>w.op==='upsert');assert.equal(up.row.id,'facebook:m_77');assert.equal(up.row.is_page,true);assert.equal(up.row.sent_by,'ADM1');assert.equal(up.row.message,'الكشف 400 جنيه');
  const upd=f.writes.find(w=>w.op==='update');assert.deepEqual(JSON.parse(JSON.stringify(upd.in)),['id',['facebook:c']],'only the waiting customer message');assert.equal(upd.row.status,'replied');assert.equal(upd.row.sent_by,'ADM1');
  // 2) Instagram works the same way

@@ -1,0 +1,43 @@
+/* «مراجعة أسماء الجهات» — mockup docs/ui-references/mockups/price-review-by-name.html (owner «طبقه» 2026-11-23) */
+.pnr{display:grid;gap:14px;min-width:0;padding-bottom:84px}
+.pnr-sub{color:#6B7788;margin:0;font-size:14px}
+.pnr-hero{background:linear-gradient(135deg,#0F369D,#1c4fd1);color:#fff;border-radius:18px;padding:18px 20px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.pnr-hero b{font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.pnr-hero small{display:block;color:#dbe4ff;margin-top:4px;font-size:14px}
+.pnr-per{font-size:13px;color:#dbe4ff;overflow-wrap:anywhere}
+.pnr-msg{background:#E7F3EC;color:#2F7D5C;border-radius:12px;padding:10px 14px;margin:0}
+.pnr-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pnr-pill{border:1px solid #D5DEEE;background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;min-height:44px;cursor:pointer;color:#16212E}
+.pnr-pill[aria-pressed=true]{background:#16212E;color:#fff;border-color:#16212E}
+.pnr-search{flex:1 1 240px;border:1px solid #D5DEEE;border-radius:12px;padding:10px 14px;font:inherit;font-size:16px;background:#fff;min-height:44px}
+.pnr-list{display:grid;gap:16px}
+.pnr-card{background:#fff;border:1px solid #E4E9F2;border-radius:16px;padding:16px 18px;display:grid;gap:10px;min-width:0}
+.pnr-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}
+.pnr-chk{width:22px;height:22px;margin-top:4px;accent-color:#0F369D}
+.pnr-name{font-weight:700;font-size:17px;overflow-wrap:anywhere}
+.pnr-meta{font-size:13px;color:#6B7788;overflow-wrap:anywhere}
+.pnr-meta b{color:#16212E}
+.pnr-lists{font-size:12px;color:#6B7788}.pnr-lists summary{cursor:pointer;color:#0F369D;min-height:28px}
+.pnr-chip{display:inline-block;font-size:12px;padding:2px 10px;border-radius:999px;margin-inline-start:6px}
+.pnr-chip.warn{background:#fdeee8;color:#b8431a}
+.pnr-sug{border:1px dashed #c9d4ef;border-radius:12px;padding:10px 12px;background:#f8faff;display:grid;gap:6px}
+.pnr-pct{font-weight:700;color:#2F7D5C}.pnr-pct.low{color:#b8431a}
+.pnr-link{background:none;border:0;padding:4px 0;font:inherit;font-size:13px;color:#0F369D;cursor:pointer;text-decoration:underline;min-height:32px}
+.pnr-acts{display:flex;flex-wrap:wrap;gap:8px}
+.pnr-acts .btn{min-height:44px;font-weight:700;border-radius:10px}
+.pnr .pnr-yes{background:#2F7D5C;border-color:#2F7D5C;color:#fff}
+.pnr-no{color:#D0402A;border-color:#f0c9c2}
+.pnr-alt{color:#0F369D}
+.pnr-other{display:grid;gap:8px;border-top:1px solid #E4E9F2;padding-top:10px}
+.pnr-other[hidden]{display:none}
+.pnr-other input{font:inherit;font-size:16px;min-height:44px}
+.pnr-results{display:grid;gap:6px}
+.pnr-res{display:grid;gap:2px;text-align:start;border:1px solid #E4E9F2;border-radius:10px;background:#FAFCFF;padding:10px 12px;font:inherit;cursor:pointer;min-height:44px;color:#16212E}
+.pnr-res small{color:#6B7788;font-size:12px}
+.pnr-res:hover{border-color:#0F369D}
+.pnr-more{font-size:13px;color:#6B7788;margin:0}
+.pnr-bulk{position:fixed;inset-inline:0;bottom:0;z-index:40;background:#16212E;color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.pnr-bulk .btn{background:#ffffff14;color:#fff;border-color:#ffffff40;min-height:44px}
+.pnr-bulk .pnr-no{background:#D0402A;border-color:#D0402A;color:#fff}
+.pnr button:focus-visible,.pnr-bulk button:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+@media(max-width:600px){.pnr-hero{grid-template-columns:1fr}.pnr-hero b{font-size:24px}.pnr-card{padding:14px}}

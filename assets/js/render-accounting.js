@@ -54,9 +54,12 @@
   function packageTotals(pkg) {
     var subtotal = packageSubtotal(pkg);
     var margin = num(pkg.profit_margin_percent);
+    var fixed = pkg.booking_fixed_price != null && pkg.booking_fixed_price !== "" && num(pkg.booking_fixed_price) > 0 ? num(pkg.booking_fixed_price) : null;
+    // Fixed package price (owner 2026-11-25): the reception template carries exactly this number (mig 20261125120000).
+    if (fixed != null) return { subtotal: subtotal, margin: subtotal > 0 ? (fixed - subtotal) / subtotal * 100 : 0, profitValue: fixed - subtotal, finalTotal: fixed, fixed: true };
     var profitValue = subtotal * margin / 100;
     var finalTotal = subtotal + profitValue;
-    return { subtotal: subtotal, margin: margin, profitValue: profitValue, finalTotal: finalTotal };
+    return { subtotal: subtotal, margin: margin, profitValue: profitValue, finalTotal: finalTotal, fixed: false };
   }
 
   function loadAll(cb) {
@@ -368,10 +371,10 @@
     return rows;
   }
   function pkgTableRows() {
-    var rows = [["الباكج", "عدد الخدمات", "الإجمالي الفرعي", "نسبة الربح %", "قيمة الربح", "الإجمالي النهائي"]];
+    var rows = [["الباكج", "طريقة السعر", "عدد الخدمات", "الإجمالي الفرعي", "نسبة الربح %", "قيمة الربح", "الإجمالي النهائي"]];
     state.packages.forEach(function (p) {
       var t = packageTotals(p);
-      rows.push([p.name, (p.services_included || []).length, t.subtotal, t.margin, t.profitValue, t.finalTotal]);
+      rows.push([p.name, t.fixed ? "ثابت" : "محسوب", (p.services_included || []).length, t.subtotal, t.fixed ? "—" : t.margin, t.fixed ? "—" : t.profitValue, t.finalTotal]);
     });
     return rows;
   }
@@ -597,7 +600,8 @@
   // ============ ٢) الباكجز ============
   function renderPackagesScreen(subView, container) {
     var totalValue = state.packages.reduce(function (s, p) { return s + packageTotals(p).finalTotal; }, 0);
-    var avgMargin = state.packages.length ? state.packages.reduce(function (s, p) { return s + num(p.profit_margin_percent); }, 0) / state.packages.length : 0;
+    var calcPackages = state.packages.filter(function (p) { return !packageTotals(p).fixed; });
+    var avgMargin = calcPackages.length ? calcPackages.reduce(function (s, p) { return s + num(p.profit_margin_percent); }, 0) / calcPackages.length : 0;
 
     var html = '<div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;">' +
       '<div class="kpi-card"><div class="label">باكجات مُجهّزة</div><div class="value">' + state.packages.length + '</div></div>' +
@@ -612,13 +616,13 @@
       '<button class="btn btn-primary" id="acc-add-package">+ إضافة باكج</button></div></div>' +
       (state.packages.length ?
         '<div style="overflow-x:auto;"><table class="simple acc-table"><thead><tr>' +
-        '<th>الباكج</th><th>عدد الخدمات</th><th>الإجمالي الفرعي</th><th>نسبة الربح</th>' +
+        '<th>الباكج</th><th>طريقة السعر</th><th>عدد الخدمات</th><th>الإجمالي الفرعي</th><th>نسبة الربح</th>' +
         "<th> <!--ssmpd-i18n:%D9%82%D9%8A%D9%85%D8%A9%20%D8%A7%D9%84%D8%B1%D8%A8%D8%AD-->قيمة الربح</th><th>الإجمالي النهائي</th><th></th></tr></thead><tbody>" +
         state.packages.map(function (p) {
           var t = packageTotals(p);
-          return '<tr><td>' + p.name + '</td><td class="acc-col-num">' + (p.services_included || []).length + '</td>' +
-            '<td class="acc-col-num">' + numSpan(t.subtotal) + '</td><td class="acc-col-num">' + pill("acc-margin", fmt(t.margin) + "%") + '</td>' +
-            '<td class="acc-col-num">' + pill("acc-profit", fmt(t.profitValue)) + '</td>' +
+          return '<tr><td>' + p.name + '</td><td>' + (t.fixed ? '<span class="acc-price-mode is-fixed">ثابت</span>' : '<span class="acc-price-mode">محسوب</span>') + '</td><td class="acc-col-num">' + (p.services_included || []).length + '</td>' +
+            '<td class="acc-col-num">' + numSpan(t.subtotal) + '</td><td class="acc-col-num">' + (t.fixed ? '—' : pill("acc-margin", fmt(t.margin) + "%")) + '</td>' +
+            '<td class="acc-col-num">' + (t.fixed ? '—' : pill("acc-profit", fmt(t.profitValue))) + '</td>' +
             '<td class="acc-col-num">' + pill("acc-final", fmt(t.finalTotal)) + '</td>' +
             '<td><button class="btn-link" data-edit-package="' + p.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button> " +
             '<button class="btn-link" data-del-package="' + p.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></td></tr>";
@@ -651,13 +655,18 @@
   function openPackageModal(pkg, onSaved) {
     pkg = pkg || {};
     var lines = (pkg.services_included || []).slice();
+    var fixedMode = pkg.booking_fixed_price != null && num(pkg.booking_fixed_price) > 0;
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal" style="max-width:560px;">' +
       '<h3>' + (pkg.id ? "تعديل باكج" : "إضافة باكج") + '</h3>' +
       '<div class="field"><label>اسم الباكج</label><input id="pk-name" value="' + (pkg.name || "") + '"></div>' +
+      '<fieldset data-pk-price><legend>سعر الباكج</legend><div class="acc-price-seg" role="radiogroup"><button type="button" id="pk-mode-calc" role="radio">محسوب من الخدمات<small>إجمالي الخدمات + نسبة الربح</small></button><button type="button" id="pk-mode-fixed" role="radio">سعر ثابت<small>الرقم اللي هتكتبه</small></button></div>' +
+      '<div class="field" id="pk-fixed-wrap"><label>سعر الباكج الثابت (ج.م)</label><input id="pk-fixed" type="number" min="1" step="0.01" value="' + esc(pkg.booking_fixed_price != null ? pkg.booking_fixed_price : "") + '"></div>' +
       '<div class="field"><label>نسبة الربح % (على إجمالي الباكج)</label><input id="pk-margin" type="number" step="any" value="' + (pkg.profit_margin_percent != null ? pkg.profit_margin_percent : "") + '"></div>' +
-      '<fieldset><legend>زيارات الباكج</legend><label><input id="pk-booking" type="checkbox" '+(pkg.booking_enabled?'checked':'')+'> متاح للتعاقد من الحجز</label><label><input id="pk-variable" type="checkbox" '+(pkg.booking_variable_visits?'checked':'')+'> عدد الزيارات تحدده المريضة عند التعاقد (الباكج يمثّل زيارة واحدة والسعر للزيارة)</label><label><input id="pk-conditional" type="checkbox" '+(pkg.conditional_offer?'checked':'')+'> عرض مشروط — الخصم بشرط إكمال الباكدج (عند الإلغاء الجلسات المستخدمة تتحسب بسعرها المنفرد، والشرط بيتطبع في عقد المريض)</label><div class="field"><label>عدد الزيارات</label><input id="pk-visits" type="number" min="1" max="365" value="'+esc(pkg.booking_visits||1)+'"></div><div class="field"><label>الصلاحية بالأيام</label><input id="pk-validity" type="number" min="1" max="3650" value="'+esc(pkg.booking_validity_days||30)+'"></div><div class="field"><label>شروط التعاقد والمشمولات</label><textarea id="pk-terms">'+esc(pkg.booking_terms)+'</textarea></div></fieldset>' +
+      '<p class="acc-price-note" id="pk-price-note"></p></fieldset>' +
+      '<fieldset><legend>زيارات الباكج</legend><label><input id="pk-booking" type="checkbox" '+(pkg.booking_enabled?'checked':'')+'> متاح للتعاقد من الحجز</label><label><input id="pk-variable" type="checkbox" '+(pkg.booking_variable_visits?'checked':'')+'> عدد الزيارات تحدده المريضة عند التعاقد (الباكج يمثّل زيارة واحدة والسعر للزيارة)</label><label><input id="pk-conditional" type="checkbox" '+(pkg.conditional_offer?'checked':'')+'> عرض مشروط — الخصم بشرط إكمال الباكدج (عند الإلغاء الجلسات المستخدمة تتحسب بسعرها المنفرد، والشرط بيتطبع في عقد المريض)</label><div class="field"><label>عدد الزيارات</label><input id="pk-visits" type="number" min="1" max="365" value="'+esc(pkg.booking_visits||1)+'"></div><div class="field"><label>الصلاحية بالأيام</label><input id="pk-validity" type="number" min="1" max="3650" value="'+esc(pkg.booking_validity_days||(pkg.id?30:120))+'"> <span class="acc-days-presets"><button class="btn" type="button" data-pk-days="30">شهر (30 يوم)</button> <button class="btn" type="button" data-pk-days="90">3 شهور (90 يوم)</button> <button class="btn" type="button" id="pk-4m" data-pk-days="120">4 شهور (120 يوم)</button> <button class="btn" type="button" data-pk-days="150">5 شهور (150 يوم)</button></span></div><div class="field"><label>شروط التعاقد والمشمولات</label><textarea id="pk-terms">'+esc(pkg.booking_terms)+'</textarea></div></fieldset>' +
+      '<fieldset data-pk-offer><legend>العرض ودفع الباكج</legend><div class="field"><label>يتباع من (اختياري)</label><input id="pk-sell-from" type="date" value="'+esc(pkg.booking_sell_from||"")+'"></div><div class="field"><label>يتباع لحد (اختياري)</label><input id="pk-sell-until" type="date" value="'+esc(pkg.booking_sell_until||"")+'"></div><div class="field"><label>أقل دفعة أولى % من قيمة الباكج</label><input id="pk-min-first" type="number" min="0" max="100" step="0.01" value="'+esc(pkg.id?(pkg.booking_min_first_percent==null?"":pkg.booking_min_first_percent):25)+'"></div><p style="font-size:12px;color:#5b6577;margin:0">بعد آخر يوم في العرض الباكج مش بيظهر في «تعاقد على باكج»، واللي اتباع بيفضل ساري مدته. المريض لازم يدفع النسبة دي قبل أول جلسة، وكل دفعة بعدها متقلش عن النسبة دي أو الباقي على الزيارات اللي فاضلة. سيبها فاضية = مفيش حد.</p></fieldset>' +
       '<h4>الخدمات المضمومة (غير محدودة)</h4>' +
       '<div id="pk-lines"></div>' +
       '<button class="btn" id="pk-add-line" type="button">+ إضافة خدمة للباكج</button>' +
@@ -690,12 +699,20 @@
       updateTotals();
     }
     function updateTotals() {
-      var tmp = { services_included: lines, profit_margin_percent: document.getElementById("pk-margin").value };
+      var tmp = { services_included: lines, profit_margin_percent: document.getElementById("pk-margin").value, booking_fixed_price: fixedMode ? document.getElementById("pk-fixed").value : null };
       var t = packageTotals(tmp);
-      document.getElementById("pk-totals").innerHTML = '<div class="acc-totals-strip">' +
-        '<span>الإجمالي الفرعي: ' + numSpan(t.subtotal) + '</span>' +
-        '<span>قيمة الربح: ' + numSpan(t.profitValue) + '</span>' +
-        '<span class="acc-final-line">الإجمالي النهائي: ' + numSpan(t.finalTotal) + '</span></div>';
+      if (t.fixed) {
+        document.getElementById("pk-totals").innerHTML = '<div class="acc-totals-strip">' +
+          '<span>الخدمات منفردة: ' + numSpan(t.subtotal) + '</span>' +
+          '<span class="acc-final-line">سعر الباكج في الاستقبال: ' + numSpan(t.finalTotal) + '</span>' +
+          (t.subtotal > t.finalTotal ? '<span class="acc-saving">المريض بيوفّر: ' + numSpan(t.subtotal - t.finalTotal) + '</span>' : '') + '</div>' +
+          (t.finalTotal > t.subtotal ? '<p class="acc-fixed-warn" id="pk-fixed-warn">تنبيه: سعر الباكج أعلى من الخدمات منفردة بـ ' + fmt(t.finalTotal - t.subtotal) + ' ج.م — المريض هيدفع أكتر لو اشترى الباكج. اتأكد من الرقم قبل الحفظ.</p>' : '');
+      } else {
+        document.getElementById("pk-totals").innerHTML = '<div class="acc-totals-strip">' +
+          '<span>الإجمالي الفرعي: ' + numSpan(t.subtotal) + '</span>' +
+          '<span>قيمة الربح: ' + numSpan(t.profitValue) + '</span>' +
+          '<span class="acc-final-line">الإجمالي النهائي: ' + numSpan(t.finalTotal) + '</span></div>';
+      }
     }
     document.getElementById("pk-add-line").onclick = function () { lines.push({ service_id: "", quantity: 1 }); renderLines(); };
     (function () {
@@ -703,8 +720,26 @@
       function sync() { if (variable.checked) visits.value = 1; visits.disabled = variable.checked; }
       variable.onchange = sync; sync();
     })();
+    backdrop.querySelectorAll("[data-pk-days]").forEach(function (b) { b.onclick = function () { document.getElementById("pk-validity").value = b.getAttribute("data-pk-days"); }; });
+    function setPriceMode(fixed) {
+      fixedMode = fixed;
+      document.getElementById("pk-mode-fixed").className = fixed ? "on" : "";
+      document.getElementById("pk-mode-calc").className = fixed ? "" : "on";
+      document.getElementById("pk-mode-fixed").setAttribute("aria-checked", fixed ? "true" : "false");
+      document.getElementById("pk-mode-calc").setAttribute("aria-checked", fixed ? "false" : "true");
+      document.getElementById("pk-fixed-wrap").style.display = fixed ? "" : "none";
+      document.getElementById("pk-margin").disabled = fixed;
+      document.getElementById("pk-price-note").textContent = fixed
+        ? "السعر الثابت هو اللي هيظهر في «تعاقد على باكج» في الاستقبال، ومش هيتغير لما سعر أي خدمة جوه الباكج يتغير. نسبة الربح مش مستخدمة."
+        : "السعر بيتحسب من أسعار الخدمات + نسبة الربح، وبيتغير لوحده لما سعر أي خدمة يتغير (زي آخر أي عرض).";
+      updateTotals();
+    }
+    document.getElementById("pk-mode-calc").onclick = function () { setPriceMode(false); };
+    document.getElementById("pk-mode-fixed").onclick = function () { setPriceMode(true); if (!document.getElementById("pk-fixed").value) document.getElementById("pk-fixed").focus(); };
+    document.getElementById("pk-fixed").oninput = updateTotals;
     document.getElementById("pk-margin").oninput = updateTotals;
     renderLines();
+    setPriceMode(fixedMode);
 
     document.getElementById("pk-cancel").onclick = function () { backdrop.remove(); };
     document.getElementById("pk-save").onclick = function () {
@@ -721,8 +756,15 @@
         booking_variable_visits: backdrop.querySelector('#pk-variable').checked,
         conditional_offer: backdrop.querySelector('#pk-conditional').checked,
         booking_validity_days: Number(backdrop.querySelector('#pk-validity').value)||null,
-        booking_terms: backdrop.querySelector('#pk-terms').value.trim()
+        booking_terms: backdrop.querySelector('#pk-terms').value.trim(),
+        booking_sell_from: backdrop.querySelector('#pk-sell-from').value || null,
+        booking_sell_until: backdrop.querySelector('#pk-sell-until').value || null,
+        booking_min_first_percent: backdrop.querySelector('#pk-min-first').value === '' ? null : Number(backdrop.querySelector('#pk-min-first').value),
+        booking_fixed_price: fixedMode ? Number(document.getElementById("pk-fixed").value) : null
       };
+      if (fixedMode && !(patch.booking_fixed_price > 0)) { window.SSMPDToast && window.SSMPDToast.error && window.SSMPDToast.error("اكتب سعر الباكج الثابت (أكبر من صفر)"); return; }
+      if (patch.booking_sell_from && patch.booking_sell_until && patch.booking_sell_from > patch.booking_sell_until) { window.SSMPDToast && window.SSMPDToast.error && window.SSMPDToast.error("«يتباع لحد» لازم يكون بعد «يتباع من»"); return; }
+      if (patch.booking_min_first_percent != null && !(patch.booking_min_first_percent >= 0 && patch.booking_min_first_percent <= 100)) { window.SSMPDToast && window.SSMPDToast.error && window.SSMPDToast.error("أقل دفعة أولى بين 0 و100 ٪"); return; }
       window.SSMPDDb.savePricingPackage(patch, me && me.id).then(function () {
         backdrop.remove();
         state.loaded = false;

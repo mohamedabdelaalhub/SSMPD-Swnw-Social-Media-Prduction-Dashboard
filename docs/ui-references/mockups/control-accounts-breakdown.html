@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — الحساب الرئيسي + التفصيل (المحافظ والفيزا والأطباء)</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}.sub{color:#5B6676;margin:0}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
+.card h2{margin:0;font-size:17px}.card h2 small{display:block;color:#5B6676;font-weight:400;font-size:12px}
+.row{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:9px 8px;border-bottom:1px solid #EEF1F6;vertical-align:middle}th{color:#5B6676;font-weight:400;white-space:nowrap}
+.code{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#5B6676}
+.num{direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+.tree td:first-child{white-space:nowrap}.l1{font-weight:700}.l2{padding-right:28px}.l3{padding-right:52px}
+.sys{background:#EEF2FD;color:#0F369D;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;margin-inline-start:6px}
+.btn{border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;background:#0F369D;color:#fff}.btn.ghost{background:#fff;color:#0F369D;border:1px solid #0F369D}.btn.sm{padding:4px 10px;font-size:12px}
+.drill{background:#F7F9FC}.drill td{border-bottom:1px dashed #E3E8F2}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}.st.wait{background:#FFF1E8;color:#F15A22}.st.off{background:#F1F3F7;color:#5B6676}
+.note{font-size:12px;color:#5B6676;margin:0}
+.pick{display:flex;gap:8px;flex-wrap:wrap}.pick b{border:1px solid #C5CDDB;border-radius:999px;padding:6px 14px;font-size:13px;background:#fff}.pick b.on{background:#0F369D;color:#fff;border-color:#0F369D}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.q{background:#FFF;border:1px dashed #F15A22;border-radius:12px;padding:12px 14px;font-size:13px}
+@media (max-width:760px){.wrap{padding:14px}.grid{grid-template-columns:1fr}table{display:block;overflow-x:auto}th,td{white-space:nowrap}}
+</style></head><body><div class="wrap">
+<div><span class="tag">تصور — مش متنفذ</span><h1>الحساب الرئيسي + التفصيل</h1>
+<p class="sub">الفلوس بتفضل على حساب رئيسي واحد لكل نوع (المحافظ، الفيزا، مستحقات الأطباء)، والشجرة بتعرض جنبه زرار «تفصيل» بيقسّم الرصيد على كل محفظة أو كل طبيب — من غير قيود نقل ومن غير ما نغيّر طرق التحصيل.</p></div>
+
+<section class="card">
+ <h2>1) شجرة الحسابات — المحافظ والفيزا<small>الحسابات ← المحاسبة والأصول ← شجرة الحسابات ← «محافظ القنوات الرقمية والإلكترونية»</small></h2>
+ <table class="tree"><thead><tr><th>الحساب</th><th>الرصيد</th><th></th></tr></thead><tbody>
+  <tr><td class="l1">محافظ القنوات الرقمية والإلكترونية <span class="code">010209</span></td><td class="num">1,000.00</td><td></td></tr>
+  <tr><td class="l2">المحافظ والتحويلات <span class="code">1115</span><span class="sys">حساب النظام</span></td><td class="num">1,000.00</td><td><button class="btn ghost sm">إخفاء التفصيل ▴</button></td></tr>
+  <tr class="drill"><td class="l3">إنستا باي</td><td class="num">0.00</td><td><span class="note">0 إيصال</span></td></tr>
+  <tr class="drill"><td class="l3">فودافون كاش</td><td class="num">0.00</td><td><span class="note">0 إيصال</span></td></tr>
+  <tr class="drill"><td class="l3">فاليو</td><td class="num">0.00</td><td><span class="note">0 إيصال</span></td></tr>
+  <tr class="drill"><td class="l3">محفظة لسه ما اتحددتش</td><td class="num">1,000.00</td><td><span class="st wait">1 إيصال — حدد المحفظة</span></td></tr>
+  <tr><td class="l2">وسيط البطاقات (الفيزا) <span class="code">1114</span><span class="sys">حساب النظام</span></td><td class="num">0.00</td><td><button class="btn ghost sm">تفصيل ▾</button></td></tr>
+  <tr><td class="l2">إنستا باي / فودافون كاش / الفاليو / الفيزا <span class="code">0102010301…04</span></td><td class="num">0.00</td><td><span class="st off">مفيش عليها حركة — نقترح أرشفتها</span></td></tr>
+ </tbody></table>
+ <p class="note">الرصيد الرئيسي هو اللي بيتطابق مع كشف المطابقة والتقارير زي ما هو النهارده. التفصيل بيتحسب من نوع المحفظة المكتوب على كل إيصال.</p>
+</section>
+
+<div class="grid">
+<section class="card">
+ <h2>2) في التحصيل: «أنهي محفظة؟»<small>شاشة التحصيل في الاستقبال — لما الموظف يختار «محفظة إلكترونية»</small></h2>
+ <div class="pick"><b>نقدي</b><b>فيزا</b><b>إنستا باي</b><b class="on">محفظة إلكترونية</b><b>تحويل بنكي</b></div>
+ <div><b>أنهي محفظة؟</b><div class="pick" style="margin-top:6px"><b class="on">فودافون كاش</b><b>فاليو</b><b>محفظة تانية</b></div></div>
+ <p class="note">إجباري مع «محفظة إلكترونية» — علشان التفصيل يطلع صح من أول مرة.</p>
+</section>
+<section class="card">
+ <h2>3) إيصالات قديمة من غير نوع محفظة<small>من نفس التفصيل ← «حدد المحفظة» — المحاسب يحدد، والمدير المالي يأكد</small></h2>
+ <table><thead><tr><th>الإيصال</th><th>المبلغ</th><th>متسجّل كـ</th><th>المحفظة</th></tr></thead><tbody>
+  <tr><td class="num">RC-2026-000010</td><td class="num">1,000.00</td><td>محفظة إلكترونية</td><td><div class="pick"><b>فودافون كاش</b><b>فاليو</b></div></td></tr>
+ </tbody></table>
+ <p class="note">لو اتضح إنه كان «إنستا باي» مش محفظة، بيتصلّح بـ«تصحيح طريقة السداد» الموجود (بموافقة) — مفيش قيد بيتمسح.</p>
+</section>
+</div>
+
+<section class="card">
+ <h2>4) مستحقات الأطباء<small>شجرة الحسابات ← الالتزامات ← «مستحقات الأطباء»</small></h2>
+ <table class="tree"><thead><tr><th>الحساب</th><th>الرصيد</th><th></th></tr></thead><tbody>
+  <tr><td class="l2">مستحقات الأطباء <span class="code">2120</span><span class="sys">حساب النظام</span></td><td class="num">…</td><td><button class="btn ghost sm">إخفاء التفصيل ▴</button></td></tr>
+  <tr class="drill"><td class="l3">د. أحمد سمير</td><td class="num">…</td><td><button class="btn sm">كشف حساب الطبيب</button></td></tr>
+  <tr class="drill"><td class="l3">د. …</td><td class="num">…</td><td><button class="btn sm">كشف حساب الطبيب</button></td></tr>
+  <tr><td class="l2">أتعاب د / أحمد سمير (حسابات لكل طبيب) <span class="code">0201040202 …</span></td><td class="num">0.00</td><td><span class="st off">مفيش عليها حركة — نقترح أرشفتها</span></td></tr>
+ </tbody></table>
+ <p class="note">حساب «مستحقات الأطباء» هيتعلّق تحت فرعه الصح في الشجرة علشان يبان برصيده. صرف د. أحمد سمير (650) اتسجّل عليه صح: من مستحقات الأطباء إلى الخزينة الرئيسية.</p>
+</section>
+
+<div class="q"><b>محتاجين قرارك:</b> الحسابات اللي المحاسب عملها لكل محفظة ولكل طبيب ومفيش عليها حركة — نأرشفها (تختفي من الشجرة ومش بتتمسح) ولا نسيبها؟</div>
+</div></body></html>

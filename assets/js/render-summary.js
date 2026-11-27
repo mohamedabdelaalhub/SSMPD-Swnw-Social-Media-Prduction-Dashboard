@@ -81,9 +81,15 @@
   var adsExpensesCache = null; // { monthly: [...], lastRecordAt: iso, error: null }
 
   function fetchAdsExpensesData() {
-    var url = (window.SSMPD_CONFIG || {}).adsExpensesWebAppUrl;
-    if (!url) return Promise.reject(new Error("رابط جسر مصروفات الإعلانات مش متظبط في config.js"));
-    return fetch(url).then(function (res) {
+    // Goes through the role-checked edge function (ads-expenses-proxy); the Apps Script bridge is no longer called from the browser.
+    var cfg = (window.SSMPD_CONFIG || {}).supabase, client = window.SSMPDDb && window.SSMPDDb.client;
+    if (!cfg || !cfg.url || !client || !client.auth) return Promise.reject(new Error("مصروفات الإعلانات محتاجة تسجيل دخول"));
+    return client.auth.getSession().then(function (r) {
+      var token = r && r.data && r.data.session && r.data.session.access_token;
+      if (!token) throw new Error("سجّل دخولك تاني لعرض مصروفات الإعلانات");
+      return fetch(cfg.url.replace(/\/+$/, "") + "/functions/v1/ads-expenses-proxy", { headers: { apikey: cfg.anonKey, Authorization: "Bearer " + token } });
+    }).then(function (res) {
+      if (res.status === 403) throw new Error("مفيش صلاحية لعرض مصروفات الإعلانات");
       if (!res.ok) throw new Error("تعذّر الوصول لجسر مصروفات الإعلانات (" + res.status + ")");
       return res.json();
     }).then(function (data) {

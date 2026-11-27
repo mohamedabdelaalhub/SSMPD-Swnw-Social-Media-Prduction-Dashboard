@@ -72,7 +72,7 @@ function serviceGroup(s){
 function serviceSelect(services){
  var order=['lab','imaging','physio','other'],groups={};
  services.forEach(function(s){var g=serviceGroup(s);(groups[g.key]||(groups[g.key]={label:g.label,rows:[]})).rows.push(s);});
- return '<label>الخدمة المطلوبة<select name="service_id" required><option value="">اختر الخدمة</option>'+order.map(function(k){var g=groups[k];if(!g||!g.rows.length)return'';return '<optgroup label="'+esc(g.label)+'">'+g.rows.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+(s.department?' — '+esc(s.department):'')+'</option>';}).join('')+'</optgroup>';}).join('')+'</select></label>';
+ return '<label>الخدمة المطلوبة<select name="service_id" required><option value="">اختر الخدمة</option>'+order.map(function(k){var g=groups[k];if(!g||!g.rows.length)return'';return '<optgroup label="'+esc(g.label)+'">'+g.rows.map(function(s){return '<option value="'+esc(s.id)+'" data-code="'+esc(s.canonical_code||s.code||'')+'">'+esc(s.name)+(s.department?' — '+esc(s.department):'')+'</option>';}).join('')+'</optgroup>';}).join('')+'</select></label>';
 }
 
 function openService(id){
@@ -166,10 +166,15 @@ function openFinish(id){
     c.modal('لا يمكن إنهاء الزيارة الآن','<p data-wide>يوجد طلب خدمة لم يُنفذ أو يُلغ بعد'+(names?' — '+esc(names):'')+'. افتح تفاصيل الزيارة وأنهِ الطلب أولًا.</p>',function(){return Promise.resolve();});
     return;
    }
+   /* owner 2026-11-25 supplies: missing billable supply → two confirmations, then close with missing_ack */
+   var VS=window.SSMPDVisitSupplies,guard=VS&&!c.sandbox?VS.finishGuard({c:c,workspace:workspace,payload:{appointment_id:id}}):Promise.resolve({ack:false});
+   return guard.then(function(g){if(!g)return;
+    if(g.ack)return afterCommand(modeCommand(model,'visit_complete',{appointment_id:id,reason:'انتهت الزيارة',missing_ack:true}));
    c.modal('تأكيد: إنهاء الزيارة','<p data-wide>الزيارة هتتقفل ومش بترجّع من الشاشة. يمكن إنهاؤها الآن بدون طلب خدمة إضافية. إذا كان الكشف الأساسي هو الخدمة الوحيدة البسيطة فسيتم تثبيت تنفيذه تلقائيًا قبل الإغلاق.</p>'+c.field('reason','ملاحظة اختيارية','text','',' '),function(v){
-    var payload={appointment_id:id,reason:String(v.reason||'').trim()||'انتهت الزيارة بعد الكشف دون خدمات إضافية'};
-    return afterCommand(modeCommand(model,'visit_complete',payload));
-   },null,{ok:'تأكيد الإنهاء',cancel:'تراجع',danger:true});
+     var payload={appointment_id:id,reason:String(v.reason||'').trim()||'انتهت الزيارة بعد الكشف دون خدمات إضافية'};
+     return afterCommand(modeCommand(model,'visit_complete',payload));
+    },null,{ok:'تأكيد الإنهاء',cancel:'تراجع',danger:true});
+   });
   });
  }).catch(function(e){toast(e.message||'تعذر إنهاء الزيارة','error');});
 }

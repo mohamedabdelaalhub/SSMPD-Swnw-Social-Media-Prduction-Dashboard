@@ -38,26 +38,65 @@ export function extractName(text) {
   return t;
 }
 
+
+// A Facebook/Instagram profile name is used as the lead name only when it looks like a real person's name: 2–4 words, letters only
+// (Arabic or Latin), no emoji/digits/symbols, not a generic placeholder. Single words and nicknames are still asked for.
+const GENERIC_NAMES = /^(facebook|instagram|meta)\s+user$|^مستخدم\s+(فيسبوك|انستجرام|إنستجرام)$/i;
+export function looksLikeRealName(raw) {
+  const t = String(raw ?? "").replace(/\s+/g, " ").trim();
+  if (t.length < 5 || t.length > 40 || GENERIC_NAMES.test(t)) return null;
+  if (!/^[\u0621-\u064A\u0671A-Za-z][\u0621-\u064A\u0671A-Za-z'.\-\s]*$/.test(t)) return null;
+  const words = t.split(" ");
+  if (words.length < 2 || words.length > 4 || words.some((w) => w.replace(/[^\u0621-\u064A\u0671A-Za-z]/g, "").length < 2)) return null;
+  return t;
+}
+
 const MSG = {
-  greet: "أهلاً بحضرتك في عيادات سونو التخصصية 🌿 أنا المساعد الآلي، هساعدك تحجز وزميلنا في الاستقبال هيأكد الميعاد معاك.",
+  greet: "أهلاً بحضرتك في مركز عيادات سونو التخصصية 🌿 أنا المساعد الآلي، هساعدك تحجز وزميلنا في الاستقبال هيأكد الميعاد معاك.",
   service: "حضرتك محتاج/ة أنهي خدمة؟ (علاج طبيعي، ليزر، أسنان، أو خدمة تانية)",
   name: "اسم حضرتك إيه؟",
-  phone: "رقم موبايل حضرتك علشان زميلنا في الاستقبال يكلمك ويأكد الميعاد؟",
+  phone: "ممكن رقم موبايل حضرتك علشان زميلنا في الاستقبال يكلمك ويحجزلك الميعاد؟",
+  reminder: "لو حابب زميلنا في الاستقبال يكلمك ويحجزلك الميعاد، ابعتلنا رقم موبايلك هنا 🌿",
   time: "إيه اليوم أو الوقت المناسب لحضرتك؟",
   unclear: "محتاج توضيح أكتر علشان أفهم حضرتك 🙏",
   unclear2: "هنحوّل حضرتك لزميل من فريقنا يكمل معاك 🙏",
   human: "تمام، زميل من فريقنا هيكمل معاك في أقرب وقت 🙏",
-  medical: "شكراً لسؤال حضرتك 🌿 وكيل بشري من فريقنا هيكمل معاك في أقرب وقت.",
+  medical: "وصلتنا رسالتك 🌿 فريقنا هيتواصل معاك في أقرب وقت يا فندم.",
 };
+
+// Hand-off wording (owner 2026-11-22: «ممكن نخليهم بدايل بدل رسالة واحدة»). The old single sentence was
+// «شكراً لسؤال حضرتك 🌿 وكيل بشري من فريقنا هيكمل معاك في أقرب وقت.». These four were chosen by the owner; the variant is picked
+// per conversation (stable for the same seed) so one person never sees two different wordings. Outside opening hours
+// (10:00-24:00 Cairo since the owner's 2026-11-22 change) the owner's «بيرد من الساعة 10» wording is used instead.
+export const HANDOFF_VARIANTS = [
+  "وصلتنا رسالتك 🌿 فريقنا هيتواصل معاك في أقرب وقت يا فندم.",
+  "حضرتك في أمان معانا 🌿 فريق الاستقبال هيراجع رسالتك ويرد عليك بنفسه.",
+  "شكراً لتواصلك معانا 🌿 حد من فريق الاستقبال هيكمّل معاك في أقرب وقت.",
+];
+export const HANDOFF_AFTER_HOURS = "شكراً لتواصلك 🌿 فريق الاستقبال بيرد من الساعة 10 الصبح، وهيكلّمك أول ما نبدأ إن شاء الله.";
+
+export function clinicOpen(now = new Date()) {
+  const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Africa/Cairo" }).format(now));
+  return hour >= 10;  // open 10:00 until midnight
+}
+
+export function handoffReply(ctx = {}) {
+  if (!clinicOpen(ctx.now || new Date())) return HANDOFF_AFTER_HOURS;
+  const seed = String(ctx.seed ?? Math.random());
+  let h = 0;
+  for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return HANDOFF_VARIANTS[h % HANDOFF_VARIANTS.length];
+}
 export const MESSAGES = MSG;
 
-const DEFAULT = { stage: "collecting", name: null, phone: null, service: null, preferred_time: null, expect: null, unclear: 0, handoff_reason: null };
+const DEFAULT = { stage: "collecting", name: null, name_source: null, phone: null, service: null, preferred_time: null, expect: null, unclear: 0, handoff_reason: null };
 const askOf = (expect) => MSG[expect] || null;
 
+// Order (owner 2026-11-24): phone first (the reception needs it), then the name, then the time. The service is never asked:
+// it comes from the text, or from ctx.defaultService (the Messenger ad is physiotherapy), so people don't stop at a pointless question.
 function missing(s) {
-  if (!s.service) return "service";
-  if (!s.name) return "name";
   if (!s.phone) return "phone";
+  if (!s.name) return "name";
   if (!s.preferred_time) return "time";
   return null;
 }
@@ -65,7 +104,7 @@ function missing(s) {
 // advance(state, text, { category, firstContact }) → { state, reply, handoff, alert, ready, infoReply, silent, passthrough }
 export function advance(prev, text, ctx = {}) {
   const s = { ...DEFAULT, ...(prev || {}) };
-  const out = (extra) => ({ state: s, reply: null, handoff: null, alert: false, ready: false, infoReply: false, silent: false, passthrough: false, ...extra });
+  const out = (extra) => ({ state: s, reply: null, handoff: null, alert: false, ready: false, leadNow: false, infoReply: false, silent: false, passthrough: false, ...extra });
   if (s.stage === "handoff" || s.stage === "ready") return out({ silent: true });
 
   const cat = ctx.category || "general";
@@ -73,17 +112,29 @@ export function advance(prev, text, ctx = {}) {
   const toHandoff = (reason, reply, alert = false) => { s.stage = "handoff"; s.handoff_reason = reason; return out({ handoff: reason, reply, alert }); };
 
   if (humanRequested(t)) return toHandoff("human", MSG.human);
-  if (cat === "medical_sensitive") return toHandoff("medical", MSG.medical);
+  if (cat === "medical_sensitive") return toHandoff("medical", handoffReply(ctx));
   if (cat === "emergency") return toHandoff("emergency", null, true);   // caller sends the approved emergency template + red alert
   if (cat === "complaint") return toHandoff("complaint", null, true);   // caller sends the approved complaint template + red alert
   if (cat === "thanks" || cat === "spam") return out({ passthrough: true });
 
-  let progress = false;
+  if (!s.name && ctx.profileName) { const pn = looksLikeRealName(ctx.profileName); if (pn) { s.name = pn; s.name_source = "facebook"; } }
+  if (!s.service && ctx.defaultService) s.service = ctx.defaultService;
+  let progress = false, phoneJustCaptured = false;
   const ph = extractPhone(t);
-  if (ph && !s.phone) { s.phone = ph; progress = true; }
+  if (ph && !s.phone) { s.phone = ph; progress = true; phoneJustCaptured = true; }
   const sv = extractService(t);
-  if (sv && !s.service) { s.service = sv; progress = true; }
-  if (s.expect === "name" && !s.name) { const n = extractName(t); if (n) { s.name = n; progress = true; } }
+  // A service named in the text wins over the default (e.g. someone on the physio ad asking about laser).
+  if (sv && (!s.service || (ctx.defaultService && s.service === ctx.defaultService && sv !== s.service))) { s.service = sv; progress = true; }
+  // "منى 01012345678" in one message: take the name from what is left once the number is removed.
+  if (phoneJustCaptured && !s.name) {
+    const rest = digits(t).replace(/[+\d][\d\s\-().]{8,}/g, " ").replace(/\s+/g, " ").trim();
+    const n = rest ? extractName(rest) : null;
+    if (n) s.name = n;
+  }
+  // A name the customer types wins over the profile name ("اسمي …" at any point, or the answer to the name question).
+  const said = t.match(/(?:اسمي|اسمى)\s+([^\n،,.؟?]+)/);
+  if (said) { const n = extractName(said[1]); if (n) { s.name = n; s.name_source = null; progress = true; } }
+  if (s.expect === "name" && (!s.name || s.name_source === "facebook")) { const n = extractName(t); if (n) { s.name = n; s.name_source = null; progress = true; } }
   if (s.expect === "time" && !s.preferred_time) {
     const clean = t.trim();
     if (clean && clean.length <= 140 && !ph && !isQuestion(clean)) { s.preferred_time = clean; progress = true; }
@@ -98,9 +149,10 @@ export function advance(prev, text, ctx = {}) {
   }
 
   const need = missing(s);
-  if (!need) { s.stage = "ready"; s.expect = null; return out({ ready: true, reply: `تمام يا ${s.name} 🌿 سجّلنا طلبك لـ${serviceLabel(s.service)}. زميلنا من الاستقبال هيتواصل مع حضرتك على رقمك لتأكيد الميعاد.` }); }
+  if (!need) { s.stage = "ready"; s.expect = null; return out({ ready: true, leadNow: phoneJustCaptured && !s.lead_id, reply: `تمام يا ${s.name} 🌿 سجّلنا طلبك لـ${serviceLabel(s.service)}. زميلنا من الاستقبال هيتواصل مع حضرتك على رقمك لتأكيد الميعاد.` }); }
   s.expect = need;
   const question = askOf(need);
+  const leadNow = phoneJustCaptured && !s.lead_id;   // the lead is created the moment the phone arrives, not at the end
   if (q && !progress) return out({ infoReply: true, reply: question });
-  return out({ reply: ctx.firstContact ? MSG.greet + "\n" + question : question });
+  return out({ leadNow, reply: ctx.firstContact ? MSG.greet + "\n" + question : question });
 }

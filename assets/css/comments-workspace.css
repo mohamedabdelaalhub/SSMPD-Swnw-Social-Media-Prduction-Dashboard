@@ -155,3 +155,139 @@
  .cm-wrap .cm-composer .cm-input,.cm-search input{font-size:16px}
 }
 @media (prefers-reduced-motion:reduce){.cm-conv{transition:none}}
+/* WhatsApp replies from the dashboard (owner 2026-11-22): who answers now + approved templates outside 24h */
+.cm-bot{flex:none;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;font-size:12px;white-space:nowrap}
+.cm-bot::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.cm-bot.ai{background:#E3F7F8;color:#00747C}
+.cm-bot.human{background:#FFF1E6;color:#B4540A}
+.cm-wa-closed{display:grid;gap:10px}
+.cm-wa-closed p{margin:0;font-weight:600}
+.cm-tpls{display:flex;flex-wrap:wrap;gap:8px}
+.cm-tpl{display:grid;gap:4px;text-align:start;max-width:100%;min-width:0;border:1px solid #F4D3BD;background:#fff;border-radius:12px;padding:8px 12px;font:inherit;font-size:12px;color:#16212E;cursor:pointer}
+.cm-tpl span{color:#667085;overflow-wrap:anywhere;line-height:1.7}
+@media (max-width:760px){.cm-chat-head .cm-bot{display:none}}
+/* Chat look approved by the owner 2026-11-22 («طبقه», mockup docs/ui-references/mockups/chat-inbox-v2.html):
+   soft white cards, light bubbles with the name + time under them, one-bar composer, line-icon avatars, quick actions.
+   Owner (same day): the reply bubbles take the platform's colour so staff always know where they are —
+   Messenger blue, Instagram pink/purple, WhatsApp green; staff replies solid, bot/page replies a light tint of it. */
+@media screen {
+ .cm-inbox{gap:16px}
+ .cm-pane{border:0;border-radius:24px;box-shadow:0 6px 24px rgba(15,54,157,.07)}
+ .cm-list-head{padding:16px 16px 12px;gap:12px}
+ .cm-search{min-height:44px;border:0;border-radius:14px;background:#F3F6FB}
+ .cm-search::before{content:"";width:18px;height:18px;flex:none;background:#667085;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") center/contain no-repeat}
+ .cm-status-tabs{margin:0 -16px;padding:0 16px}
+ .cm-status-tabs button{font-weight:500;color:#667085}
+ .cm-status-tabs button.on{color:#16212E;font-weight:700}
+ .cm-chip{border-radius:12px;padding:6px 12px}
+ .cm-convs{padding:6px 10px 12px}
+ .cm-conv{grid-template-columns:46px minmax(0,1fr) auto;gap:12px;padding:12px 10px;border-radius:16px}
+ .cm-conv:hover{background:#F3F6FB}
+ .cm-conv.on{background:#EAF0FF}
+ .cm-av{width:46px;height:46px;background:#F3F6FB;color:#0F369D}
+ .cm-av-instagram,.cm-av-whatsapp{background:#F3F6FB}
+ .cm-av svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+ .cm-av-pl{width:19px;height:19px}
+ .cm-av-pl svg{width:10px;height:10px;stroke:#fff;stroke-width:2.4}
+ .cm-conv-unread{background:#00B0BD;color:#fff}
+ .cm-chat-head{gap:12px;padding:14px 18px}
+ .cm-chat-head .cm-av{width:44px;height:44px}
+ .cm-ibtn{min-width:44px;min-height:44px;border:0;border-radius:14px;background:#F3F6FB}
+ .cm-ibtn:hover{background:#EAF0FF}
+ .cm-win{flex:none;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;font-size:12px;white-space:nowrap;background:#F3F6FB;color:#667085}
+ .cm-win.late{background:#FDECEA;color:#D0402A}
+ .cm-win svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+ .cm-msgs{padding:18px 22px;gap:4px;background:linear-gradient(#fff,#FBFCFE)}
+ .cm-day{margin:12px 0;background:#F3F6FB;padding:4px 14px}
+ .cm-b{max-width:min(560px,72%);gap:4px;margin-top:6px}
+ .cm-b p{padding:11px 16px;border-radius:20px;line-height:1.9}
+ .cm-b-meta{font-size:11px;color:#667085;padding:0 6px;white-space:nowrap}
+ .cm-b-meta .cm-b-who,.cm-b-meta time{padding:0;font-size:inherit}
+ .cm-b.me .cm-b-meta{text-align:end}
+ .cm-b.them p{border-color:#E6EBF3}
+ /* page / bot replies: light tint; staff replies: solid — per platform */
+ .cm-b.me p,.cm-b.me.auto p{background:#EAF0FF;color:#16212E;border:0}
+ .cm-b.me p a,.cm-b.me.auto p a{color:#0F369D}
+ .cm-b.me.staff p{background:#0F369D;color:#fff}
+ .cm-b.me.staff p a{color:#fff}
+ .pl-facebook .cm-b.me p{background:#E7F0FE}
+ .pl-facebook .cm-b.me.staff p{background:#166FE5;color:#fff}
+ .pl-instagram .cm-b.me p{background:#FBEAF3}
+ .pl-instagram .cm-b.me.staff p{background:linear-gradient(135deg,#7B35B0,#B52D82 55%,#C92A66);color:#fff}
+ .pl-whatsapp .cm-b.me p{background:#DCF5E3}
+ .pl-whatsapp .cm-b.me.staff p{background:#0E7A6E;color:#fff}
+ .pl-facebook .cm-b.me.staff p a,.pl-instagram .cm-b.me.staff p a,.pl-whatsapp .cm-b.me.staff p a{color:#fff}
+ /* composer: one bar */
+ .cm-composer{grid-template-columns:minmax(0,1fr);padding:12px 16px 14px;gap:6px}
+ .cm-cbar{display:flex;align-items:flex-end;gap:8px;background:#F3F6FB;border-radius:20px;padding:6px;min-width:0}
+ .cm-wrap .cm-composer .cm-cbar .cm-input{flex:1;width:0;min-width:0;min-height:40px;max-height:140px;resize:none;border:0;background:none;box-shadow:none;outline:none;padding:10px 8px;line-height:1.7}
+ .cm-cbar .btn{flex:none;min-height:40px;border-radius:14px;white-space:nowrap}
+ .cm-cbar .cm-sug{background:#fff;border-color:#fff;color:#0F369D}
+ .cm-wrap .cm-cbar .cm-send{display:inline-flex;align-items:center;gap:8px;padding:0 18px}
+ .cm-cbar .cm-send svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+ .cm-composer-row{padding:0 6px}
+ .cm-composer-row:not(:has(.btn)) .cm-hint{flex-basis:100%}
+ .cm-closed{margin:12px 16px 14px;border:0;border-radius:18px}
+ /* contact pane */
+ .cm-info{padding:24px 20px}
+ .cm-info>.cm-av{width:84px;height:84px;background:#EAF0FF}
+ .cm-info>.cm-av svg{width:38px;height:38px}
+ .cm-info>.cm-av .cm-av-pl{width:24px;height:24px;border-width:3px}
+ .cm-info h3{font-size:18px;margin-top:4px}
+ .cm-acts{display:flex;justify-content:center;gap:22px;margin:6px 0}
+ .cm-act{display:grid;justify-items:center;gap:6px;font-size:12px;color:#16212E;text-decoration:none;white-space:nowrap}
+ .cm-act span{width:46px;height:46px;border-radius:50%;background:#F3F6FB;color:#0F369D;display:grid;place-items:center}
+ .cm-act:hover span{background:#EAF0FF}
+ .cm-act svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+ .cm-act:focus-visible{outline:3px solid #F15A22;outline-offset:2px;border-radius:12px}
+}
+@media screen and (max-width:1100px){.cm-inbox.sheet .cm-info-pane{border-radius:24px 24px 0 0}}
+@media screen and (max-width:760px){
+ .cm-inbox,.cm-inbox.no-info{gap:12px}
+ .cm-chat-head{padding:10px 12px;gap:8px}
+ .cm-chat-head .cm-win{display:none}
+ .cm-msgs{padding:14px 12px}
+ .cm-b{max-width:86%}
+ .cm-composer{padding:10px}
+ .cm-cbar .cm-sug span{display:none}
+ .cm-hint{order:0}
+}
+/* «الليد» card in the contact pane (owner 2026-11-22): the lead behind the chat, its status, opens it in the leads module */
+@media screen {
+ .cm-lead-box{display:grid}
+ .cm-lead{display:grid;gap:10px;width:100%;text-align:start;font:inherit;color:#16212E;background:#F7F9FD;border:1px solid #E6EBF3;border-radius:18px;padding:14px;box-sizing:border-box;min-width:0}
+ .cm-lead>b,.cm-lead-head b{font-size:14px}
+ .cm-lead-wait span,.cm-lead-note{color:#667085;font-size:12px;line-height:1.8}
+ .cm-lead-none .btn{justify-self:start}
+ .cm-lead-open{cursor:pointer;border-inline-start:4px solid #0F369D}
+ .cm-lead-open:hover{background:#EEF3FF;border-color:#C9D6F2}
+ .cm-lead-open:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+ .cm-lead-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+ .cm-lead-st{flex:none;white-space:nowrap;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px}
+ .cm-lead-st.st-new{background:#00B0BD;color:#fff}
+ .cm-lead-st.st-soon{background:#FFF1E0;color:#9A4E00}
+ .cm-lead-st.st-ok{background:#E6F4EC;color:#2F7D5C}
+ .cm-lead-st.st-late{background:#FDECEA;color:#D0402A}
+ .cm-lead-st.st-old{background:#525B6F;color:#fff}
+ .cm-lead-facts{display:grid;gap:8px;margin:0}
+ .cm-lead-facts div{display:flex;justify-content:space-between;gap:10px;min-width:0}
+ .cm-lead-facts dt{color:#667085;font-size:12px;flex:none}
+ .cm-lead-facts dd{margin:0;font-size:13px;font-weight:600;text-align:end;min-width:0;overflow-wrap:anywhere}
+ .cm-lead-go{color:#0F369D;font-size:12px;font-weight:700}
+}
+/* WhatsApp template requests (owner only) */
+.cm-tpl-admin{display:grid;gap:10px;margin-top:8px;padding-top:10px;border-top:1px dashed #D5DBE6}
+.cm-tpl-admin-row{display:flex;flex-wrap:wrap;gap:8px}
+.cm-tpl-form{display:grid;gap:8px;min-width:0}
+.cm-tpl-form label{display:grid;gap:4px;font-weight:600}
+.cm-tpl-form textarea{width:100%;box-sizing:border-box;resize:vertical}
+.cm-tpl-cat{display:flex;flex-wrap:wrap;gap:14px}
+.cm-tpl-cat label{display:flex;align-items:center;gap:6px;font-weight:600}
+.cm-warn{margin:0;color:#B4361E;font-size:12px;font-weight:600}
+.cm-tpl-preview{white-space:pre-wrap;overflow-wrap:anywhere;background:#DCF5E3;color:#16212E;border-radius:12px;padding:10px 12px;line-height:1.8;min-width:0}
+.cm-reqs{display:grid;gap:8px}
+.cm-req{border:1px solid #E3E8F2;border-radius:12px;padding:8px 10px;min-width:0;overflow-wrap:anywhere}
+.cm-req p{margin:4px 0}
+.cm-badge.st-APPROVED{background:#E3F4EB;color:#2F7D5C}
+.cm-badge.st-REJECTED,.cm-badge.st-FAILED{background:#FBE7E3;color:#D0402A}
+.cm-badge.st-PENDING,.cm-badge.st-QUEUED,.cm-badge.st-LEASED{background:#EAF0FF;color:#0F369D}

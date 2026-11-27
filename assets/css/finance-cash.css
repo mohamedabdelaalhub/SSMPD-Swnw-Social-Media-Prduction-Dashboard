@@ -93,3 +93,110 @@
 .fc-mb-mini{border:1px solid #E3E8F2;border-radius:12px;padding:12px 14px;font-size:13px;color:#3B4658;display:grid;gap:4px;background:#fff}.fc-mb-mini b{font-size:18px;color:#16212E}
 .fc-mb-mini.is-in b{color:#2F7D5C}.fc-mb-mini.is-out b{color:#D0402A}
 @media (max-width:640px){.fc-mb-row{grid-template-columns:1fr}.fc-mb-tile b{font-size:24px}}
+/* «جرد الخزينة الرئيسية» box (20261122200000) */
+.mc{border:2px solid #0F369D;border-radius:16px;padding:16px 18px;background:#F5F8FF;display:grid;gap:12px;margin:0 0 12px}.mc[hidden]{display:none}
+.mc-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.mc-head b{display:block;font-size:20px;color:#0F369D}.mc-head small{color:#3B4658;font-size:13px}
+.mc-big{font-size:18px;padding:14px 26px;border-radius:12px;min-height:52px}
+.mc-facts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.mc-fact{background:#fff;border:1px solid #E3E8F2;border-radius:12px;padding:12px 14px;display:grid;gap:4px;font-size:13px;color:#3B4658}
+.mc-fact b{font-size:20px;color:#16212E}.mc-fact.is-wait b{color:#F15A22}.mc-fact.is-late{border-color:#F15A22;background:#FFF4EE}.mc-diff{color:#D0402A;font-weight:700}
+.mc-hint{margin:0;font-size:13px;color:#3B4658}.mc-pending{display:grid;gap:8px;background:#fff;border:1px solid #E3E8F2;border-radius:12px;padding:12px 14px}
+.mc-p{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}.mc-p.is-late span{color:#D0402A;font-weight:700}
+.mc-form{background:#fff;border:1px solid #E3E8F2;border-radius:12px;padding:14px}.mc-form form{display:grid;gap:10px}
+.mc-den{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mc-den label,.mc-form label{display:grid;gap:4px;font-size:13px}.mc-den input,.mc-form input{min-height:40px}
+.mc-total b{font-size:20px;color:#0F369D}.mc-actions{display:flex;gap:8px;flex-wrap:wrap}.mc-status{margin:0;font-size:13px;color:#2F7D5C}.mc-status:empty{display:none}
+@media (max-width:640px){.mc-facts{grid-template-columns:1fr}.mc-den{grid-template-columns:repeat(2,1fr)}.mc-big{width:100%}}
+/* «الضرائب» box + tax report (20261122280000) */
+.tx-box{border:1px solid #E3E8F2;border-radius:14px;padding:14px;display:grid;gap:10px;background:#fff;margin:10px 0}
+.tx-head b{display:block;font-size:16px;color:#0F369D}.tx-head small{color:#5B6676;font-size:12px}
+.tx-types{display:flex;gap:18px;flex-wrap:wrap}.tx-chk{display:flex;gap:6px;align-items:center;font-weight:700}.tx-chk small{font-weight:400;color:#5B6676}
+.tx-portal{border:2px solid #C5CDDB;border-radius:12px;padding:12px;display:grid;gap:8px}.tx-portal.is-uploaded{border-color:#2F7D5C;background:#F2FAF6}.tx-portal.is-pending{border-color:#0F369D;background:#F5F8FF}.tx-portal.is-not_uploaded{border-color:#F15A22;background:#FFF7F2}
+.tx-row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.tx-seg{display:inline-flex;border:1px solid #C5CDDB;border-radius:999px;overflow:hidden}.tx-seg b{padding:4px 14px;font-size:13px}.tx-seg b.on{background:#2F7D5C;color:#fff}.tx-seg b.on.no{background:#F15A22}.tx-seg b.wait{background:#0F369D;color:#fff}
+.tx-kv{display:grid;grid-template-columns:150px 1fr;gap:4px 12px;font-size:13px}.tx-kv span:nth-child(odd){color:#5B6676}.tx-ltr{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all}
+.tx-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tx-note{margin:0;font-size:12px;color:#5B6676}.tx-status{margin:0;font-size:13px;color:#2F7D5C}.tx-status:empty{display:none}
+.tx-form{display:grid;gap:8px}.tx-form label{display:grid;gap:4px;font-size:13px}.tx-form input{min-height:38px}
+.tx-overlay{position:fixed;inset:0;background:rgba(22,33,46,.45);display:grid;place-items:center;z-index:1000;padding:16px}.tx-dialog{background:#fff;border-radius:16px;padding:16px;max-width:560px;width:100%;max-height:90vh;overflow:auto;display:grid;gap:8px}.tx-close{justify-self:start}
+.tx-report{border:1px solid #E3E8F2;border-radius:16px;padding:16px;background:#fff;display:grid;gap:12px;margin:0 0 14px}
+.tx-rhead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:end}.tx-rhead b{display:block;font-size:18px;color:#0F369D}.tx-rhead small{color:#5B6676}
+.tx-period{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.tx-period label{display:grid;gap:2px;font-size:12px}
+.tx-pills{display:flex;gap:8px;flex-wrap:wrap}.tx-pill{border-radius:999px;padding:6px 14px;background:#fff;border:1px solid #E3E8F2;font:inherit;font-size:13px;cursor:pointer}.tx-pill.on{background:#16212E;color:#fff;border-color:#16212E}
+.tx-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.tx-kpi{border:1px solid #E3E8F2;border-radius:12px;padding:12px;display:grid;gap:2px}.tx-kpi span,.tx-kpi small{color:#5B6676;font-size:12px}.tx-kpi b{font-size:20px}.tx-kpi.ok b{color:#2F7D5C}.tx-kpi.wait b{color:#F15A22}
+.tx-warn{margin:0;background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px}
+.tx-table{overflow-x:auto}.tx-table table{width:100%;border-collapse:collapse;font-size:13px}.tx-table th,.tx-table td{text-align:right;padding:8px;border-bottom:1px solid #EEF1F6;white-space:nowrap}.tx-table th{color:#5B6676;font-weight:400}
+.tx-st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;background:#EEF1F6;color:#3B4658}.tx-st.is-uploaded{background:#E6F4EC;color:#2F7D5C}.tx-st.is-pending{background:#E8EEFB;color:#0F369D}.tx-st.is-not_uploaded{background:#FFF1E8;color:#F15A22}
+.tx-settings{border-top:1px solid #EEF1F6;padding-top:10px}.tx-settings form{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:end;margin-top:10px}.tx-settings label{display:grid;gap:4px;font-size:13px}.tx-settings .tx-note{grid-column:1/-1}
+.tx-hint{margin:4px 0 8px;font-size:12px;color:#0F369D;background:#F5F8FF;border-radius:8px;padding:6px 10px}.tx-hint:empty{display:none}
+@media (max-width:640px){.tx-kpis,.tx-settings form{grid-template-columns:1fr}.tx-kv{grid-template-columns:120px 1fr}}
+/* «تسوية فروق الخزن» (20261124190000) */
+.cs-st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}.cs-st.ok{background:#E6F4EC;color:#2F7D5C}.cs-st.wait{background:#FFF1E8;color:#F15A22}.cs-st.blue{background:#E8EEFB;color:#0F369D}
+.cs-neg{color:#D0402A;font-weight:700}.btn.btn-orange{background:#F15A22;color:#fff;border-color:#F15A22}
+.cs-facts{display:grid;grid-template-columns:120px 1fr;gap:4px 12px;font-size:13px;margin-bottom:8px}.cs-facts span:nth-child(odd){color:#5B6676}
+.cs-entry{border:1px dashed #C5CDDB;border-radius:12px;padding:10px 12px;font-size:13px;display:grid;gap:4px;background:#FBFCFE;margin:8px 0}.cs-entry div{display:flex;justify-content:space-between;gap:12px}
+.cs-warn{background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px;margin:8px 0}.cs-note{font-size:12px;color:#5B6676;margin:4px 0}
+/* «تفصيل» الحساب الرئيسي (account-breakdown.js, 20261125030000) */
+.ab-modal .modal{width:min(880px,95vw)}
+.ab-modal .fc-table{overflow-x:auto}
+.ab-modal .fc-table table{min-width:0;width:100%}
+.ab-modal td,.ab-modal th{white-space:nowrap}
+.ab-modal .ab-total{margin:0 0 10px;font-size:15px}
+.ab-modal .ab-other td{color:#5B6676}
+.ab-modal .ab-kind{min-height:34px;border:1px solid #C5CDDB;border-radius:8px;padding:4px 8px;font:inherit;background:#fff}
+.ab-modal h4{margin:16px 0 8px}
+/* «جرد الوردية» (count-check.js, 20261125110000) */
+.cc-modal{z-index:9700}
+.cc-modal .modal{width:min(460px,95vw)}
+.cc-table{width:100%;border-collapse:collapse;font-size:14px}.cc-table td{padding:8px 4px;border-bottom:1px solid #EEF1F6}.cc-table td.n{text-align:left;white-space:nowrap}
+.cc-table .cc-tot td{font-weight:700;font-size:16px;border-bottom:0}
+.cc-alert{background:#FFF4EE;border:1px solid #F8C9B3;border-radius:12px;padding:12px 14px;display:grid;gap:6px;margin-bottom:12px}.cc-alert b{color:#B8410F}
+.cc-modal .btn.cc-warn{background:#F15A22;color:#fff;border-color:#F15A22}
+.cc-tog{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid #E3E8F2;border-radius:12px;padding:12px 14px;flex-wrap:wrap}.cc-tog b{display:block}.cc-tog small{color:#5B6676}
+.cc-state{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}.cc-state.on{background:#E6F4EC;color:#2F7D5C}.cc-state.off{background:#F1F3F7;color:#5B6676}
+.cc-setting{margin-top:16px}
+.cc-att{display:block;margin-top:4px;color:#5B6676}.cc-att .bad{color:#D0402A}.cc-att .ok{color:#2F7D5C}
+/* سجل المراجعة in words (help 281) */
+.fc-aud{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.fc-aud li{display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:12px;align-items:center;background:#fff;border:1px solid #E6EBF3;border-radius:14px;padding:10px 14px;min-width:0}
+.fc-aud-t{font-size:12.5px;color:#667085}.fc-aud b{display:block;font-size:14px;color:#16212E}.fc-aud small{display:block;font-size:12.5px;color:#475467;line-height:1.6;overflow-wrap:anywhere}
+.fc-aud-who{font-size:12.5px;color:#0F369D;background:#EAF0FF;border-radius:999px;padding:3px 10px;white-space:nowrap}
+@media(max-width:600px){.fc-aud li{grid-template-columns:minmax(0,1fr) auto}.fc-aud-t{grid-column:1/-1}}
+/* «حركات اليوم» (owner 2026-11-26, finance-day-movements.js): summary of the user's shift, tabs, one-line lists, detail popups */
+.dm-wrap{display:grid;gap:12px}.dm-top{display:grid;gap:12px}
+.dm-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.dm-tile{border-radius:14px;border:1px solid #e6ebf3;background:#fff;padding:12px;text-align:right;font:inherit;color:#16212E;cursor:pointer;display:grid;gap:4px;min-width:0;transition:transform .15s}
+.dm-tile small{font-size:12px;color:#667085}.dm-tile b{font-size:19px}.dm-tile span{font-size:11.5px;color:#667085;line-height:1.5}
+.dm-tile.hero{background:linear-gradient(135deg,#F15A22,#f37b4c);border-color:#F15A22;color:#fff}.dm-tile.hero small,.dm-tile.hero span{color:#fff;opacity:.92}
+.dm-tile:hover{transform:translateY(-2px)}.dm-tile:focus-visible,.dm-tabs button:focus-visible,.dm-ln:focus-visible,.dm-x:focus-visible,.dm-chip:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+.dm-tile .neg,.dm-r .neg,.dm-ln .neg{color:#D0402A}.dm-tile .warn,.dm-ln .warn,.dm-r .warn{color:#B4400F}.dm-ln .pos,.dm-r .pos{color:#2F7D5C}
+.dm-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #e6ebf3;padding-bottom:10px}
+.dm-tabs button{font:inherit;font-size:14px;font-weight:700;padding:7px 14px;border-radius:10px;border:0;background:transparent;color:#475467;cursor:pointer}
+.dm-tabs button[aria-selected=true]{background:#0F369D;color:#fff}.dm-n{font-size:12px;opacity:.75;margin-inline-start:4px}
+.dm-pane{display:grid;gap:10px}.dm-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.dm-bar input{flex:1 1 260px;min-height:38px;border:1px solid rgba(15,54,157,.15);border-radius:10px;padding:5px 10px;font:inherit;color:#16212E;background:#fff}.dm-sp{flex:1}
+.dm-chips{display:flex;gap:6px;flex-wrap:wrap}.dm-chip{font:inherit;font-size:12.5px;padding:5px 11px;border-radius:999px;background:#F1F4F8;color:#344054;border:0;cursor:pointer}.dm-chip.on{background:#0F369D;color:#fff}
+.dm-list{display:grid;border:1px solid #e6ebf3;border-radius:14px;overflow:hidden;background:#fff}
+.dm-ln{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.4fr) minmax(0,1fr) 24px;gap:10px;align-items:center;width:100%;padding:11px 14px;border:0;border-top:1px solid #eef1f6;background:#fff;font:inherit;color:#16212E;text-align:right;cursor:pointer;min-height:52px}
+.dm-ln:first-child{border-top:0}.dm-ln:hover{background:#F7F9FD}
+.dm-a{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}.dm-a b{font-size:14.5px;color:#0F369D;text-decoration:underline;text-decoration-color:rgba(15,54,157,.25);text-underline-offset:4px}
+.dm-b{font-size:12.5px;color:#667085;min-width:0}.dm-c{text-align:left;font-weight:700;font-size:14.5px;white-space:nowrap}.dm-go{color:#98A2B3;font-size:16px;text-align:left}
+.dm-dot{width:8px;height:8px;border-radius:50%;background:#2F7D5C;flex:none}.dm-dot.r{background:#D0402A}
+.dm-tag{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EEF4FF;color:#0F369D;white-space:nowrap}
+.dm-tag.vz{background:#E9F7FB;color:#0B6E8A}.dm-tag.rf{background:#F4F0FF;color:#5B3CC4}.dm-tag.wk{background:#F1F4F8;color:#344054}.dm-tag.st{background:#ECF8F2;color:#2F7D5C}.dm-tag.sp{background:#FFF4EE;color:#B4400F}.dm-tag.red{background:#FEF3F2;color:#B42318}
+.dm-ov{position:fixed;inset:0;background:rgba(22,33,46,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:60}
+.dm-ov[hidden]{display:none}
+.dm-pop{width:min(640px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(22,33,46,.3);display:grid;gap:12px;padding:16px;color:#16212E}
+.dm-ph{display:flex;align-items:center;gap:8px}.dm-tt{flex:1;min-width:0}.dm-ph h3{margin:0;font-size:17px}.dm-ph p{margin:2px 0 0;font-size:12px;color:#667085}
+.dm-x{width:38px;height:38px;flex:none;border-radius:10px;border:1px solid #D5DEEE;background:#fff;font:inherit;font-size:18px;cursor:pointer;color:#16212E}
+.dm-kv{display:grid;border:1px solid #eef1f6;border-radius:12px;overflow:hidden}.dm-kv h4{margin:0;padding:9px 12px;font-size:13px;background:#F1F4F8;color:#344054}
+.dm-r{display:flex;justify-content:space-between;gap:12px;padding:9px 12px;border-top:1px solid #eef1f6;font-size:13.5px}.dm-kv h4+.dm-r,.dm-kv>.dm-r:first-child{border-top:0}
+.dm-r>span{color:#667085}.dm-r>b{text-align:left}.dm-r.tot{background:#F7F9FD;font-weight:700}
+button.dm-r{width:100%;border:0;border-top:1px solid #eef1f6;background:#fff;font:inherit;font-size:13.5px;cursor:pointer;text-align:right;color:inherit}button.dm-r:hover{background:#F7F9FD}
+.dm-flags{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:760px){.dm-sum{grid-template-columns:repeat(2,minmax(0,1fr))}.dm-sum .hero{grid-column:1/-1}
+ .dm-ln{grid-template-columns:minmax(0,1fr) auto 18px;gap:4px 10px}.dm-b{grid-column:1/2;grid-row:2}.dm-c{grid-row:1/3;grid-column:2}.dm-go{grid-row:1/3;grid-column:3}
+ .dm-ov{align-items:flex-end;padding:0}.dm-pop{border-radius:18px 18px 0 0;max-height:92vh}}
+@media(prefers-reduced-motion:reduce){.dm-tile{transition:none}.dm-tile:hover{transform:none}}
+@media print{html.mv-printing .dm-top,html.mv-printing .dm-pane{display:none!important}}
+.fc-expect{margin:0 0 10px;padding:8px 12px;border-radius:10px;background:#FFF3E0;color:#16212E;font-size:14px}.fc-expect small{color:#8a4b00;font-size:12px}
+
+/* owner decision 2026-11-26: the shift-spending number is orange as soon as anything is spent */
+.dm-tile b.spent{color:#F15A22}.dm-tile.is-spent{border-color:rgba(241,90,34,.45)}
+.dm-x.dm-back{display:inline-flex;align-items:center;justify-content:center}

@@ -2,26 +2,13 @@
 // and answer the latest customer message within Meta's 24-hour window (autopilot), using the same
 // reply rules as comments. Complaints raise a red alert in the dashboard.
 import { decideReply, clinicInfo } from "./ai.ts";
-import { advance, serviceLabel } from "./flow.mjs";
+import { advance, serviceLabel, MESSAGES } from "./flow.mjs";
 import { reviewHandoffs } from "./review.ts";
+import { gget, gpostJson } from "./graph.ts";
+import { isCoolingDown, startCooldown } from "./cooldown.ts";
 
-const GRAPH = "https://graph.facebook.com/v26.0/";
+const LEAD_NAME_PLACEHOLDER = "عميل ماسنجر";
 const WINDOW_MS = 23.5 * 3600e3; // stay inside Meta's 24h standard messaging window
-
-async function gget(path: string, params: Record<string, string>) {
-  const u = new URL(GRAPH + path);
-  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
-  const r = await fetch(u.toString());
-  const d = await r.json().catch(() => ({}));
-  return { ok: r.ok && !d.error, data: d, error: d.error?.message as string | undefined };
-}
-async function gpostJson(path: string, token: string, body: unknown) {
-  const r = await fetch(`${GRAPH}${path}?access_token=${encodeURIComponent(token)}`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
-  });
-  const d = await r.json().catch(() => ({}));
-  return { ok: r.ok && !d.error, data: d, error: d.error?.message as string | undefined };
-}
 
 export async function syncMessages(db: any, brand: string, cfg: any, token: string, report: any, autopilot: boolean) {
   if (!cfg?.facebook_page_id) return;
@@ -31,11 +18,17 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
     // Instagram rejects nested messages on the conversations list ("reduce the amount of data"/timeout),
     // so there the messages of each conversation are read one by one.
     const ig = platform === "instagram";
+    // Instagram conversations kept timing out (20 s lost every run): 10 s limit, and after a timeout it is skipped for 30 minutes.
+    if (ig && await isCoolingDown(db, `${brand}:instagram-messages`)) continue;
     const r = await gget(`${pageId}/conversations`, {
       platform, fields: ig ? "id,updated_time" : "id,link,updated_time,messages.limit(6){id,message,from,created_time}",
       limit: ig ? "10" : "20", access_token: token
-    });
-    if (!r.ok) { report.errors.push(`${brand} ${platform} messages: ${r.error}`); continue; }
+    }, ig ? 10000 : 20000);
+    if (!r.ok) {
+      report.errors.push(`${brand} ${platform} messages: ${r.error}`);
+      if (ig && /timeout/i.test(String(r.error))) await startCooldown(db, `${brand}:instagram-messages`, 30, String(r.error));
+      continue;
+    }
     if (ig) for (const conv of r.data.data || []) {
       if (conv.updated_time && Date.now() - Date.parse(conv.updated_time) > 3 * 864e5) { conv.messages = { data: [] }; continue; }
       const mr = await gget(`${conv.id}/messages`, { fields: "id,message,from,created_time", limit: "6", access_token: token });
@@ -82,13 +75,20 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
       // Booking flow first (state per conversation); general info questions fall back to decideReply.
       const { data: st } = await db.from("messenger_flow_state").select("*").eq("conversation_id", conv.id).maybeSingle();
       const hist = msgs.slice(Math.max(0, lastPage - 3), lastPage + 1).map((m: any) => `${selfIds.has(m.from?.id) ? "الصفحة" : "العميل"}: ${m.message || ""}`);
-      let decision = await decideReply({ brand, channel: "message", text: waitingText, history: hist, clinicInfo: await clinicInfo() });
-      if (!decision.ok) { report.errors.push(`${brand} message reply: ${decision.error}`); break; }
+      let decision: any;
+      try { decision = await decideReply({ brand, channel: "message", text: waitingText, history: hist, clinicInfo: await clinicInfo() }); }
+      catch (e) { decision = { ok: false, error: `decideReply threw: ${String((e as any)?.message || e).slice(0, 200)}` }; }
+      if (!decision.ok) {
+        // Don't stop the whole inbox for one failing conversation: record why and move on.
+        report.errors.push(`${brand} message reply: ${decision.error}`);
+        await db.from("social_messages").update({ last_error: String(decision.error || "decideReply failed").slice(0, 300), updated_at: now }).in("id", ids).eq("status", "new");
+        continue;
+      }
       if (decision.category === "spam" && !st) {
         await db.from("social_messages").update({ status: "skipped", category: decision.category, updated_at: now }).in("id", ids);
         continue;
       }
-      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0 });
+      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0, seed: conv.id, defaultService: brand === "sono" ? "physiotherapy" : undefined, profileName: latest.from?.name });
       if (flow.silent) { await db.from("social_messages").update({ status: "skipped", category: "handoff", updated_at: now }).in("id", ids); continue; }
       if (flow.passthrough) { /* thanks: keep decideReply's text, no state change */ }
       else {
@@ -97,21 +97,37 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
         else if (flow.alert && !reply) reply = decision.reply; // approved emergency/complaint template from ai.ts
         decision = { ...decision, category: flow.handoff === "emergency" ? "emergency" : flow.handoff === "complaint" ? "complaint" : decision.category, reply };
         const s = flow.state;
-        const row = { conversation_id: conv.id, platform: plat, brand, sender_id: recipient, stage: s.stage, name: s.name, phone: s.phone, service: s.service,
+        const row = { conversation_id: conv.id, platform: plat, brand, sender_id: recipient, stage: s.stage, name: s.name, name_source: s.name_source || null, phone: s.phone, service: s.service,
           preferred_time: s.preferred_time, expect: s.expect, unclear: s.unclear, handoff_reason: s.handoff_reason, updated_at: now,
           ...((flow.handoff || flow.ready) && !st?.handoff_at ? { handoff_at: now } : {}) };
         let leadId = st?.lead_id || null;
-        if (flow.ready) {
+        const where = platform === "messenger" ? "ماسنجر" : "انستجرام";
+        const leadMsg = `حجز ${serviceLabel(s.service)}${s.preferred_time ? " — الوقت المفضل: " + s.preferred_time : ""}`;
+        // The lead is created the moment the phone arrives (flow.leadNow), not at the end of the questions.
+        if (flow.leadNow || (flow.ready && !leadId)) {
           // Ad attribution from the webhook referral (if the webhook is live); campaign/adset come from the synced ad rows.
           const { data: ref } = await db.from("messenger_referrals").select("ad_id").eq("sender_id", recipient).eq("page_id", pageId).maybeSingle();
           const { data: adRow } = ref?.ad_id ? await db.from("meta_ads_daily").select("adset_id,campaign_id").eq("ad_id", ref.ad_id).limit(1).maybeSingle() : { data: null };
-          const { data: lead, error: le } = await db.rpc("ingest_lead", { p_event_id: `${plat}:flow:${conv.id}`, p_source: platform, p_name: s.name, p_phone: s.phone,
-            p_message: `حجز ${serviceLabel(s.service)} — الوقت المفضل: ${s.preferred_time}`, p_ad_id: ref?.ad_id || null, p_adset_id: adRow?.adset_id || null, p_campaign_id: adRow?.campaign_id || null });
+          const { data: lead, error: le } = await db.rpc("ingest_lead", { p_event_id: `${plat}:flow:${conv.id}`, p_source: platform, p_name: s.name || LEAD_NAME_PLACEHOLDER, p_phone: s.phone,
+            p_message: leadMsg, p_ad_id: ref?.ad_id || null, p_adset_id: adRow?.adset_id || null, p_campaign_id: adRow?.campaign_id || null });
           if (le) { report.errors.push(`${brand} ingest_lead: ${le.message}`); continue; }
-          leadId = Array.isArray(lead) ? lead[0]?.lead_id : lead?.lead_id;
-          await db.rpc("messenger_flow_notify", { p_message: `حجز جديد من ${platform === "messenger" ? "ماسنجر" : "انستجرام"}: ${s.name} — ${serviceLabel(s.service)} — ${s.phone} — ${s.preferred_time}` });
+          const leadRow = Array.isArray(lead) ? lead[0] : lead;
+          leadId = leadRow?.lead_id;
+          // Name from the Facebook/Instagram profile: mark it unconfirmed so reception checks it on the call (only for a lead this flow just created).
+          if (leadId && leadRow?.was_new && s.name_source === "facebook") await db.from("leads").update({ customer_name_source: "facebook", updated_at: now }).eq("id", leadId);
+          await db.rpc("messenger_flow_notify", { p_message: `ليد جديد من ${where}: ${s.name ? s.name + (s.name_source === "facebook" ? " (الاسم من فيسبوك)" : "") : "بدون اسم لسه"} — ${serviceLabel(s.service)} — ${s.phone}` });
+        }
+        if (flow.ready && leadId) {
+          // Name/time arrived after the lead existed: complete it (only the placeholder name and this flow's own leads are touched).
+          if (s.name_source !== "facebook" && s.name) {
+            // The customer typed the name: it replaces the placeholder or the unconfirmed Facebook name.
+            await db.from("leads").update({ customer_name: s.name, customer_name_source: null, updated_at: now }).eq("id", leadId).eq("customer_name", LEAD_NAME_PLACEHOLDER);
+            await db.from("leads").update({ customer_name: s.name, customer_name_source: null, updated_at: now }).eq("id", leadId).eq("customer_name_source", "facebook");
+          }
+          await db.from("leads").update({ message_text: leadMsg, updated_at: now }).eq("id", leadId).eq("source", platform);
+          await db.rpc("messenger_flow_notify", { p_message: `اكتملت بيانات حجز ${where}: ${s.name} — ${serviceLabel(s.service)} — ${s.phone} — ${s.preferred_time}` });
         } else if (flow.handoff) {
-          await db.rpc("messenger_flow_notify", { p_message: `محادثة محتاجة موظف (${flow.handoff}) على ${platform === "messenger" ? "ماسنجر" : "انستجرام"} — ${brand}` });
+          await db.rpc("messenger_flow_notify", { p_message: `محادثة محتاجة موظف (${flow.handoff}) على ${where} — ${brand}` });
         }
         await db.from("messenger_flow_state").upsert({ ...row, lead_id: leadId }, { onConflict: "conversation_id" });
       }
@@ -130,12 +146,14 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
       }
     }
   }
+  await sendFlowReminders(db, brand, pageId, token, report).catch((e) => report.errors.push(`${brand} flow reminders: ${e?.message}`));
   await reviewHandoffs(db, brand, token, new Set([pageId, igId].filter(Boolean)), report).catch((e) => report.errors.push(`${brand} flow review: ${e?.message}`));
 }
 
 // ---------- Manual replies from the dashboard (owner 2026-11-22: «ايوة عايز الموظف يقدر يرد من الداشبورد») ----------
 // Only Messenger / Instagram Direct, only inside Meta's 24h standard messaging window (messaging_type RESPONSE),
-// sent with the same page token the autopilot uses. The caller's role is checked in index.ts before this runs.
+// sent with the same page token the autopilot uses. message.metadata "swnw-dashboard:<admin>" comes back on the echo, so the
+// swnw-agent treats the thread as taken over by a human (no bot double reply). The caller's role is checked in index.ts before this runs.
 export const MANUAL_WINDOW_MS = 24 * 3600e3;
 export const WINDOW_CLOSED_AR = "عدّى 24 ساعة من آخر رسالة للعميل — ميتا مش بتسمح بالرد";
 
@@ -175,7 +193,7 @@ export async function sendManualMessage(db: any, opts: { conversationId: string;
   const token = opts.token(brand);
   const { data: cfg } = await db.from("meta_brand_config").select("facebook_page_id").eq("brand", brand).maybeSingle();
   if (!token || !cfg?.facebook_page_id) return { ok: false, error: "الصفحة مش متوصلة بميتا (التوكن أو رقم الصفحة ناقص)" };
-  const sent = await gpostJson(`${cfg.facebook_page_id}/messages`, token, { recipient: { id: lastCustomer.sender_id }, messaging_type: "RESPONSE", message: { text } });
+  const sent = await gpostJson(`${cfg.facebook_page_id}/messages`, token, { recipient: { id: lastCustomer.sender_id }, messaging_type: "RESPONSE", message: { text, metadata: `swnw-dashboard:${opts.adminId}` } });
   if (!sent.ok) return { ok: false, error: "ميتا رفضت الإرسال: " + String(sent.error || "خطأ غير معروف").slice(0, 200) };
   const at = new Date(now).toISOString(), mid = sent.data?.message_id || `manual-${now}`;
   const ins = await db.from("social_messages").upsert({
@@ -189,4 +207,19 @@ export async function sendManualMessage(db: any, opts: { conversationId: string;
   const ids = chrono.slice(lastPage + 1).filter((m) => !m.is_page && ["new", "failed", "expired"].includes(m.status)).map((m) => m.id);
   if (ids.length) await db.from("social_messages").update({ status: "replied", reply_text: text, replied_at: at, reply_platform_id: mid, sent_by: opts.adminId, last_error: null, updated_at: at }).in("id", ids);
   return { ok: true, id: `${platform}:${mid}`, saved: !ins.error };
+}
+
+// One gentle reminder (owner 2026-11-24): a conversation that stopped before giving a phone gets a single nudge ~2 hours after the
+// bot's last question, still inside Meta's 24h window. Never twice (reminded_at), never once the phone is known.
+export async function sendFlowReminders(db: any, brand: string, pageId: string, token: string, report: any) {
+  const from = new Date(Date.now() - 20 * 3600e3).toISOString(), to = new Date(Date.now() - 2 * 3600e3).toISOString();
+  const { data: rows } = await db.from("messenger_flow_state").select("conversation_id,sender_id,platform")
+    .eq("brand", brand).eq("stage", "collecting").is("phone", null).is("reminded_at", null).gte("updated_at", from).lte("updated_at", to).limit(10);
+  for (const r of rows || []) {
+    if (!r.sender_id) continue;
+    const sent = await gpostJson(`${pageId}/messages`, token, { recipient: { id: r.sender_id }, messaging_type: "RESPONSE", message: { text: MESSAGES.reminder } });
+    const now = new Date().toISOString();
+    await db.from("messenger_flow_state").update({ reminded_at: now }).eq("conversation_id", r.conversation_id);
+    if (sent.ok) report.flowReminders = (report.flowReminders || 0) + 1; else report.errors.push(`${brand} flow reminder: ${sent.error}`);
+  }
 }

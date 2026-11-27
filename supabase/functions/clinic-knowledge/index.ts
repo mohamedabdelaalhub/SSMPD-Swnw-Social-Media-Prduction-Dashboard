@@ -31,6 +31,7 @@ function dayList(days: string[]): string {
   const d = ORDER.filter((x) => days.includes(x));
   return d.length === 7 ? "كل يوم" : d.map((x) => DAYS[x]).join("، ");
 }
+const money = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? String(Math.round(n * 100) / 100) : String(v); };
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { "Content-Type": "application/json; charset=utf-8" } });
 
 Deno.serve(async (req) => {
@@ -48,6 +49,10 @@ Deno.serve(async (req) => {
     db.from("contracting_entities").select("id,name"),
     db.from("contracting_entity_contracts").select("entity_id,status,start_date,end_date,discount_percent,services")
   ]);
+  // Per-entity prices and offer price lists (mig 20261127030000). Optional: if the RPC is missing or fails, the
+  // output below falls back to the one-line entity summary it always had.
+  const feedRes = await db.rpc("clinic_knowledge_feed");
+  const feed: any = feedRes.error ? null : feedRes.data;
   // An unavailable source is not an empty catalog. Let the caller retain its last good snapshot.
   if ([p, h, o, f, ent, con].some((r) => r.error)) return json({ ok: false, error: "CLINIC_SOURCE_UNAVAILABLE" }, 503);
   const lines: string[] = [];
@@ -66,17 +71,44 @@ Deno.serve(async (req) => {
     }
   }
   const offers = (o.data || []).filter((x: any) => (!x.starts_on || x.starts_on <= today) && (!x.ends_on || x.ends_on >= today));
-  if (offers.length) {
+  const offerLists: any[] = (feed && Array.isArray(feed.offers)) ? feed.offers.filter((x: any) => (x.lines || []).length) : [];
+  if (offers.length || offerLists.length) {
     lines.push("\n## العروض الحالية");
     for (const x of offers as any[]) lines.push(`- ${x.title}${x.price_text ? ` — ${x.price_text}` : ""}${x.details ? `: ${x.details}` : ""}${x.ends_on ? ` (لحد ${x.ends_on})` : ""}`);
+    for (const x of offerLists) {
+      lines.push(`- ${x.name}${x.valid_to ? ` (لحد ${x.valid_to})` : ""}`);
+      for (const l of x.lines) lines.push(`  - ${l.name}: ${money(l.price)} جنيه`);
+      if (x.more > 0) lines.push(`  - و ${x.more} خدمة تانية في العرض: اسأل الاستقبال عن سعرها`);
+    }
   }
   const names = new Map((ent.data || []).map((e: any) => [e.id, e.name]));
   const active = (con.data || []).filter((c: any) => (c.status || "active") === "active" && (!c.end_date || c.end_date >= today) && (!c.start_date || c.start_date <= today));
-  if (active.length) {
+  const fed: any[] | null = (feed && Array.isArray(feed.entities)) ? feed.entities : null;
+  if (fed ? fed.length : active.length) {
     lines.push("\n## جهات متعاقدين معاها (تأمين/شركات/نقابات)");
-    for (const c of active as any[]) {
-      const name = names.get(c.entity_id); if (!name) continue;
-      lines.push(`- ${name}${c.discount_percent ? ` — خصم ${Number(c.discount_percent)}%` : ""}${c.services ? ` — على: ${c.services}` : ""}`);
+    if (fed) {
+      for (const c of fed) {
+        if (!c.entity) continue;
+        const scope = c.services ? ` — على: ${c.services}` : "";
+        const cover = c.billing === "insurer" && Number(c.coverage) > 0 ? ` — التأمين بيغطي ${Number(c.coverage)}%` : "";
+        if (c.has_list) {
+          lines.push(`- ${c.entity} — أسعار خاصة${scope}${cover}`);
+          for (const l of c.lines || []) lines.push(`  - ${l.name}: ${money(l.price)} جنيه`);
+          if (c.more > 0) lines.push(`  - و ${c.more} خدمة تانية: اسأل الاستقبال عن سعرها`);
+          if (c.complete_list) lines.push(`  - أي خدمة مش مكتوبة هنا مش في عقد ${c.entity}: الاستقبال هيأكد`);
+        } else {
+          lines.push(`- ${c.entity}${c.discount_percent ? ` — خصم ${Number(c.discount_percent)}%` : ""}${scope}${cover}`);
+        }
+        for (const k of c.consultations || []) {
+          if (!k || !k.grade) continue;
+          lines.push(k.not_in_contract ? `  - كشف ${k.grade}: مش في العقد — الاستقبال هيأكد` : `  - كشف ${k.grade}: ${money(k.price)} جنيه`);
+        }
+      }
+    } else {
+      for (const c of active as any[]) {
+        const name = names.get(c.entity_id); if (!name) continue;
+        lines.push(`- ${name}${c.discount_percent ? ` — خصم ${Number(c.discount_percent)}%` : ""}${c.services ? ` — على: ${c.services}` : ""}`);
+      }
     }
   }
   if ((f.data || []).length) {

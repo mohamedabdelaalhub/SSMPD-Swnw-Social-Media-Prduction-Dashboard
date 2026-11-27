@@ -1,0 +1,64 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>الحسابات — الباكجز: سعر ثابت للباكج</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:20px 12px;color:#16212E}
+.wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:stretch}
+.eyebrow{grid-column:1/-1;margin:0;font-size:12px;color:#8a93a3;line-height:1.7}
+.card{align-content:start;background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;box-shadow:0 12px 30px rgba(15,54,157,.08)}
+.card.wide{grid-column:1/-1}
+.card h3{margin:0;font-size:14px;color:#0F369D}
+.f{display:grid;gap:5px;font-size:13px}.f input{font:inherit;padding:9px 11px;border:1px solid #CBD5E1;border-radius:10px;min-width:0}
+.f input:disabled{background:#F1F3F7;color:#8a93a3}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg span{border:1.5px solid #CBD5E1;border-radius:12px;padding:9px 6px;text-align:center;font-size:13px;font-weight:700;line-height:1.4}
+.seg span small{display:block;font-weight:400;font-size:11px;color:#5b6577}
+.seg span.on{border-color:#0F369D;background:#EAF0FF;color:#0F369D}
+.lbl{font-size:13px;font-weight:700;margin:0}
+.sum{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:13px;background:#F6F8FC;border-radius:10px;padding:8px 10px}.sum b{color:#0F369D}
+.good{color:#2F7D5C;font-weight:700}
+.note{font-size:12px;color:#5b6577;margin:0;line-height:1.7}
+.warn{font-size:12px;background:#FFF6E5;color:#8A5A00;border-radius:10px;padding:8px 10px;margin:0;line-height:1.7}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.presets{display:flex;flex-wrap:wrap;gap:6px}.presets span{border:1px solid #CBD5E1;border-radius:999px;padding:4px 10px;font-size:12px}.presets span.on{border-color:#0F369D;background:#EAF0FF;color:#0F369D}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 6px;border-bottom:1px solid #E5EAF3;text-align:right}th{color:#5b6577;font-weight:700;font-size:12px}
+.tag{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700}.tag.fixed{background:#EAF0FF;color:#0F369D}.tag.calc{background:#F1F3F7;color:#5b6577}
+.btns{display:flex;gap:8px}.btn{font:inherit;font-size:13px;border:1px solid #CBD5E1;background:#fff;border-radius:10px;padding:8px 14px}.btn.p{background:#0F369D;border-color:#0F369D;color:#fff}
+</style></head><body><div class="wrap">
+<p class="eyebrow">تصور (بيانات حقيقية من النهارده). الحسابات ← الباكجز ← «تعديل باكج»: خانة جديدة <b>«سعر الباكج»</b> تختار بيها السعر يتحسب من الخدمات زي دلوقتي، أو <b>سعر ثابت</b> تكتبه بإيدك وميتغيرش لما أسعار الخدمات تتغير (زي آخر عرض الوايت فرايداي). الباكجات اللي اتباعت بتفضل بسعرها.</p>
+
+<section class="card"><h3>١) سعر ثابت — «عروض المناطق لليزر — كانديلا 3 جلسات — الوجه»</h3>
+<p class="lbl">سعر الباكج</p>
+<div class="seg"><span>محسوب من الخدمات<small>إجمالي الخدمات + نسبة الربح</small></span><span class="on">سعر ثابت<small>الرقم اللي هتكتبه</small></span></div>
+<label class="f">سعر الباكج الثابت (ج.م)<input value="380"></label>
+<label class="f">نسبة الربح % (مش مستخدمة مع السعر الثابت)<input value="0" disabled></label>
+<div class="sum"><span>الخدمات منفردة النهارده (3 × 140)</span><span>420 ج.م</span><span>من 1 ديسمبر (3 × 150)</span><span>450 ج.م</span><span>سعر الباكج في الاستقبال</span><b>380 ج.م</b><span>المريض بيوفّر النهارده</span><span class="good">40 ج.م</span></div>
+<p class="note">السعر ده هو اللي هيظهر في «تعاقد على باكج» في الاستقبال، ومش هيتغير لما سعر الجلسة يتغير.</p>
+</section>
+
+<section class="card"><h3>٢) الصلاحية والدفع (نفس الشاشة)</h3>
+<div class="two"><label class="f">عدد الزيارات<input value="3"></label><label class="f">الصلاحية بالأيام<input value="90"></label></div>
+<div class="presets"><span>شهر (30 يوم)</span><span class="on">3 شهور (90 يوم)</span><span>4 شهور (120 يوم)</span><span>5 شهور (150 يوم)</span></div>
+<div class="two"><label class="f">يتباع من (اختياري)<input value=""></label><label class="f">يتباع لحد (اختياري)<input value=""></label></div>
+<label class="f">أقل دفعة أولى % من قيمة الباكج<input value="25"></label>
+<p class="note">من غير «يتباع لحد» = عرض ثابت. المريض يدفع 25% على الأقل قبل أول جلسة (95 ج.م هنا)، ويقدر يدفع الباكج كامل. لو عايز الدفع كامل إجباري اكتب 100.</p>
+</section>
+
+<section class="card"><h3>٣) لو السعر الثابت أعلى من الخدمات منفردة</h3>
+<p class="lbl">سعر الباكج</p>
+<div class="seg"><span>محسوب من الخدمات<small>إجمالي الخدمات + نسبة الربح</small></span><span class="on">سعر ثابت<small>الرقم اللي هتكتبه</small></span></div>
+<label class="f">سعر الباكج الثابت (ج.م)<input value="500"></label>
+<div class="sum"><span>الخدمات منفردة النهارده</span><span>420 ج.م</span><span>سعر الباكج في الاستقبال</span><b>500 ج.م</b></div>
+<p class="warn">تنبيه: سعر الباكج أعلى من الخدمات منفردة بـ 80 ج.م — المريض هيدفع أكتر لو اشترى الباكج. اتأكد من الرقم قبل الحفظ.</p>
+<div class="btns"><button class="btn p">حفظ</button><button class="btn">إلغاء</button></div>
+</section>
+
+<section class="card wide"><h3>٤) جدول الباكجز — بيوضح طريقة السعر</h3>
+<table><thead><tr><th>الباكج</th><th>طريقة السعر</th><th>الخدمات منفردة</th><th>سعر الباكج</th><th>الصلاحية</th><th>أقل دفعة أولى</th></tr></thead><tbody>
+<tr><td>عروض المناطق لليزر — كانديلا 3 جلسات — الوجه</td><td><span class="tag fixed">ثابت</span></td><td>420</td><td><b>380</b></td><td>90 يوم</td><td>25%</td></tr>
+<tr><td>باكج ليزر كانديلا — 3000 نبضة</td><td><span class="tag fixed">ثابت</span></td><td>1,500</td><td><b>1,350</b></td><td>90 يوم</td><td>50%</td></tr>
+<tr><td>باكج علاج طبيعي 12 جلسة (350 للجلسة)</td><td><span class="tag fixed">ثابت</span></td><td>6,000</td><td><b>4,200</b></td><td>90 يوم</td><td>50%</td></tr>
+<tr><td>باكج دايود — إزالة الشعر (سعر الزيارة)</td><td><span class="tag calc">محسوب</span></td><td>500</td><td><b>500</b></td><td>180 يوم</td><td>—</td></tr>
+</tbody></table>
+<p class="note">«الخدمات منفردة» = أسعار الاستقبال النهارده. الطباعة والتصدير لـ Excel هيطلعوا نفس الأعمدة.</p>
+</section>
+</div></body></html>

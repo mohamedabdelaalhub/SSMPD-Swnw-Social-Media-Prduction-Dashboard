@@ -20,9 +20,9 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   const groups = box.querySelectorAll('details.fc-doctor-group');
   assert.equal(groups.length, 2, 'one group per doctor');
   const sum = groups[0].querySelector('summary').textContent;
-  assert(sum.includes('د. أ') && sum.includes('EMP-1') && sum.includes('3 عقد'), 'summary shows doctor, code, contract count: ' + sum);
+  assert(sum.includes('د. أ') && sum.includes('EMP-1') && sum.includes('3 عقود'), 'summary shows doctor, code, contract count: ' + sum);
   assert(sum.includes('30.00%') && sum.includes('50.00%'), 'summary shows the rate range');
-  assert(sum.includes('قيد الاعتماد 2') && sum.includes('معتمد 1'), 'summary shows status counts: ' + sum);
+  assert(sum.includes('قيد الاعتماد 2') && sum.includes('ساري 1'), 'summary shows status counts (by today, owner 2026-11-25): ' + sum);
   assert.equal(box.querySelectorAll('[data-fin-action="contract-marketing"]').length, 2, 'marketing button once per doctor');
   assert(groups[0].querySelector('summary [data-fin-action="contract-marketing"]'), 'marketing button sits in the summary');
   assert(!groups[0].querySelector('table [data-fin-action="contract-marketing"]'), 'not repeated inside the table');

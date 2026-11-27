@@ -44,15 +44,18 @@
       });
     }
 
+    // Owner 2026-11-25 («طبق الكل», mockup docs/ui-references/mockups/hr-lists-mobile.html): one primary action per row, the rest in «⋯», «فقد/تلف» red.
     function actions(i) {
-      var a = [];
       if (!data.can_manage) return btn('history', 'السجل', i.id);
-      if (i.status === 'in_store') a.push(btn('issue', 'تسليم', i.id));
-      if (i.status === 'with_holder') a.push(btn('transfer', 'تحويل', i.id), btn('return', 'إرجاع', i.id), btn('lost', 'فقد', i.id), btn('damaged', 'تلف', i.id));
-      if (i.status === 'lost' || i.status === 'damaged') a.push(btn('return', 'إرجاع', i.id));
-      a.push(btn('edit', 'تعديل', i.id), btn('history', 'السجل', i.id));
-      return a.join('');
+      var main = '', more = [];
+      if (i.status === 'in_store') main = btn('issue', 'تسليم لموظف', i.id);
+      if (i.status === 'with_holder') { main = btn('return', 'إرجاع للمخزن', i.id); more.push(btn('transfer', 'تحويل لموظف تاني', i.id)); }
+      if (i.status === 'lost' || i.status === 'damaged') main = btn('return', 'لقيناها — رجّعها', i.id);
+      more.push(btn('edit', 'تعديل', i.id), btn('history', 'السجل', i.id));
+      var danger = i.status === 'with_holder' ? '<hr>' + btn('lost', 'اتسجلت فقد', i.id) + btn('damaged', 'اتسجلت تلف', i.id) : '';
+      return '<div class="hrl-acts">' + main.replace('class="btn ghost"', 'class="btn hrl-primary"') + '<details class="hrl-more"><summary aria-label="إجراءات أكتر">⋯</summary><div class="hrl-menu">' + more.join('') + danger.replace(/class="btn ghost" data-custody="(lost|damaged)"/g, 'class="btn ghost hrl-danger" data-custody="$1"') + '</div></details></div>';
     }
+    function fdate(v) { if (!v) return '—'; var t = Date.parse(String(v).slice(0, 10) + 'T12:00:00Z'); return isNaN(t) ? esc(v) : new Intl.DateTimeFormat('ar-EG-u-nu-latn', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(t)); }
 
     function rows() {
       return visible().map(function (i) {
@@ -61,8 +64,8 @@
           money(i.value),
           i.holder_name ? esc(i.holder_name) : 'المخزن',
           esc(i.came_from_name || i.came_from_note || '—'),
-          esc(i.issued_on || '—'),
-          esc(i.returned_on || '—'),
+          fdate(i.issued_on),
+          fdate(i.returned_on),
           '<span data-custody-status="' + esc(i.status) + '">' + esc(STATUS[i.status] || i.status) + '</span>',
           actions(i)];
       });
@@ -73,9 +76,9 @@
       var sum = function (list) { return list.reduce(function (t, i) { return t + Number(i.value || 0); }, 0); };
       var cards = [['إجمالي البنود', items.length, ''], ['مع موظفين', held.length, money(sum(held))], ['مفقودة أو تالفة', bad.length, money(sum(bad))], ['في المخزن', items.filter(function (i) { return i.status === 'in_store'; }).length, '']];
       host.innerHTML = '<p>سجل دائم لكل عهدة: من استلمها ومن سلّمها ومتى. العهدة التي لم تُرجع تظهر تلقائيًا في مخالصة الموظف عند إنهاء الخدمة.</p>' +
-        '<div class="wp-grid" data-custody-cards>' + cards.map(function (c) { return '<div class="wp-card"><b>' + esc(c[1]) + '</b><span>' + esc(c[0]) + '</span>' + (c[2] ? '<small>' + esc(c[2]) + ' ج.م</small>' : '') + '</div>'; }).join('') + '</div>' +
+        '<div class="wp-grid hrl-kpis" data-custody-cards>' + cards.map(function (c) { return '<div class="wp-card"><b>' + esc(c[1]) + '</b><span>' + esc(c[0]) + '</span>' + (c[2] ? '<small>' + esc(c[2]) + ' ج.م</small>' : '') + '</div>'; }).join('') + '</div>' +
         '<div class="wp-actions">' + (data.can_manage ? btn('new', 'إضافة بند عهدة') : '') + U.select('custody_status', 'الحالة', [['', 'الكل']].concat(opts(STATUS)), filter.status) + U.field('custody_q', 'بحث بالبند أو الكود أو الشخص', 'search', filter.q) + '</div>' +
-        '<div data-custody-table></div>';
+        '<div data-custody-table class="hrl-table"></div>';
       table(); bind();
       var s = host.querySelector('[name=custody_status]'), q = host.querySelector('[name=custody_q]');
       s.onchange = function () { filter.status = s.value; table(); bind(); };

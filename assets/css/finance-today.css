@@ -13,3 +13,74 @@
 .ft-more{margin:0 0 16px;border:1px dashed #CBD5E1;border-radius:14px;padding:10px 14px;background:#fff}
 .ft-more>summary{cursor:pointer;font-weight:700;color:#0F369D;font-size:14px;padding:4px 0}
 .ft-more[open]>summary{margin-bottom:10px}
+/* help 277 — «اللي مستنيك النهارده»: equal cards, buttons on one line, everyday tasks in a calmer row */
+.ft-tasks{grid-template-columns:repeat(4,minmax(0,1fr))}
+.ft-tasks[data-cols="1"]{grid-template-columns:minmax(0,1fr)}.ft-tasks[data-cols="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}.ft-tasks[data-cols="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ft-task{grid-template-rows:auto 1fr auto;min-width:0}
+.ft-task b{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.ft-task .ft-badge{flex:none;margin:0;min-width:24px;height:24px;display:inline-grid;place-items:center;padding:0 7px;font-size:12px}
+.ft-task .btn{justify-self:stretch;justify-content:center}
+.ft-group{margin:4px 0 -4px;font-size:13px;font-weight:600;color:#667085}
+.ft-calm .ft-task{background:#F3F6FB;border-color:#F3F6FB;box-shadow:none;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;column-gap:12px}
+.ft-calm .ft-task b{grid-column:1}.ft-calm .ft-task .ft-sub{grid-column:1}.ft-calm .ft-task .btn{grid-column:2;grid-row:1/3;justify-self:end}
+@media(max-width:900px){.ft-tasks,.ft-tasks[data-cols="3"],.ft-tasks[data-cols="4"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.ft-tasks,.ft-tasks[data-cols]{grid-template-columns:minmax(0,1fr)}}
+/* طلبات الصرف list */
+.fc-rq-lead{margin:0 0 8px;font-size:13px;color:#475467}
+.fc-rq-chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.fc-rq-chip{min-height:34px;border-radius:999px;border:1px solid #E6EBF3;background:#fff;padding:0 12px;font:inherit;font-size:12.5px;cursor:pointer}
+.fc-rq-chip.is-on{background:#EAF0FF;border-color:#C9D6F2;color:#0F369D;font-weight:700}
+.fc-rq-list{display:grid;background:#fff;border:1px solid #E6EBF3;border-radius:14px;padding:0 12px}
+.fc-rq{display:grid;grid-template-columns:150px minmax(0,1.4fr) minmax(0,.8fr) 120px 180px;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #E6EBF3}
+.fc-rq:last-child{border-bottom:0}.fc-rq[hidden]{display:none}
+.fc-rq-d{font-size:13px;color:#344054}.fc-rq-w b{display:block;font-size:14px;overflow-wrap:anywhere}.fc-rq-w small{display:block;color:#667085;font-size:12px}
+.fc-rq-ref{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:#344054}.fc-rq-m{font-weight:700;white-space:nowrap}
+.fc-rq-s{display:grid;gap:4px;justify-items:start}.fc-rq-s small{font-size:12px;color:#667085}.fc-rq-s small.is-why{color:#D0402A}
+.fc-rq-st{display:inline-flex;min-height:24px;align-items:center;padding:0 10px;border-radius:999px;font-size:12px;background:#EAF0FF;color:#0F369D;white-space:nowrap}
+.fc-rq-st.is-ok{background:#E7F3EC;color:#2F7D5C}.fc-rq-st.is-bad{background:#FCEDEB;color:#D0402A}.fc-rq-st.is-warn{background:#FFF1E0;color:#9A4E00}
+@media(max-width:760px){.fc-rq{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.fc-rq-w{grid-column:1/-1;order:-1}.fc-rq-d,.fc-rq-ref{font-size:12px}.fc-rq-s{grid-column:1/-1}}
+/* voucher guide (help 277) */
+.fc-voucher-guide{background:#F3F6FB;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.8;color:#344054}
+.fc-voucher-guide p{margin:0}.fc-voucher-guide ul{margin:4px 0;padding-inline-start:18px}
+.fc-voucher-guide summary{cursor:pointer;color:#B23B12;font-weight:600}
+/* help 278 — handovers and shifts in plain words */
+.fc-hint{margin:4px 0 10px;font-size:12.5px;color:#667085}
+.fc-ho-list{display:grid;background:#fff;border:1px solid #E6EBF3;border-radius:14px;padding:0 12px;margin:0 0 14px}
+.fc-ho{display:grid;grid-template-columns:170px minmax(0,1.3fr) 120px 120px 200px;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #E6EBF3}
+.fc-ho:last-child{border-bottom:0}
+.fc-ho-d{font-size:13px;color:#344054}.fc-ho-d small,.fc-ho-w small{display:block;color:#667085;font-size:12px}
+.fc-ho-w b{display:block;font-size:14px}.fc-ho-w small.is-why{color:#D0402A}
+.fc-ho-m{font-weight:700;white-space:nowrap}
+.fc-ho-s{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.fc-ho-st{display:inline-flex;min-height:24px;align-items:center;padding:0 10px;border-radius:999px;font-size:12px;background:#EAF0FF;color:#0F369D;white-space:nowrap}
+.fc-ho-st.is-ok{background:#E7F3EC;color:#2F7D5C}.fc-ho-st.is-bad{background:#FCEDEB;color:#D0402A}.fc-ho-st.is-warn{background:#FFF1E0;color:#9A4E00}
+.fc-ho-diff{font-size:12px;border-radius:999px;padding:2px 8px;display:inline-block;white-space:nowrap}
+.fc-ho-diff.is-bad{background:#FCEDEB;color:#D0402A}.fc-ho-diff.is-ok{background:#E7F3EC;color:#2F7D5C}
+.fc-sub{display:block;color:#667085;font-size:12px}.fc-muted{color:#98A2B3;font-size:12.5px}
+@media(max-width:760px){.fc-ho{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.fc-ho-w{grid-column:1/-1;order:-1}.fc-ho-s{grid-column:1/-1;justify-content:flex-start}}
+/* help 279 — doctor accounts */
+.fc-da-name{border:0;background:none;padding:0;font:inherit;font-weight:700;font-size:15px;color:#0F369D;cursor:pointer;text-align:start}
+.fc-da-name:hover{text-decoration:underline}
+.fc-da-now{color:#2F7D5C}.fc-da-wait{color:#C2410C;font-weight:600}
+.fc-da-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.fc-da-acts [data-fin-action="doctor-dues"]{background:#F15A22;border-color:#F15A22;color:#fff}
+.fc-da-more{position:relative}.fc-da-more>summary{list-style:none;cursor:pointer;min-width:34px;min-height:34px;display:grid;place-items:center;border:1px solid #E6EBF3;border-radius:10px;background:#fff;font-weight:700}
+.fc-da-more>summary::-webkit-details-marker{display:none}
+.fc-da-more[open]>:not(summary){position:absolute;inset-inline-end:0;top:40px;z-index:5;background:#fff;border:1px solid #E6EBF3;border-radius:12px;box-shadow:0 10px 26px rgba(15,54,157,.12);padding:8px;display:grid;gap:4px;min-width:220px}
+.fc-da-more[open]{display:grid}
+.fc-st-eq{background:#F3F6FB;border-radius:12px;padding:8px 12px}
+.fc-st-warn{background:#FFF6EC;border:1px solid #FBD9B4;color:#9A4E00;border-radius:12px;padding:10px 14px;font-size:13.5px;font-weight:600;margin:10px 0}
+/* help 284 — payroll & advances */
+.fc-pr{grid-template-columns:minmax(0,1.4fr) 140px 140px 0 220px}.fc-pr[hidden]{display:none}
+.fc-pr .fc-ho-m small{font-weight:400}
+.fc-pr-need{border:1px solid #F6C9B6;background:#FFF8F4;border-radius:14px;padding:10px 12px;margin:0 0 14px}.fc-pr-need h4{margin:0 0 6px;color:#B23B12}
+.fc-pr-need .fc-ho{border-bottom-color:#F6DCCF}
+.fc-pr-more{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#F3F6FB;border-radius:12px;padding:8px 12px;font-size:13px;color:#475467;margin:-6px 0 14px}
+@media(max-width:760px){.fc-pr{grid-template-columns:repeat(2,minmax(0,1fr))}.fc-pr .fc-ho-w,.fc-pr .fc-ho-s{grid-column:1/-1}}
+/* «الخزائن والورديات» accordion — help 297 */
+.ta{display:grid;gap:8px;margin:12px 0}.ta-item[hidden]{display:none}
+.ta-h{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid #D5DEEE;background:#fff;border-radius:12px;padding:12px;font:inherit;color:#16212E;text-align:start;cursor:pointer;min-width:0}
+.ta-h b{font-size:15px}.ta-h small{display:block;color:#5b6b82;font-size:12px;font-weight:400}.ta-r{display:flex;align-items:center;gap:8px;flex:none}
+.ta-badge{background:#F1F4F8;border-radius:999px;padding:2px 10px;font-size:12px}.ta-badge[hidden]{display:none}.ta-badge.is-need{background:#F15A22;color:#fff}
+.ta-chev{color:#5b6b82;transition:transform .15s}.ta-item.open>.ta-h{border-color:#0F369D;background:#F4F7FF}.ta-item.open>.ta-h .ta-chev{transform:rotate(180deg)}
+.ta-b{border:1px solid #D5DEEE;border-top:0;border-radius:0 0 12px 12px;padding:10px;display:grid;gap:8px;margin-top:-6px;min-width:0}.ta-b[hidden]{display:none}

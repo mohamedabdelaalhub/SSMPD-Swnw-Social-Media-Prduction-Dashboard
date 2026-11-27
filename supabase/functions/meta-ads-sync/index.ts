@@ -62,14 +62,17 @@ async function brandMap(admin: any, acct: string, token: string, adIds: string[]
   const { data: cfg } = await admin.from("meta_brand_config").select("brand,facebook_page_id");
   const byPage = new Map<string, string>((cfg || []).map((c: any) => [String(c.facebook_page_id), c.brand]));
   const out = new Map<string, string>();
-  for (let i = 0; i < adIds.length; i += 50) {
-    const chunk = adIds.slice(i, i + 50);
-    const d = await graphGet("", { ids: chunk.join(","), fields: "creative{effective_object_story_id}" }, token);
-    for (const id of chunk) {
-      const story = d[id]?.creative?.effective_object_story_id as string | undefined;
+  // Graph v26 removed the `ids` multi-read parameter: read each ad on its own (10 at a time).
+  for (let i = 0; i < adIds.length; i += 10) {
+    const chunk = adIds.slice(i, i + 10);
+    const results = await Promise.all(chunk.map(async (id) => {
+      try { return await graphGet(id, { fields: "creative{effective_object_story_id}" }, token); } catch { return null; }
+    }));
+    chunk.forEach((id, idx) => {
+      const story = results[idx]?.creative?.effective_object_story_id as string | undefined;
       const brand = story ? byPage.get(story.split("_")[0]) : undefined;
       if (brand) out.set(id, brand);
-    }
+    });
   }
   return out;
 }

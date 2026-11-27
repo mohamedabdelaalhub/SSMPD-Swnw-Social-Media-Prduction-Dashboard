@@ -27,10 +27,10 @@
     header.dir = "rtl";
     var inner = element("div", "swnw-chrome-header__inner");
     var brand = link(inner, "", site + "/User/Default", "swnw-chrome-header__brand");
-    brand.setAttribute("aria-label", "عيادات سونو التخصصية — الصفحة الرئيسية");
+    brand.setAttribute("aria-label", "مركز عيادات سونو التخصصية — الصفحة الرئيسية");
     var logo = element("img");
     logo.src = base + "swnw-logo-white.png";
-    logo.alt = "عيادات سونو التخصصية";
+    logo.alt = "مركز عيادات سونو التخصصية";
     logo.width = 128; logo.height = 54;
     brand.appendChild(logo);
     var nav = element("nav");
@@ -47,7 +47,7 @@
     var footer = element("footer", "swnw-chrome-footer");
     footer.dir = "rtl";
     var footerInner = element("div", "swnw-chrome-footer__inner");
-    footerInner.appendChild(element("span", "", "© " + new Date().getFullYear() + " عيادات سونو التخصصية — جميع الحقوق محفوظة"));
+    footerInner.appendChild(element("span", "", "© " + new Date().getFullYear() + " مركز عيادات سونو التخصصية — جميع الحقوق محفوظة"));
     var links = element("div", "swnw-chrome-footer__links");
     link(links, "0236230005", "tel:0236230005").dir = "ltr";
     link(links, "واتساب", "https://wa.me/201010686264").rel = "noopener";

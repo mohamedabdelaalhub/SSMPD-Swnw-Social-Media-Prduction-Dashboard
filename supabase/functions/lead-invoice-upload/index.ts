@@ -36,7 +36,7 @@ async function getCallerAdmin(req: Request) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: row } = await admin
     .from("admins")
-    .select("id, role, active, admin_extra_roles!admin_id(role)")
+    .select("id, role, active, has_leads_archive_access, admin_extra_roles!admin_id(role)")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
@@ -50,6 +50,11 @@ async function getCallerAdmin(req: Request) {
 // true لو الرول الأساسي أو أي من الأدوار الإضافية موجود في القائمة
 function roleIn(caller: { role: string; extra_roles?: string[] }, roles: string[]): boolean {
   return roles.includes(caller.role) || (caller.extra_roles ?? []).some((r) => roles.includes(r));
+}
+
+// owner 2026-11-25 «الليدز تشوف كلها»: an active admin with has_leads_archive_access sees and works ALL leads (like reception)
+function hasLeadsGrant(caller: { has_leads_archive_access?: boolean | null }): boolean {
+  return caller.has_leads_archive_access === true;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -92,7 +97,7 @@ async function uploadViaBridge(
     mimeType: mimeType || "application/octet-stream",
     base64: bytesToBase64(bytes),
   };
-  const res = await fetch(DRIVE_BRIDGE_URL, {
+  const res = await fetch(bridgeUrl(DRIVE_BRIDGE_URL), {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" }, // يتفادى preflight CORS مع Apps Script
     body: JSON.stringify(payload),
@@ -135,7 +140,7 @@ Deno.serve(async (req) => {
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const allowed = roleIn(caller, ["reception", "customer_service", "general_manager", "super_admin"]);
+  const allowed = roleIn(caller, ["reception", "customer_service", "general_manager", "super_admin"]) || hasLeadsGrant(caller);
   if (!allowed) return json({ error: "مفيش صلاحية موديول الليدز" }, 403);
 
   let form: FormData;
@@ -167,7 +172,7 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (leadErr || !lead) return json({ error: "الليد غير موجود" }, 404);
 
-  const hasWiderAccess = roleIn(caller, ["reception", "general_manager", "super_admin"]);
+  const hasWiderAccess = roleIn(caller, ["reception", "general_manager", "super_admin"]) || hasLeadsGrant(caller);
   if (!hasWiderAccess && roleIn(caller, ["customer_service"]) && lead.assigned_to !== caller.id) {
     return json({ error: "الليد ده مش مُسند لك" }, 403);
   }
@@ -290,3 +295,9 @@ Deno.serve(async (req) => {
     return json({ error: (e as Error).message }, 502);
   }
 });
+
+// Server-to-bridge auth: token is read from the DRIVE_BRIDGE_TOKEN secret (optional until set on both sides).
+function bridgeUrl(base: string): string {
+  const t = Deno.env.get("DRIVE_BRIDGE_TOKEN");
+  return t ? `${base}${base.includes("?") ? "&" : "?"}token=${encodeURIComponent(t)}` : base;
+}

@@ -24,7 +24,7 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rxe]'))return;var
  // card 3: temporary note
  var tn=document.createElement('label');tn.setAttribute('data-wide','');tn.className='rxe-tnote';tn.innerHTML='ملاحظة للحجز ده بس <small>(مؤقتة — بتظهر مع الميعاد ده وبس)</small><textarea name="x_appointment_note" rows="2" maxlength="500"></textarea>';c3.appendChild(tn);
  var home=form.querySelector('[data-rxe-home]'),cb=sw.querySelector('input'),go=home.querySelector('[data-rxe-go]'),maps=form.elements.x_maps_url;
- function sync(){home.hidden=!cb.checked;form.elements.x_area.required=cb.checked;form.elements.x_building.required=cb.checked;}
+ function sync(){home.hidden=!cb.checked;form.elements.x_area.required=cb.checked;form.elements.x_building.required=cb.checked;form.dispatchEvent(new CustomEvent('rxe-home',{detail:cb.checked}));}
  function linkSync(){var ok=mapsOk(maps.value);if(ok)go.href=maps.value.trim();else go.removeAttribute('href');go.setAttribute('aria-disabled',ok?'false':'true');}
  cb.onchange=sync;maps.oninput=linkSync;
  function svcHome(){var s=(data.services||[]).find(function(x){return x.id===form.elements.service_id.value;});return !!(s&&s.is_home);}

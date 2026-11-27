@@ -7,7 +7,7 @@ window.SSMPD_CONFIG = {
 
   updateNoticeTrial: true,
 
-  centerName: "مركز عيادات Swnw التخصصية — فرع حدائق الأهرام",
+  centerName: "مركز عيادات سونو التخصصية — فرع حدائق الأهرام",
 
   // مفاتيح Supabase — تُملأ بعد إنشاء المشروع (خطوة البنية التحتية)
   supabase: {
@@ -42,7 +42,7 @@ window.SSMPD_CONFIG = {
 (function loadSystemDiagnosticsLauncher(){
   if(window.__SWNWSystemDiagnosticsLauncher || document.querySelector('script[data-system-diagnostics-launcher]')) return;
   var script=document.createElement('script');
-  script.src='assets/js/system-diagnostics-launcher.js?v=system-diagnostics-20261114-1';
+  script.src='assets/js/system-diagnostics-launcher.js?v=no-idle-loop-20261126-1';
   script.async=false;
   script.dataset.systemDiagnosticsLauncher='1';
   document.head.appendChild(script);
@@ -111,18 +111,19 @@ window.SSMPD_CONFIG = {
     loadOnce("__SSMPDPerformanceV2","assets/js/employee-performance.js?v=performance-v2-20261025-3","performance-v2");
     loadOnce("__SSMPDInsuranceContractsV1","assets/js/insurance-contracts.js?v=entity-claims-20261029-1","insurance");
     loadOnce("__SWNWTaskStageNavigation","assets/js/task-stage-navigation.js?v=task-stage-nav-20261108-1","task-stage-navigation");
-    loadOnce("__SWNWLeadsArchiveGrantRuntimeV3","assets/js/leads-archive-permission-column.js?v=leads-archive-permission-20261028-1","leads-archive-permission");
+    loadOnce("__SWNWLeadsArchiveGrantRuntimeV3","assets/js/leads-archive-permission-column.js?v=leads-grant-all-20261125-1","leads-archive-permission");
     loadOnce("__SWNWLeadsMissingDataEnhancement","assets/js/leads-missing-data-enhancement.js?v=english-digits-20261122-1","leads-missing-data");
     loadOnce("__SWNWContractServiceMapping","assets/js/contract-service-mapping.js?v=shared-tariffs-20261029-1","contract-service-mapping");
     loadOnce("__SWNWHRAccountLinkingFix","assets/js/hr-account-linking-fix.js?v=hr-account-link-20261102-1","hr-account-linking-fix");
     loadOnce("SWNJourneySandbox","assets/js/today-operations-sandbox.js?v=journey-sandbox-20261031-1","journey-sandbox");
-    loadOnce("__SWNWTodayOperationsV1","assets/js/today-operations.js?v=lead-booking-20261122-1","today-operations");
-    loadOnce("__SWNWTodayOperationsConsistency","assets/js/today-operations-consistency.js?v=integ-20261121-2","today-operations-consistency");
+    loadOnce("__SWNWTodayOperationsV1","assets/js/today-operations.js?v=fix-visit-20261126-1","today-operations");
+    loadOnce("__SWNWTodayOperationsConsistency","assets/js/today-operations-consistency.js?v=supplies-20261125-1","today-operations-consistency");
     loadOnce("__SWNWTodayOperationsDisplayV1","assets/js/today-operations-display.js?v=today-simplify-20261122-1","today-operations-display");
     loadOnce("__SWNWTodayOperationsUnifiedV1","assets/js/today-operations-unified.js?v=today-board-20261107-1","today-operations-unified");
     loadOnce("__SWNWTodayOperationsFinalizeV1","assets/js/today-operations-finalize.js?v=doctor-assistant-20261120-1","today-operations-finalize");
-    loadOnce("__SWNWTodayOperationsQueueV1","assets/js/today-operations-queue.js?v=masa-hint-20261120-1","today-operations-queue");
-    loadOnce("__SWNWNursingDayOpsV1","assets/js/nursing-day-ops.js?v=assistant-nursing-20261120-1","nursing-day-ops");
+    loadOnce("__SWNWTodayOperationsQueueV1","assets/js/today-operations-queue.js?v=room-link-20261123-1","today-operations-queue");
+    loadOnce("__SWNWNursingDayOpsV1","assets/js/nursing-day-ops.js?v=supplies-pr2-20261125-1","nursing-day-ops");
+    loadOnce("__SWNWPerformerSuppliesV1","assets/js/performer-supplies.js?v=supplies-pr2-20261125-1","performer-supplies");
     loadOnce("__SWNWNursingTriageStripV1","assets/js/nursing-triage-strip.js?v=assistant-nursing-20261120-1","nursing-triage-strip");
     loadOnce("__SWNWClinicalDraftsV1","assets/js/clinical-drafts.js?v=clinical-drafts-20261120-1","clinical-drafts");
   });

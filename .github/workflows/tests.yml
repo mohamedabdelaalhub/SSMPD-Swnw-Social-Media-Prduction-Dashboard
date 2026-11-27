@@ -36,6 +36,10 @@ jobs:
       - run: npm ci
       - name: Check digital team navigation and launcher accessibility
         run: |
+          node tests/index-assets-guard.cjs
+          node tests/supplies-billable-dom.cjs
+          node tests/leads-edit-visible-dom.cjs
+          node tests/count-check-above-handover.cjs
           node tests/digital-team-navigation.cjs
           node tests/patient360-navigation.cjs
           node tests/specialist-agent-reviews.cjs
@@ -54,7 +58,7 @@ jobs:
 
   tests:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -62,6 +66,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Drop the runner's broken Microsoft apt source (403 / unsigned since 2026-11-26)
+        run: |
+          if [ -f /etc/apt/sources.list.d/microsoft-prod.list ]; then sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list || true; fi
       - name: Install Chromium (with retries, the runner apt step sometimes fails)
         run: |
           for attempt in 1 2 3; do

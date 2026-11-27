@@ -113,7 +113,7 @@
   }
   function listLeadArchive(params) {
     var f = params || {}, size = Math.min(50, Math.max(1, Number(f.page_size) || 20)), page = Math.max(1, Number(f.page) || 1);
-    var query = client.from('leads').select('id, customer_name, phone_raw, phone_normalized, source, current_status, patient_type, assigned_to, received_by, interested_service, requested_department, priority, booking_reference, booking_date, booked_by, created_at, closed_at, missing_data_completed_at', { count: 'exact' }).order('created_at', { ascending: false }).order('id', { ascending: false });
+    var query = client.from('leads').select('id, customer_name, customer_name_source, phone_raw, phone_normalized, source, current_status, patient_type, assigned_to, received_by, interested_service, requested_department, priority, booking_reference, booking_date, booked_by, created_at, closed_at, missing_data_completed_at', { count: 'exact' }).order('created_at', { ascending: false }).order('id', { ascending: false });
     if (f.status) query = query.eq('current_status', f.status);
     if (f.received_by === '__unrecorded__') query = query.is('received_by', null);
     else if (f.received_by) query = query.eq('received_by', f.received_by);
@@ -840,6 +840,10 @@
     updateContractingEntityContract: function (contractId, entityId, patch) {
       return handle(client.from("contracting_entity_contracts").update(patch)
         .eq("id", contractId).eq("entity_id", entityId).select().single());
+    },
+    // تفعيل العقد + اعتماد قائمة أسعاره المرتبطة (لو فيه) في خطوة واحدة — السوبر أدمن أو المدير المالي
+    activateContractingEntityContract: function (contractId) {
+      return handle(client.rpc("contracting_contract_activate", { p_contract_id: contractId }));
     },
     addContractActivity: function (row) { return handle(client.from("contracting_entity_activities").insert(row).select().single()); },
     linkPatientToContract: function (row) { return handle(client.from("contract_patient_links").insert(row).select().single()); },
@@ -1730,7 +1734,7 @@
     "هل شرح لك الطبيب حالتك والعلاج بشكل واضح؟",
     "ما مدى رضاك عن جودة الخدمة بشكل عام؟",
     "من وجهة نظرك هل كانت تكلفة الخدمة مناسبة؟",
-    "إلى أي مدى قد ترشح عيادات سونو لعائلتك وأصدقائك؟"
+    "إلى أي مدى قد ترشح مركز عيادات سونو التخصصية لعائلتك وأصدقائك؟"
   ];
 })();
 

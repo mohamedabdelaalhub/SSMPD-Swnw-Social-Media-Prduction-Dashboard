@@ -1,0 +1,19 @@
+/* «طريقة الدفع / نوع الكشف» (owner 2026-11-23, mockup booking-payer-kind.html) */
+.rpk{display:grid;gap:10px;border:1px solid #D5DEEE;border-radius:14px;padding:12px 14px;background:#fff;min-width:0}
+.rpk-title{margin:0}.rpk-req{color:#D0402A;font-weight:700}
+.rpk-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.rpk-opt{position:relative;min-width:0}
+.rpk-opt input{position:absolute;opacity:0;pointer-events:none}
+.rpk-opt span{display:block;border:1.5px solid #CBD5E1;border-radius:12px;padding:9px 6px;text-align:center;font-size:13px;font-weight:700;line-height:1.4;color:#16212E;cursor:pointer;background:#fff}
+.rpk-opt span small{display:block;font-weight:400;font-size:11px;color:#5b6577}
+.rpk-opt input:checked+span{border-color:#0F369D;background:#EAF0FF;color:#0F369D}
+.rpk-opt input:focus-visible+span{outline:2px solid #F15A22;outline-offset:2px}
+.rpk-opt.rpk-off span{opacity:.45;cursor:not-allowed}
+.rpk-body{border:0;margin:0;padding:0;display:grid;gap:10px;min-width:0}
+.rpk-empty{font-size:12px;background:#FFF6E5;color:#8A5A00;border-radius:10px;padding:8px 10px;margin:0;line-height:1.7}
+.rpk select,.rpk input:not([type=radio]):not([type=file]){min-width:0;max-width:100%}
+@media (max-width:420px){.rpk-opt span{font-size:12px;padding:8px 4px}.rpk-opt span small{font-size:10px}}
+.rx-modal .rpk fieldset.rpk-body{border:0;border-radius:0;padding:0;margin:0;background:none;box-shadow:none}
+.rpk .rbd-two{align-items:start}
+.rpk .rbd-up{color:#5b6577;font-size:12px}
+.rpk .rpk-star::after{content:' *';color:#D0402A;font-weight:700}

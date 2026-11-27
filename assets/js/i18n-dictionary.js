@@ -1,4 +1,6 @@
 window.SSMPD_TRANSLATIONS = {
+  "مساعد إنستنكت": "Instinct assistant",
+  "مساعد إنستنكت (ذكاء اصطناعي)": "Instinct assistant (AI)",
   "أخصائي نفسية": "Psychology specialist",
   "الأقسام والخدمات": "Sections and services",
   "فتح القسم": "Open section",
@@ -850,5 +852,8 @@ window.SSMPD_TRANSLATIONS = {
   "مفيش فيديوهات ناقصة على TikTok.": "No videos are missing on TikTok.",
   "اتنسخ الكابشن.": "Caption copied.",
   "المتصفح رفض النسخ.": "The browser blocked copying.",
-  "تعذر التحميل": "Could not load"
+  "تعذر التحميل": "Could not load",
+  "ملخص الليدز": "Leads summary",
+  "ليدز جديدة النهارده": "New leads today",
+  "محتاجة متابعة عاجلة": "Need urgent follow-up"
 };
