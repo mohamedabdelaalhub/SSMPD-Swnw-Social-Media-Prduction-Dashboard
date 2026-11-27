@@ -78,6 +78,31 @@
     return { ready: "جاهز للصرف", pending: "معلّق — مستني اعتماد المدير المالي أو المدير العام أو السوبر أدمن", approved: "اتعتمد — سلّم الفلوس للدكتور واطبع الإيصال",
       paid: "تم الصرف", partial: "صرف جزئي — فيه جزء من حسابه لسه", nothing: "مفيش مبلغ مستحق دلوقتي", unlinked: "الدكتور مش مربوط بعقد أتعاب في الحسابات" }[r.state] || "";
   }
+  /* «راجع قبل ما تطلب الصرف» (owner 2026-11-27, mig 20261127140000, help 329): every case with its price, what was removed first and the
+     doctor share; «شيل الحالة» leaves a case for the next payout, «المبلغ» can only go LOWER, and any change needs a reason. The request
+     still waits for the approver, who sees the change (reception_review). */
+  function pct(fee, base) { return base > 0 ? Math.round(fee / base * 100) + "%" : ""; }
+  function reviewHtml(r) {
+    var list = r.invoices || [];
+    return '<section class="dp-review" data-dp-review><h3 class="dp-h">راجع قبل ما تطلب الصرف</h3><div class="dp-rv-list">' + list.map(function (i) {
+      var base = Number(i.amount) || 0, cut = Number(i.discount) || 0;
+      return '<div class="dp-rv-row" data-dp-case="' + esc(i.invoice_id) + '" data-fee="' + esc(i.fee) + '"><span class="dp-rv-name">' + esc(i.description) + (i.patient ? " — " + esc(i.patient) : "") +
+        '<small>' + esc(i.reference) + " · " + esc(when(i.created_at)) + "</small></span>" +
+        '<span class="dp-rv-num">' + money(i.gross != null ? i.gross : base) + (cut > 0 ? '<small class="dp-neg">خصم <bdi dir="ltr">−' + money(cut) + "</bdi></small>" : "") + "</span>" +
+        '<span class="dp-rv-num"><b>' + money(i.fee) + "</b><small>" + esc(pct(Number(i.fee), base)) + (base ? " من " + money(base) : "") + "</small></span>" +
+        '<button type="button" class="btn btn-sm dp-rv-x" data-dp-drop>✕ شيل الحالة</button></div>';
+    }).join("") + "</div>" +
+      '<p class="dp-muted">الحالة اللي بتتشال مبتضيعش: بتفضل للدكتور وتظهر في الصرف الجاي.</p>' +
+      '<div class="dp-facts"><span>المحسوب للحالات دي: <b data-dp-kept>' + money(r.payable) + "</b></span><span>محجوز لحد ما المرضى يدفعوا: <b>" + money(r.held) + "</b></span><span>اتصرف النهارده: <b>" + money(r.paid_today) + "</b></span></div>" +
+      '<div class="dp-rv-ask"><label>المبلغ اللي هتطلبه<input type="number" min="0.01" step="0.01" inputmode="decimal" data-dp-amount value="' + esc(r.payable) + '"></label>' +
+      '<label>السبب (إجباري لو شلت حالة أو قللت المبلغ)<input type="text" maxlength="300" data-dp-reason placeholder="مثلاً: الدكتور هيستلم الباقي بكرة"></label>' +
+      '<p class="dp-muted">مينفعش أكتر من المحسوب. الطلب بيروح للي بيعتمد، وهو شايف التعديل والسبب.</p></div></section>';
+  }
+  function reviewNote(p) {
+    var v = p && p.reception_review; if (!v) return "";
+    return '<p class="dp-note dp-rv-note" data-dp-rv-note>الاستقبال عدّل الطلب: المحسوب ' + money(v.computed_full) + (v.removed && v.removed.length ? " — شال " + v.removed.length + " حالة (" + v.removed.map(function (x) { return esc(x.description || x.reference); }).join("، ") + ")" : "") +
+      " — طلب " + money(v.requested_gross) + " · السبب: " + esc(v.note) + "</p>";
+  }
   function open(ws, providerId, day) {
     var m = overlay("حساب الطبيب");
     function load() {
@@ -90,9 +115,9 @@
         '<div class="dp-facts"><span>محجوز لحد ما المرضى يدفعوا: <b>' + money(r.held) + "</b></span><span>اتصرف النهارده: <b>" + money(r.paid_today) + "</b></span></div>" +
         '<details class="dp-details"><summary>التفاصيل (' + (r.invoices || []).length + " حالة)</summary>" + invoiceTable(r.invoices) + "</details>";
       var actions = "";
-      if (r.state === "pending" && cur) actions += '<p class="dp-note">طلب ' + money(cur.gross) + " من " + esc(cur.requested_by) + " — " + esc(when(cur.created_at)) + "</p>" + (approver.is ? '<button type="button" class="btn" data-dp-approvals>افتح الاعتماد</button>' : "");
-      else if (r.state === "approved" && cur) actions += '<p class="dp-note">اتعتمد ' + money(cur.gross) + " من " + esc(cur.reviewed_by) + (cur.adjust_note ? " — اتعدّل: " + esc(cur.adjust_note) : "") + '</p><button type="button" class="btn" data-dp-print="' + esc(cur.id) + '">اطبع إيصال الاستلام</button><button type="button" class="btn btn-primary dp-go" data-dp-hand="' + esc(cur.id) + '">سلّمت الفلوس للدكتور</button>';
-      else if (Number(r.payable) > 0 && !r.pending) actions += '<button type="button" class="btn btn-primary dp-go" data-dp-request>اطلب صرف ' + money(r.payable) + "</button><p class=\"dp-muted\">المبلغ محسوب من الداشبورد ومش بيتعدّل من الاستقبال؛ التعديل للي بيعتمد بس.</p>";
+      if (r.state === "pending" && cur) actions += '<p class="dp-note">طلب ' + money(cur.gross) + " من " + esc(cur.requested_by) + " — " + esc(when(cur.created_at)) + "</p>" + reviewNote(cur) + (approver.is ? '<button type="button" class="btn" data-dp-approvals>افتح الاعتماد</button>' : "");
+      else if (r.state === "approved" && cur) actions += '<p class="dp-note">اتعتمد ' + money(cur.gross) + " من " + esc(cur.reviewed_by) + (cur.adjust_note ? " — اتعدّل: " + esc(cur.adjust_note) : "") + '</p>' + reviewNote(cur) + '<button type="button" class="btn" data-dp-print="' + esc(cur.id) + '">اطبع إيصال الاستلام</button><button type="button" class="btn btn-primary dp-go" data-dp-hand="' + esc(cur.id) + '">سلّمت الفلوس للدكتور</button>';
+      else if (Number(r.payable) > 0 && !r.pending) actions += reviewHtml(r) + '<button type="button" class="btn btn-primary dp-go" data-dp-request>اطلب صرف ' + money(r.payable) + "</button>";
       html += '<div class="dp-actions">' + actions + "</div>";
       var done = (r.payouts || []).filter(function (p) { return p.status === "approved"; });
       if (done.length) html += '<h3 class="dp-h">الصرف اللي اتعمل</h3><ul class="dp-list">' + done.map(function (p) {
@@ -102,8 +127,31 @@
       }).join("") + "</ul>";
       m.body.innerHTML = html;
       var by = function (sel, fn) { m.body.querySelectorAll(sel).forEach(function (b) { b.onclick = function () { fn(b); }; }); };
+      var rv = m.body.querySelector("[data-dp-review]"), reqBtn = m.body.querySelector("[data-dp-request]"), reqKey = uuid();
+      function kept() { var t = 0; if (rv) rv.querySelectorAll("[data-dp-case]").forEach(function (row) { if (!row.classList.contains("is-off")) t += Number(row.getAttribute("data-fee")) || 0; }); return Math.round(t * 100) / 100; }
+      function sync() { if (!rv || !reqBtn) return; var k = kept(), a = rv.querySelector("[data-dp-amount]"), v = Number(a.value);
+        rv.querySelector("[data-dp-kept]").textContent = money(k); if (!(v > 0) || v > k || a.__auto) { a.value = k; a.__auto = true; v = k; }
+        reqBtn.textContent = "اطلب صرف " + money(v); reqBtn.disabled = !(k > 0); }
+      if (rv) {
+        rv.querySelectorAll("[data-dp-drop]").forEach(function (b) { b.onclick = function () { var row = b.closest("[data-dp-case]"), off = row.classList.toggle("is-off");
+          b.textContent = off ? "↺ رجّعها" : "✕ شيل الحالة"; reqKey = uuid(); sync(); }; });
+        var amt = rv.querySelector("[data-dp-amount]"); amt.__auto = true; amt.oninput = function () { amt.__auto = false; reqKey = uuid(); var v = Number(amt.value); if (v > 0 && v <= kept()) reqBtn.textContent = "اطلب صرف " + money(v); };
+        amt.onchange = function () { var v = Number(amt.value), k = kept(); if (!(v > 0) || v > k) { toast("المبلغ لازم يكون أكبر من صفر ومش أكتر من " + money(k), true); amt.__auto = true; } sync(); };
+        rv.querySelector("[data-dp-reason]").oninput = function () { reqKey = uuid(); };
+      }
+      function payload() {
+        var pl = { workspace_id: ws, provider_id: providerId }; if (!rv) return pl;
+        var rm = [], k = kept(), v = Number(rv.querySelector("[data-dp-amount]").value), why = rv.querySelector("[data-dp-reason]").value.trim();
+        rv.querySelectorAll("[data-dp-case].is-off").forEach(function (row) { rm.push(row.getAttribute("data-dp-case")); });
+        if (!(k > 0)) throw Error("شلت كل الحالات — رجّع حالة على الأقل");
+        if (!(v > 0) || v > k) throw Error("المبلغ لازم يكون أكبر من صفر ومش أكتر من " + money(k));
+        var lower = Math.round(v * 100) < Math.round(k * 100);
+        if (rm.length || lower) { if (why.length < 3) throw Error("اكتب السبب — ليه شلت حالة أو قللت المبلغ"); pl.remove = rm; if (lower) pl.gross = Math.round(v * 100) / 100; pl.note = why; }
+        return pl;
+      }
       by("[data-dp-request]", function (b) {
-        b.disabled = true; rpc("request", { workspace_id: ws, provider_id: providerId }, uuid()).then(function () { toast("اتطلب الصرف وهو معلّق لحد الاعتماد"); refreshAll(); load(); }).catch(function (e) { b.disabled = false; toast(e.message, true); }); });
+        var pl; try { pl = payload(); } catch (e) { toast(e.message, true); return; }
+        b.disabled = true; rpc("request", pl, reqKey).then(function () { toast("اتطلب الصرف وهو معلّق لحد الاعتماد"); refreshAll(); load(); }).catch(function (e) { b.disabled = false; toast(e.message, true); }); });
       by("[data-dp-hand]", function (b) {
         if (!w.confirm("اتأكد إن الدكتور استلم الفلوس ومضى على الإيصال؟")) return;
         b.disabled = true; rpc("handover", { id: b.getAttribute("data-dp-hand") }).then(function () { toast("تم الصرف"); refreshAll(); load(); }).catch(function (e) { b.disabled = false; toast(e.message, true); }); });
@@ -149,7 +197,7 @@
       if (!items.length) { m.body.innerHTML = '<p class="dp-muted">مفيش طلبات معلّقة.</p>'; return; }
       m.body.innerHTML = items.map(function (p) {
         return '<article class="dp-card" data-dp-item="' + esc(p.id) + '"><header><h3>' + esc(p.doctor_name) + '</h3><strong>' + money(p.gross) + "</strong></header>" +
-          '<p class="dp-muted">طلبه ' + esc(p.requested_by) + " — " + esc(when(p.created_at)) + "</p>" +
+          '<p class="dp-muted">طلبه ' + esc(p.requested_by) + " — " + esc(when(p.created_at)) + "</p>" + reviewNote(p) +
           '<details class="dp-details"><summary>التفاصيل (' + (p.invoices || []).length + " حالة)</summary>" + invoiceTable(p.invoices) + "</details>" +
           '<div class="dp-approve"><label>المبلغ<input type="number" min="0.01" step="0.01" value="' + esc(p.gross) + '" data-dp-gross></label><label>ملاحظة / سبب التعديل أو الرفض<input type="text" maxlength="200" data-dp-note></label></div>' +
           '<div class="dp-actions"><button type="button" class="btn btn-primary dp-ok-btn" data-dp-approve>اعتماد الصرف</button><button type="button" class="btn dp-reject" data-dp-reject>رفض</button></div></article>';

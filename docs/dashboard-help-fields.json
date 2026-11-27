@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2079,
-    "labels": 1515,
-    "files": 170,
-    "groups": 1645
+    "definitions": 2104,
+    "labels": 1535,
+    "files": 172,
+    "groups": 1663
   },
   "fields": [
     {
@@ -3022,6 +3022,36 @@
       "tab": "production",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "المبلغ اللي هيتصرف (جنيه)",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "review-before-money",
+      "text_sha256": "fa731de4abd6308253dc794b038bc6aabeaf23e3ead2619f1a0db62c0cb05871"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "مثلاً: الموظف طلب 400 بس",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "review-before-money",
+      "text_sha256": "281fb89aa2062c5c7e16f7af7169e319fbd7034554852313b0b1ae5746588371"
+    },
+    {
+      "file": "drawer-requests.js",
+      "label": "ملاحظة / السبب (إجباري لو المبلغ أقل)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "review-before-money",
+      "text_sha256": "281fb89aa2062c5c7e16f7af7169e319fbd7034554852313b0b1ae5746588371"
     },
     {
       "file": "employee-assistant.js",
@@ -8921,6 +8951,136 @@
       "text_sha256": "2e37e8875406aa1b2c73c9e83ebeae2bbeb1cf1ffb3bce86f21c6678d2f71c8b"
     },
     {
+      "file": "hr-work-schedule.js",
+      "label": "الوردية من الساعة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "e72af238e368e100312eb9d439134a1339baeab6ab7a0ad8d889ff3aa1d2e36c"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "الوردية لحد الساعة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "e262ddc2e289838ced5d82d7d7b16c096b7d130a92c5c4b6d7364e909b8ce994"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "سبب الوردية (اختياري)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "eb05ab024d59c6566702d0967b0dc02bd7c5d263de00d453f3dbb6427a69d446"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "السماح قبل التأخير (دقيقة)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "2ec54170e8c1ab7094e60834853ae286f500fbc55cddef7bf3efc0e0fca6c6b7"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "يرجع ثابت من يوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "49dd655e09443e2b40756dffdbc844d4e021ee951520de7c76b6573fd93c207e"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "أضف طبيب",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "78b86c5aa70840260b0752d244442cd9458e00c9f20e2224a05f73f77bb94c56"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "الأطباء",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "78b86c5aa70840260b0752d244442cd9458e00c9f20e2224a05f73f77bb94c56"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "القسم",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "أو قسم كامل",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "d7502f43342d41ed4306190c23acd8827d1f8ab318da76d8afb6b77af7cf57dc"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "تيجي قبل أول كشف بـ (دقيقة)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "53822fb041e092f97d909b453f0fe5e3511d2e79d922c4fdb153ffb0a0ae3e60"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "تمشي بعد آخر كشف بـ (دقيقة)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "aa03f6210b7fc0f5c66d027ca6a689562921025287be3007ce3349d26f01143e"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "يبدأ من يوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "49dd655e09443e2b40756dffdbc844d4e021ee951520de7c76b6573fd93c207e"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "فرق أكبر من كده بين طبيبين = فترتين (دقيقة)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "ec8f67c75b7cd83b99d250a29acd1d34bd1a8271bac01492aec888594ecd3902"
+    },
+    {
       "file": "indicator-reports.js",
       "label": "الإجراء",
       "name": "",
@@ -10944,6 +11104,46 @@
     },
     {
       "file": "nursing-day-ops.js",
+      "label": "الوردية من الساعة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "hr-flex-shifts",
+      "text_sha256": "e72af238e368e100312eb9d439134a1339baeab6ab7a0ad8d889ff3aa1d2e36c"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "الوردية لحد الساعة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "hr-flex-shifts",
+      "text_sha256": "e262ddc2e289838ced5d82d7d7b16c096b7d130a92c5c4b6d7364e909b8ce994"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "مثلاً: تغطية عيادة الأسنان",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "hr-flex-shifts",
+      "text_sha256": "eb05ab024d59c6566702d0967b0dc02bd7c5d263de00d453f3dbb6427a69d446"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "سبب الوردية (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "hr-flex-shifts",
+      "text_sha256": "eb05ab024d59c6566702d0967b0dc02bd7c5d263de00d453f3dbb6427a69d446"
+    },
+    {
+      "file": "nursing-day-ops.js",
       "label": "المخزن اللي هيتخصم منه",
       "name": "",
       "kind": "aria",
@@ -12399,6 +12599,36 @@
       "tab": "reception_services",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "reception-doctor-payout.js",
+      "label": "المبلغ اللي هتطلبه",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "review-before-money",
+      "text_sha256": "161c52159a48abb692e0b61afc5cf322c6df5ac0d6f4befdb801ef7567b9c3e5"
+    },
+    {
+      "file": "reception-doctor-payout.js",
+      "label": "مثلاً: الدكتور هيستلم الباقي بكرة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "review-before-money",
+      "text_sha256": "042222b376a65a86f9aafbea50958a02443b54eba69eb1c475e4e2aaa8f17297"
+    },
+    {
+      "file": "reception-doctor-payout.js",
+      "label": "السبب (إجباري لو شلت حالة أو قللت المبلغ)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "review-before-money",
+      "text_sha256": "042222b376a65a86f9aafbea50958a02443b54eba69eb1c475e4e2aaa8f17297"
     },
     {
       "file": "reception-doctor-payout.js",
@@ -14299,6 +14529,26 @@
       "tab": "reception_services",
       "article": "shift-expenses-review",
       "text_sha256": "7874f0f73a8de1334b8801d900f5617184950df9b3298a359ad5b06835da4a75"
+    },
+    {
+      "file": "reception-shifts-view.js",
+      "label": "بحث في الورديات",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-shifts-view",
+      "text_sha256": "f31727bc10db6d0b4972dac5a300ad81cd352b717f38fdbee4b1a0198fe497b7"
+    },
+    {
+      "file": "reception-shifts-view.js",
+      "label": "دوّر باسم الخزينة…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-shifts-view",
+      "text_sha256": "f31727bc10db6d0b4972dac5a300ad81cd352b717f38fdbee4b1a0198fe497b7"
     },
     {
       "file": "reception-vezeeta-paste.js",
