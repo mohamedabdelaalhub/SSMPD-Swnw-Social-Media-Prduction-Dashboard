@@ -41,14 +41,14 @@ assert.equal(await pick(derm,'كشف جديد'),blood,'bug reproduced: جلدي�
 assert.equal(await pick(phys,'كشف جديد'),blood,'bug reproduced: a department without a consult → blood consult');
 // the live rolled-back dry-run: its body is the migration (minus begin / commit) and the whole file runs here, rolled back
 const LIVE=require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'auto-pick-own-department-live-rollback.sql'))},'utf8');
-{const i=LIVE.indexOf('<<<\\n')+4,j=LIVE.indexOf('\\n-- >>> END migration body <<<');assert(i>3&&j>i,'live markers');
+{const mk0=LIVE.indexOf('-- >>> BEGIN migration body'),i=LIVE.indexOf('<<<\\n',mk0)+4,j=LIVE.indexOf('\\n-- >>> END migration body <<<');assert(i>3&&j>i,'live markers');
  assert.equal(LIVE.slice(i,j),MIG.split('\\n').filter(l=>l!=='begin;'&&l!=='commit;').join('\\n').replace(/\\n+$/,''),'live body = migration');}
 await db.exec('reset role');
 // live-only pieces the dry-run READS (absent from the harness): a minimal external_bookings + one Masa row on a wrong booking
-await db.exec("create table if not exists clinic_reception.external_bookings(id uuid primary key default gen_random_uuid(),source text not null,appointment_id uuid,public_patient_id uuid,created_at timestamptz not null default now());alter table public.patients add column if not exists patient_code text;alter table clinic_reception.workspaces add column if not exists mode text default 'live'");
+await db.exec("create table if not exists clinic_reception.external_bookings(id uuid primary key default gen_random_uuid(),source text not null,provider_id uuid,needed_service text,appointment_id uuid,public_patient_id uuid,created_at timestamptz not null default now());alter table public.patients add column if not exists patient_code text;alter table clinic_reception.workspaces add column if not exists mode text default 'live'");
 {const d=new Date(Date.now()+2*86400000).toISOString().slice(0,10);await as(1);await cmd(live,'availability',{provider_id:ahmed,starts_at:d+'T06:00Z',ends_at:d+'T22:00Z'});
  const ap=(await cmd(live,'book',{patient_id:pat,provider_id:ahmed,service_id:blood,starts_at:d+'T10:00:00Z',same_day_ok:true})).id;await db.exec('reset role');
- await db.query("insert into clinic_reception.external_bookings(source,appointment_id) values('masa',$1)",[ap]);}
+ await db.query("insert into clinic_reception.external_bookings(source,provider_id,needed_service,appointment_id) values('masa',$2,'كشف جديد',$1),('masa',$3,'كشف',null),('masa',$4,'استشارة',null)",[ap,ahmed,derm,phys]);}
 {const res=await db.exec(LIVE),sum=res[res.length-2].rows;if(process.env.SHOW_LIVE)console.log(sum);
  assert(sum.length>=6,'live summary rows');assert.deepEqual(sum.filter(r=>!r.ok),[],'every live step ok');
  assert(sum.some(r=>/^\\(c\\) after: picks outside/.test(r.step)&&r.actual==='0'));}

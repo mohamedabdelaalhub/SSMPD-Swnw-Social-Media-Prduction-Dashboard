@@ -1,10 +1,11 @@
 -- Live rollback check for 20261127310000_auto_pick_own_department.sql. ONE transaction ending in ROLLBACK, run as postgres.
--- Nothing is kept: no function change, no booking, no message. Appointments are only READ.
--- (a) READ-ONLY before the body: Masa auto-booked appointments since 2026-11-26 whose service is outside the doctor's own
---     departments (home / provider_departments / scope row), and today's pick for «كشف جديد» of every active live doctor.
+-- Nothing is kept: no function change, no booking, no message. Appointments are only READ. Output is COUNTS ONLY (no patient data).
+-- (a) READ-ONLY before the body: the REPORT — Masa auto-booked appointments since 2026-11-26 whose service is outside the
+--     doctor's own departments (home / provider_departments / scope row), split past (done / collected) vs upcoming, and today's
+--     pick for «كشف جديد» of every active live doctor; then the masa-auto-service-check on the state BEFORE the fix (shows the bug).
 -- (b) the migration body (between the markers, without begin / commit).
 -- (c) after: no doctor's pick is outside his departments; Dr Ahmed Mostafa's pick; how many picks changed / became NULL
---     (= staff picks once in «حجوزات تحتاج استكمال»); the OPEN wrong appointments listed for reception. Summary table LAST.
+--     (= staff picks once in «حجوزات تحتاج استكمال»); the masa-auto-service-check again (expected 0). Summary tables LAST.
 begin;
 savepoint apod_live_guard;
 select set_config('apod_live.in_txn', 'yes', true);
@@ -19,23 +20,62 @@ create function pg_temp.apod_member(p_provider uuid, p_department text, p_code t
       or exists (select 1 from clinic_reception.provider_service_scopes sc where sc.provider_id = p_provider and sc.service_code = p_code)
 $f$;
 create temp table apod_wrong as
-  select e.id ext_id, a.id appointment_id, a.status, a.starts_at, p.name doctor, p.department home, s.code, s.name service, s.department svc_dept,
-         (select pt.patient_code from public.patients pt where pt.id = e.public_patient_id) patient_code
+  select a.id appointment_id, a.status, a.starts_at, a.provider_id, s.name service,
+         exists (select 1 from clinic_reception.visits v where v.appointment_id = a.id) has_visit
     from clinic_reception.external_bookings e
     join clinic_reception.appointments a on a.id = e.appointment_id
-    join clinic_reception.providers p on p.id = a.provider_id
     join clinic_reception.services s on s.id = a.service_id
    where e.source = 'masa' and e.created_at >= '2026-11-26' and not pg_temp.apod_member(a.provider_id, s.department, s.code);
+-- REPORT (counts only)
+create temp table apod_report as
+  select case when status = 'cancelled' then '4 اتلغى'
+              when status = 'no_show' then '3 ماضي — محضرش'
+              when status = 'completed' then '1 ماضي — اتنفّذ / اتحصّل'
+              when status = 'arrived' or has_visit then '2 وصل — الزيارة مفتوحة (تتصلح بـ«تغيير الخدمة»)'
+              when starts_at < now() then '3 ماضي — لسه «محجوز» ومتعملّوش وصول'
+              else '5 جاي — يتصلح قبل ما المريض يوصل' end bucket,
+         count(*) n, count(distinct provider_id) doctors
+    from apod_wrong group by 1;
+create temp table apod_by_service as select service, count(*) n from apod_wrong group by 1;
+insert into apod_live(step, expected, actual, ok)
+select '(a) REPORT: Masa auto-booked since 11-26 with another department''s service', 'info (the bug)',
+       count(*) || ' booking(s), ' || count(distinct provider_id) || ' doctor(s)', true from apod_wrong;
 create temp table apod_before as
   select p.id provider_id, p.name, p.department, clinic_reception.auto_time_service(p.workspace_id, p.id, 'كشف جديد') svc
     from clinic_reception.providers p join clinic_reception.workspaces w on w.id = p.workspace_id and w.mode = 'live' where p.active;
 insert into apod_live(step, expected, actual, ok)
-select '(a) before: Masa auto-booked since 11-26 outside the doctor''s departments', 'info (the bug)',
-       count(*) || ' (' || count(*) filter (where service like '%الدم%') || ' = «…الدم والمناعة»)', true from apod_wrong;
-insert into apod_live(step, expected, actual, ok)
 select '(a) before: doctors whose «كشف جديد» pick is outside their departments', 'info (the bug)',
        count(*) || ' of ' || (select count(*) from apod_before), true
   from apod_before b join clinic_reception.services s on s.id = b.svc where not pg_temp.apod_member(b.provider_id, s.department, s.code);
+-- >>> BEGIN masa-auto-service-check (same text in tests/masa-auto-service-live-check.sql; CI: tests/masa-auto-service-guard.cjs) <<<
+-- Re-runs the auto picker on the REAL Masa bookings of the last 7 days and compares the department of the picked service with
+-- the doctor's own departments (home / provider_departments / scope row). Expected: 0 outside. Reads only.
+create function pg_temp.masa_chk_member(p_provider uuid, p_department text, p_code text) returns boolean language sql stable as $f$
+  select exists (select 1 from clinic_reception.providers p where p.id = p_provider and p.department = p_department)
+      or exists (select 1 from clinic_reception.provider_departments d where d.provider_id = p_provider and d.department = p_department)
+      or exists (select 1 from clinic_reception.provider_service_scopes sc where sc.provider_id = p_provider and sc.service_code = p_code)
+$f$;
+create temp table masa_chk as
+  select e.id, e.provider_id, s.department svc_dept, s.code, s.name svc_name, s.is_home, s.placeholder
+    from clinic_reception.external_bookings e
+    join clinic_reception.providers p on p.id = e.provider_id
+    left join clinic_reception.services s on s.id = clinic_reception.auto_time_service(p.workspace_id, e.provider_id, e.needed_service)
+   where e.source = 'masa' and e.created_at >= now() - interval '7 days';
+create temp table masa_chk_result(n serial, step text, expected text, actual text, ok boolean);
+insert into masa_chk_result(step, expected, actual, ok)
+select 'masa check: Masa bookings of the last 7 days re-picked', '> 0 (info)',
+       count(*) || ' (' || count(*) filter (where code is null) || ' → staff review)', true from masa_chk;
+insert into masa_chk_result(step, expected, actual, ok)
+select 'masa check: picked service outside the doctor''s departments', '0', count(*)::text, count(*) = 0
+  from masa_chk where code is not null and not pg_temp.masa_chk_member(provider_id, svc_dept, code);
+insert into masa_chk_result(step, expected, actual, ok)
+select 'masa check: picked a home / placeholder / non-consult service for a consult text', '0', count(*)::text, count(*) = 0
+  from masa_chk c join clinic_reception.external_bookings e on e.id = c.id
+ where c.code is not null and clinic_reception.consult_kind(e.needed_service) is not null
+   and (c.is_home or coalesce(c.placeholder, false) or not clinic_reception.consult_pickable(c.svc_name));
+-- >>> END masa-auto-service-check <<<
+insert into apod_live(step, expected, actual, ok)
+select '(a) BEFORE fix — ' || step, 'info (the bug)', actual, true from masa_chk_result order by n;
 -- >>> BEGIN migration body: supabase/migrations/20261127310000_auto_pick_own_department.sql (without begin / commit) <<<
 -- Masa auto booking puts «كشف أخصائي أمراض الدم والمناعة» on consults of OTHER doctors (owner bug 2026-11-27, relayed by main
 -- chat 7 from Mazen: «اي حالة بتتسجل كشف من علي ماسا بيتحول لي الداش نفس نوع الكشف دا اخصائي المناعه و الدم», booking of
@@ -97,8 +137,39 @@ insert into apod_live(step, expected, actual, ok)
 select '(c) manual booking unchanged: basics of another department still open (provider_serves_code)', 'true',
        coalesce(bool_and(clinic_reception.provider_serves_code(x.provider_id, s.department, s.code, null))::text, 'no sample'), coalesce(bool_and(clinic_reception.provider_serves_code(x.provider_id, s.department, s.code, null)), true)
   from (select provider_id, before_svc from apod_after limit 50) x join clinic_reception.services s on s.id = x.before_svc;
--- the OPEN wrong appointments for reception («تغيير الخدمة»), read only
-select 'open wrong' kind, patient_code, doctor, home, to_char(starts_at at time zone 'Africa/Cairo', 'YYYY-MM-DD HH24:MI') at_cairo, status, code, service, svc_dept
-  from apod_wrong where status not in ('cancelled','no_show','completed') order by starts_at;
+drop function pg_temp.masa_chk_member(uuid, text, text);
+drop table masa_chk, masa_chk_result;
+-- >>> BEGIN masa-auto-service-check (same text in tests/masa-auto-service-live-check.sql; CI: tests/masa-auto-service-guard.cjs) <<<
+-- Re-runs the auto picker on the REAL Masa bookings of the last 7 days and compares the department of the picked service with
+-- the doctor's own departments (home / provider_departments / scope row). Expected: 0 outside. Reads only.
+create function pg_temp.masa_chk_member(p_provider uuid, p_department text, p_code text) returns boolean language sql stable as $f$
+  select exists (select 1 from clinic_reception.providers p where p.id = p_provider and p.department = p_department)
+      or exists (select 1 from clinic_reception.provider_departments d where d.provider_id = p_provider and d.department = p_department)
+      or exists (select 1 from clinic_reception.provider_service_scopes sc where sc.provider_id = p_provider and sc.service_code = p_code)
+$f$;
+create temp table masa_chk as
+  select e.id, e.provider_id, s.department svc_dept, s.code, s.name svc_name, s.is_home, s.placeholder
+    from clinic_reception.external_bookings e
+    join clinic_reception.providers p on p.id = e.provider_id
+    left join clinic_reception.services s on s.id = clinic_reception.auto_time_service(p.workspace_id, e.provider_id, e.needed_service)
+   where e.source = 'masa' and e.created_at >= now() - interval '7 days';
+create temp table masa_chk_result(n serial, step text, expected text, actual text, ok boolean);
+insert into masa_chk_result(step, expected, actual, ok)
+select 'masa check: Masa bookings of the last 7 days re-picked', '> 0 (info)',
+       count(*) || ' (' || count(*) filter (where code is null) || ' → staff review)', true from masa_chk;
+insert into masa_chk_result(step, expected, actual, ok)
+select 'masa check: picked service outside the doctor''s departments', '0', count(*)::text, count(*) = 0
+  from masa_chk where code is not null and not pg_temp.masa_chk_member(provider_id, svc_dept, code);
+insert into masa_chk_result(step, expected, actual, ok)
+select 'masa check: picked a home / placeholder / non-consult service for a consult text', '0', count(*)::text, count(*) = 0
+  from masa_chk c join clinic_reception.external_bookings e on e.id = c.id
+ where c.code is not null and clinic_reception.consult_kind(e.needed_service) is not null
+   and (c.is_home or coalesce(c.placeholder, false) or not clinic_reception.consult_pickable(c.svc_name));
+-- >>> END masa-auto-service-check <<<
+insert into apod_live(step, expected, actual, ok)
+select '(c) AFTER fix — ' || step, expected, actual, ok from masa_chk_result order by n;
+-- REPORT tables (counts only, no patient data)
+select bucket, n bookings, doctors from apod_report order by bucket;
+select service, n bookings from apod_by_service order by n desc;
 select step, expected, actual, ok from apod_live order by n;
 rollback;
