@@ -1,0 +1,21 @@
+/* «الخزن والورديات» clear view — Sonu Glass (docs/SONU-GLASS-STYLE.md): glass cards, 16px radius, tile icons like the approved reception tiles. */
+.rsv{display:grid;gap:16px;min-width:0}.rsv>*{min-width:0}
+.rsv-card{background:var(--glass-fill,rgba(255,255,255,.66));border:1px solid var(--glass-line,rgba(15,54,157,.10));border-radius:16px;box-shadow:var(--glass-shadow,0 10px 30px rgba(15,54,157,.09)),inset 0 1px 0 var(--glass-edge,rgba(255,255,255,.85))}
+.rsv-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.rsv-tile{padding:16px;display:grid;grid-template-columns:44px 1fr;gap:4px 12px;align-items:center;text-align:start;font:inherit;color:inherit}button.rsv-tile{cursor:pointer}.rsv-tile:focus-visible,.rsv-fb:focus-visible{outline:2px solid #F15A22;outline-offset:2px}
+.rsv-ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;grid-row:span 2;font-size:20px;font-weight:800}.rsv-ico.i1{background:#EAF0FF;color:#0F369D}.rsv-ico.i2{background:#FFF1E8;color:#F15A22}.rsv-ico.i3{background:#E6F3EC;color:#2F7D5C}
+.rsv-tile small{color:#5b6b82;font-size:13px}.rsv-tile b{font-size:30px;font-weight:800;line-height:1.1;color:#0F369D}.rsv-tile.hot b{color:#F15A22}.rsv-tile.ok b{color:#2F7D5C}.rsv-tile.bad b{color:#D0402A}
+.rsv-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px}.rsv-bar input{flex:1 1 220px;min-width:0;min-height:44px;border:1px solid #D5DEEE;border-radius:12px;padding:0 12px;font:inherit;background:#fff}
+.rsv-go .btn{min-height:44px;border-radius:12px;background:#0F369D;color:#fff;border-color:#0F369D;font-weight:700;padding:0 14px}
+.rsv-chips{display:flex;gap:8px;flex-wrap:wrap;flex:1 1 100%}.rsv-fb{border:1px solid #D5DEEE;background:#fff;border-radius:999px;min-height:44px;padding:0 14px;font:inherit;cursor:pointer;color:#16212E}.rsv-fb.on{background:#EAF0FF;border-color:#0F369D;color:#0F369D;font-weight:700}
+.rsv-group{padding:14px 16px;display:grid;gap:4px}.rsv-group[hidden],.rsv-row[hidden]{display:none}.rsv-gh{display:flex;align-items:center;justify-content:space-between;gap:8px}.rsv-gh h4{margin:0;font-size:16px}.rsv-gh small{color:#5b6b82}
+.rsv-row{display:grid;grid-template-columns:minmax(0,1.3fr) auto minmax(0,1.4fr) minmax(0,.9fr);align-items:center;gap:12px;padding:12px 0;border-top:1px solid #E4E9F2}.rsv-gh+.rsv-row{border-top:0}
+.rsv-who b{display:block;line-height:1.6}.rsv-who small{color:#5b6b82;line-height:1.6}
+.rsv-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}.rsv-chip.open{background:#EAF0FF;color:#0F369D}.rsv-chip.sub{background:#FFF1E8;color:#C2410C}.rsv-chip.done{background:#E6F3EC;color:#2F7D5C}
+.rsv-res{line-height:1.7}.rsv-res small{display:block;color:#5b6b82}.rsv-diff{font-weight:700}.rsv-diff.z{color:#2F7D5C}.rsv-diff.p{color:#F15A22}.rsv-diff.n{color:#D0402A}
+.rsv-act .btn{width:100%;min-height:44px;white-space:normal;border:1px solid #0F369D;color:#0F369D;background:#fff;border-radius:12px;font-weight:700}.rsv-wait{display:block;text-align:center;color:#5b6b82;font-size:13px}
+.rsv-empty,.rsv-none{padding:16px;color:#5b6b82;margin:0}
+.rx-more-tools .rsv-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.rsv-tg{padding:12px;display:grid;gap:8px;align-content:start}.rsv-tg h5{margin:0;font-size:14px;color:#0F369D}.rsv-tg .btn{width:100%;text-align:start;white-space:normal;min-height:44px}
+@media(max-width:760px){.rsv-tile{grid-template-columns:1fr;padding:10px}.rsv-ico{display:none}.rsv-tiles{gap:8px}.rsv-tile b{font-size:22px}.rsv-row{grid-template-columns:1fr auto;gap:8px}.rsv-res,.rsv-act{grid-column:1/-1}.rx-more-tools .rsv-tools{grid-template-columns:1fr}.rsv-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}.rsv-fb{white-space:nowrap}.rsv-go{order:-1;flex:1 1 100%}.rsv-go .btn{width:100%}}
+@media(prefers-reduced-motion:reduce){.rsv *{transition:none!important}}
+@media(prefers-contrast:more){.rsv-card{background:#fff;box-shadow:none}}
