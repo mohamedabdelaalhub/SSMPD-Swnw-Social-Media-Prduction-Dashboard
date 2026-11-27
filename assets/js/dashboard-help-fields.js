@@ -22834,6 +22834,21 @@
       "reviewed": true
     },
     {
+      "title": "الخدمة (إجباري)",
+      "labels": [
+        "الخدمة (إجباري)"
+      ],
+      "text": "حجز جاي من ماسا من غير خدمة واضحة («محتاج تختار الخدمة») — اختار الخدمة اللي المريض جاي لها من خدمات الدكتور، وبعدين «سجّل الحضور». مفيش فاتورة ولا تحصيل قبل الاختيار.",
+      "article": "automatic-bookings",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "وصل — اختار الخدمة الأول"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "خط العرض",
       "labels": [
         "خط العرض",
@@ -24562,9 +24577,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2119,
+    "definitions": 2120,
     "labels": 1549,
     "files": 175,
-    "groups": 1675
+    "groups": 1676
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

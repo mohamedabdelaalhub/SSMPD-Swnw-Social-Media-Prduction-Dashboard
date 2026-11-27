@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2119,
+    "definitions": 2120,
     "labels": 1549,
     "files": 175,
-    "groups": 1675
+    "groups": 1676
   },
   "fields": [
     {
@@ -21122,6 +21122,18 @@
       "tab": "reception_services",
       "article": "today-board",
       "text_sha256": "5b9d11709a5da94b3bda9e02f0817a1d20b930933f9aa9df6705fde8d7bb519c"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "الخدمة (إجباري)",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "وصل — اختار الخدمة الأول"
+      ],
+      "tab": "reception_services",
+      "article": "automatic-bookings",
+      "text_sha256": "4ef4ee4e4d38a2cf697ab5218f295d6cfd54cdb2284a38e0bee222899b6379c2"
     },
     {
       "file": "today-operations.js",
