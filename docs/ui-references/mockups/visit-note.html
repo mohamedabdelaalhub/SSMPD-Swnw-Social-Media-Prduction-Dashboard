@@ -1,0 +1,81 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: ملاحظة على الزيارة</title>
+<!-- MOCKUP — request via main chat 7 (2026-11-27): «مش لاقيين مكان نكتب فيه ملاحظة على الزيارة… زي «حجز فيزيتا اتسجّل من ماسا كعادي» للمحاسب».
+     Today: «ملاحظة للحجز ده بس» exists ONLY inside «حجز موعد / تعديل الحجز» (gone after «وصل»), the permanent patient note is about the
+     patient, and nothing reaches finance. Proposal: «📝 ملاحظة على الزيارة» — append-only notes on a visit, each with the writer's name +
+     Cairo date/time, shown in «تفاصيل الزيارة», on the board card (count), in the collect review and in the visit's account (finance).
+     A wrong note is never edited: «اتكتبت غلط» marks it (struck through, kept, with who/when). FAKE names / numbers. -->
+<style>body{background:#f4f7fc;margin:0;padding:16px;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.page{max-width:1100px;margin:auto;display:grid;gap:14px}.ph{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.ph h2{margin:0;font-size:20px;flex:1}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}.tabs a{font-size:13px;padding:7px 13px;border-radius:999px;background:#fff;border:1px solid #D5DEEE;color:#16212E;text-decoration:none}.tabs a.on{background:#0F369D;color:#fff;border-color:#0F369D}
+.note{background:#fff;border:1px solid #e6ebf3;border-radius:14px;padding:12px 14px;font-size:13px;color:#475467;margin:0}
+.card{background:#fff;border:1px solid #e6ebf3;border-radius:16px;padding:14px;display:grid;gap:10px}
+.mh{display:flex;align-items:center;gap:8px}.mh h3{margin:0;flex:1;font-size:17px}.x{width:38px;height:38px;border-radius:10px;border:1px solid #D5DEEE;background:#fff;font-size:18px}
+.btn{font:inherit;font-size:14px;font-weight:700;padding:9px 16px;border-radius:10px;border:1px solid #D5DEEE;background:#fff;color:#0F369D}.btn.pri{background:#0F369D;color:#fff;border-color:#0F369D}.btn.sm{font-size:12.5px;padding:5px 10px}
+.new{font-size:10.5px;background:#F15A22;color:#fff;border-radius:6px;padding:1px 6px;margin-inline-start:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #D5DEEE;border-radius:999px;padding:6px 12px;font-size:14px}
+.tag{font-size:11.5px;font-weight:800;padding:1px 8px;border-radius:999px;background:#EEF4FF;color:#0F369D;border:1px solid #CFDDF7}
+.menu{border:1px solid #e6ebf3;border-radius:12px;display:grid;width:280px;background:#fff;box-shadow:0 8px 24px rgba(22,33,46,.08)}.menu button{font:inherit;font-size:14px;text-align:start;padding:10px 12px;border:0;border-top:1px solid #eef1f6;background:#fff}.menu button:first-child{border-top:0}.menu .hl{background:#FFF8F4;font-weight:800}
+.nl{display:grid;border:1px solid #e6ebf3;border-radius:12px;overflow:hidden}.n{padding:10px 12px;border-top:1px solid #eef1f6;font-size:14px;display:grid;gap:4px}.n:first-child{border-top:0}
+.n small{color:#667085;font-size:12px}.n.void p{text-decoration:line-through;color:#98A2B3}.n.void small b{color:#D0402A}
+.n p{margin:0}.n .act{justify-self:start}
+textarea{font:inherit;font-size:14px;width:100%;box-sizing:border-box;border:1px solid #D5DEEE;border-radius:10px;padding:10px;min-height:90px}
+.hint{margin:0;font-size:12px;color:#667085}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.inv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;font-size:14px}.inv b{font-weight:800}.sep{border-top:1px dashed #D5DEEE;grid-column:1/-1}
+section[id]{display:none}section[id]:target,section#board:not(:target){display:grid}
+</style>
+<div class="page">
+ <div class="ph"><h2>تصور: «📝 ملاحظة على الزيارة»</h2><span class="tag">تصور بس — مفيش تنفيذ قبل موافقة المالك</span></div>
+ <nav class="tabs"><a href="#board">١) الكارت في «تشغيل اليوم»</a><a href="#write">٢) نافذة الكتابة</a><a href="#visit">٣) تفاصيل الزيارة</a><a href="#money">٤) المراجعة قبل التحصيل والحساب</a></nav>
+ <p class="note">النهارده: «ملاحظة للحجز ده بس» موجودة جوه «حجز موعد / تعديل الحجز» بس، ومش بتتعدل بعد «وصل»، ومش بتوصل للحسابات. الاقتراح: ملاحظات على <b>الزيارة</b> نفسها، كل ملاحظة باسم اللي كتبها واليوم والساعة، بتظهر للاستقبال والتمريض والحسابات. الملاحظة <b>ما بتتعدلش ولا بتتمسح</b> — لو اتكتبت غلط بتتعلّم «اتكتبت غلط» وتفضل ظاهرة مشطوبة (زي قاعدة «ممنوع شيل أي حاجة»).</p>
+
+ <section id="board" class="card">
+  <h3 style="margin:0">١) كارت المريض في «تشغيل اليوم»</h3>
+  <div class="row"><span class="chip"><b>8:20م</b> محمد تجريبي <span class="tag">📝 2</span></span><span class="hint">← عدد الملاحظات على الزيارة بيظهر على الكارت</span></div>
+  <div class="row" style="align-items:flex-start">
+   <div class="menu" aria-label="⋯ إجراءات أخرى">
+    <button>تغيير الخدمة</button><button>خصم على الزيارة (قبل التحصيل)</button><button class="hl">📝 ملاحظة على الزيارة<span class="new">جديد</span></button><button>تفاصيل الزيارة</button>
+   </div>
+   <p class="hint" style="max-width:420px">الزرار في «⋯» على كارت أي مريض <b>وصل</b> (مستني / في الكشف / خلص) — وكمان جوه «تفاصيل الزيارة» تحت الخدمات. قبل «وصل» تفضل «ملاحظة للحجز ده بس» زي ما هي في «تعديل الحجز».</p>
+  </div>
+ </section>
+
+ <section id="write" class="card">
+  <div class="mh"><h3>📝 ملاحظة على الزيارة — محمد تجريبي</h3><button class="x" aria-label="إغلاق">✕</button></div>
+  <p class="hint">د. أحمد تجريبي · كشف استشاري باطنة · زيارة النهارده 8:20م</p>
+  <textarea placeholder="مثلاً: الحجز ده فيزيتا بس اتسجّل من ماسا كعادي — المريض دافع على فيزيتا">الحجز ده فيزيتا بس اتسجّل من ماسا كعادي — المريض دافع على فيزيتا</textarea>
+  <p class="hint">لحد 500 حرف. هتتسجّل باسمك (مازن تجريبي) واليوم والساعة، وتظهر في تفاصيل الزيارة وفي حساب الزيارة عند الحسابات. مش بتتطبع على الفاتورة ولا بتوصل للمريض.</p>
+  <div class="row"><button class="btn pri">حفظ الملاحظة</button><button class="btn">تراجع</button></div>
+ </section>
+
+ <section id="visit" class="card">
+  <div class="mh"><h3>تفاصيل الزيارة — محمد تجريبي</h3><button class="x" aria-label="إغلاق">✕</button></div>
+  <p class="hint">… الخدمات والتحصيل زي ما هم …</p>
+  <div class="row" style="justify-content:space-between"><h4 style="margin:0;color:#0F369D">📝 ملاحظات على الزيارة (2)</h4><button class="btn sm">＋ ملاحظة</button></div>
+  <div class="nl">
+   <div class="n"><p>الحجز ده فيزيتا بس اتسجّل من ماسا كعادي — المريض دافع على فيزيتا</p><small>مازن تجريبي · 27/11/2026 · 8:31م</small></div>
+   <div class="n void"><p>المريض هيدفع الباقي بكرة</p><small><b>اتكتبت غلط</b> — علّمها مازن تجريبي 8:40م · الأصل: مازن تجريبي · 27/11/2026 · 8:35م</small></div>
+  </div>
+  <p class="hint">«اتكتبت غلط» بيظهر لكاتب الملاحظة نفسه في نفس اليوم، أو لمدير المساحة — بسبب إجباري. مفيش تعديل ولا مسح.</p>
+ </section>
+
+ <section id="money" class="card">
+  <div class="grid2">
+   <div class="card">
+    <div class="mh"><h3>راجع قبل التحصيل</h3><button class="x" aria-label="إغلاق">✕</button></div>
+    <div class="inv"><span>كشف استشاري باطنة</span><b>400</b><div class="sep"></div><span>المطلوب</span><b>400</b></div>
+    <p class="note" style="background:#EEF4FF;border-color:#CFDDF7;color:#0F369D">📝 ملاحظة على الزيارة: «الحجز ده فيزيتا بس اتسجّل من ماسا كعادي — المريض دافع على فيزيتا» — مازن تجريبي 8:31م</p>
+    <div class="row"><button class="btn pri">حصّل 400</button><button class="btn">عدّل</button></div>
+   </div>
+   <div class="card">
+    <div class="mh"><h3>الحسابات — حساب الزيارة</h3><button class="x" aria-label="إغلاق">✕</button></div>
+    <div class="inv"><span>فاتورة <bdi dir="ltr">2026-004512</bdi></span><b>400</b><span>المحصّل</span><b>400</b></div>
+    <h4 style="margin:0;color:#0F369D;font-size:14px">📝 ملاحظات الاستقبال على الزيارة (1)</h4>
+    <div class="nl"><div class="n"><p>الحجز ده فيزيتا بس اتسجّل من ماسا كعادي — المريض دافع على فيزيتا</p><small>مازن تجريبي · 27/11/2026 · 8:31م</small></div></div>
+    <p class="hint">بتظهر كمان في سجل نشاط الاستقبال («ملاحظة على زيارة») وفي تقرير «زيارات فيها ملاحظات» للمدير المالي (فلتر بالتاريخ).</p>
+   </div>
+  </div>
+ </section>
+
+ <p class="note"><b>أسئلة للمالك:</b> (١) مين يكتب؟ الاقتراح: الاستقبال + التمريض + الحسابات (والدكتور لأ). (٢) تظهر للدكتور؟ الاقتراح: لأ. (٣) «اتكتبت غلط» بدل التعديل/المسح — موافق؟ (٤) تظهر في المراجعة قبل التحصيل — موافق؟</p>
+</div>
