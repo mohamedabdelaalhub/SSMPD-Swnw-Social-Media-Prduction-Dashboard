@@ -16182,6 +16182,20 @@
       "reviewed": true
     },
     {
+      "title": "بحث في الورديات",
+      "labels": [
+        "بحث في الورديات",
+        "دوّر باسم الخزينة…"
+      ],
+      "text": "اكتب جزء من اسم الخزينة والقايمة بتصغر على المطابق (بيتجاهل الفرق بين أ/إ/آ وة/ه). امسح الخانة ترجع كل الورديات.",
+      "article": "reception-shifts-view",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "Dear Doctor …",
       "labels": [
         "Dear Doctor …",
@@ -24163,9 +24177,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2079,
-    "labels": 1515,
-    "files": 170,
-    "groups": 1645
+    "definitions": 2081,
+    "labels": 1517,
+    "files": 171,
+    "groups": 1646
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

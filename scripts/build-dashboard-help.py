@@ -1249,6 +1249,7 @@ frule('select-search.js','اكتب للبحث…','اكتب جزء من الاس
 frule('select-search.js','بحث في القايمة','خانة بحث فوق القايمة الكبيرة. اكتب وهتلاقي المطابق، Enter يختار أول نتيجة، Esc يمسح.','select-search')
 frule('finance-doctors.js','القرار على كل العقود المعلّقة','اختار اعتماد الكل أو رفض الكل على كل العقود المعلّقة اللي تقدر تراجعها (من غير عقودك إنت).','doctor-contracts-layout')
 frule('finance-doctors.js','سبب القرار (مطلوب للرفض)','اكتب سبب القرار على كل العقود المعلّقة. لو الرفض، السبب إجباري. بيتسجّل مع القرار.','doctor-contracts-layout')
+frule('reception-shifts-view.js','دوّر باسم الخزينة…|بحث في الورديات','اكتب جزء من اسم الخزينة والقايمة بتصغر على المطابق (بيتجاهل الفرق بين أ/إ/آ وة/ه). امسح الخانة ترجع كل الورديات.','reception-shifts-view')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'
