@@ -17,7 +17,7 @@ async function upload(file){var c=client();if(!c||!c.storage)throw new Error('ت
  var r=await c.storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type||undefined});if(r&&r.error)throw r.error;return path;}
 /* ---------- reception card ---------- */
 function cardHtml(s){var left=Math.max(0,(+s.allowance||0)-(+s.spent||0));
- return '<section class="rse-card" data-rse aria-label="مصروفات الوردية"><div class="rse-head"><h4>مصروفات الوردية <small>— '+esc(s.register)+'</small></h4>'+
+ return '<section class="rse-card" data-rse data-rht-reg="'+esc(s.register)+'" data-rht-allow="'+(+s.allowance||0)+'" data-rht-spent="'+(+s.spent||0)+'" data-rht-left="'+left+'" data-rht-can="'+(left>0?1:0)+'" aria-label="مصروفات الوردية"><div class="rse-head"><h4>مصروفات الوردية <small>— '+esc(s.register)+'</small></h4>'+
   '<button type="button" class="btn btn-primary" data-rse-spend'+(left>0?'':' disabled')+'>− صرف من مصروفات الوردية</button></div>'+
   '<div class="rse-k"><div><span>هامش الوردية</span><b dir="ltr">'+money(s.allowance)+'</b></div><div><span>اتصرف</span><b dir="ltr">'+money(s.spent)+'</b></div><div><span>باقي</span><b dir="ltr">'+money(left)+'</b></div></div>'+
   ((s.expenses||[]).length?'<ul class="rse-list">'+s.expenses.slice(0,5).map(function(x){return '<li><time dir="ltr">'+esc(hm(x.at))+'</time><span>'+esc(x.item)+'</span><b dir="ltr">'+money(x.amount)+'</b>'+(x.post_review==='rejected'?'<em class="rse-bad">مرفوض</em>':x.post_review==='ok'?'<em class="rse-ok">اتراجع</em>':'<em>مستني مراجعة</em>')+'</li>';}).join('')+'</ul>':'')+'</section>';}

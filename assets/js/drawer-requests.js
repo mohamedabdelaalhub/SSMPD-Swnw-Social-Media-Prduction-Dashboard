@@ -20,8 +20,8 @@ async function upload(file){var c=client();if(!c||!c.storage)throw new Error('ت
 function who(x){return x.kind==='supplier'?(x.supplier||''):(x.subject_name||x.subject||'');}
 function badge(s){var b=ST[s]||[s,'wait'];return '<em class="rdr-st '+b[1]+'">'+esc(b[0])+'</em>';}
 /* ---------- reception card ---------- */
-function cardHtml(s){var mine=s.mine||[];
- return '<section class="rse-card rdr-card" data-rdr aria-label="طلب صرف من الدرج"><div class="rse-head"><h4>طلب صرف من الدرج <small>— سلفة · حافز · فاتورة مورد</small></h4>'+
+function cardHtml(s){var mine=s.mine||[],pend=mine.filter(function(x){return x.status==='pending'||x.status==='first_ok';}).length,appr=mine.filter(function(x){return x.status==='approved';}).length;
+ return '<section class="rse-card rdr-card" data-rdr data-rht-pending="'+pend+'" data-rht-approved="'+appr+'" data-rht-total="'+mine.length+'" data-rht-can="'+(s.can_request?1:0)+'" aria-label="طلب صرف من الدرج"><div class="rse-head"><h4>طلب صرف من الدرج <small>— سلفة · حافز · فاتورة مورد</small></h4>'+
   '<button type="button" class="btn" data-rdr-new'+(s.can_request?'':' disabled')+'>+ طلب صرف من الدرج</button></div>'+
   '<p class="rse-note">الفلوس مابتطلعش من الدرج غير بعد الموافقة. بعد ما يتوافق، دوس «اتصرف» وسلّم الفلوس.</p>'+
   (mine.length?'<ul class="rse-list rdr-list">'+mine.map(function(x){var act='';
