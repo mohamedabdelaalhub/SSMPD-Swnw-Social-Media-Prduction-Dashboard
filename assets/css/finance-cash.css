@@ -143,7 +143,7 @@
 .ab-modal .ab-kind{min-height:34px;border:1px solid #C5CDDB;border-radius:8px;padding:4px 8px;font:inherit;background:#fff}
 .ab-modal h4{margin:16px 0 8px}
 /* «جرد الوردية» (count-check.js, 20261125110000) */
-.cc-modal{z-index:1200}
+.cc-modal{z-index:9700}
 .cc-modal .modal{width:min(460px,95vw)}
 .cc-table{width:100%;border-collapse:collapse;font-size:14px}.cc-table td{padding:8px 4px;border-bottom:1px solid #EEF1F6}.cc-table td.n{text-align:left;white-space:nowrap}
 .cc-table .cc-tot td{font-weight:700;font-size:16px;border-bottom:0}

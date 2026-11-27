@@ -17,6 +17,7 @@ function monthName(iso){var m=/^(\d{4})-(\d{2})/.exec(String(iso||''));return m?
 function addMonths(iso,n){var m=/^(\d{4})-(\d{2})/.exec(String(iso||''));if(!m)return '';var y=+m[1],k=+m[2]-1+n;y+=Math.floor(k/12);k=((k%12)+12)%12;return y+'-'+String(k+1).padStart(2,'0')+'-01';}
 function client(){return w.SSMPDDb&&w.SSMPDDb.client;}
 function rpc(a,p){var c=client();if(!c)return Promise.reject(new Error('تعذر الاتصال'));return Promise.resolve(c.rpc('clinic_finance_employee_debt',{p_action:a,p:p||{}})).then(function(r){if(r&&r.error)throw r.error;return r.data;});}
+function rpc2(a,p){var c=client();if(!c)return Promise.reject(new Error('تعذر الاتصال'));return Promise.resolve(c.rpc('clinic_finance_employee_debt_change',{p_action:a,p:p||{}})).then(function(r){if(r&&r.error)throw r.error;return r.data;});}
 function toast(m,k){if(w.SSMPDToast&&w.SSMPDToast.show)w.SSMPDToast.show(m,k||'success');}
 function badge(s){var b=ST[s]||[s,'wait'];return '<em class="rdr-st '+b[1]+'">'+esc(b[0])+'</em>';}
 function plan(x){return +x.months>1?x.months+' × '+money(x.installment):'مرة واحدة';}
@@ -104,16 +105,69 @@ function panelHtml(l){var inbox=l.inbox||[],items=l.items||[],bal=l.balances||[]
  return '<h4 class="fc-st-h">على حساب الموظف — يتخصم من المرتب</h4><p class="fc-note">الموافقة: المدير المالي أو السوبر أدمن (المالك) — أي واحد فيهم، بشرط مايكونش اللي طلب. بعد الموافقة القيد بيتسجل، والقسط بيتخصم لوحده من المرتب كل شهر.</p>'+
   (l.can_review?'<h4 class="fc-st-h">مستني موافقتك ('+inbox.length+')</h4>'+(inbox.length?'<div class="table-wrap"><table class="data-table">'+head+'<tbody>'+inbox.map(function(x){return rowHtml(x,'<button type="button" class="btn btn-primary" data-emd-ok="'+esc(x.id)+'">موافقة</button> <button type="button" class="btn" data-emd-no="'+esc(x.id)+'">رفض</button>');}).join('')+'</tbody></table></div>':'<p class="fc-note">مفيش طلبات مستنياك.</p>'):'')+
   '<h4 class="fc-st-h">الطلبات ('+items.length+')</h4>'+(items.length?'<label class="emd-search">دوّر في الطلبات<input type="search" data-emd-filter placeholder="اسم الموظف أو رقم الزيارة أو اللي طلب" autocomplete="off"></label><div class="table-wrap"><table class="data-table" data-emd-items>'+head+'<tbody>'+items.map(function(x){return rowHtml(x);}).join('')+'</tbody></table></div>':'<p class="fc-note">مفيش طلبات في الفترة دي.</p>')+
-  (bal.length?'<h4 class="fc-st-h">مديونيات الموظفين — في المرتبات</h4><div class="table-wrap"><table class="data-table"><thead><tr><th>الموظف</th><th>المديونية</th><th>اتخصم</th><th>الباقي</th><th>قسط الشهر ده</th><th>آخر قسط</th></tr></thead><tbody>'+
-   bal.map(function(b){return '<tr data-emd-bal><td>'+esc(b.name)+'</td><td dir="ltr">'+money(b.total)+'</td><td dir="ltr">'+money(b.recovered)+'</td><td dir="ltr">'+money((+b.total||0)-(+b.recovered||0))+'</td><td dir="ltr">'+money(b.this_month)+'</td><td>'+esc(monthName(b.last_month))+'</td></tr>';}).join('')+'</tbody></table></div>':'');}
+  (bal.length?'<h4 class="fc-st-h">مديونيات الموظفين — في المرتبات</h4><div class="table-wrap"><table class="data-table"><thead><tr><th>الموظف</th><th>المديونية</th><th>اتخصم</th><th>الباقي</th><th>قسط الشهر ده</th><th>آخر قسط</th><th></th></tr></thead><tbody>'+
+   bal.map(function(b){return '<tr data-emd-bal><td>'+esc(b.name)+'</td><td dir="ltr">'+money(b.total)+'</td><td dir="ltr">'+money(b.recovered)+'</td><td dir="ltr">'+money((+b.total||0)-(+b.recovered||0))+'</td><td dir="ltr">'+money(b.this_month)+'</td><td>'+esc(monthName(b.last_month))+'</td><td>'+(l._ch&&l._ch.can_request?'<button type="button" class="btn ghost" data-emd-resched="'+esc(b.person_id)+'">تأجيل / تغيير الأقساط</button>':'')+'</td></tr>';}).join('')+'</tbody></table></div>':'')+changeHtml(l._ch);}
+var CK={postpone:'تأجيل قسط',resplit:'تغيير عدد الأقساط'};
+function schedText(a){a=a||[];if(!a.length)return '—';var same=a.every(function(x){return +x.amount===+a[0].amount;});
+ return same&&a.length>1?a.length+' × '+money(a[0].amount)+' ('+monthName(a[0].month)+' ← '+monthName(a[a.length-1].month)+')':a.map(function(x){return monthName(x.month)+' '+money(x.amount);}).join('، ');}
+function changeHtml(ch){if(!ch)return '';var inbox=ch.inbox||[],items=ch.items||[];if(!inbox.length&&!items.length)return '';
+ var head='<thead><tr><th>النوع</th><th>الموظف</th><th>قبل</th><th>بعد</th><th>طلبه</th><th>السبب</th><th></th></tr></thead>';
+ var row=function(x,act){return '<tr data-emd-chrow><td>'+esc(CK[x.kind]||x.kind)+'</td><td>'+esc(x.person_name)+(x.visit_no?'<br><small>زيارة '+esc(x.visit_no)+'</small>':'')+'</td><td>'+esc(schedText(x.before))+'</td><td>'+esc(schedText(x.after))+'</td><td>'+esc(x.by||'')+'</td><td>'+esc(x.reason||'')+'</td><td>'+act+'</td></tr>';};
+ return '<h4 class="fc-st-h">تأجيل / تغيير الأقساط</h4>'+
+  (ch.can_review?(inbox.length?'<div class="table-wrap"><table class="data-table" data-emd-chinbox>'+head+'<tbody>'+inbox.map(function(x){return row(x,'<button type="button" class="btn btn-primary" data-emd-cok="'+esc(x.id)+'">موافقة</button> <button type="button" class="btn" data-emd-cno="'+esc(x.id)+'">رفض</button>');}).join('')+'</tbody></table></div>':'<p class="fc-note">مفيش طلبات تغيير أقساط مستنياك.</p>'):'')+
+  (items.length?'<div class="table-wrap"><table class="data-table" data-emd-chitems>'+head+'<tbody>'+items.slice(0,30).map(function(x){return row(x,badge(x.status)+(x.note?'<br><small>'+esc(x.note)+'</small>':'')+(x.status==='pending'&&x.mine?' <button type="button" class="btn ghost" data-emd-ccancel="'+esc(x.id)+'">الغي</button>':''));}).join('')+'</tbody></table></div>':'');}
+function sbox(list,mark){return '<div class="emd-sched">'+(list||[]).map(function(x){var cls=x.claimed?'done':(mark&&mark(x)||'');return '<span class="'+cls+'">'+esc(monthName(x.month))+'<small dir="ltr">'+money(x.amount)+(x.claimed?' ✓':'')+'</small></span>';}).join('')+'</div>';}
+function reschedModal(person,box){return rpc2('schedule',{person_id:person}).then(function(s){var debts=(s.debts||[]).filter(function(x){return (x.schedule||[]).some(function(i){return !i.claimed;});});
+  if(!debts.length){toast('مفيش أقساط باقية تتغيّر — كلها اتخصمت أو في مرتب متجهز','error');return null;}
+  d.querySelectorAll('.emd-modal').forEach(function(x){x.remove();});
+  var root=d.createElement('div');root.className='modal-backdrop emd-modal';
+  root.innerHTML='<section class="modal" role="dialog" aria-modal="true" aria-labelledby="emd-rt"><header class="modal-head"><h3 id="emd-rt">تأجيل / تغيير الأقساط — '+esc(debts[0].person_name)+'</h3><button type="button" class="modal-close" aria-label="إغلاق" data-emd-x>✕</button></header>'+
+   '<form class="rx-form" data-emd-rf>'+(debts.length>1?'<label data-wide>المديونية<select name="debt">'+debts.map(function(x){return '<option value="'+esc(x.id)+'">'+esc(money(x.amount)+(x.visit_no?' — زيارة '+x.visit_no:''))+'</option>';}).join('')+'</select></label>':'')+
+   '<div data-emd-facts data-wide></div><fieldset class="rse-items" data-wide><legend>عايز تعمل إيه؟</legend><label class="rse-chip"><input type="radio" name="kind" value="postpone" checked> تأجيل قسط</label><label class="rse-chip"><input type="radio" name="kind" value="resplit"> تغيير عدد الأقساط</label></fieldset>'+
+   '<div data-emd-pp><label>القسط اللي هيتأجل<select name="from_month"></select></label><label>يتأجل لحد<select name="to_month"></select></label></div>'+
+   '<div data-emd-rs hidden><label>عدد الأقساط الجديد (للباقي)<input name="months" type="number" min="1" max="12" step="1" value="2" inputmode="numeric"></label><label>من مرتب<select name="first_month"></select></label></div>'+
+   '<label data-wide>السبب (إجباري)<input name="reason" minlength="3" maxlength="300" required placeholder="مثلاً: ظروف عائلية — بطلب الموظف"></label>'+
+   '<div data-wide><b>قبل</b><div data-emd-before></div><b>بعد</b><div data-emd-after></div></div>'+
+   '<p class="rse-note" data-wide>المبلغ الكلي زي ما هو ومفيش قيد جديد — الجدول بس هو اللي بيتغيّر. الموافقة: المدير المالي أو المالك (مش اللي طلب).</p>'+
+   '<p role="status" data-emd-st></p><footer><button class="btn btn-primary" type="submit">ابعت للموافقة</button><button class="btn" type="button" data-emd-back>رجوع</button></footer></form></section>';
+  d.body.appendChild(root);var f=root.querySelector('form'),close=function(){root.remove();};
+  root.querySelector('[data-emd-x]').onclick=close;root.querySelector('[data-emd-back]').onclick=close;root.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  var debt=function(){var v=f.elements.debt?f.elements.debt.value:debts[0].id;return debts.find(function(x){return x.id===v;})||debts[0];};
+  var opts=function(sel,list){sel.innerHTML=list.map(function(m){return '<option value="'+esc(m[0])+'">'+esc(m[1])+'</option>';}).join('');};
+  var plan=function(){var x=debt(),sc=x.schedule||[],open=sc.filter(function(i){return !i.claimed;}),last=sc.length?sc[sc.length-1].month:s.this_month,k=(f.querySelector('[name=kind]:checked')||{}).value;
+   f.querySelector('[data-emd-pp]').hidden=k!=='postpone';f.querySelector('[data-emd-rs]').hidden=k!=='resplit';
+   var after;if(k==='postpone'){var fm=f.elements.from_month.value,tm=f.elements.to_month.value;after=sc.map(function(i){return !i.claimed&&i.month===fm?{month:tm,amount:i.amount,moved:true}:i;}).sort(function(a,b){return a.month<b.month?-1:1;});
+    f.querySelector('[data-emd-before]').innerHTML=sbox(sc,function(i){return i.month===fm?'moved':'';});}
+   else{var n=Math.max(1,Math.min(12,+f.elements.months.value||1)),m0=f.elements.first_month.value,tot=open.reduce(function(t,i){return t+ +i.amount;},0),each=Math.round(tot/n*100)/100;
+    after=sc.filter(function(i){return i.claimed;}).concat(Array.apply(null,{length:n}).map(function(_,j){return {month:addMonths(m0,j),amount:j<n-1?each:Math.round((tot-each*(n-1))*100)/100,moved:true};}));
+    f.querySelector('[data-emd-before]').innerHTML=sbox(sc);}
+   f.querySelector('[data-emd-after]').innerHTML=sbox(after,function(i){return i.moved?'new':'';});
+   f.querySelector('[data-emd-facts]').innerHTML='<p class="emd-plain">المديونية <b dir="ltr">'+money(x.amount)+'</b>'+(x.visit_no?' — زيارة '+esc(x.visit_no):'')+' · الباقي <b dir="ltr">'+money(open.reduce(function(t,i){return t+ +i.amount;},0))+'</b></p>';};
+  var fill=function(){var x=debt(),sc=x.schedule||[],open=sc.filter(function(i){return !i.claimed;}),last=sc.length?sc[sc.length-1].month:s.this_month;
+   opts(f.elements.from_month,open.map(function(i){return [i.month,monthName(i.month)+' — '+money(i.amount)];}));
+   opts(f.elements.to_month,[1,2,3,4,5,6].map(function(j){var m=addMonths(last,j);return [m,monthName(m)];}));
+   opts(f.elements.first_month,[0,1,2,3].map(function(j){var m=addMonths(s.this_month,j);return [m,monthName(m)];}).filter(function(m){return !sc.some(function(i){return i.claimed&&i.month===m[0];});}));
+   f.elements.months.value=Math.max(1,open.length);plan();};
+  f.querySelectorAll('select,input').forEach(function(el){el.addEventListener('change',function(){if(el.name==='debt')fill();else plan();});el.addEventListener('input',plan);});fill();
+  f.onsubmit=function(e){e.preventDefault();if(!f.reportValidity())return;var k=(f.querySelector('[name=kind]:checked')||{}).value,st=root.querySelector('[data-emd-st]');
+   var p={debt_id:debt().id,kind:k,reason:f.elements.reason.value.trim(),token:(w.crypto&&w.crypto.randomUUID?w.crypto.randomUUID():String(Date.now()))};
+   if(k==='postpone'){p.from_month=f.elements.from_month.value;p.to_month=f.elements.to_month.value;}else{p.months=+f.elements.months.value;p.first_month=f.elements.first_month.value;}
+   root.querySelectorAll('button').forEach(function(b){b.disabled=true;});
+   rpc2('request',p).then(function(){close();toast('اتبعت للموافقة');if(box)load(box);},function(err){root.querySelectorAll('button').forEach(function(b){b.disabled=false;});st.textContent=err.message||'تعذر الإرسال';});};
+  return root;},function(e){toast(e.message||'تعذر','error');return null;});}
+
 function load(box){box.setAttribute('aria-busy','true');
- return rpc('list',{}).then(function(l){box.removeAttribute('aria-busy');box.innerHTML=panelHtml(l||{});wire(box);},function(e){box.removeAttribute('aria-busy');box.innerHTML='<p class="fc-note">'+esc(e.message||'تعذر التحميل')+'</p>';});}
+ return rpc('list',{}).then(function(l){return rpc2('list',{}).then(function(ch){l=l||{};l._ch=ch;return l;},function(){return l;});}).then(function(l){box.removeAttribute('aria-busy');box.innerHTML=panelHtml(l||{});wire(box);},function(e){box.removeAttribute('aria-busy');box.innerHTML='<p class="fc-note">'+esc(e.message||'تعذر التحميل')+'</p>';});}
 function wire(box){
+ box.querySelectorAll('[data-emd-resched]').forEach(function(b){b.onclick=function(){reschedModal(b.getAttribute('data-emd-resched'),box);};});
+ box.querySelectorAll('[data-emd-cok]').forEach(function(b){b.onclick=function(){b.disabled=true;rpc2('review',{id:b.getAttribute('data-emd-cok'),ok:true}).then(function(){toast('اتوافق — الجدول اتغيّر');load(box);},function(e){b.disabled=false;toast(e.message||'تعذر','error');});};});
+ box.querySelectorAll('[data-emd-cno]').forEach(function(b){b.onclick=function(){var n=w.prompt('سبب الرفض؟');if(!n||n.trim().length<3)return;b.disabled=true;rpc2('review',{id:b.getAttribute('data-emd-cno'),ok:false,note:n.trim()}).then(function(){toast('اترفض');load(box);},function(e){b.disabled=false;toast(e.message||'تعذر','error');});};});
+ box.querySelectorAll('[data-emd-ccancel]').forEach(function(b){b.onclick=function(){if(!w.confirm('تلغي الطلب؟'))return;b.disabled=true;rpc2('cancel',{id:b.getAttribute('data-emd-ccancel')}).then(function(){toast('الطلب اتلغى');load(box);},function(e){b.disabled=false;toast(e.message||'تعذر','error');});};});
  var f=box.querySelector('[data-emd-filter]');if(f)f.addEventListener('input',function(){var t=f.value.trim().toLowerCase();box.querySelectorAll('[data-emd-items] tbody tr').forEach(function(r){r.hidden=!!t&&r.textContent.toLowerCase().indexOf(t)<0;});});
  box.querySelectorAll('[data-emd-ok]').forEach(function(b){b.onclick=function(){b.disabled=true;rpc('review',{id:b.getAttribute('data-emd-ok'),ok:true}).then(function(){toast('اتوافق — القيد اتسجل');load(box);},function(e){b.disabled=false;toast(e.message||'تعذر','error');});};});
  box.querySelectorAll('[data-emd-no]').forEach(function(b){b.onclick=function(){var n=w.prompt('سبب الرفض؟');if(!n||n.trim().length<3)return;b.disabled=true;rpc('review',{id:b.getAttribute('data-emd-no'),ok:false,note:n.trim()}).then(function(){toast('اترفض');load(box);},function(e){b.disabled=false;toast(e.message||'تعذر','error');});};});}
 function fill(){var box=d.querySelector('[data-employee-debts]');if(box)load(box);}
 var prior=w.SSMPDFinanceControls;
 if(prior&&prior.panel){w.SSMPDFinanceControls=Object.assign({},prior,{panel:function(tab,dd,h){var html=prior.panel(tab,dd,h);if(tab!=='drawer-requests')return html;setTimeout(fill,0);return html+'<div class="rse emd" data-employee-debts><p class="rse-note">جاري التحميل…</p></div>';}});}
-w.SSMPDEmployeeDebt={decorate:decorate,load:load,enhanceCollect:enhanceCollect,_t:{cardHtml:cardHtml,panelHtml:panelHtml,planBlock:planBlock,addMonths:addMonths,monthName:monthName}};
+w.SSMPDEmployeeDebt={decorate:decorate,load:load,enhanceCollect:enhanceCollect,_t:{cardHtml:cardHtml,panelHtml:panelHtml,changeHtml:changeHtml,reschedModal:reschedModal,planBlock:planBlock,addMonths:addMonths,monthName:monthName}};
 })(window,document);

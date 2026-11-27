@@ -95,8 +95,13 @@ Deno.serve(async (req) => {
           lines.push(`- ${c.entity} — أسعار خاصة${scope}${cover}`);
           for (const l of c.lines || []) lines.push(`  - ${l.name}: ${money(l.price)} جنيه`);
           if (c.more > 0) lines.push(`  - و ${c.more} خدمة تانية: اسأل الاستقبال عن سعرها`);
+          if (c.complete_list) lines.push(`  - أي خدمة مش مكتوبة هنا مش في عقد ${c.entity}: الاستقبال هيأكد`);
         } else {
           lines.push(`- ${c.entity}${c.discount_percent ? ` — خصم ${Number(c.discount_percent)}%` : ""}${scope}${cover}`);
+        }
+        for (const k of c.consultations || []) {
+          if (!k || !k.grade) continue;
+          lines.push(k.not_in_contract ? `  - كشف ${k.grade}: مش في العقد — الاستقبال هيأكد` : `  - كشف ${k.grade}: ${money(k.price)} جنيه`);
         }
       }
     } else {

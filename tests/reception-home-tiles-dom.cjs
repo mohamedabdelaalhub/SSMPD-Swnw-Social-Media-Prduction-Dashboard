@@ -55,5 +55,10 @@ const fs = require('fs'), assert = require('node:assert/strict'), { JSDOM } = re
   assert.equal(host.querySelectorAll('[data-rht-tile]').length, 3, 'still three tiles (no duplicates)');
   // no mutation loop while idle
   let n = 0; new w.MutationObserver(l => { n += l.length; }).observe(host, { childList: true, subtree: true }); await tick(250); assert.equal(n, 0, 'idle page stays quiet');
+  // ---- «على حساب الموظف» card (employee-debt.js) arrives inside the blue hero: it must be moved under the tiles, with its button and note intact
+  const hero = host.querySelector('.rx-header'), emd = d.createElement('section'); emd.className = 'rse-card emd-card'; emd.setAttribute('data-emd', ''); emd.innerHTML = '<h4>على حساب الموظف <small>— يتخصم من المرتب</small></h4><button type="button" class="btn" data-emd-convert>تحويل تحصيل لمديونية على الموظف</button><p class="rse-note">للإيصال النقدي اللي اتسجل بالغلط</p>';
+  hero.appendChild(emd); await tick(120);
+  assert(!hero.querySelector('[data-emd]'), 'employee-debt card left the hero'); assert(host.querySelector('[data-emd] [data-emd-convert]') && host.querySelector('[data-emd] .rse-note'), 'its button and note are still there (rule 11)');
+  assert(host.querySelector('[data-rht]').compareDocumentPosition(host.querySelector('[data-emd]')) & 4, 'it sits after (under) the tiles row'); assert(!host.querySelector('[data-rht-stash] [data-emd]'), 'and it is visible, not in the hidden stash');
   console.log('reception-home-tiles-dom OK');
 })().catch(e => { console.error(e); process.exit(1); });

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — تأجيل قسط وتغيير عدد الأقساط</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}.sub{color:#5B6676;margin:0}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
+.card h2{margin:0;font-size:17px}.card h2 small{display:block;color:#5B6676;font-weight:400;font-size:12px}
+.steps{display:flex;gap:8px;flex-wrap:wrap;font-size:13px}.steps b{border-radius:999px;padding:4px 12px;background:#EEF1F6;color:#3B4658}.steps b.on{background:#0F369D;color:#fff}.steps b.new{background:#FFF1E8;color:#F15A22;border:1px dashed #F15A22}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:10px 8px;border-bottom:1px solid #EEF1F6;white-space:nowrap}th{color:#5B6676;font-weight:400}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}.st.ok{background:#E6F4EC;color:#2F7D5C}.st.wait{background:#FFF1E8;color:#F15A22}.st.blue{background:#E8EEFB;color:#0F369D}
+.btn{border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;background:#0F369D;color:#fff}.btn.ghost{background:#fff;color:#0F369D;border:1px solid #0F369D}.btn.orange{background:#F15A22}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.modal{border:1px solid #E3E8F2;border-radius:16px;overflow:hidden;background:#fff}.mh{background:linear-gradient(135deg,#0F369D,#1E4FC7);color:#fff;padding:14px 18px;font-weight:700;font-size:16px}
+.mb{padding:16px 18px;display:grid;gap:12px}
+.fact{display:grid;grid-template-columns:140px 1fr;gap:6px 12px;font-size:13px}.fact span:nth-child(odd){color:#5B6676}
+.opt{border:2px solid #E3E8F2;border-radius:12px;padding:10px 12px;display:grid;gap:4px}.opt.on{border-color:#0F369D;background:#F5F8FF}.opt b{font-size:14px}.opt small{color:#5B6676}
+.entry{border:1px dashed #C5CDDB;border-radius:12px;padding:10px 12px;font-size:13px;display:grid;gap:4px;background:#FBFCFE}.entry .ln{display:flex;justify-content:space-between;gap:12px}
+.note{font-size:12px;color:#5B6676;margin:0}.warn{background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px}
+.field{display:grid;gap:4px;font-size:13px}.field i{display:block;border:1px solid #D7DDEA;border-radius:10px;height:38px;background:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pos{color:#2F7D5C;font-weight:700}.neg{color:#D0402A;font-weight:700}
+@media (max-width:760px){.grid{grid-template-columns:1fr}.wrap{padding:14px}table{display:block;overflow-x:auto}.fact{grid-template-columns:110px 1fr}}
+.x{float:left;border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:8px;width:30px;height:30px;font:inherit;font-weight:700}
+.badge{border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;background:#EFE5FF;color:#6600FF}
+.big{font-size:20px;font-weight:700}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.three>div{border:1px solid #E3E8F2;border-radius:12px;padding:10px 12px;display:grid;gap:2px}.three small{color:#5B6676}
+@media (max-width:760px){.three{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<style>.sched{display:flex;gap:6px;flex-wrap:wrap}.sched span{border:1px solid #E3E8F2;border-radius:10px;padding:6px 10px;font-size:13px;display:grid;gap:2px;text-align:center;min-width:92px}.sched span small{color:#5B6676}.sched span.done{background:#E6F4EC;border-color:#BFE3CC}.sched span.moved{background:#FFF1E8;border-color:#F15A22}.sched span.new{background:#F5F8FF;border-color:#0F369D}
+.arrow{font-weight:700;color:#5B6676;font-size:13px}</style>
+</head><body><div class="wrap">
+<div><span class="tag">تصور — مش متنفذ</span><h1>تأجيل قسط وتغيير عدد الأقساط — «على حساب الموظف»</h1>
+<p class="sub">بعد ما المديونية تتعتمد، المحاسب يقدر يطلب تأجيل قسط أو تغيير عدد الأقساط الباقية. الطلب لازم موافقة المدير المالي أو المالك (مش اللي طلب). المبلغ نفسه مابيتغيرش ومفيش قيد جديد — الجدول بس هو اللي بيتغير، والأقساط اللي اتخصمت خلاص مابتتلمسش.</p></div>
+
+<section class="card"><h2>في المرتبات — «مديونيات الموظفين»<small>زرار جديد على كل مديونية: «تأجيل / تغيير الأقساط»</small></h2>
+<table><thead><tr><th>الموظف</th><th>المديونية</th><th>اتخصم</th><th>الباقي</th><th>قسط الشهر ده</th><th>آخر قسط</th><th></th></tr></thead>
+<tbody><tr><td>هدى</td><td>360.00</td><td>120.00</td><td>240.00</td><td>120.00</td><td>فبراير 2027</td><td><button class="btn ghost">تأجيل / تغيير الأقساط</button></td></tr></tbody></table></section>
+
+<div class="grid">
+<div class="modal"><div class="mh"><button class="x" aria-label="إغلاق">✕</button>تأجيل قسط — هدى</div><div class="mb">
+<div class="fact"><span>المديونية</span><b>360.00 — زيارة 195</b><span>اتخصم</span><b>120.00 (ديسمبر)</b><span>الباقي</span><b>240.00</b></div>
+<div class="steps"><b class="on">تأجيل قسط</b><b>تغيير عدد الأقساط</b></div>
+<div class="field">القسط اللي هيتأجل<i></i><small class="note">يناير 2027 — 120.00</small></div>
+<div class="field">يتأجل لحد<i></i><small class="note">مارس 2027 (أي شهر بعد آخر قسط، لحد 6 شهور)</small></div>
+<div class="field">السبب (إجباري)<i></i></div>
+<b>الجدول</b>
+<div class="sched"><span class="done">ديسمبر<small>120.00 ✓ اتخصم</small></span><span class="moved">يناير<small>اتأجل</small></span><span>فبراير<small>120.00</small></span><span class="new">مارس<small>120.00</small></span></div>
+<p class="note">في يناير مفيش خصم من المرتب. المبلغ الكلي زي ما هو 360.00.</p>
+<div class="row"><button class="btn">ابعت للموافقة</button><button class="btn ghost">رجوع</button></div>
+</div></div>
+
+<div class="modal"><div class="mh"><button class="x" aria-label="إغلاق">✕</button>تغيير عدد الأقساط — هدى</div><div class="mb">
+<div class="fact"><span>الباقي</span><b>240.00 (قسطين × 120.00)</b></div>
+<div class="steps"><b>تأجيل قسط</b><b class="on">تغيير عدد الأقساط</b></div>
+<div class="field">عدد الأقساط الجديد (للباقي)<i></i><small class="note">4 شهور — من 1 لـ 12</small></div>
+<div class="field">من مرتب<i></i><small class="note">يناير 2027</small></div>
+<div class="field">السبب (إجباري)<i></i></div>
+<b>قبل</b><div class="sched"><span class="done">ديسمبر<small>120.00 ✓</small></span><span>يناير<small>120.00</small></span><span>فبراير<small>120.00</small></span></div>
+<b>بعد</b><div class="sched"><span class="done">ديسمبر<small>120.00 ✓</small></span><span class="new">يناير<small>60.00</small></span><span class="new">فبراير<small>60.00</small></span><span class="new">مارس<small>60.00</small></span><span class="new">أبريل<small>60.00</small></span></div>
+<p class="note">ممكن كمان تقلّل العدد (مثلاً الباقي كله مرة واحدة).</p>
+<div class="row"><button class="btn">ابعت للموافقة</button><button class="btn ghost">رجوع</button></div>
+</div></div>
+</div>
+
+<section class="card"><h2>الموافقة — في الحسابات ← طلبات صرف من الدرج<small>نفس مكان موافقات «على حساب الموظف» — المدير المالي أو المالك، مش اللي طلب</small></h2>
+<table><thead><tr><th>النوع</th><th>الموظف</th><th>قبل</th><th>بعد</th><th>طلبه</th><th>السبب</th><th></th></tr></thead>
+<tbody><tr><td>تأجيل قسط</td><td>هدى</td><td>يناير 120.00</td><td>مارس 120.00</td><td>المحاسب</td><td>ظروف عائلية</td><td><button class="btn">موافقة</button> <button class="btn ghost">رفض</button></td></tr>
+<tr><td>تغيير عدد الأقساط</td><td>هدى</td><td>2 × 120.00</td><td>4 × 60.00</td><td>المحاسب</td><td>طلب الموظفة</td><td><span class="st ok">اتعتمد</span></td></tr></tbody></table>
+<p class="note">لو مرتب الشهر اتجهز وفيه القسط ده، التغيير مينفعش لحد ما المرتب يتعتمد أو يترفض. أي تغيير بيتسجل في السجل باسم اللي طلب واللي وافق.</p></section>
+</div></body></html>

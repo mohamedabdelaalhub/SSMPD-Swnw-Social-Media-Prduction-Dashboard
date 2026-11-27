@@ -36,6 +36,7 @@ jobs:
       - run: npm ci
       - name: Check digital team navigation and launcher accessibility
         run: |
+          node tests/count-check-above-handover.cjs
           node tests/digital-team-navigation.cjs
           node tests/patient360-navigation.cjs
           node tests/specialist-agent-reviews.cjs
