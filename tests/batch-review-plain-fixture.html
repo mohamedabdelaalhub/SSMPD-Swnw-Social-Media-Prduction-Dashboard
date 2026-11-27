@@ -1,0 +1,14 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../assets/css/styles.css"><link rel="stylesheet" href="../assets/css/workforce-prices.css"><link rel="stylesheet" href="../assets/css/service-mapping-review.css">
+</head><body><main></main>
+<script>
+const rows=[];for(let i=0;i<329;i++)rows.push({name:'بند '+i,code:'',category:'',unit:'',price:100,row:i+2,sheet:'ملف',service_id:'s1',confirmed:true,review_status:'approved'});for(let i=0;i<692;i++)rows.push({name:'بند ب '+i,code:'',category:'',unit:'',price:100,row:i+400,sheet:'ملف',service_id:'',confirmed:false,review_status:'deferred'});
+if(location.hash==='#left')for(let i=0;i<7;i++)rows.push({name:'بند فاضل '+i,code:'',category:'',unit:'',price:100,row:i+2000,sheet:'ملف',service_id:'',confirmed:false});
+const l={id:'l',name:'قائمة أسعار نقابة التجاريين',status:'draft',created_by:'owner',can_edit:true,revision:9,version:1,issue_year:2026,application_year:2026},batch={id:'b',list_id:'l',status:'draft',revision:2,filename:'نقابة التجاريين.xlsx',operation:'append',rows};
+const data={lists:[l],items:[],sections:[],contracts:[],services:[{id:'s1',name:'كشف باطنة',canonical_code:'S1',category:'الباطنة',active:true}],aliases:[],proposals:[]};
+window.SSMPDAuth={currentAdmin:{id:'owner'}};window.SSMPDRoles={canModuleAction:()=>true};window.SSMPDToast={show:()=>{}};
+window.SSMPDDb={client:{rpc:async(fn)=>fn==='price_lists_workspace'?{data}:fn==='price_import_workspace'?{data:{batches:[batch],audit:[]}}:{data:'ok'}}};
+</script>
+<script src="../assets/js/workforce-prices.js"></script><script src="../assets/js/price-import-reader.js"></script><script src="../assets/js/service-mapping-review.js"></script><script src="../assets/js/service-search-picker.js"></script><script src="../assets/js/contract-price-workspace.js"></script>
+<script>(async()=>{const t=()=>new Promise(r=>setTimeout(r,30));SSMPDContractPrices.render(document.querySelector('main'),'center');await t();document.querySelector('[data-pi=open]').click();await t();document.querySelector('[data-pi=batch]').click();await t();document.querySelector('.batch-review-advanced').open=true;document.body.dataset.ready='1';})();</script>
+</body></html>
