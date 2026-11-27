@@ -6,7 +6,7 @@ d.querySelector('[data-name-review]').onclick=()=>{reviewOpened=true;};w.confirm
 const services=[{id:'s1',name:'كشف باطنة',canonical_code:'S1',category:'الباطنة',active:true},{id:'s2',name:'سونار بطن',canonical_code:'S2',category:'الأشعة',active:true}];
 const l={id:'l',name:'قائمة أسعار نقابة اختبار',status:'draft',created_by:'owner',can_edit:true,revision:9,version:1,issue_year:2026,application_year:2026},batch={id:'b',list_id:'l',status:'draft',revision:2,filename:'نقابة.xlsx',operation:'append',rows};
 const data={lists:[l],items:[],sections:[],contracts:[],services,aliases:[],proposals:[]};
-w.SSMPDDb={client:{rpc:async(fn,args)=>{if(fn==='price_lists_workspace')return {data};if(fn==='price_import_workspace')return {data:{batches:[batch],audit:[]}};calls.push(Object.assign({fn},args));return {data:'ok'};}}};
+w.SSMPDDb={client:{rpc:async(fn,args)=>{if(fn==='price_lists_workspace')return {data};if(fn==='price_import_workspace')return {data:{batches:[batch],audit:[]}};calls.push(Object.assign({fn},args));if(fn==='price_service_mapping_command')return {data:{list_revision:20+calls.length,batch_revision:30+calls.length}};return {data:'ok'};}}};
 for(const n of ['workforce-prices','price-import-reader','service-mapping-review','service-search-picker','contract-price-workspace'])w.eval(fs.readFileSync('assets/js/'+n+'.js','utf8'));
 const tick=async()=>{for(let i=0;i<5;i++)await new Promise(r=>setTimeout(r,0));};w.SSMPDContractPrices.render(d.querySelector('main'),'center');await tick();d.querySelector('[data-pi=open]').click();await tick();d.querySelector('[data-pi=batch]').click();await tick();
 return {w,d,calls,tick,reviewOpened:()=>reviewOpened,dom};}
@@ -27,8 +27,16 @@ const row=(o)=>Object.assign({name:'بند',code:'',category:'',unit:'',price:10
  assert.equal(d.querySelector('footer [data-close]').textContent,'اقفل من غير ما تغيّر حاجة');
  assert(d.querySelector('.wp-modal header [data-close]'),'✕ close (rule 10)');
  fin.click();await t.tick();
- const last=t.calls.at(-1);assert.equal(last.p_action,'discard_batch');assert.equal(last.p_payload.id,'b');assert.equal(last.p_payload.revision,2);assert.equal(last.p_payload.list_id,'l');
+ // the 2 rows were linked only inside this file: they are written to the list first (source_review), then the file closes
+ assert.deepEqual(t.calls.map(c=>c.p_action||c.p_payload.action),['batch','source_review','source_review','discard_batch']);
+ assert.equal(t.calls[0].p_payload.rows[0].confirmed,false,'saved unconfirmed so source_review can confirm it');
+ assert.equal(JSON.stringify(t.calls[1].p_payload.indexes),'[0]');assert.equal(t.calls[1].p_payload.service_id,'s1');assert.equal(t.calls[1].p_payload.details_confirmed,true);
+ assert.equal(JSON.stringify(t.calls[2].p_payload.indexes),'[1]');assert.equal(t.calls[2].p_payload.service_id,'s2');
+ const last=t.calls.at(-1);assert.equal(last.p_payload.id,'b');assert.equal(last.p_payload.list_id,'l');assert.equal(last.p_payload.revision,t.calls[2].p_payload.batch_revision+1);
  assert.equal(d.querySelector('.wp-modal [data-brp]'),null,'window closed after finishing');t.dom.window.close();
+ // 1b) rows already linked through «مراجعة أسماء الجهات» (review_status approved) → just close the file
+ t=await open([row({service_id:'s1',confirmed:true,review_status:'approved'}),row({review_status:'deferred'})]);d=t.d;
+ d.querySelector('[data-pi=finish]').click();await t.tick();assert.deepEqual(t.calls.map(c=>c.p_action||c.p_payload.action),['discard_batch']);assert.equal(t.calls[0].p_payload.revision,2);t.dom.window.close();
  // 2) rows left: orange tile, blue «كمّل» jumps to «مراجعة أسماء الجهات», no finish
  t=await open([row({service_id:'s1',confirmed:true}),row({}),row({}),row({review_status:'deferred'})]);d=t.d;
  assert.equal(d.querySelector('[data-brp-tile="left"] b').textContent,'2');assert(d.querySelector('[data-brp-tile="left"]').classList.contains('left'));

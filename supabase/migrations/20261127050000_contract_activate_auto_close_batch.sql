@@ -1,8 +1,8 @@
 -- «تفعيل العقد» closes the entity list's import file by itself when nothing is left to decide (owner «طبّق شكل مراجعة
 -- الملف», 2026-11-27, point 4 of mockup batch-review-plain.html). Builds on 20261127040000 (all-or-nothing activation).
 -- Before decide_list, for the contract's linked list (draft/pending only):
---   * if any DRAFT import batch of that list still has an undecided row (not confirmed, not «مش عندنا» = deferred, not a
---     proposed new service) → refuse with «فاضل N سطر في ملف الاستيراد محتاج قرار في «مراجعة أسماء الجهات»؛ كمّلهم الأول»
+--   * if any DRAFT import batch of that list still has an undecided row (not «مش عندنا» = deferred, not a proposed new
+--     service, and either not confirmed or confirmed only inside the file without its service being a list item yet) → refuse with «فاضل N سطر في ملف الاستيراد محتاج قرار في «مراجعة أسماء الجهات»؛ كمّلهم الأول»
 --     (20261127040000 turns that into «العقد ماتفعلش ولا اتغير فيه حاجة: …»);
 --   * otherwise every draft batch of that list is marked 'discarded' (exactly what «استبعاد دفعة الاستيراد بالكامل…»
 --     does: rows already linked were written as list items when they were linked and stay; deferred/proposed rows only
@@ -21,12 +21,14 @@ declare
  new_frag constant text := $n$   if l.status in ('draft','pending') then
     -- 20261127050000: close the list's import file(s) when nothing is left to decide
     if exists(select 1 from clinic_prices.batches b2 cross join lateral jsonb_array_elements(b2.rows) r2
-              where b2.list_id=l.id and b2.status='draft' and not coalesce((r2->>'confirmed')::boolean,false)
-                and coalesce(r2->>'review_status','') not in ('deferred','proposed')) then
+              where b2.list_id=l.id and b2.status='draft' and coalesce(r2->>'review_status','') not in ('deferred','proposed')
+                and (not coalesce((r2->>'confirmed')::boolean,false)
+                     or not exists(select 1 from clinic_prices.items i2 where i2.list_id=l.id and i2.service_id::text=r2->>'service_id'))) then
      raise exception 'فاضل % سطر في ملف الاستيراد محتاج قرار في «مراجعة أسماء الجهات»؛ كمّلهم الأول',
       (select count(*) from clinic_prices.batches b2 cross join lateral jsonb_array_elements(b2.rows) r2
-        where b2.list_id=l.id and b2.status='draft' and not coalesce((r2->>'confirmed')::boolean,false)
-          and coalesce(r2->>'review_status','') not in ('deferred','proposed'));
+        where b2.list_id=l.id and b2.status='draft' and coalesce(r2->>'review_status','') not in ('deferred','proposed')
+          and (not coalesce((r2->>'confirmed')::boolean,false)
+               or not exists(select 1 from clinic_prices.items i2 where i2.list_id=l.id and i2.service_id::text=r2->>'service_id')));
     end if;
     insert into clinic_prices.audit(actor_id,action,list_id,details)
      select me,'auto_close_batch',l.id,jsonb_build_object('batch_id',b2.id,'contract_id',c.id,'note','اتقفل مع تفعيل العقد',

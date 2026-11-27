@@ -9,12 +9,14 @@ declare
  new_frag constant text := $n$   if l.status in ('draft','pending') then
     -- 20261127050000: close the list's import file(s) when nothing is left to decide
     if exists(select 1 from clinic_prices.batches b2 cross join lateral jsonb_array_elements(b2.rows) r2
-              where b2.list_id=l.id and b2.status='draft' and not coalesce((r2->>'confirmed')::boolean,false)
-                and coalesce(r2->>'review_status','') not in ('deferred','proposed')) then
+              where b2.list_id=l.id and b2.status='draft' and coalesce(r2->>'review_status','') not in ('deferred','proposed')
+                and (not coalesce((r2->>'confirmed')::boolean,false)
+                     or not exists(select 1 from clinic_prices.items i2 where i2.list_id=l.id and i2.service_id::text=r2->>'service_id'))) then
      raise exception 'فاضل % سطر في ملف الاستيراد محتاج قرار في «مراجعة أسماء الجهات»؛ كمّلهم الأول',
       (select count(*) from clinic_prices.batches b2 cross join lateral jsonb_array_elements(b2.rows) r2
-        where b2.list_id=l.id and b2.status='draft' and not coalesce((r2->>'confirmed')::boolean,false)
-          and coalesce(r2->>'review_status','') not in ('deferred','proposed'));
+        where b2.list_id=l.id and b2.status='draft' and coalesce(r2->>'review_status','') not in ('deferred','proposed')
+          and (not coalesce((r2->>'confirmed')::boolean,false)
+               or not exists(select 1 from clinic_prices.items i2 where i2.list_id=l.id and i2.service_id::text=r2->>'service_id')));
     end if;
     insert into clinic_prices.audit(actor_id,action,list_id,details)
      select me,'auto_close_batch',l.id,jsonb_build_object('batch_id',b2.id,'contract_id',c.id,'note','اتقفل مع تفعيل العقد',
