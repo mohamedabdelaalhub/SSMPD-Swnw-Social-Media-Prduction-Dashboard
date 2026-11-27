@@ -138,6 +138,19 @@ Deno.serve(async (request)=>{
     }
     patch.masa_doctor_id = masaDoctorId;
   }
+  // Website booking form extras (2026-11-27): the service text the patient wrote, and the gender (dashboard only; Masa never gets it).
+  if (body.gender !== undefined && body.gender !== null && body.gender !== "") {
+    if (body.gender !== "male" && body.gender !== "female") {
+      return respond({
+        ok: false,
+        error: "invalid_gender"
+      }, 400);
+    }
+    patch.gender = body.gender;
+  }
+  if (body.needed_service !== undefined && body.needed_service !== null && body.needed_service !== "") {
+    patch.needed_service = (textValue(body.needed_service) || "").slice(0, 80) || null;
+  }
   if (body.price !== undefined && body.price !== null && body.price !== "") {
     const price = Number(body.price);
     if (!Number.isFinite(price)) {
