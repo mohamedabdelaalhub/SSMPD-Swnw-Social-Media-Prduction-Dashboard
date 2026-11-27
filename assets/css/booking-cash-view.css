@@ -45,3 +45,6 @@
 .bcv-empty{color:#475467;font-size:13px;background:#F3F6FB;border-color:#F3F6FB;box-shadow:none}
 @media(max-width:760px){.bcv-card{padding:14px}.bcv-kp{grid-template-columns:repeat(2,minmax(0,1fr))}.bcv-row{grid-template-columns:minmax(0,1fr)}.bcv-row-acts{justify-content:flex-start}
  .bcv-it,.bcv-it3{grid-template-columns:minmax(0,1fr) auto;row-gap:4px}.bcv-it>:nth-child(n+3){grid-column:auto}.bcv-it .bcv-row-acts{grid-column:1/-1;justify-content:flex-start}}
+
+/* «تحصيلاتي بالتفصيل»: the movements view inside the reception cash card */
+.bcv-mv .mv-section{box-shadow:none;border:0;padding:0;background:transparent}
