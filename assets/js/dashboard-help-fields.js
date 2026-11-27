@@ -14836,6 +14836,19 @@
       "reviewed": true
     },
     {
+      "title": "رقم موافقة التغطية (للخدمات بس — الكشف مش محتاج)",
+      "labels": [
+        "رقم موافقة التغطية (للخدمات بس — الكشف مش محتاج)"
+      ],
+      "text": "رقم الموافقة اللي الجهة أدتها للخدمة دي، وبيروح على المطالبة. إجباري للخدمات بس — الكشف مش محتاج موافقة ولا صورة (المالك 2026-11-27).",
+      "article": "reception-payer-kind",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "نسبة تحمّل الجهة ٪ * ٪",
       "labels": [
         "نسبة تحمّل الجهة ٪ * ٪",
@@ -24393,6 +24406,6 @@
     "definitions": 2104,
     "labels": 1535,
     "files": 172,
-    "groups": 1662
+    "groups": 1663
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

@@ -4,7 +4,7 @@
     "definitions": 2104,
     "labels": 1535,
     "files": 172,
-    "groups": 1662
+    "groups": 1663
   },
   "fields": [
     {
@@ -12989,6 +12989,16 @@
       "tab": "reception_services",
       "article": "reception-payer-kind",
       "text_sha256": "0d0d8a7f034417fd255aafb957a71efa9bc33d9fb00cda55c396b40219116057"
+    },
+    {
+      "file": "reception-payer-kind.js",
+      "label": "رقم موافقة التغطية (للخدمات بس — الكشف مش محتاج)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-payer-kind",
+      "text_sha256": "8105f322867c6c01c31dc0fb6be01518695fffdc71f3007ea631db28e3e8546e"
     },
     {
       "file": "reception-payer-kind.js",
