@@ -10,8 +10,9 @@
 --   Cancel with no replacement: SVC-0001330 فيلر Stylage L/XL (its list items are removed).
 --   Rename: SVC-0000283 Albumin → «S.Albumin», SVC-0001061 Total Protein → «S.Total Protein», SVC-0000869 → «S.LDH».
 -- What moves: price-list items (if the kept service already has an item in the same list, the kept price stays and the
--- cancelled item is removed), name aliases, and live reception catalog rows (re-pointed to the kept service; a row with
--- no replacement is switched off). History is NOT touched: orders, invoices, appointments, proposals, pay adjustments keep
+-- cancelled item is removed), name aliases, and live reception catalog rows: a row is switched off (kept for history) when
+-- the kept service already has an active row in that workspace and nothing is booked ahead on it, otherwise re-pointed;
+-- a row with no replacement is switched off. History is NOT touched: orders, invoices, appointments, proposals, pay adjustments keep
 -- pointing where they did. A future booked appointment on a service with no replacement stops the migration.
 -- Every step is written to clinic_prices.audit (action 'catalog_cleanup', full copy of the old row). Idempotent.
 -- Rollback: supabase/rollbacks/20261127200000_catalog_duplicates_cleanup.rollback.sql
@@ -64,11 +65,21 @@ begin
         jsonb_build_object('migration', '20261127200000', 'step', case when kid is null then 'alias_removed' else 'alias_moved' end, 'alias', to_jsonb(al), 'to_service', kid));
     end loop;
 
-    for rs in select * from clinic_reception.services where pricing_service_id = cid and (kid is not null or active) loop
-      if kid is not null then update clinic_reception.services set pricing_service_id = kid where id = rs.id;
-      else update clinic_reception.services set active = false where id = rs.id; end if;
-      insert into clinic_prices.audit(actor_id, action, list_id, details) values (actor, 'catalog_cleanup', center,
-        jsonb_build_object('migration', '20261127200000', 'step', case when kid is null then 'reception_off' else 'reception_moved' end, 'reception_service', to_jsonb(rs), 'to_service', kid));
+    for rs in select * from clinic_reception.services where pricing_service_id = cid and active loop
+      -- the kept service already has its own active row in this workspace and nothing is booked ahead on this row:
+      -- switch this row off (kept for history) instead of having two rows for one service in the booking list
+      if kid is null or (exists (select 1 from clinic_reception.services k where k.workspace_id = rs.workspace_id and k.pricing_service_id = kid and k.active and k.id <> rs.id)
+                         and not exists (select 1 from clinic_reception.appointments ap where ap.service_id = rs.id and ap.status = 'booked' and ap.starts_at > now())) then
+        if rs.active then
+          update clinic_reception.services set active = false where id = rs.id;
+          insert into clinic_prices.audit(actor_id, action, list_id, details) values (actor, 'catalog_cleanup', center,
+            jsonb_build_object('migration', '20261127200000', 'step', 'reception_off', 'reception_service', to_jsonb(rs), 'kept', kid));
+        end if;
+      else
+        update clinic_reception.services set pricing_service_id = kid where id = rs.id;
+        insert into clinic_prices.audit(actor_id, action, list_id, details) values (actor, 'catalog_cleanup', center,
+          jsonb_build_object('migration', '20261127200000', 'step', 'reception_moved', 'reception_service', to_jsonb(rs), 'to_service', kid));
+      end if;
     end loop;
 
     select * into c from public.pricing_services where id = cid;
