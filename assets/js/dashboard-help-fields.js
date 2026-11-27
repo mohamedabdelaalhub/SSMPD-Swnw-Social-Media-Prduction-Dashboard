@@ -5940,6 +5940,21 @@
       "reviewed": true
     },
     {
+      "title": "دوّر باسم الخزنة أو الموظف",
+      "labels": [
+        "دوّر باسم الخزنة أو الموظف",
+        "دوّر باسم الخزنة أو الموظف…"
+      ],
+      "text": "اكتب جزء من اسم الخزنة أو الموظف علشان تلاقي ملف الفرق بسرعة. البحث بيتجاهل الهمزات (أ/إ/آ) والتاء المربوطة والتشكيل، ومع فلتر الحالة فوق.",
+      "article": "cash-case-settlement",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "مرجع الفاتورة",
       "labels": [
         "مرجع الفاتورة"
@@ -24521,9 +24536,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2114,
-    "labels": 1544,
+    "definitions": 2116,
+    "labels": 1546,
     "files": 174,
-    "groups": 1672
+    "groups": 1673
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
