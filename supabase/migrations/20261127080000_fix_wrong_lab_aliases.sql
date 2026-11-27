@@ -17,7 +17,7 @@ declare
 begin
   for pair in select * from (values
       ('aminogram', '^\s*aminogram\M.*\murine\M', 'CMV PCR Qualitative In Urine', '^\s*aminogram'),
-      ('troponin_i', '^\s*troponine?\s*i\M.*\mqual', 'Troponin T', '^\s*troponine?\s*i\M')) p(k, right_re, wrong_name, alias_re)
+      ('troponin_i', '^\s*troponine?\s*i\M', 'Troponin T', '^\s*troponine?\s*i\M')) p(k, right_re, wrong_name, alias_re)
   loop
     select count(*) into n from public.pricing_services where name = pair.wrong_name;
     if n = 0 then raise notice 'skip %: wrong service «%» not found', pair.k, pair.wrong_name; continue; end if;
