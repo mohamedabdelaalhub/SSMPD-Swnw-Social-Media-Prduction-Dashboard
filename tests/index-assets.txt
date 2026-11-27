@@ -109,6 +109,7 @@ assets/css/training-evaluation.css
 assets/css/ui-motion.css
 assets/css/update-notice.css
 assets/css/video-studio.css
+assets/css/website-requests.css
 assets/css/workforce-prices.css
 assets/css/workspace-navigation.css
 assets/js/account-breakdown.js
@@ -376,6 +377,7 @@ assets/js/usage-heatmap.js
 assets/js/video-storyboard.js
 assets/js/video-studio.js
 assets/js/website-publish.js
+assets/js/website-requests.js
 assets/js/weekly-plan.js
 assets/js/workflow.js
 assets/js/workforce-prices.js

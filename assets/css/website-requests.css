@@ -1,0 +1,22 @@
+/* «طلبات الموقع» (reception): card with tiles, popups with ✕. Palette: brand #0F369D, new #00B0BD (white text), reviewed #525B6F, done #2F7D5C. */
+.wr-card{margin:0 0 14px;padding:14px;border-radius:18px;background:var(--glass-fill,rgba(255,255,255,.85));border:1px solid #D5DEEE}
+.wr-card>header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}.wr-card h3{margin:0;font-size:18px}
+.wr-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.wr-tile{display:grid;gap:4px;justify-items:start;text-align:start;padding:12px;border-radius:14px;border:1px solid #D5DEEE;background:#fff;font:inherit;color:inherit;min-width:0;min-height:44px;cursor:pointer}
+.wr-tile b{font-size:15px;white-space:nowrap}.wr-tile .wr-n{font-size:26px;line-height:1.2;font-weight:700;color:#0F369D}.wr-tile small{color:#5b6b82;font-size:12.5px;overflow-wrap:anywhere}
+.wr-badge{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12.5px;white-space:nowrap}.wr-new{background:#00B0BD;color:#fff}.wr-reviewed{background:#e8eaf0;color:#525B6F}.wr-done{background:#e6f2ec;color:#2F7D5C}.wr-zero{background:#F1F4F8;color:#5b6b82}
+.wr-err{margin:0 0 8px;padding:6px 10px;border-radius:8px;background:#FDEDEA;color:#D0402A;font-size:13px}
+.wr-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(22,33,46,.45);display:grid;place-items:center;padding:16px}
+.wr-pop{background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:calc(100vh - 32px);overflow:auto;padding:14px;display:grid;gap:12px;box-shadow:0 14px 40px rgba(22,33,46,.25)}
+.wr-pop>header{display:flex;align-items:center;gap:8px}.wr-pop h3{margin:0;font-size:18px;overflow-wrap:anywhere}
+.wr-x{margin-inline-start:auto;border:1px solid #D5DEEE;background:#fff;border-radius:10px;width:44px;height:44px;font-size:20px;color:#16212E;cursor:pointer}
+.wr-search{font:inherit;font-size:16px;padding:11px;border:1px solid #D5DEEE;border-radius:10px;width:100%;min-width:0}
+.wr-chips{display:flex;gap:8px;flex-wrap:wrap}.wr-chip{padding:6px 12px;border:0;border-radius:999px;background:#F1F4F8;font:inherit;font-size:13px;white-space:nowrap;cursor:pointer;min-height:36px}.wr-chip.on{background:#0F369D;color:#fff}
+.wr-item{display:grid;gap:2px;text-align:start;font:inherit;color:inherit;background:#fff;border:1px solid #D5DEEE;border-inline-start:5px solid #00B0BD;border-radius:12px;padding:10px 12px;min-width:0;cursor:pointer}
+.wr-item.reviewed{border-inline-start-color:#525B6F}.wr-item.done{border-inline-start-color:#2F7D5C}.wr-item.done b{text-decoration:line-through;color:#5b6b82}
+.wr-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.wr-item small{color:#5b6b82;overflow-wrap:anywhere}.wr-empty{margin:0;color:#5b6b82}
+.wr-more{border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:9px 14px;font:inherit;min-height:44px;cursor:pointer}
+.wr-pop dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px}.wr-pop dt{color:#5b6b82;font-size:13px}.wr-pop dd{margin:0;overflow-wrap:anywhere}.wr-ltr{text-align:right}
+.wr-msg{background:#F1F4F8;border-radius:10px;padding:10px;overflow-wrap:anywhere;white-space:pre-wrap}
+.wr-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.wr-actions .btn{min-height:44px}.wr-menu{display:flex;gap:8px;flex-wrap:wrap}.wr-menu[hidden]{display:none}
+@media(max-width:600px){.wr-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.wr-card{padding:12px}}

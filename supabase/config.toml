@@ -115,3 +115,8 @@ verify_jwt = false
 # Called machine-to-machine by the voice-over worker on swnw-vps (ops/vo-worker/vo.py), no Supabase Auth session.
 # The function rejects every request whose X-VO-Worker-Secret header doesn't match VO_WORKER_SECRET.
 verify_jwt = false
+
+[functions.website-request-ingest]
+# Machine-to-machine: the new website server posts «اتصل بنا» / الوظايف here with its own X-Website-Request-Secret header;
+# no dashboard user JWT is involved.
+verify_jwt = false
