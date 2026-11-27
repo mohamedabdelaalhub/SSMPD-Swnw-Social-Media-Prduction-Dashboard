@@ -7,3 +7,5 @@
 .emd-plain{margin:0;font-size:14px}
 .emd-adv summary{cursor:pointer;color:#5B6676;font-size:13px}
 .emd-search{display:grid;gap:4px;max-width:420px;margin:0 0 8px}
+.emd-sched{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}.emd-sched span{border:1px solid #E3E8F2;border-radius:10px;padding:6px 10px;font-size:13px;display:grid;gap:2px;text-align:center;min-width:88px}
+.emd-sched span small{color:#5B6676}.emd-sched span.done{background:#E6F4EC;border-color:#BFE3CC}.emd-sched span.moved{background:#FFF1E8;border-color:#F15A22}.emd-sched span.new{background:#F5F8FF;border-color:#0F369D}

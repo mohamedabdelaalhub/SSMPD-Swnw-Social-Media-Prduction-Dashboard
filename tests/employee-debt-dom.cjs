@@ -93,7 +93,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  assert.ok(reqs.some(x=>x.status==='approved'&&x.kind==='service'),'FM approved the service debt');
  // help + cache tokens
  const html=fs.readFileSync('index.html','utf8');assert.ok(html.indexOf('drawer-requests.js')<html.indexOf('employee-debt.js')&&html.indexOf('employee-debt.js')<html.indexOf('finance-cash.js'),'load order');
- assert.match(html,/employee-debt\.js\?v=employee-debt-20261126-2/);assert.match(html,/employee-debt\.css\?v=employee-debt-20261126-2/);
+ assert.match(html,/employee-debt\.js\?v=employee-debt-20261127-3/);assert.match(html,/employee-debt\.css\?v=employee-debt-20261127-3/);
  const help=fs.readFileSync('assets/js/dashboard-help-data.js','utf8');assert.match(help,/"id": "employee-debt"/);
  console.log('employee-debt-dom: OK');
 })().catch(e=>{console.error(e);process.exit(1);});
