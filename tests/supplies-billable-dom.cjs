@@ -32,6 +32,8 @@ const submit=async(w)=>{const f=w.document.querySelector('.rx-modal form');f.req
    if(args.p_action==='add')return {data:{id:'a1',billable:false,amount:0},error:null};}
   return {data:null,error:{message:'unexpected '+name}};}}};
  w.SSMPDReceptionModules={sections:()=>[],panel:()=>'',act:()=>false,bookingFields:()=>'',bookingWire:()=>{}};
+ // owner 2026-11-27 «زرار تعديل قبل التحصيل مش شغال»: the #860 merge dropped this script from index.html, so window.SSMPDVisitSupplies was undefined on live — the page MUST load it
+ assert(/<script src="assets\/js\/reception-visit-supplies\.js\?v=[^"]+"><\/script>/.test(fs.readFileSync('index.html','utf8')),'index.html loads reception-visit-supplies.js');
  for(const f of ['today-operations','today-operations-unified','reception-visit-supplies'])w.eval(fs.readFileSync('assets/js/'+f+'.js','utf8'));
  const modal=realModal(w),host=w.document.querySelector('#host');
  const field=(n,l,t,v,x)=>'<label>'+l+'<input name="'+n+'" type="'+(t||'text')+'" value="'+(v||'')+'" '+(x||'')+'></label>';
