@@ -1,5 +1,11 @@
 /* back arrow — help 298 */
-.back-nav-btn[disabled]{opacity:.35;cursor:default}
+.back-nav-btn[disabled]{opacity:.5;cursor:default}
+/* owner 2026-11-27: always visible, right beside the bell (RTL: the bell's left); never hidden on desktop */
+.app-shell .topbar #back-nav-btn{order:3}
+/* every in-page «العودة إلى …» link looks like a real back button */
+.bn-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 14px;border:1px solid rgba(15,54,157,.28);border-radius:12px;background:#fff;color:#0F369D;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
+.bn-link::before{content:"←";font-weight:800}:root[dir="ltr"] .bn-link::before{content:"→"}
+.bn-link:hover{background:#EAF0FF}.bn-link:focus-visible{outline:2px solid #F15A22;outline-offset:2px}
 @media (max-width:860px){.bn-in-acs #back-nav-btn{display:none}}
 .acs-back{display:none}
 @media (max-width:860px){.acs .acs-mbar{display:flex;gap:8px;align-items:center}.acs .acs-mbar .acs-open{flex:1;min-width:0;width:auto}
