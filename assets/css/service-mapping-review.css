@@ -22,3 +22,30 @@
 .brp-row b{display:block;font-size:13px;color:#16212E}.brp-row small{display:block;font-size:11px;color:#5b6577}
 .brp-row [data-pi=discard]{color:#D0402A}
 @media (max-width:480px){.brp-sum{grid-template-columns:1fr}.brp-tile{grid-template-columns:1fr auto;align-items:center}.brp-row{grid-template-columns:1fr}.brp-row .btn{justify-self:start}}
+/* Batch rows as a compact list + details window (owner «طبّق شكل سطور الملف» 2026-11-27, mockup batch-rows-compact.html) */
+.brr-pills{display:flex;gap:6px;flex-wrap:wrap}
+.brr-pill{font-size:12px;padding:5px 10px;border-radius:99px;background:#F4F7FC;color:#3B4658;border:0;cursor:pointer}
+.brr-pill[aria-pressed=true]{background:#16212E;color:#fff}
+.brr-list{display:grid;border:1px solid #E3E8F2;border-radius:12px;overflow:hidden;background:#fff}
+.brr-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid #EEF1F6;min-height:44px}
+.brr-row:first-child{border-top:0}
+.brr-main{display:grid;gap:3px;min-width:0}.brr-main b{font-size:14px;color:#16212E;overflow-wrap:anywhere}
+.brr-price{font-size:14px;font-variant-numeric:tabular-nums;color:#16212E;white-space:nowrap}
+.brr-chip{justify-self:start;display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;overflow-wrap:anywhere}
+.brr-chip.ok{background:#E6F2EC;color:#2F7D5C}.brr-chip.off{background:#F4F7FC;color:#3B4658}.brr-chip.left{background:#FFF3E9;color:#F15A22}
+.brr-row [data-pi=details]{font-size:12px;padding:6px 10px;white-space:nowrap}
+.brr-pop{scroll-margin-top:96px;grid-column:1/-1;background:#fff;border-radius:16px;border:1px solid #D5DEEE;box-shadow:0 20px 50px rgba(15,54,157,.18);overflow:hidden}
+.brr-pop header{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#F4F7FC;border-bottom:1px solid #E3E8F2}
+.brr-pop header h4{margin:0;font-size:15px;color:#0F369D;flex:1;min-width:0;overflow-wrap:anywhere}
+.brr-x{border:1px solid #D5DEEE;background:#fff;border-radius:10px;width:36px;height:36px;font-size:18px;line-height:1;color:#16212E;flex:none;cursor:pointer}
+.brr-back{border:1px solid #D5DEEE;background:#fff;border-radius:10px;height:36px;padding:0 10px;font-size:13px;color:#16212E;flex:none;cursor:pointer}
+.brr-body{padding:14px;display:grid;gap:12px}
+.brr-src{margin:0;background:#F4F7FC;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.9;color:#16212E}.brr-src b{color:#0F369D}.brr-src small{color:#8a93a3}
+.brr-fs{border:1px solid #D5DEEE;border-radius:12px;padding:10px 12px;display:grid;gap:10px}
+.brr-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.brr-acts .btn{padding:12px;border-radius:12px;font-weight:700;font-size:14px;white-space:normal}
+.brr-acts .brr-yes{background:#F15A22;color:#fff;border:0}.brr-acts .brr-no{background:#fff;color:#16212E;border:1px solid #D5DEEE}
+.brr-msg{margin:0;font-size:12px;color:#D0402A}.brr-msg:empty{display:none}
+.brr-edit summary{cursor:pointer;font-size:12px;color:#5b6577}
+.brr-nav{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.brr-nav .btn{font-size:12px}
+@media (max-width:480px){.brr-row{gap:8px;padding:10px}.brr-acts{grid-template-columns:1fr}}
