@@ -1,0 +1,51 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: الدفع ورقم الموافقة في حجوزات الموقع</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--pos:#2F7D5C;--neg:#D0402A;--new:#00B0BD;--soon:#FF8800;--old:#525B6F;--none:#F1F4F8;--line:#D5DEEE;--muted:#5b6b82}
+*{box-sizing:border-box}body{margin:0;padding:16px;background:#f4f7fc;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);line-height:1.7}
+.frame{max-width:980px;margin:0 auto 28px;display:grid;gap:12px}
+h2.cap{margin:0;font-size:14px;color:var(--muted);font-weight:600}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;gap:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:12px}
+.tile{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff;display:grid;gap:4px;min-width:0;text-align:right;font:inherit;color:inherit}
+.tile b{font-size:15px;white-space:nowrap}.tile .n{font-size:26px;font-weight:700;color:var(--brand);line-height:1.2}.tile small{color:var(--muted);font-size:12.5px;overflow-wrap:anywhere}
+.tile.on{border-color:var(--brand);box-shadow:0 0 0 2px rgba(15,54,157,.12)}
+.badge{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12.5px;white-space:nowrap}
+.b-new{background:var(--new);color:#fff}.b-rev{background:#e8eaf0;color:var(--old)}.b-done{background:#e6f2ec;color:var(--pos)}.zero{background:var(--none);color:var(--muted)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 14px;font:inherit;min-height:44px;white-space:nowrap}.pri{background:var(--brand);color:#fff;border-color:var(--brand)}
+.overlay{background:rgba(22,33,46,.45);border-radius:16px;padding:16px;display:grid;place-items:center}
+.pop{background:#fff;border-radius:16px;width:100%;max-width:560px;padding:14px;display:grid;gap:12px;box-shadow:0 14px 40px rgba(22,33,46,.25)}
+.pop header{display:flex;align-items:center;gap:8px}.pop h3{margin:0;font-size:18px}.x{margin-inline-start:auto;border:1px solid var(--line);background:#fff;border-radius:10px;width:44px;height:44px;font-size:20px;color:var(--ink)}
+input[type=search]{font:inherit;font-size:16px;padding:11px;border:1px solid var(--line);border-radius:10px;width:100%;min-width:0}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{padding:6px 12px;border-radius:999px;background:var(--none);font-size:13px;white-space:nowrap}.chip.on{background:var(--brand);color:#fff}
+.item{border:1px solid var(--line);border-inline-start:5px solid var(--new);border-radius:12px;padding:10px 12px;display:grid;gap:2px;min-width:0}
+.item.rev{border-inline-start-color:var(--old)}.item.done{border-inline-start-color:var(--pos)}.item.done b{text-decoration:line-through;color:var(--muted)}
+.item .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.item small{color:var(--muted);overflow-wrap:anywhere}
+dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px}dt{color:var(--muted);font-size:13px}dd{margin:0;overflow-wrap:anywhere}
+.msg{background:var(--none);border-radius:10px;padding:10px;overflow-wrap:anywhere}
+.note{font-size:12.5px;color:#8a4b00;background:#FFF3E0;border-radius:8px;padding:6px 10px}
+@media(max-width:600px){body{padding:12px}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:12px}}
+</style>
+<div class="frame"><h2 class="cap">1) قايمة «الحجوزات الآلية» (الموقع): علامة الدفع جنب كل حجز + فلتر «مستنية موافقة»</h2>
+<div class="panel"><div class="chips"><span class="chip on">الكل</span><span class="chip">مستنية موافقة</span><span class="chip">الموافقة وصلت</span><span class="chip">دفع مباشر</span></div>
+<div class="item"><div class="top"><b>أحمد علي — د. دينا حسني</b><span class="badge b-done">تأمين · الموافقة وصلت</span></div><small>اليوم 21:00 · تأمين أ · موافقة AP-5566 (وصلت 14:05)</small></div>
+<div class="item" style="border-inline-start-color:var(--soon)"><div class="top"><b>منى حسن — د. كريم سعيد</b><span class="badge" style="background:#FFF3E0;color:#8a4b00">تأمين · مستنية موافقة</span></div><small>بكرة 12:20 · تأمين أ · لسه ما بعتتش رقم الموافقة</small></div>
+<div class="item rev"><div class="top"><b>سامي فؤاد — د. هالة منصور</b><span class="badge b-rev">جهة متعاقدة</span></div><small>بكرة 18:00 · حضانة ج · السعر بيتحدد عند الحضور</small></div>
+<div class="item rev"><div class="top"><b>ليلى أحمد — د. محمد عادل</b><span class="badge zero">دفع مباشر</span></div><small>اليوم 19:40</small></div></div></div>
+
+<div class="frame"><h2 class="cap">2) تفاصيل الحجز: بلوك «الدفع» (للقراءة، والموافقة كتبها المريض فلازم تتأكد منها)</h2>
+<div class="overlay"><div class="pop"><header><h3>تفاصيل حجز من الموقع</h3><button class="x">✕</button></header>
+<dl><dt>المريض</dt><dd>أحمد علي · 01xxxxxxxxx · 30 سنة · ذكر</dd><dt>الطبيب والميعاد</dt><dd>د. دينا حسني · اليوم 21:00</dd><dt>الخدمة المطلوبة</dt><dd>كشف متابعة</dd></dl>
+<div class="panel" style="gap:6px"><b>الدفع</b><dl><dt>الطريقة</dt><dd>تأمين</dd><dt>الجهة</dt><dd>تأمين أ</dd><dt>رقم الموافقة</dt><dd><b>AP-5566</b> <span class="badge b-done">وصلت 14:05</span> <button class="btn" style="min-height:34px;padding:2px 10px">نسخ</button></dd></dl>
+<div class="note">الرقم كتبه المريض: اتأكد منه من بوابة الشركة قبل ما تعتمد عليه. لو الخدمة غير الكشف ولسه مفيش موافقة، الحجز يفضل «مستنية موافقة».</div></div>
+<div class="row"><button class="btn pri">تحويل لحجز داخلي</button><button class="btn">واتساب للمريض</button></div></div></div></div>
+
+<div class="frame"><h2 class="cap">3) «تحويل لحجز داخلي»: بيانات الدفع بتتعبّى لوحدها (جهة + رقم الموافقة → رقم مرجع الموافقة)، والاستقبال يراجع ويحفظ</h2>
+<div class="overlay"><div class="pop"><header><h3>تحويل لحجز داخلي</h3><button class="x">✕</button></header>
+<dl><dt>طريقة الدفع</dt><dd>تأمين / تعاقد</dd><dt>الجهة</dt><dd>تأمين أ <span class="badge b-done">من الموقع</span></dd><dt>رقم مرجع الموافقة</dt><dd>AP-5566 <span class="badge b-done">من الموقع</span></dd><dt>نسبة تحمّل الجهة %</dt><dd><span class="badge b-new">اكتبها من الموافقة</span></dd><dt>صورة الموافقة</dt><dd><span class="badge" style="background:#FFF3E0;color:#8a4b00">مطلوبة (للخدمات غير الكشف)</span></dd></dl>
+<div class="note">الكشف مش بيطلب موافقة (قرار النهارده)، فصورة الموافقة مطلوبة للخدمات بس. نسبة التحمّل بتتكتب يدويًا من الموافقة زي ما هي دلوقتي.</div>
+<div class="row"><button class="btn pri">حفظ</button><button class="btn">إلغاء</button></div></div></div></div>
