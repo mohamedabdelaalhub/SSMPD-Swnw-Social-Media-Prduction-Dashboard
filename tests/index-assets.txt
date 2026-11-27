@@ -386,3 +386,4 @@ assets/js/website-requests.js
 assets/js/weekly-plan.js
 assets/js/workflow.js
 assets/js/workforce-prices.js
+assets/js/business-day.js

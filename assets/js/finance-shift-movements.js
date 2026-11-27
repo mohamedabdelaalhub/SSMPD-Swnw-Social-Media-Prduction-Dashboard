@@ -8,7 +8,7 @@ function num(v){return Number(v||0).toLocaleString('en-US',{minimumFractionDigit
 function money(v){return num(v)+' ج.م';}
 function time(v){return v?new Date(v).toLocaleTimeString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit'}):'';}
 function day(v){return v?new Date(v).toLocaleDateString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',weekday:'long',day:'numeric',month:'long'}):'';}
-function cairoDay(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+function cairoDay(){if(window.SSMPDBusinessDay)return window.SSMPDBusinessDay.today();/* «يوم العمل» 20261127340000 */return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
 var WK={vodafone:'فودافون كاش',valu:'فاليو',other:'محفظة تانية'};
 /* 20261125030000: a wallet receipt carries which wallet («محفظة — فودافون كاش»); unknown kind stays «محفظة» */
 function wk(r){return r&&r.method==='wallet'&&WK[r.wallet_kind]?' — '+WK[r.wallet_kind]:'';}

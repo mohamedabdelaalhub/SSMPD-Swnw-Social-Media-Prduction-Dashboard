@@ -828,6 +828,36 @@
       "reviewed": true
     },
     {
+      "title": "ساعة القفل الجديدة",
+      "labels": [
+        "ساعة القفل الجديدة"
+      ],
+      "text": "الساعة اللي قبلها الشغل بيتحسب على اليوم اللي فات (بتوقيت القاهرة) — من 00:00 لحد 08:00، والمعتاد 4 الفجر.",
+      "article": "business-day",
+      "tabs": [
+        "production"
+      ],
+      "forms": [
+        "ساعة قفل اليوم"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "السبب (إجباري)",
+      "labels": [
+        "السبب (إجباري)"
+      ],
+      "text": "ليه بتغيّر ساعة قفل اليوم — بيتسجّل مع الساعة القديمة والجديدة واسمك.",
+      "article": "business-day",
+      "tabs": [
+        "production"
+      ],
+      "forms": [
+        "ساعة قفل اليوم"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "عدد الشرايح",
       "labels": [
         "عدد الشرايح"
@@ -24592,9 +24622,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2122,
-    "labels": 1551,
-    "files": 175,
-    "groups": 1677
+    "definitions": 2124,
+    "labels": 1552,
+    "files": 176,
+    "groups": 1679
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

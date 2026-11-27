@@ -6,7 +6,7 @@ var host=null,data=null,workspace=null,owner=null,section=null,version=0,from=''
 var labels={booked:'محجوز',arrived:'حضر',completed:'تم التنفيذ',cancelled:'ملغي',no_show:'لم يحضر',ordered:'بانتظار التنفيذ',open:'مفتوحة'};
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function parts(v){var o={};new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(v)).forEach(function(p){o[p.type]=p.value;});return o;}
-function day(v){var p=parts(v||Date.now());return p.year+'-'+p.month+'-'+p.day;}
+function day(v){if(!v&&window.SSMPDBusinessDay)return window.SSMPDBusinessDay.today();/* «يوم العمل» 20261127340000 */var p=parts(v||Date.now());return p.year+'-'+p.month+'-'+p.day;}
 function cairoISO(s){var m=String(s).match(/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)$/);if(!m)throw Error('راجع التاريخ والوقت');var desired=Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5]),value=desired;for(var i=0;i<3;i++){var p=parts(value),seen=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute);value+=desired-seen;}var check=parts(value);if(check.hour!==m[4]||check.minute!==m[5])throw Error('الوقت غير متاح بسبب تغيير التوقيت');return new Date(value).toISOString();}
 function stamp(v){if(!v)return '—';return new Date(v).toLocaleString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',dateStyle:'short',timeStyle:'short'});}
 function money(v){return Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' ج.م';}

@@ -23,7 +23,7 @@ function toast(m,k){if(w.SSMPDToast&&w.SSMPDToast.show)w.SSMPDToast.show(m,k||'i
 function T(){return w.SSMPDTodayOps;}
 function hhmm(v){var t=new Date(v);if(isNaN(t))return '';return new Intl.DateTimeFormat('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',hour:'numeric',minute:'2-digit'}).format(t);}
 function money(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م';}
-function cairoDay(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+function cairoDay(){if(window.SSMPDBusinessDay)return window.SSMPDBusinessDay.today();/* «يوم العمل» 20261127340000 */return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
 function reached(q){return REACHED[q]==null?0:REACHED[q];}
 function liveList(){return T().appointments().filter(function(a){return a.queue_status!=='cancelled'&&a.queue_status!=='no_show';}).sort(function(x,y){var o=(ORDER[x.queue_status]==null?9:ORDER[x.queue_status])-(ORDER[y.queue_status]==null?9:ORDER[y.queue_status]);return o||String(x.starts_at).localeCompare(String(y.starts_at));});}
 function rowNote(a){var q=a.queue_status,hasDue=a.can_view_finance&&Number(a.patient_due)>0;
