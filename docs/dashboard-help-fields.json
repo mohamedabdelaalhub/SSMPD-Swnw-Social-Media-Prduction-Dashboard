@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2079,
-    "labels": 1515,
-    "files": 170,
-    "groups": 1645
+    "definitions": 2096,
+    "labels": 1527,
+    "files": 171,
+    "groups": 1658
   },
   "fields": [
     {
@@ -8921,6 +8921,136 @@
       "text_sha256": "2e37e8875406aa1b2c73c9e83ebeae2bbeb1cf1ffb3bce86f21c6678d2f71c8b"
     },
     {
+      "file": "hr-work-schedule.js",
+      "label": "الوردية من الساعة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "e72af238e368e100312eb9d439134a1339baeab6ab7a0ad8d889ff3aa1d2e36c"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "الوردية لحد الساعة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "e262ddc2e289838ced5d82d7d7b16c096b7d130a92c5c4b6d7364e909b8ce994"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "سبب الوردية (اختياري)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "eb05ab024d59c6566702d0967b0dc02bd7c5d263de00d453f3dbb6427a69d446"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "السماح قبل التأخير (دقيقة)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "2ec54170e8c1ab7094e60834853ae286f500fbc55cddef7bf3efc0e0fca6c6b7"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "يرجع ثابت من يوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "49dd655e09443e2b40756dffdbc844d4e021ee951520de7c76b6573fd93c207e"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "أضف طبيب",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "78b86c5aa70840260b0752d244442cd9458e00c9f20e2224a05f73f77bb94c56"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "الأطباء",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "78b86c5aa70840260b0752d244442cd9458e00c9f20e2224a05f73f77bb94c56"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "القسم",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "أو قسم كامل",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "d7502f43342d41ed4306190c23acd8827d1f8ab318da76d8afb6b77af7cf57dc"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "تيجي قبل أول كشف بـ (دقيقة)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "53822fb041e092f97d909b453f0fe5e3511d2e79d922c4fdb153ffb0a0ae3e60"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "تمشي بعد آخر كشف بـ (دقيقة)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "aa03f6210b7fc0f5c66d027ca6a689562921025287be3007ce3349d26f01143e"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "يبدأ من يوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "49dd655e09443e2b40756dffdbc844d4e021ee951520de7c76b6573fd93c207e"
+    },
+    {
+      "file": "hr-work-schedule.js",
+      "label": "فرق أكبر من كده بين طبيبين = فترتين (دقيقة)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-flex-shifts",
+      "text_sha256": "ec8f67c75b7cd83b99d250a29acd1d34bd1a8271bac01492aec888594ecd3902"
+    },
+    {
       "file": "indicator-reports.js",
       "label": "الإجراء",
       "name": "",
@@ -10941,6 +11071,46 @@
       "tab": "home",
       "article": "personal",
       "text_sha256": "cb369dfe4f4d347611d73d597b06cf662eed732794d5ab3c69f3490bdb9b7602"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "الوردية من الساعة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "hr-flex-shifts",
+      "text_sha256": "e72af238e368e100312eb9d439134a1339baeab6ab7a0ad8d889ff3aa1d2e36c"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "الوردية لحد الساعة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "hr-flex-shifts",
+      "text_sha256": "e262ddc2e289838ced5d82d7d7b16c096b7d130a92c5c4b6d7364e909b8ce994"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "مثلاً: تغطية عيادة الأسنان",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "hr-flex-shifts",
+      "text_sha256": "eb05ab024d59c6566702d0967b0dc02bd7c5d263de00d453f3dbb6427a69d446"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "سبب الوردية (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "hr-flex-shifts",
+      "text_sha256": "eb05ab024d59c6566702d0967b0dc02bd7c5d263de00d453f3dbb6427a69d446"
     },
     {
       "file": "nursing-day-ops.js",

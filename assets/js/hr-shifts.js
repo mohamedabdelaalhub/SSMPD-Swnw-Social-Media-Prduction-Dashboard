@@ -74,7 +74,7 @@
     }
     /* owner 2026-11-23 («طبقه», option أ): the rest-gap pills and the «بدون جدول» banner collapse into one line; details open on demand */
     function alertsHtml() {
-      var conflicts = warnChips(), un = ws.people.filter(function (p) { return !(p.days && Object.keys(p.days).length); });
+      var conflicts = warnChips(), un = ws.people.filter(function (p) { return !p.flex && !(p.days && Object.keys(p.days).length); });
       if (!ws.templates.length || un.length === ws.people.length) return '';
       if (!conflicts.length && !un.length) return '<div class="sh-alerts ok" data-shifts-ok>' + ico('ok') + '<span>الجدول متوازن: لا تعارض راحة بين الورديات</span></div>';
       var label = [conflicts.length ? conflicts.length + ' ' + (conflicts.length === 1 ? 'تنبيه راحة' : 'تنبيهات راحة') : '', un.length ? un.length + ' من غير جدول' : ''].filter(Boolean).join(' · ');
@@ -105,7 +105,7 @@
               if (t && shortRest[p.id + ':' + dy[0]]) b = b.replace('class="sc"', 'class="sc sc-rest"').replace('title="' + esc(t.name) + '"', 'title="' + esc(t.name) + ' — راحة أقل من 11 ساعة قبلها"');
               return '<td class="' + (i === tIdx ? 'today' : '') + '">' + b + '</td>';
             }).join('');
-            return '<tr data-shifts-person><td class="n"><button type="button" data-shifts="sched" data-id="' + esc(p.id) + '" style="border:0;background:none;padding:0;text-align:start"><b>' + esc(p.full_name) + '</b></button> <small style="color:var(--muted)">' + esc([p.code, p.job_title].filter(Boolean).join(' · ')) + '</small>' + (w.SSMPDHRActions ? w.SSMPDHRActions.button(p.id, p.full_name) : '') + '</td>' + cells +
+            return '<tr data-shifts-person><td class="n"><button type="button" data-shifts="sched" data-id="' + esc(p.id) + '" style="border:0;background:none;padding:0;text-align:start"><b>' + esc(p.full_name) + '</b></button> <small style="color:var(--muted)">' + esc([p.code, p.job_title].filter(Boolean).join(' · ')) + '</small>' + (p.flex ? ' <span class="pill" data-shifts-flex title="ورديتها بتتحسب كل يوم من مواعيد الطبيب — الجدول الأسبوعي مش بيتحسب" style="background:#E8EEFB;color:#0F369D">حسب تواجد الطبيب</span>' : '') + (w.SSMPDHRActions ? w.SSMPDHRActions.button(p.id, p.full_name) : '') + '</td>' + cells +
               '<td><b style="color:' + (hours > MAX_WEEK_HOURS ? 'var(--neg)' : 'var(--dark)') + '">' + Math.round(hours * 10) / 10 + '</b> <small style="color:var(--muted)">س</small>' + (hours > MAX_WEEK_HOURS ? '<br><small style="color:var(--neg)">فوق ' + MAX_WEEK_HOURS + '</small>' : '') + '</td></tr>';
           }).join('');
       }).join('');
