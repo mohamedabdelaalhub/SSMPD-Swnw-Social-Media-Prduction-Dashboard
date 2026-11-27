@@ -89,6 +89,9 @@
     }
     var stash = host.querySelector('[data-rht-stash]');
     if (!stash) { stash = d.createElement('div'); stash.hidden = true; stash.dataset.rhtStash = ''; row.parentNode.insertBefore(stash, row.nextSibling); }
+    /* «على حساب الموظف» card (employee-debt.js) is not a tile: it must not stay inside the blue hero (pale hero text made its note unreadable) -> put it under the tiles */
+    var emd = host.querySelector('[data-emd]');
+    if (emd && emd.closest('.rx-header') && stash.parentNode) stash.parentNode.insertBefore(emd, stash.nextSibling);
     found.forEach(function (x) {
       var kind = x[0], card = x[1];
       if (!card.hasAttribute('data-rht-src')) { card.setAttribute('data-rht-src', kind.key); card.hidden = true; }
@@ -109,7 +112,7 @@
     if (!host || !host.querySelector) return;
     if (host.__rht) { schedule(host); return; }
     var obs = new w.MutationObserver(function (ms) {
-      for (var i = 0; i < ms.length; i++) { var m = ms[i]; if (m.type !== 'childList') continue; for (var j = 0; j < m.addedNodes.length; j++) { var x = m.addedNodes[j]; if (x.nodeType === 1 && (x.matches && KINDS.some(function (k) { return x.matches(k.sel); }) || x.querySelector && KINDS.some(function (k) { return x.querySelector(k.sel); }))) { schedule(host); return; } } }
+      for (var i = 0; i < ms.length; i++) { var m = ms[i]; if (m.type !== 'childList') continue; for (var j = 0; j < m.addedNodes.length; j++) { var x = m.addedNodes[j]; if (x.nodeType === 1 && (x.matches && KINDS.some(function (k) { return x.matches(k.sel); }) || x.matches('[data-emd]') || x.querySelector && (KINDS.some(function (k) { return x.querySelector(k.sel); }) || x.querySelector('[data-emd]')))) { schedule(host); return; } } }
     });
     host.__rht = { obs: obs }; obs.observe(host, { childList: true, subtree: true }); schedule(host);
   }
