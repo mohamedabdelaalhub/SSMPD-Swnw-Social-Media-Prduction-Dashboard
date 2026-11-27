@@ -10,9 +10,13 @@ begin;
 -- apply-all loop) put the standard markup and price back. Main chat asked for this fix 2026-11-27. راجعت قرارات المالك.
 --   * inventory_medicine_no_markup also takes the medicine off the standard markup (use_standard_markup := false), so the
 --     standard trigger that runs after it does nothing for a medicine.
+--   * a medicine with no purchase yet keeps its price when a write puts a markup on it (before: price ÷ (1 + markup), so every
+--     «طبّق على الكل» cut it again — live dry-run 2026-11-27: 41 medicines, e.g. 1,350 → 1,000). An item that becomes a medicine
+--     is brought back from its marked-up price as before.
 --   * the price-history row apply-all writes for a medicine with the standard markup (a change that never happened) is skipped.
---   * repair: every medicine still on the standard markup or carrying a markup is brought back to 0 with the purchase price
---     (one real price-history row per item that changes; each printed as a NOTICE: sku, old → new).
+--   * repair: every medicine still on the standard markup or carrying a markup goes back to markup 0 — at its purchase price when
+--     it has one, otherwise at the price it has now (one real price-history row per item whose price changes; every item printed
+--     as a NOTICE: sku, old price (markup) → new price, and whether it has a purchase price).
 -- Shortage («ناقص») and supply items are unchanged.
 -- Rollback: supabase/rollbacks/20261127320000_medicine_apply_all_no_markup.rollback.sql (repaired prices stay).
 do $$ begin
@@ -29,6 +33,9 @@ begin
     new.use_standard_markup := false;   -- the standard-markup trigger fires after this one (name order)
     if new.markup_percent <> 0 then
       base := clinic_finance.inventory_highest_purchase(new.id);
+      -- no purchase yet: a medicine that is already «دوا» keeps the price it has (it is the typed public price, not cost × markup);
+      -- only an item that BECOMES a medicine is brought back from its marked-up price, as before
+      if base is null and tg_op = 'UPDATE' and old.pricing_kind = 'medicine' then base := new.current_sale_price; end if;
       if base is null then base := round(new.current_sale_price / (1 + new.markup_percent / 100), 2); end if;
       new.markup_percent := 0;
       new.current_sale_price := round(base, 2);
@@ -62,7 +69,8 @@ begin
         values (r.id, r.current_sale_price, p, r.markup_percent, 0, actor);
     end if;
     n := n + 1;
-    raise notice 'medicine back to no markup: % — % (markup %) → %', r.sku, r.current_sale_price, r.markup_percent, p;
+    raise notice 'medicine back to no markup: % — % (markup %) → % (%)', r.sku, r.current_sale_price, r.markup_percent, p,
+      case when clinic_finance.inventory_highest_purchase(r.id) is null then 'no purchase: price kept' else 'purchase price' end;
   end loop;
   raise notice 'medicines repaired: %', n;
 end $$;
