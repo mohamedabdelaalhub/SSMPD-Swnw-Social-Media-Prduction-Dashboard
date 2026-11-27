@@ -1468,7 +1468,7 @@
     },
     {
       "file": "contract-price-workspace.js",
-      "label": "اسم الخدمة أو الكود أو القسم",
+      "label": "دوّر باسم الخدمة أو الكود أو القسم",
       "name": "",
       "kind": "placeholder",
       "forms": [

@@ -51,8 +51,8 @@ assert.match(legacy, /الخدمات: Hearing/);
   now += 30001; fail = false; assert.equal(await get(), 'complete facts');
 
   let promptRequests = [], websiteReads = 0;
-  const ai = load(['meta-comments/clinic-facts.ts', 'meta-comments/clinic-catalog.ts', 'whatsapp-webhook/reply-rules.ts', 'meta-comments/ai.ts'], {
-    Deno: { env: { get: () => 'test-key-not-a-real-secret' } },
+  const ai = load(['meta-comments/clinic-facts.ts', 'meta-comments/clinic-catalog.ts', 'whatsapp-webhook/reply-rules.ts', '_shared/llm.ts', 'meta-comments/ai.ts'], {
+    Deno: { env: { get: (n) => (/^(ANTHROPIC|AI_)/.test(n) ? undefined : 'test-key-not-a-real-secret') } }, // OpenAI key only: this test checks the OpenAI request
     fetch: async (url, options) => {
       if (url.includes('published.json')) { websiteReads++; return Response.json(site); }
       assert.equal(url, 'https://api.openai.com/v1/responses');
@@ -81,7 +81,7 @@ assert.match(legacy, /الخدمات: Hearing/);
   };
   const knowledge = load(['clinic-knowledge/index.ts'], {
     Deno: { env: { get: k => k === 'WHATSAPP_ALERT_SECRET' ? 'test-secret' : k === 'SUPABASE_SERVICE_ROLE_KEY' ? 'test-service' : k === 'SUPABASE_URL' ? 'https://example.supabase.co' : undefined }, serve: fn => handler = fn },
-    createClient: () => ({ from: table => {
+    createClient: () => ({ rpc: async () => ({ data: null, error: { message: 'feed not deployed' } }), from: table => {
       const q = { select: fields => { selects.push({ table, fields }); return q; }, eq: () => q, order: () => q,
         maybeSingle: () => q, then: (resolve, reject) => Promise.resolve({ data: tableRows[table], error: broken && table === 'clinic_faqs' ? { message: 'db down' } : null }).then(resolve, reject) };
       return q;
