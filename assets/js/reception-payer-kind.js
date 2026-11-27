@@ -41,7 +41,7 @@ function decorate(form,quiet){var sel=form&&form.elements&&form.elements.service
  if(lost&&!quiet){sel.value='';sel.dispatchEvent(new Event('change',{bubbles:true}));}
  sel.dispatchEvent(new Event('rx-svc-refresh'));}
 function seg(val){return '<div class="rpk-seg" role="radiogroup" aria-label="طريقة الدفع">'+KINDS.map(function(k){return '<label class="rpk-opt"><input type="radio" name="payer_kind" value="'+k[0]+'" required'+(k[0]===val?' checked':'')+'><span>'+esc(k[1])+'<small>'+esc(k[2])+'</small></span></label>';}).join('')+'</div>';}
-function fileRow(label,hidden,attr){return '<div class="rbd-row"><span class="rbd-l">'+label+' <b class="rpk-req">*</b></span><input type="file" accept="image/*,application/pdf" capture="environment" '+attr+'><input type="hidden" name="'+hidden+'" required><small class="rbd-up" role="status"></small></div>';}
+function fileRow(label,hidden,attr,optional){return '<div class="rbd-row"><span class="rbd-l">'+label+(optional?' <small class="rpk-opt-note">'+optional+'</small>':' <b class="rpk-req">*</b>')+'</span><input type="file" accept="image/*,application/pdf" capture="environment" '+attr+'><input type="hidden" name="'+hidden+'"'+(optional?'':' required')+'><small class="rbd-up" role="status"></small></div>';}
 /* ctx: {data, workspace, appointment, order, only} — only: limit the choices (after arrival on a contract visit) */
 function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.elements.service_id)return null;
  ctx=ctx||{};var data=ctx.data||{},ws=ctx.workspace,ap=ctx.appointment||null,cur=ap&&ap.payer_kind||'';
@@ -53,11 +53,11 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.ele
    '<p class="rpk-empty" data-rpk-cempty hidden>مفيش عقود متفعّلة — الحسابات تفعّل العقد الأول</p>'+
    '<p class="rbd-note" data-rpk-entnote aria-live="polite" hidden></p>'+
    '<div class="rbd-two"><label class="rbd-row"><span class="rbd-l">رقم الكوبون / الكارنيه <b class="rpk-req">*</b></span><input name="payer_coupon_no" maxlength="60" required dir="ltr"></label>'+
-   '<label class="rbd-row"><span class="rbd-l">رقم موافقة التغطية <b class="rpk-req">*</b></span><input name="payer_auth_ref" maxlength="80" required dir="ltr"></label></div>'+
+   '<label class="rbd-row"><span class="rbd-l">رقم موافقة التغطية <small class="rpk-opt-note">(للخدمات بس — الكشف مش محتاج)</small></span><input name="payer_auth_ref" maxlength="80" dir="ltr"></label></div>'+
    '<div class="rbd-two"><label class="rbd-row"><span class="rbd-l">نسبة تحمّل الجهة ٪ <b class="rpk-req">*</b></span><span class="rbd-pctin"><input name="payer_coverage_percent" type="number" min="0" max="100" step="0.5" inputmode="decimal" required dir="ltr"> ٪</span></label>'+
-   fileRow('صورة الموافقة','payer_proof_path','data-rpk-cfile')+'</div>'+
+   fileRow('صورة الموافقة','payer_proof_path','data-rpk-cfile','(للخدمات بس — الكشف مش محتاج)')+'</div>'+
    '<div class="rbd-sum" data-rpk-csum hidden></div>'+
-   '<p class="rbd-note">نسبة التحمّل بتتكتب من الموافقة والكارت الطبي للمريض، وصورة الموافقة إجبارية. السعر من قايمة أسعار العقد، والمريض بيتربط بعقد الجهة لوحده.</p>'+
+   '<p class="rbd-note">نسبة التحمّل بتتكتب من الموافقة والكارت الطبي للمريض، ورقم الموافقة وصورتها إجباريين للخدمات بس — الكشف مش محتاج موافقة (المالك 2026-11-27). السعر من قايمة أسعار العقد، والمريض بيتربط بعقد الجهة لوحده.</p>'+
   '</fieldset>'+
   '<fieldset class="rpk-body" data-rpk-union hidden disabled>'+
    '<label class="rbd-row"><span class="rbd-l">النقابة / النادي</span><select required data-rpk-u><option value="">اختار</option></select></label><input type="hidden" name="payer_union">'+
