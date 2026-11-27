@@ -31,7 +31,7 @@ async function run(feed) {
     '## جهات متعاقدين معاها (تأمين/شركات/نقابات)', '- نقابة المهندسين — أسعار خاصة — على: الكشف والأشعة', '  - كشف باطنة: 300 جنيه', '  - سونار بطن: 250.5 جنيه',
     '  - و 3 خدمة تانية: اسأل الاستقبال عن سعرها', '- دار الارقم — خصم 40% — على: جميع خدمات', '- ميد شور — التأمين بيغطي 80%'];
   for (const w of want) assert(fed.includes(w), 'missing line: ' + w);
-  // mig 20261127110000: full list (no cap), «not in contract» line, graded consultations
+  // mig 20261127120000: full list (no cap), «not in contract» line, graded consultations
   const full = await run({ error: null, data: { as_of: '2026-11-27', offers: [], entities: [
     { entity: 'ميد نت', billing: 'discount', coverage: 0, has_list: true, complete_list: true, more: 0,
       lines: Array.from({ length: 120 }, (_, i) => ({ name: 'خدمة ' + (i + 1), price: 100 + i })),

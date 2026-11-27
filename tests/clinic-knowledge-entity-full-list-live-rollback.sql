@@ -1,5 +1,5 @@
--- Live dry run of 20261127110000_clinic_knowledge_entity_full_list. Ends in ROLLBACK: nothing is kept.
--- Run: psql -v ON_ERROR_STOP=1 -v body="$(sed '/^begin;$/d;/^commit;$/d' supabase/migrations/20261127110000_clinic_knowledge_entity_full_list.sql)" -f tests/clinic-knowledge-entity-full-list-live-rollback.sql
+-- Live dry run of 20261127120000_clinic_knowledge_entity_full_list. Ends in ROLLBACK: nothing is kept.
+-- Run: psql -v ON_ERROR_STOP=1 -v body="$(sed '/^begin;$/d;/^commit;$/d' supabase/migrations/20261127120000_clinic_knowledge_entity_full_list.sql)" -f tests/clinic-knowledge-entity-full-list-live-rollback.sql
 -- Shows per entity: lines sent, unpriceable count, complete_list, consultations; total payload size and run time.
 -- Service names and prices only; no patient data.
 begin;

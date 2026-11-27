@@ -1,14 +1,4 @@
--- WhatsApp agent (request from the agent chat on the owner's behalf, 2026-11-27): every contracted entity's FULL price list
--- and its graded consultation (كشف) prices. Replaces public.clinic_knowledge_feed() from 20261127030000 (same signature,
--- same grants, still read-only, service_role only). Changes:
---  * entities[].lines: no 30-line cap — one {name, price} per priceable service of the linked list; «more» stays (count of
---    list items that could not be priced for the contract, normally 0). complete_list = true when the linked list is
---    usable, meaning a service not listed is NOT in the contract (the agent says reception will confirm).
---  * entities[].consultations: [{grade:'أخصائي'|'استشاري', price}] or {grade, not_in_contract:true}, from the live reception
---    services 0001371 (أخصائي) / 0001372 (استشاري) → pricing_service_id → clinic_prices.resolve(service, cash, today,
---    contract) — exactly what reception charges. A grade missing from the live catalog is omitted. No contract data for home visits exists, so no home_visit flag is sent.
---  * offers: unchanged (30-line cap kept).
--- Rollback: supabase/rollbacks/20261127110000_clinic_knowledge_entity_full_list.rollback.sql (restores 030000's body).
+-- Rollback of 20261127120000: restores clinic_knowledge_feed() exactly as in 20261127030000 (30-line cap, no consultations).
 begin;
 
 create or replace function public.clinic_knowledge_feed() returns jsonb
@@ -16,7 +6,7 @@ language plpgsql stable security definer set search_path = pg_catalog, public as
 declare
   today date := (now() at time zone 'Africa/Cairo')::date;
   c record; it record; o record; lines jsonb; total int; shown int; cash numeric; p numeric;
-  ents jsonb := '[]'::jsonb; offs jsonb := '[]'::jsonb; usable boolean; cons jsonb; g record;
+  ents jsonb := '[]'::jsonb; offs jsonb := '[]'::jsonb; usable boolean;
 begin
   for c in
     select k.id, k.discount_percent, k.services, k.booking_billing_kind, k.booking_coverage, k.price_list_id, e.name entity_name,
@@ -36,6 +26,7 @@ begin
         left join clinic_prices.sections sec on sec.id = i.section_id
         where i.list_id = c.price_list_id order by sec.name nulls last, s.name, s.id
       loop
+        exit when shown >= 30;
         begin
           cash := (clinic_prices.resolve(it.id, it.base_price, today, null)->>'price')::numeric;
           p := (clinic_prices.resolve(it.id, cash, today, c.id)->>'price')::numeric;
@@ -46,29 +37,9 @@ begin
         end;
       end loop;
     end if;
-    cons := '[]'::jsonb;
-    for g in
-      select x.grade, ps.id, ps.base_price from (values ('0001371', 'أخصائي', 1), ('0001372', 'استشاري', 2)) x(code, grade, ord)
-      left join lateral (select rs.pricing_service_id from clinic_reception.services rs join clinic_reception.workspaces w on w.id = rs.workspace_id
-                         where w.mode = 'live' and rs.code = x.code and rs.pricing_service_id is not null order by rs.id limit 1) r on true
-      left join public.pricing_services ps on ps.id = r.pricing_service_id and ps.active
-      order by x.ord
-    loop
-      continue when g.id is null;  -- grade not set up in the live reception catalog: say nothing rather than «not in contract»
-      p := null;
-      if true then
-        begin
-          cash := (clinic_prices.resolve(g.id, g.base_price, today, null)->>'price')::numeric;
-          p := (clinic_prices.resolve(g.id, cash, today, c.id)->>'price')::numeric;
-        exception when others then p := null;
-        end;
-      end if;
-      cons := cons || case when p is not null and p > 0 then jsonb_build_object('grade', g.grade, 'price', round(p, 2))
-                           else jsonb_build_object('grade', g.grade, 'not_in_contract', true) end;
-    end loop;
     ents := ents || jsonb_build_object('entity', c.entity_name, 'discount_percent', c.discount_percent, 'services', c.services,
       'billing', c.booking_billing_kind, 'coverage', c.booking_coverage, 'has_list', c.has_list and shown > 0,
-      'complete_list', c.has_list and shown > 0, 'lines', lines, 'more', greatest(total - shown, 0), 'consultations', cons);
+      'lines', lines, 'more', greatest(total - shown, 0));
   end loop;
 
   for o in
