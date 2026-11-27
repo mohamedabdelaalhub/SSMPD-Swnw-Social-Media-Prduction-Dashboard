@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2114,
-    "labels": 1544,
+    "definitions": 2116,
+    "labels": 1546,
     "files": 174,
-    "groups": 1672
+    "groups": 1673
   },
   "fields": [
     {
@@ -12842,13 +12842,13 @@
     },
     {
       "file": "reception-legacy-package.js",
-      "label": "المبلغ المدفوع",
+      "label": "قيمة الخدمة في الباكج",
       "name": "",
       "kind": "label",
       "forms": [],
       "tab": "reception_services",
       "article": "reception-legacy-package",
-      "text_sha256": "39fca68dac850123cdd9979ad6784f4631c0f1d287864820d0e684926af7ad1d"
+      "text_sha256": "ab8fbdd49ef6d83f82bd405f47035b007e519efefc3600ed172ce8d17cb8465a"
     },
     {
       "file": "reception-legacy-package.js",
@@ -12889,6 +12889,26 @@
       "tab": "reception_services",
       "article": "reception-legacy-package",
       "text_sha256": "06d153a4125dac472f2b0c119cd2ad3449287d7e0f2fbdf4ffcb9e9ee0f15d95"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "مثلاً 2000",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "990da91edc336c4075afcca2e0a8be95777645320606c7537ddfef3de96819d2"
+    },
+    {
+      "file": "reception-legacy-package.js",
+      "label": "المدفوع قبل كده في السيستم القديم (لو اتدفع كله سيبها فاضية)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-legacy-package",
+      "text_sha256": "990da91edc336c4075afcca2e0a8be95777645320606c7537ddfef3de96819d2"
     },
     {
       "file": "reception-manual-time.js",
