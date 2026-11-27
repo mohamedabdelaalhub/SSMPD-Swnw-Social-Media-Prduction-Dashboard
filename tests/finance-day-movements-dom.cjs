@@ -41,6 +41,7 @@ assert.equal(host.querySelector('[data-dm-tab][aria-selected=true]').dataset.dmT
 const tiles=[...host.querySelectorAll('.dm-tile')].map(t=>t.textContent);
 assert(tiles[0].includes('اتحصّل في ورديتك')&&tiles[0].includes('2,670')&&tiles[0].includes('نقدي 1,500')&&tiles[0].includes('فيزا 360')&&tiles[0].includes('إنستا باي 810'));
 assert(tiles[1].includes('300')&&tiles[1].includes('للأطباء 180')&&tiles[1].includes('مصروفات وغيرها 120'));
+assert(host.querySelectorAll('.dm-tile')[1].classList.contains('is-spent')&&host.querySelector('.dm-tile b.spent'),'owner: spent number orange once anything is spent');
 assert(tiles[2].includes('330')&&tiles[2].includes('2 خصم'));
 assert(tiles[3].includes('صافي النقدي في ورديتك')&&tiles[3].includes('1,200')&&!/المفروض في الدرج/.test(tiles[3]),'blind count ON: cashier sees net cash only');
 const popText=()=>host.querySelector('[data-dm-pop]').textContent,ovOpen=()=>!host.querySelector('[data-dm-ov]').hidden;
@@ -54,7 +55,7 @@ assert(lines[0].textContent.includes('منى عادل')&&lines[0].textContent.in
 lines[2].click();let t=popText();for(const x of ['سارة يوسف','P-2026-900330','جلسة تقشير','الخصم — خاص 10٪','810','باقي 200','نصيب الطبيب','705'])assert(t.includes(x),x);
 assert(closeBtn()&&!backBtn(),'first popup: ✕ only');
 host.querySelector('[data-dm-pop] button.dm-r[data-dm-open]').click();t=popText();assert(t.includes('اعتمده')&&t.includes('أ. وليد')&&t.includes('مريضة متكررة'));
-assert(backBtn(),'nested popup has → back');backBtn().click();assert(popText().includes('سارة يوسف'),'back returns to the visit');closeBtn().click();assert(!ovOpen());
+assert(backBtn(),'nested popup has a back arrow');{const ph=host.querySelector('[data-dm-pop] .dm-ph');assert.equal(ph.lastElementChild,backBtn(),'owner: back arrow is the farthest element (far left in RTL)');}backBtn().click();assert(popText().includes('سارة يوسف'),'back returns to the visit');closeBtn().click();assert(!ovOpen());
 host.querySelectorAll('[data-dm-list] .dm-ln')[0].click();t=popText();assert(t.includes('نصيب فيزيتا')&&t.includes('150')&&t.includes('225'));closeBtn().click();
 host.querySelectorAll('[data-dm-list] .dm-ln')[3].click();t=popText();assert(t.includes('عمولة الترشيح')&&t.includes('50')&&t.includes('تصحيح طريقة الدفع')&&t.includes('فيزا ← نقدي'));
 // Esc closes too

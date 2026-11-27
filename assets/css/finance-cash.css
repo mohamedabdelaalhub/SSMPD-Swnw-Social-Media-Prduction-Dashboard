@@ -195,3 +195,7 @@ button.dm-r{width:100%;border:0;border-top:1px solid #eef1f6;background:#fff;fon
  .dm-ov{align-items:flex-end;padding:0}.dm-pop{border-radius:18px 18px 0 0;max-height:92vh}}
 @media(prefers-reduced-motion:reduce){.dm-tile{transition:none}.dm-tile:hover{transform:none}}
 @media print{html.mv-printing .dm-top,html.mv-printing .dm-pane{display:none!important}}
+
+/* owner decision 2026-11-26: the shift-spending number is orange as soon as anything is spent */
+.dm-tile b.spent{color:#F15A22}.dm-tile.is-spent{border-color:rgba(241,90,34,.45)}
+.dm-x.dm-back{display:inline-flex;align-items:center;justify-content:center}
