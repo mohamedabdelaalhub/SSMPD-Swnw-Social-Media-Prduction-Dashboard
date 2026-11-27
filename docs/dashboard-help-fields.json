@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2049,
-    "labels": 1486,
-    "files": 167,
-    "groups": 1619
+    "definitions": 2054,
+    "labels": 1491,
+    "files": 168,
+    "groups": 1621
   },
   "fields": [
     {
@@ -14065,6 +14065,56 @@
       "tab": "reception_services",
       "article": "shift-expenses-review",
       "text_sha256": "7874f0f73a8de1334b8801d900f5617184950df9b3298a359ad5b06835da4a75"
+    },
+    {
+      "file": "reception-vezeeta-paste.js",
+      "label": "Dear Doctor …",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-vezeeta-paste",
+      "text_sha256": "5420e971a077c98cf135a7285b6838c80d4be5fc7d9e0a608808a7968dea5f45"
+    },
+    {
+      "file": "reception-vezeeta-paste.js",
+      "label": "الصق رسالة فيزيتا (SMS) هنا",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-vezeeta-paste",
+      "text_sha256": "5420e971a077c98cf135a7285b6838c80d4be5fc7d9e0a608808a7968dea5f45"
+    },
+    {
+      "file": "reception-vezeeta-paste.js",
+      "label": "أول معاد فاضي مع الدكتور",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-vezeeta-paste",
+      "text_sha256": "35f821c7e1d2a18a12ec310cf851d4118ce75a9aeb9d1410e831e3031c783331"
+    },
+    {
+      "file": "reception-vezeeta-paste.js",
+      "label": "بدون معاد — بالدور",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-vezeeta-paste",
+      "text_sha256": "35f821c7e1d2a18a12ec310cf851d4118ce75a9aeb9d1410e831e3031c783331"
+    },
+    {
+      "file": "reception-vezeeta-paste.js",
+      "label": "أختار الساعة بنفسي",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-vezeeta-paste",
+      "text_sha256": "35f821c7e1d2a18a12ec310cf851d4118ce75a9aeb9d1410e831e3031c783331"
     },
     {
       "file": "reception-visit-supplies.js",
