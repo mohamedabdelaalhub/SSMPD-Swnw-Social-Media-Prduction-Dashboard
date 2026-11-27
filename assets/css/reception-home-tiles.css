@@ -1,0 +1,22 @@
+/* Reception home tiles (reception-home-tiles.js) — direction A of the owner-approved mockup. 8/16px grid, one-line titles, equal heights. */
+[data-rht-src][hidden]{display:none!important}
+.rht{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0}
+.rht-tile{display:grid;grid-template-rows:auto auto auto 1fr auto;gap:8px;padding:16px;border-radius:16px;min-width:0;cursor:pointer;align-content:start}
+.rht-tile:focus-visible{outline:2px solid #F15A22;outline-offset:2px}
+.rht-top{display:flex;align-items:center;gap:12px;min-width:0}.rht-ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;flex:none}
+.a1 .rht-ico{background:#EAF0FF;color:#0F369D}.a2 .rht-ico{background:#FFF1E8;color:#F15A22}.a3 .rht-ico{background:#EEE9FB;color:#5B3FB5}
+.rht-tt{min-width:0;flex:1}.rht-tile h4{margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#16212E}
+.rht-sub{font-size:12px;color:#5b6b82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1em}.rht-chev{color:#8aa0cf;flex:none}
+.rht-lbl{font-size:13px;color:#5b6b82;margin-top:8px}.rht-num{font-size:30px;font-weight:800;line-height:1.1;color:#0F369D}.rht-num small{font-size:14px;font-weight:600;color:#5b6b82;margin-inline-start:4px}
+.rht-num.rht-hot{color:#F15A22}
+.rht-facts{display:flex;gap:8px 12px;flex-wrap:wrap;align-items:center;font-size:12px;color:#3B4658;min-height:28px}.rht-facts b{color:#16212E}
+.rht-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;background:#EAF0FF;color:#0F369D}.rht-chip.warn{background:#FFF1E8;color:#C2410C}.rht-chip.ok{background:#E6F3EC;color:#2F7D5C}
+.rht-go{width:100%;min-height:44px;border:1px solid #0F369D;color:#0F369D;background:#fff;border-radius:12px;font:inherit;font-weight:700;cursor:pointer;margin-top:8px}
+.rht-go:hover{background:#EAF0FF}.rht-go:focus-visible{outline:2px solid #F15A22;outline-offset:2px}.rht-go[disabled]{opacity:.5;cursor:not-allowed}
+/* popup: real .modal-head hero; the original card sits inside without its own frame or duplicate title */
+.rht-pop .modal{max-width:560px}
+.rht-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px}.rht-sum div{background:#F4F7FD;border-radius:12px;padding:8px 10px}.rht-sum small{display:block;color:#5b6b82;font-size:12px}.rht-sum b{font-size:18px;color:#16212E}
+.rht-sum .hot b{color:#F15A22}
+.rht-body .rse-card{border:0;box-shadow:none;background:transparent;padding:0;margin:0}.rht-body .rse-head h4{display:none}.rht-body .rse-head{justify-content:flex-start}
+.rht-body .rse-k{display:none}
+@media(max-width:1023px){.rht{grid-template-columns:minmax(0,1fr)}}

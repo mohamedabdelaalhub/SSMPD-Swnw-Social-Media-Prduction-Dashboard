@@ -32,8 +32,9 @@
 <link rel="stylesheet" href="assets/css/patient-profile-ui.css?v=patient-file-look-20261122-1">
 <link rel="stylesheet" href="assets/css/patient-file-look.css?v=patient-file-look-20261122-1">
 <link rel="stylesheet" href="assets/css/tips-coach.css?v=tips-coach-20261122-1">
-<link rel="stylesheet" href="assets/css/finance-cash.css?v=reports-plain-20261126-2">
+<link rel="stylesheet" href="assets/css/finance-cash.css?v=close-blind-20261127-2">
 <link rel="stylesheet" href="assets/css/finance-doctors-look.css?v=doctor-contracts-refine-20261125-1">
+<link rel="stylesheet" href="assets/css/doctor-contracts-ui.css?v=dcu-20261127-2">
 <link rel="stylesheet" href="assets/css/finance-section-template.css?v=section-template-20261125-1">
 <link rel="stylesheet" href="assets/css/finance-doctor-dues.css?v=dues-fit-20261125-1">
 <link rel="stylesheet" href="assets/css/finance-reports.css?v=reports-plain-20261126-2">
@@ -47,7 +48,9 @@
 <link rel="stylesheet" href="assets/css/reception-shift-expenses.css?v=shift-expenses-redesign-20261126-1">
 <link rel="stylesheet" href="assets/css/partner-accounts.css?v=partners-20261126-1">
 <link rel="stylesheet" href="assets/css/drawer-requests.css?v=drawer-req-20261126-1">
-<link rel="stylesheet" href="assets/css/month-end-accounts.css?v=platform-audit-20261126-1">
+<link rel="stylesheet" href="assets/css/employee-debt.css?v=employee-debt-20261126-2">
+<link rel="stylesheet" href="assets/css/month-end-accounts.css?v=month-end-20261126-1">
+<link rel="stylesheet" href="assets/css/reception-home-tiles.css?v=rht-20261127-1">
 <link rel="stylesheet" href="assets/css/reception-follow-ups.css?v=follow-ups-20261121-1">
 <link rel="stylesheet" href="assets/css/reception-minicards.css?v=minicards-1">
 <link rel="stylesheet" href="assets/css/reception-reminders.css?v=tomorrow-reminders-20261121-1">
@@ -64,6 +67,7 @@
 <link rel="stylesheet" href="assets/css/reception-booking-discount.css?v=vezeeta-paste-20261126-1">
 <link rel="stylesheet" href="assets/css/fix-visit.css?v=fix-visit-20261126-1">
 <link rel="stylesheet" href="assets/css/service-select-search.css?v=service-search-20261123-1">
+<link rel="stylesheet" href="assets/css/select-search.css?v=select-search-20261126-1">
 <link rel="stylesheet" href="assets/css/reception-legacy-package.css?v=legacy-package-20261123-1">
 <link rel="stylesheet" href="assets/css/reception-payer-kind.css?v=payer-kind-20261123-2">
 <link rel="stylesheet" href="assets/css/reception-referrer.css?v=referrer-20261123-1">
@@ -206,7 +210,7 @@
 <script src="assets/js/leads-booking-funnel.js?v=lead-source-20261122-1"></script>
 <script src="assets/js/render-leads.js?v=leads-archive-tiles-20261125-1"></script>
 <script src="assets/js/leads-edit-details.js?v=leadgen-form-20261114-1"></script>
-<script src="assets/js/render-contracting-entities.js?v=entities-look-20261125-2"></script>
+<script src="assets/js/render-contracting-entities.js?v=activate-expired-20261127-1"></script>
 <script src="assets/js/contracting-partnership-runtime-fix.js?v=partnership-runtime-20261020-1"></script>
 <script src="assets/js/contracting-partnerships.js?v=entities-look-20261125-2"></script>
 <script src="assets/js/contracting-partnership-letterhead.js?v=partnership-letterhead-20261021-3"></script>
@@ -225,7 +229,7 @@
 <script src="assets/js/render-mediabuyer.js?v=operations-live-20261017-2"></script>
 <script src="assets/js/swnw-print.js?v=referrer-20261123-2"></script>
 <script src="assets/js/finance-controls.js?v=cash-settle-cap-20261125-1"></script>
-<script src="assets/js/finance-doctors.js?v=doctor-accounts-plain-20261126-3"></script>
+<script src="assets/js/finance-doctors.js?v=dcu-20261126-1"></script>
 <script src="assets/js/finance-channels.js?v=channels-20261108-1"></script>
 <script src="assets/js/finance-doctor-payout.js?v=payout2-20261108-1"></script>
 <script src="assets/js/finance-doctor-accounts.js?v=doctor-accounts-plain-20261126-2"></script>
@@ -233,6 +237,7 @@
 <script src="assets/js/finance-staff-tax.js?v=tax-20261109-1"></script>
 <script src="assets/js/finance-doctor-dues.js?v=dues-fit-20261125-1"></script>
 <script src="assets/js/test-records.js?v=integ-20261121-2"></script>
+<script src="assets/js/doctor-contracts-ui.js?v=dcu-20261127-2"></script>
 <script src="assets/js/finance-contract-signature.js?v=doctor-contracts-refine-20261125-1"></script>
 <script src="assets/js/my-contract.js?v=online-contract-20261109-1"></script>
 <script src="assets/js/contract-marketing.js?v=lazy-help-20261108-1"></script>
@@ -244,7 +249,7 @@
 <script src="assets/js/finance-bank.js?v=finance-groups-20261017-1"></script>
 <script src="assets/js/finance-business.js?v=payroll-plain-20261126-1"></script>
 <script src="assets/js/finance-reports.js?v=reports-plain-20261126-1"></script>
-<script src="assets/js/finance-advances.js?v=advances-plain-20261126-1"></script>
+<script src="assets/js/finance-advances.js?v=close-blind-20261127-1"></script>
 <script src="assets/js/booking-cash-view.js?v=advances-plain-20261126-1"></script>
 <script src="assets/js/finance-treasury.js?v=finance-today-plain-20261126-1"></script>
 <script src="assets/js/ledger-editor.js?v=ledger-look-20261125-1"></script>
@@ -253,10 +258,12 @@
 <script src="assets/js/finance-account-statements.js?v=finance-today-plain-20261126-2"></script>
 <script src="assets/js/account-breakdown.js?v=breakdown-20261125-3"></script>
 <script src="assets/js/count-check.js?v=count-repeat-20261126-1"></script>
-<script src="assets/js/reception-shift-expenses.js?v=shift-expenses-redesign-20261126-1"></script>
+<script src="assets/js/reception-shift-expenses.js?v=rht-20261127-1"></script>
 <script src="assets/js/partner-accounts.js?v=partners-20261126-1"></script>
-<script src="assets/js/drawer-requests.js?v=drawer-req-20261126-2"></script>
-<script src="assets/js/month-end-accounts.js?v=platform-audit-20261126-2"></script>
+<script src="assets/js/drawer-requests.js?v=rht-20261127-1"></script>
+<script src="assets/js/employee-debt.js?v=employee-debt-20261126-2"></script>
+<script src="assets/js/month-end-accounts.js?v=rht-20261127-1"></script>
+<script src="assets/js/reception-home-tiles.js?v=rht-20261127-1"></script>
 <script src="assets/js/reception-minicards.js?v=minicards-1"></script>
 <script src="assets/js/reception-follow-ups.js?v=center-name-20261122-2"></script>
 <script src="assets/js/reception-reminders.js?v=center-name-20261122-1"></script>
@@ -265,10 +272,11 @@
 <script src="assets/js/finance-masa-net.js?v=masa-net-20261120-6"></script>
 <script src="assets/js/nav-state.js?v=nav-state-20261108-1"></script>
 <script src="assets/js/finance-shift-movements.js?v=breakdown-20261125-1"></script>
+<script src="assets/js/finance-day-movements.js?v=day-movements-20261127-2"></script>
 <script src="assets/js/finance-labels.js?v=accnames-20261122-1"></script>
 <script src="assets/js/payment-proof.js?v=proof-photo-1"></script>
 <script src="assets/js/treasury-accordion.js?v=treasury-accordion-20261126-1"></script>
-<script src="assets/js/finance-cash.js?v=partners-r2-20261126-1"></script>
+<script src="assets/js/finance-cash.js?v=close-blind-20261127-1"></script>
 <script src="assets/js/tax-status.js?v=tax-20261122-1"></script>
 <script src="assets/js/main-treasury-count.js?v=count-repeat-20261126-1"></script>
 <script src="assets/js/today-review-inbox.js?v=integ-inbox-phone-20261123-1"></script>
@@ -323,7 +331,8 @@
 <script src="assets/js/reception-legacy-package.js?v=partial-pulse-20261125-1"></script>
 <script src="assets/js/reception-family-legacy.js?v=family-legacy-20261125-1"></script>
 <script src="assets/js/service-select-search.js?v=service-search-20261123-1"></script>
-<script src="assets/js/reception-workspace.js?v=vezeeta-paste-20261126-1"></script>
+<script src="assets/js/reception-workspace.js?v=staff-discount-20261126-1"></script>
+<script src="assets/js/select-search.js?v=select-search-20261126-1"></script>
 <script src="assets/js/reception-activity-log.js?v=activity-log-20261123-1"></script>
 <script src="assets/js/reception-arrived-collect.js?v=integ-20261121-2"></script>
 <script src="assets/js/peer-handover.js?v=zero-handover-20261125-2"></script>
@@ -336,7 +345,7 @@
 <script src="assets/js/training-videos.js?v=tips-coach-20261122-1"></script>
 <script src="assets/js/tips-coach.js?v=handover-choice-20261124-1"></script>
 <script src="assets/js/usage-heatmap.js?v=heatmap-20261114-1"></script>
-<script src="assets/js/dashboard-help.js?v=help-322-308f-316-vezeeta-20261127-1"></script>
+<script src="assets/js/dashboard-help.js?v=help-330-int-20261127-1"></script>
 <script src="assets/js/workforce-prices.js?v=hr-requests-polish-20261126-1"></script>
 <script src="assets/js/training-course-data.js?v=training-gahar-20261119-1"></script>
 <script src="assets/js/training-evaluation.js?v=training-center-20261119-8"></script>
@@ -344,7 +353,7 @@
 <script src="assets/js/service-mapping-review.js?v=contracts-workbench-20261029-1"></script>
 <script src="assets/js/price-list-governance.js?v=contract-activation-20261123-1"></script>
 <script src="assets/js/service-search-picker.js?v=contracts-workbench-20261029-1"></script>
-<script src="assets/js/contract-price-workspace.js?v=batch-rows-compact-20261127-1"></script>
+<script src="assets/js/contract-price-workspace.js?v=finish-resumable-20261127-1"></script>
 <script src="assets/js/price-name-review.js?v=price-name-review-20261123-1"></script>
 <script src="assets/js/hr-payroll-workspace.js?v=weekly-off-20261120-1"></script>
 <script src="assets/js/center-master-review.js?v=offer-price-lists-20261124-1"></script>

@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2053,
-    "labels": 1490,
-    "files": 167,
-    "groups": 1620
+    "definitions": 2070,
+    "labels": 1506,
+    "files": 170,
+    "groups": 1636
   },
   "fields": [
     {
@@ -3034,6 +3034,126 @@
       "text_sha256": "b9b5a4422cd034c88a121628568f0ec30c825d0c67785efa6f9980f52e4b2037"
     },
     {
+      "file": "employee-debt.js",
+      "label": "الموظف (المديونية عليه)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "dc5d2c5c87b2c202fd331d01a113e8682b471041e240e14f3642b596cab5bd6a"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "مرة واحدة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "33329f4ad44bfa07ce8a804cf03ee7cebce8084bca45d70d3072f277704cf028"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "أقساط",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "7e2233e4fc3ef4ba132502641e9373fdf8e6dbd9c0c2ce846a54bd4a3a974c13"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "عدد الشهور",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "a6f52d48577eca8a8379f2f18fd74b3f94384afcc5eff267f732304a9e2fe7eb"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "أول خصم من مرتب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "94c65e2378b4aa48753188516d0ad4a11e4e705a062d5ac1e6eccb811eb1332b"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "مثلاً: كشف ابن الموظف — يتخصم من المرتب",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "b1f6737d1b570187860c748354737c15cdadc0489b51575f290a6d82cf7e4ce1"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "السبب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "رقم الزيارة أو اسم المريض أو المبلغ",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "741f6110a6804e37ad8e6073e7138908d22a896bf6b20afab39d762bf06e33bc"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "دوّر على الإيصال",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "118799970c81be931441b23a3b54e6c7ee912b23e580e2f34f4196a8d2e2a303"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "الإيصال النقدي",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "4f3ddff34be9c03addf8b556966e15385337d60b45335d95c5eb288cf6524969"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "اسم الموظف أو رقم الزيارة أو اللي طلب",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "a81d8c6904614b6216bc3145f1953ece74411009c55b83c51ac9e82ec38268dc"
+    },
+    {
+      "file": "employee-debt.js",
+      "label": "دوّر في الطلبات",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "employee-debt",
+      "text_sha256": "98c86ab2b6c4bd1b6ecb6876d44ad25e4ece46d64abe9cfb9e3277347086fc8d"
+    },
+    {
       "file": "employee-performance.js",
       "label": "فترة المتابعة",
       "name": "",
@@ -5220,6 +5340,16 @@
       "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
     },
     {
+      "file": "finance-day-movements.js",
+      "label": "دوّر باسم المريض أو رقم الملف أو الدكتور",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "accounting",
+      "article": "finance-day-movements",
+      "text_sha256": "dc366ff4ea8992795a2c7da9c5f367833a7472c75298a980d711c971a6050236"
+    },
+    {
       "file": "finance-doctor-accounts.js",
       "label": "ابحث باسم الدكتور",
       "name": "",
@@ -5776,6 +5906,30 @@
       "tab": "accounting",
       "article": "payroll",
       "text_sha256": "669c60e3e98e88413748b15f4bfe6ce2a8b41879ff5cec62d3c16c111a806140"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "القرار على كل العقود المعلّقة",
+      "name": "approval",
+      "kind": "helper",
+      "forms": [
+        "مراجعة "
+      ],
+      "tab": "accounting",
+      "article": "doctor-contracts-layout",
+      "text_sha256": "90e904651c1c6681fcb83f67620c97cb22b7c0c3992167ff168b5a221ffe61a8"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "سبب القرار (مطلوب للرفض)",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة "
+      ],
+      "tab": "accounting",
+      "article": "doctor-contracts-layout",
+      "text_sha256": "a413342fa010ed8abd57f30064c3ad0336915841316ef67a3c2393c5d3010b78"
     },
     {
       "file": "finance-doctors.js",
@@ -19632,6 +19786,26 @@
       "tab": "tasks",
       "article": "tasks-guide",
       "text_sha256": "d2eea2754a97cb6aed022894d7a712ecefa0457e5a9d6bbe451a8973b2a2d5c2"
+    },
+    {
+      "file": "select-search.js",
+      "label": "بحث في القايمة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "select-search",
+      "text_sha256": "de23351f2013cf8eb0cd4bb3f2f8214e7c2b374eb07d437170ee1385b3406f3b"
+    },
+    {
+      "file": "select-search.js",
+      "label": "اكتب للبحث…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "select-search",
+      "text_sha256": "ba0efd05817436dcaa09a0736cb4499de505c7908133590808464212cc49c675"
     },
     {
       "file": "service-mapping-review.js",

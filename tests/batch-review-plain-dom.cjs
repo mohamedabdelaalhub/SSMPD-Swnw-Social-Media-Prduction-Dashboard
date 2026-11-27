@@ -1,12 +1,12 @@
 // «مراجعة دفعة» in plain words (owner «طبّق شكل مراجعة الملف» 2026-11-27): tiles, one primary button, renamed advanced
 // actions (old names kept visible), the ✕ close (rule 10). Live-workspace payloads, mocked RPC.
 const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsdom');
-async function open(rows,{confirm=true}={}){const dom=new JSDOM('<main></main><button data-name-review>مراجعة أسماء الجهات</button>',{runScripts:'outside-only',url:'https://example.test'}),w=dom.window,d=w.document,calls=[];let reviewOpened=false;
+async function open(rows,{confirm=true,failReview=0}={}){const dom=new JSDOM('<main></main><button data-name-review>مراجعة أسماء الجهات</button>',{runScripts:'outside-only',url:'https://example.test'}),w=dom.window,d=w.document,calls=[];let reviewOpened=false;
 d.querySelector('[data-name-review]').onclick=()=>{reviewOpened=true;};w.confirm=()=>confirm;w.SSMPDAuth={currentAdmin:{id:'owner'}};w.SSMPDRoles={canModuleAction:()=>true};w.SSMPDToast={show:()=>{}};
 const services=[{id:'s1',name:'كشف باطنة',canonical_code:'S1',category:'الباطنة',active:true},{id:'s2',name:'سونار بطن',canonical_code:'S2',category:'الأشعة',active:true}];
 const l={id:'l',name:'قائمة أسعار نقابة اختبار',status:'draft',created_by:'owner',can_edit:true,revision:9,version:1,issue_year:2026,application_year:2026},batch={id:'b',list_id:'l',status:'draft',revision:2,filename:'نقابة.xlsx',operation:'append',rows};
 const data={lists:[l],items:[],sections:[],contracts:[],services,aliases:[],proposals:[]};
-w.SSMPDDb={client:{rpc:async(fn,args)=>{if(fn==='price_lists_workspace')return {data};if(fn==='price_import_workspace')return {data:{batches:[batch],audit:[]}};calls.push(Object.assign({fn},args));if(fn==='price_service_mapping_command')return {data:{list_revision:20+calls.length,batch_revision:30+calls.length}};return {data:'ok'};}}};
+w.SSMPDDb={client:{rpc:async(fn,args)=>{if(fn==='price_lists_workspace')return {data};if(fn==='price_import_workspace')return {data:{batches:[batch],audit:[]}};calls.push(Object.assign({fn},args));if(fn==='price_service_mapping_command'){if(failReview&&calls.filter(c=>c.fn===fn).length===failReview)return {error:{message:'السطر مرفوض للاختبار'}};return {data:{list_revision:20+calls.length,batch_revision:30+calls.length}};}return {data:'ok'};}}};
 for(const n of ['workforce-prices','price-import-reader','service-mapping-review','service-search-picker','contract-price-workspace'])w.eval(fs.readFileSync('assets/js/'+n+'.js','utf8'));
 const tick=async()=>{for(let i=0;i<5;i++)await new Promise(r=>setTimeout(r,0));};w.SSMPDContractPrices.render(d.querySelector('main'),'center');await tick();d.querySelector('[data-pi=open]').click();await tick();d.querySelector('[data-pi=batch]').click();await tick();
 return {w,d,calls,tick,reviewOpened:()=>reviewOpened,dom};}
@@ -34,6 +34,18 @@ const row=(o)=>Object.assign({name:'بند',code:'',category:'',unit:'',price:10
  assert.equal(JSON.stringify(t.calls[2].p_payload.indexes),'[1]');assert.equal(t.calls[2].p_payload.service_id,'s2');
  const last=t.calls.at(-1);assert.equal(last.p_payload.id,'b');assert.equal(last.p_payload.list_id,'l');assert.equal(last.p_payload.revision,t.calls[2].p_payload.batch_revision+1);
  assert.equal(d.querySelector('.wp-modal [data-brp]'),null,'window closed after finishing');t.dom.window.close();
+ // 1c) a row is refused half-way: the error names the row, rows before it stay saved, and «خلّصت» resumes from it
+ t=await open([row({name:'كشف',service_id:'s1',confirmed:true}),row({name:'سونار',service_id:'s2',confirmed:true}),row({review_status:'deferred'})],{failReview:2});d=t.d;
+ d.querySelector('[data-pi=finish]').click();await t.tick();
+ assert.deepEqual(t.calls.map(c=>c.p_action||c.p_payload.action),['batch','source_review','source_review']);
+ assert.equal(t.calls[0].p_payload.rows[1].finish_pending,true,'rows waiting for «خلّصت» are marked so they still count as linked');
+ assert(d.querySelector('.wp-modal [role=alert]').textContent.includes('وقفت عند السطر رقم 2 «سونار»'),'error names the row');
+ assert.equal(d.querySelector('[data-pi=finish]').disabled,false);t.dom.window.close();
+ // …reopened as saved on the server: row 1 done, row 2 still waiting → counted as linked, nothing left, «خلّصت» does only row 2
+ t=await open([row({name:'كشف',service_id:'s1',confirmed:true,review_status:'approved'}),row({name:'سونار',service_id:'s2',confirmed:false,finish_pending:true}),row({review_status:'deferred'})]);d=t.d;
+ assert.equal(d.querySelector('[data-brp-tile="linked"] b').textContent,'2');assert.equal(d.querySelector('[data-brp-tile="left"] b').textContent,'0');
+ d.querySelector('[data-pi=finish]').click();await t.tick();
+ assert.deepEqual(t.calls.map(c=>c.p_action||c.p_payload.action),['batch','source_review','discard_batch']);assert.equal(JSON.stringify(t.calls[1].p_payload.indexes),'[1]');t.dom.window.close();
  // 1b) rows already linked through «مراجعة أسماء الجهات» (review_status approved) → just close the file
  t=await open([row({service_id:'s1',confirmed:true,review_status:'approved'}),row({review_status:'deferred'})]);d=t.d;
  d.querySelector('[data-pi=finish]').click();await t.tick();assert.deepEqual(t.calls.map(c=>c.p_action||c.p_payload.action),['discard_batch']);assert.equal(t.calls[0].p_payload.revision,2);t.dom.window.close();
@@ -49,5 +61,5 @@ const row=(o)=>Object.assign({name:'بند',code:'',category:'',unit:'',price:10
  // 4) all linked, nothing deferred → finish uses the existing save + apply path
  t=await open([row({service_id:'s1',confirmed:true}),row({service_id:'s2',confirmed:true})]);d=t.d;
  d.querySelector('[data-pi=finish]').click();await t.tick();assert.deepEqual(t.calls.map(c=>c.p_action),['batch','apply_batch']);t.dom.window.close();
- console.log('PASS batch review in plain words: tiles, «خلّصت» = discard_batch (or apply when all linked), «كمّل» jumps to name review, renamed advanced actions with old names, ✕ close');
+ console.log('PASS batch review in plain words: tiles, «خلّصت» = discard_batch (resumes after a refused row) (or apply when all linked), «كمّل» jumps to name review, renamed advanced actions with old names, ✕ close');
 })().catch(e=>{console.error(e);process.exitCode=1;});
