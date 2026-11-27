@@ -12992,13 +12992,13 @@
     },
     {
       "file": "reception-payer-kind.js",
-      "label": "رقم موافقة التغطية *",
+      "label": "رقم موافقة التغطية (للخدمات بس — الكشف مش محتاج)",
       "name": "",
       "kind": "label",
       "forms": [],
       "tab": "reception_services",
       "article": "reception-payer-kind",
-      "text_sha256": "3352bc48f3261b42daa98bdf30da3d0c86fddcd859267219364f819fda4cedf0"
+      "text_sha256": "8105f322867c6c01c31dc0fb6be01518695fffdc71f3007ea631db28e3e8546e"
     },
     {
       "file": "reception-payer-kind.js",
