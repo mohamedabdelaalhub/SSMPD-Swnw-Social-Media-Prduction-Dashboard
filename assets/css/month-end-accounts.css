@@ -6,3 +6,7 @@
 .mea .rdr-st.bad{background:#fbe7e3;color:#D0402A}
 .mea .rdr-st.wait{background:#fdeee6;color:#b0461a}
 .mea-modal .modal{max-width:760px}
+/* booking platforms — period audit (help 306) */
+.mea .mea-pos{color:#2F7D5C;font-weight:700}
+.mea .mea-neg{color:#D0402A;font-weight:700}
+.mea .rdr-st.mea-plat{background:#EFE5FF;color:#6600FF}
