@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2120,
-    "labels": 1549,
+    "definitions": 2122,
+    "labels": 1551,
     "files": 175,
-    "groups": 1676
+    "groups": 1677
   },
   "fields": [
     {
@@ -5182,6 +5182,26 @@
       "tab": "accounting",
       "article": "payroll",
       "text_sha256": "63bae1cb31e3da8fdbe7bbad1a910ab74efa25e9f910b257e1417c5f7f3e66aa"
+    },
+    {
+      "file": "finance-controls.js",
+      "label": "دوّر باسم الخزنة أو الموظف",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "accounting",
+      "article": "cash-case-settlement",
+      "text_sha256": "23758d0657a7f22360ea045e93722db57e19a70fcba91562e1b6b94ba6037686"
+    },
+    {
+      "file": "finance-controls.js",
+      "label": "دوّر باسم الخزنة أو الموظف…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "accounting",
+      "article": "cash-case-settlement",
+      "text_sha256": "23758d0657a7f22360ea045e93722db57e19a70fcba91562e1b6b94ba6037686"
     },
     {
       "file": "finance-controls.js",
