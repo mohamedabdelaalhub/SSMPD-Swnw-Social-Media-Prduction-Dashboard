@@ -376,7 +376,7 @@ begin
    where ag.provider_id = pr and ag.status = 'active' and current_date between ag.valid_from and ag.valid_to and clinic_reception.consult_kind(s.name) = 'K' limit 1;
   insert into _r values ('his «كشف» percent', k_rate is not null, coalesce(k_rate::text, 'no كشف agreement — the paid follow-up falls back to the «متابعة» agreement'));
   -- a test patient linked to a unified archive file (public.patients), like every real patient — arrival refuses otherwise
-  insert into public.patients(full_name, phone, created_by) values ('مريض اختبار تراجع متابعة', '010' || lpad((floor(random() * 1e8))::bigint::text, 8, '0'), me) returning id into person;
+  insert into public.patients(full_name, phone, age, created_by) values ('مريض اختبار تراجع متابعة', '010' || lpad((floor(random() * 1e8))::bigint::text, 8, '0'), 30, me) returning id into person;
   insert into clinic_reception.patients(workspace_id, patient_id, file_no, name, phone, created_by)
     select w, id, coalesce(patient_code, ref), full_name, phone, me from public.patients where id = person returning id into pat;
   -- reads of clinic_reception.* happen as the owner role ONLY; the impersonated user (authenticated) just calls the public RPCs, like the browser
