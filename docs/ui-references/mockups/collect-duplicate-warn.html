@@ -1,0 +1,81 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تنبيه التحصيل المكرر — تصور</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:20px 12px;color:#16212E}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));align-items:stretch}
+.card{align-content:start}
+.eyebrow{grid-column:1/-1;margin:0;font-size:12.5px;color:#5b6577;line-height:1.8}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:16px;display:grid;gap:12px;box-shadow:0 12px 30px rgba(15,54,157,.10);position:relative}
+.tag{position:absolute;top:-10px;inset-inline-start:14px;background:#F15A22;color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.head{background:#0F369D;color:#fff;border-radius:12px;padding:12px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.x{background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer}
+.f{display:grid;gap:6px;font-size:13px}
+.f input,.f select,.f textarea{font:inherit;padding:10px 12px;border:1px solid #CBD5E1;border-radius:10px;min-width:0}
+.alert{border:2px solid #F15A22;background:#FFF4EE;border-radius:12px;padding:12px;display:grid;gap:10px}
+.alert p{margin:0;font-size:13.5px;line-height:1.9}
+.alert b{color:#9b2c1c}
+.info{border:2px solid #0F369D;background:#EEF3FF;border-radius:12px;padding:12px;display:grid;gap:10px}
+.info p{margin:0;font-size:13.5px;line-height:1.9}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row .btn{flex:1;min-width:140px}
+.btn{font:inherit;border-radius:10px;padding:10px 12px;border:1px solid #CBD5E1;background:#fff;cursor:pointer;font-weight:700}
+.btn.pri{background:#0F369D;color:#fff;border-color:#0F369D}
+.btn.ok{background:#2F7D5C;color:#fff;border-color:#2F7D5C}
+.btn.warn{background:#fff;color:#9b2c1c;border-color:#F15A22}
+.sub{font-size:12px;color:#5b6577;line-height:1.8;margin:0}
+.rc{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;font-size:13px;background:#fff;border:1px solid #F3C9B8;border-radius:10px;padding:8px 10px}
+.rc span{color:#5b6577}
+.amt{font-size:20px;font-weight:700;color:#0F369D}
+.req{color:#D0402A}
+table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{border-bottom:1px solid #E3E8F2;padding:6px;text-align:start}
+.wide{grid-column:1/-1}
+</style></head><body><div class="wrap">
+<p class="eyebrow">تصور فقط (بيانات تجريبية، مش مريضة حقيقية). الحالة اللي حصلت: المريضة دفعت 50 مرة واحدة — اتسجلت الساعة 1:47 «رصيد مقدم» (RC-38)، وبعدها الساعة 5:41 اتحصّلت تاني على الحقنة (RC-41) → السيستم 100 والدرج 50. التنبيهات التلاتة دي بتطلع <b>قبل الحفظ</b>، والسيرفر نفسه بيرفض لو الشاشة اتعدّت، زي حارس «من ثانية» الموجود.</p>
+
+<section class="card"><span class="tag">١ — المريض ليه رصيد</span>
+ <div class="head">تحصيل — مريضة تجريبية — حقنة — باقي 50 <button class="x" aria-label="قفل">✕</button></div>
+ <div class="alert">
+  <p>⚠ <b>المريضة ليها رصيد مقدم 50 ج</b> اتدفع النهارده الساعة <b>1:47</b> (إيصال <b>RC-38</b> — نقدي — مازن).<br>غالباً الفلوس دي هي نفسها. استخدم الرصيد للفاتورة دي بدل تحصيل جديد؟</p>
+  <div class="row"><button class="btn ok">استخدم الرصيد (50 ج)</button><button class="btn warn">ده دفع جديد فعلاً</button></div>
+  <p class="sub">«استخدم الرصيد» = نفس «استخدام رصيد سابق للمريض» الموجود: الفاتورة تتقفل من الرصيد، ومفيش إيصال جديد ولا فلوس جديدة في الدرج.</p>
+ </div>
+ <label class="f">المبلغ<input value="50" disabled></label>
+ <p class="sub">لو داس «ده دفع جديد فعلاً» ↓</p>
+ <label class="f"><span>ليه ده دفع جديد؟ <b class="req">*</b></span><textarea rows="2" placeholder="مثلاً: المريضة دفعت تاني قدامي — الرصيد القديم لخدمة تانية"></textarea></label>
+ <div class="row"><button class="btn pri">حفظ التحصيل</button><button class="btn">رجوع</button></div>
+ <p class="sub">نفس التنبيه في: تحصيل فاتورة، «حصّل» على الزيارة، تحصيل أكتر من فاتورة، الباكدج. السبب بيتكتب على الإيصال ويظهر للمراجعة.</p>
+</section>
+
+<section class="card"><span class="tag">٢ — تحصيل مشابه النهارده</span>
+ <div class="head">تأكيد قبل الحفظ <button class="x" aria-label="قفل">✕</button></div>
+ <div class="alert">
+  <p>⚠ <b>فيه تحصيل اتعمل النهارده لنفس المريضة</b>:</p>
+  <div class="rc"><b>RC-38</b><span>1:47 م · نقدي · مازن · رصيد مقدم</span><b>50 ج</b></div>
+  <p>نفس المبلغ (50). اتأكد إن المريضة دفعت مرتين فعلاً قبل ما تكمّل.</p>
+  <div class="row"><button class="btn ok">لأ، ده نفس الدفع — رجوع</button><button class="btn warn">أيوه، دفعت مرتين — كمّل</button></div>
+ </div>
+ <p class="sub">بيطلع لو في <b>نفس اليوم</b> لنفس المريض إيصال: بنفس المبلغ، أو على نفس الفاتورة، أو على نفس الخدمة — مش بس آخر دقيقتين زي دلوقتي. «كمّل» محتاج سبب ويتكتب على الإيصال «تحصيل تاني متأكد منه — الإيصال السابق RC-38».</p>
+</section>
+
+<section class="card"><span class="tag">٣ — «حصّل من مريض» وعنده فواتير</span>
+ <div class="head">حصّل من مريض (رصيد مقدم) <button class="x" aria-label="قفل">✕</button></div>
+ <div class="info">
+  <p>ℹ المريضة عندها <b>زيارة مفتوحة النهارده</b> فيها فواتير مستحقة:</p>
+  <table><tr><th>الفاتورة</th><th>الخدمة</th><th>الباقي</th></tr><tr><td>INV-112</td><td>حقنة</td><td>50</td></tr></table>
+  <p>حصّل على فاتورة الزيارة بدل رصيد مقدم؟</p>
+  <div class="row"><button class="btn ok">حصّل على فاتورة الزيارة</button><button class="btn">لأ، رصيد مقدم فعلاً</button></div>
+ </div>
+ <label class="f">المبلغ<input value="50"></label>
+ <label class="f"><span>سبب الرصيد المقدم <b class="req">*</b></span><input placeholder="مثلاً: مقدم جلسة الأسبوع الجاي"></label>
+ <p class="sub">«حصّل على فاتورة الزيارة» بيفتح نافذة «حصّل» على الزيارة نفسها (كل فواتيرها متعلّمة). لو اختار رصيد مقدم فعلاً، السبب إجباري.</p>
+</section>
+
+<section class="card wide"><span class="tag">٤ — تصليح اللي حصل (المريضة: RC-38 زيادة)</span>
+ <div class="head">إيصال مكرر بالغلط <button class="x" aria-label="قفل">✕</button></div>
+ <table>
+  <tr><th></th><th>الطريق</th><th>بيظهر إزاي</th><th>محتاج إيه</th></tr>
+  <tr><td>أ</td><td><b>استرداد عادي</b> (موجود النهارده)</td><td>«استرداد رصيد المريض» 50 نقدي خارج من الدرج — الأرقام بتتظبط (السيستم 50 = الدرج 50) <b>بس بيبان إن المريضة استلمت فلوس</b> وهي ما استلمتش.</td><td>طلب استرداد على RC-38 + موافقة الحسابات + وردية صرف مفتوحة لطالب الاسترداد.</td></tr>
+  <tr><td>ب ⭐</td><td><b>«إيصال مكرر بالغلط»</b> (جديد — مقترح)</td><td>طلب تصحيح جنب «تصحيح طريقة الدفع» و«إلغاء خدمة بالغلط»: يلغي RC-38 بقيد عكسي، الإيصال يبان «ملغي — مكرر لـ RC-41»، ورصيد المريضة يرجع صفر. <b>مفيش استرداد نقدي في التقارير.</b></td><td>الريسبشن يطلب ويختار الإيصال الأصلي (RC-41)؛ المدير المالي يوافق. بيتقبل بس لو: نفس المريض، نفس اليوم، الرصيد لسه ما اتستخدمش، والمبلغ ≤ الرصيد. لو الوردية اتقفلت: الفرق يتشرح في مراجعة الوردية.</td></tr>
+ </table>
+ <p class="sub">اقتراحي: (ب) للحالة دي وأي تكرار بالغلط بعد كده، و(أ) يفضل للاسترداد الحقيقي لما المريض ياخد فلوسه. لو المالك عايز يقفل حالة المريضة النهارده قبل ما (ب) يتبني: (أ) شغال، ويتكتب في المرجع «تحصيل مكرر بالغلط RC-38 — مفيش فلوس طلعت».</p>
+</section>
+</div></body></html>
