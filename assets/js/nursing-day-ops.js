@@ -87,7 +87,7 @@ function routeNotes(){var h='',ns=staff.nurses||[];['physio','dental'].forEach(f
  return h;}
 /* «اعمل وردية النهارده» (owner 2026-11-27, mockup docs/ui-references/mockups/hr-flex-shifts.html): someone who clocked in with no shift today
    gets a one-day shift from HR or the direct manager (hr_day_shift quick_save; the server decides can_quick). */
-function cairoDay(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+function cairoDay(){if(window.SSMPDBusinessDay)return window.SSMPDBusinessDay.today();/* «يوم العمل» 20261127340000 */return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
 function hhmm(v){var t=v?new Date(v):new Date();var p=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit',hour12:false}).format(t).split(':');var m=+p[0]*60+(+p[1]);m=Math.floor(m/30)*30;return [m,String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')];}
 function openQuick(b){var old=document.querySelector('[data-nd-quick]');if(old)old.remove();var st=hhmm(b.dataset.in),en=Math.min(st[0]+480,1439),ens=String(Math.floor(en/60)).padStart(2,'0')+':'+String(en%60).padStart(2,'0');
  var m=document.createElement('div');m.className='nd-modal';m.dataset.ndQuick=b.dataset.id;m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.setAttribute('aria-label','وردية النهارده');document.body.appendChild(m);

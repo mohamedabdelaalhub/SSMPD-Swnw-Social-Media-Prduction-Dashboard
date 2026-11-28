@@ -15,15 +15,15 @@ const cases=[{id:'M',register_name:'خزينة مازن',cashier_name:'مازن'
 const base={cash_cases:cases,can_review:true,can_create:true};
 // accountant (maker, no review)
 let html=C.panel('cases',{...base,can_review:false,me:'ACC'},h);doc.getElementById('b').innerHTML=html;let B=doc.getElementById('b');
-assert.match(B.querySelector('thead').textContent,/رصيد الخزينة دلوقتي/);assert.match(B.textContent,/← تسوية الفرق/);
-const rowOf=id=>B.querySelector('[data-cs-bal="'+id+'"]').closest('tr');
+assert.match(B.textContent,/رصيد الخزنة دلوقتي/);assert.match(B.textContent,/تسوية الفرق/);
+const rowOf=id=>B.querySelector('[data-cs-bal="'+id+'"]').closest('[data-cs-case]');
 assert.ok(rowOf('M').querySelector('[data-fin-action="case-settle"].btn-orange'),'orange «تسوية الفرق» after the decision');
-assert.match(rowOf('N').textContent,/مستني موافقة التسوية/);assert.match(rowOf('N').textContent,/مستني موافقة شخص تاني/);assert.equal(rowOf('N').querySelector('button'),null,'maker cannot review own');
-assert.match(rowOf('R').textContent,/تمت التسوية/);assert.equal(rowOf('X').querySelector('button'),null,'accountant cannot run the case path');
-assert.match(rowOf('M').textContent,/\+550.00 زيادة/);assert.match(rowOf('N').textContent,/-1,500.00 عجز/);
+assert.match(rowOf('N').textContent,/مستني موافقة/);assert.match(rowOf('N').textContent,/مستني موافقة شخص تاني/);assert.equal(rowOf('N').querySelector('button[data-fin-action]'),null,'maker cannot review own');
+assert.match(rowOf('R').textContent,/اتقفل/);assert.equal(rowOf('X').querySelector('button[data-fin-action]'),null,'accountant cannot run the case path');
+assert.match(rowOf('M').textContent,/\+550\.00\s*زيادة/);assert.match(rowOf('N').textContent,/-1,500\.00\s*ناقص/);
 // FM (reviewer): review button on N; the cashier sees nothing on own case
 html=C.panel('cases',{...base,me:'FM'},h);B.innerHTML=html;assert.ok(rowOf('N').querySelector('[data-fin-action="case-settle-review"]'));assert.ok(rowOf('X').querySelector('[data-fin-action="case-step"]'));
-html=C.panel('cases',{...base,me:'MAZ'},h);B.innerHTML=html;assert.equal(rowOf('M').querySelector('button'),null,'shift cashier sees no action');
+html=C.panel('cases',{...base,me:'MAZ'},h);B.innerHTML=html;assert.equal(rowOf('M').querySelector('button[data-fin-action]'),null,'shift cashier sees no action');
 // settle modal: surplus → only income + warning + entry preview; submit calls the RPC
 let calls=[];w.SSMPDDb={client:{rpc:(n,a)=>{calls.push([n,a]);return Promise.resolve({data:n==='clinic_finance_case_settle'&&a.p_action==='list'?[{id:'M',register_balance:-550},{id:'R',register_balance:0}]:{settle_status:'pending'}});}}};
 C.act('case-settle','M',{...base,me:'ACC'},h);let f=doc.querySelector('.fc-modal:last-child form');

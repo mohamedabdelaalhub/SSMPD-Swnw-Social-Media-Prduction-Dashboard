@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — سعر بيع ثابت بدل نسبة الربح</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}.sub{color:#5B6676;margin:0}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
+.card h2{margin:0;font-size:17px}.card h2 small{display:block;color:#5B6676;font-weight:400;font-size:12px}
+.steps{display:flex;gap:8px;flex-wrap:wrap;font-size:13px}.steps b{border-radius:999px;padding:4px 12px;background:#EEF1F6;color:#3B4658}.steps b.on{background:#0F369D;color:#fff}.steps b.new{background:#FFF1E8;color:#F15A22;border:1px dashed #F15A22}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:10px 8px;border-bottom:1px solid #EEF1F6;white-space:nowrap}th{color:#5B6676;font-weight:400}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}.st.ok{background:#E6F4EC;color:#2F7D5C}.st.wait{background:#FFF1E8;color:#F15A22}.st.blue{background:#E8EEFB;color:#0F369D}
+.btn{border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;background:#0F369D;color:#fff}.btn.ghost{background:#fff;color:#0F369D;border:1px solid #0F369D}.btn.orange{background:#F15A22}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.modal{border:1px solid #E3E8F2;border-radius:16px;overflow:hidden;background:#fff}.mh{background:linear-gradient(135deg,#0F369D,#1E4FC7);color:#fff;padding:14px 18px;font-weight:700;font-size:16px}
+.mb{padding:16px 18px;display:grid;gap:12px}
+.fact{display:grid;grid-template-columns:140px 1fr;gap:6px 12px;font-size:13px}.fact span:nth-child(odd){color:#5B6676}
+.opt{border:2px solid #E3E8F2;border-radius:12px;padding:10px 12px;display:grid;gap:4px}.opt.on{border-color:#0F369D;background:#F5F8FF}.opt b{font-size:14px}.opt small{color:#5B6676}
+.entry{border:1px dashed #C5CDDB;border-radius:12px;padding:10px 12px;font-size:13px;display:grid;gap:4px;background:#FBFCFE}.entry .ln{display:flex;justify-content:space-between;gap:12px}
+.note{font-size:12px;color:#5B6676;margin:0}.warn{background:#FFF7F2;border:1px dashed #F15A22;border-radius:10px;padding:8px 12px;font-size:13px}
+.field{display:grid;gap:4px;font-size:13px}.field i{display:block;border:1px solid #D7DDEA;border-radius:10px;height:38px;background:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pos{color:#2F7D5C;font-weight:700}.neg{color:#D0402A;font-weight:700}
+@media (max-width:760px){.grid{grid-template-columns:1fr}.wrap{padding:14px}table{display:block;overflow-x:auto}.fact{grid-template-columns:110px 1fr}}
+.x{float:left;border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:8px;width:30px;height:30px;font:inherit;font-weight:700}
+.badge{border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;background:#EFE5FF;color:#6600FF}
+.big{font-size:20px;font-weight:700}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.three>div{border:1px solid #E3E8F2;border-radius:12px;padding:10px 12px;display:grid;gap:2px}.three small{color:#5B6676}
+@media (max-width:760px){.three{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<style>.seg{display:inline-flex;border:1px solid #D7DDEA;border-radius:999px;overflow:hidden}.seg b{padding:6px 14px;font-size:13px;color:#3B4658}.seg b.on{background:#0F369D;color:#fff}
+.inp{border:1px solid #D7DDEA;border-radius:10px;height:38px;display:flex;align-items:center;padding:0 12px;font-weight:700;background:#fff}.inp.ro{background:#F3F5F9;color:#5B6676;font-weight:400}
+.info{font-size:13px;color:#2F7D5C;font-weight:700}.danger{background:#FDECEA;border:1px solid #D0402A;color:#D0402A;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700}
+.chip{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;background:#E8EEFB;color:#0F369D}.chip.fx{background:#FFF1E8;color:#F15A22}</style>
+</head><body><div class="wrap">
+<div><span class="tag">تصور — مش متنفذ</span><h1>«سعر بيع ثابت» جنب «نسبة الربح»</h1>
+<p class="sub">لأصناف زي «سكين بروتيكتور»: تكلفتها 10 وسعرها في السوق 50. لما تختار «سعر بيع ثابت» بتكتب السعر بإيدك، ومبيتغيرش لوحده: لا مع فاتورة استلام جديدة، ولا مع تطبيق الهامش الموحّد على كل الأصناف. هامش الربح الفعلي بيبان جنبه للمعلومة بس.</p></div>
+
+<div class="grid">
+<div class="modal"><div class="mh"><button class="x" aria-label="إغلاق">✕</button>تعديل صنف — سكين بروتيكتور (ITM-0000595)</div><div class="mb">
+<div class="fact"><span>آخر تكلفة شراء</span><b>10.00</b></div>
+<div class="field">طريقة التسعير<div class="seg"><b>نسبة ربح %</b><b class="on">سعر بيع ثابت</b></div></div>
+<div class="field">سعر البيع (ثابت)<div class="inp">50.00</div><small class="note">بتكتبه بإيدك — مبيتغيرش مع الاستلام أو الهامش الموحّد</small></div>
+<p class="info">هامش الربح الفعلي: 400% (الربح 40.00 في الوحدة)</p>
+<div class="row"><button class="btn">حفظ</button><button class="btn ghost">رجوع</button></div>
+</div></div>
+
+<div class="modal"><div class="mh"><button class="x" aria-label="إغلاق">✕</button>تعديل صنف — نفس الصنف بنسبة ربح</div><div class="mb">
+<div class="fact"><span>آخر تكلفة شراء</span><b>10.00</b></div>
+<div class="field">طريقة التسعير<div class="seg"><b class="on">نسبة ربح %</b><b>سعر بيع ثابت</b></div></div>
+<div class="field">هامش الربح %<div class="inp">35</div></div>
+<div class="field">سعر البيع (محسوب)<div class="inp ro">13.50</div><small class="note">زي دلوقتي بالظبط — بيتحسب من التكلفة × (1 + النسبة)</small></div>
+<div class="row"><button class="btn">حفظ</button><button class="btn ghost">رجوع</button></div>
+</div></div>
+</div>
+
+<section class="card"><h2>لو السعر الثابت أقل من التكلفة<small>تحذير بس — الحفظ مسموح لو ده قرار مقصود</small></h2>
+<div class="danger">⚠ سعر البيع 8.00 أقل من التكلفة 10.00 — هتخسر 2.00 في كل وحدة</div></section>
+
+<section class="card"><h2>«تسعير الأدوية والمستلزمات»<small>نوع جديد في نفس القايمة: «سعر بيع ثابت»</small></h2>
+<table><thead><tr><th>الصنف</th><th>نوع التسعير</th><th>سعر الشراء</th><th>النسبة / السعر</th><th>سعر البيع</th><th>الهامش الفعلي</th><th></th></tr></thead><tbody>
+<tr><td>سكين بروتيكتور</td><td><span class="chip fx">سعر بيع ثابت</span></td><td>10.00</td><td>50.00 (ثابت)</td><td>50.00</td><td class="pos">400%</td><td><button class="btn ghost">تعديل</button></td></tr>
+<tr><td>شاش طبي</td><td><span class="chip">مستلزمات — سعر الشراء + نسبة</span></td><td>4.00</td><td>35%</td><td>5.40</td><td>35%</td><td><button class="btn ghost">تعديل</button></td></tr>
+</tbody></table>
+<p class="note">«هامش الربح الموحّد ← طبّق على كل الأصناف» بيتخطى الأصناف اللي سعرها ثابت، وبيقول عددهم. وأي تغيير في السعر الثابت بيتسجل في سجل الأسعار باسم اللي غيّره.</p></section>
+</div></body></html>
