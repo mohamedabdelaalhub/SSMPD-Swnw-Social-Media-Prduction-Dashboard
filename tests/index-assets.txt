@@ -80,6 +80,7 @@ assets/css/reception-legacy-package.css
 assets/css/reception-look.css
 assets/css/reception-manual-time.css
 assets/css/reception-minicards.css
+assets/css/reception-no-meter.css
 assets/css/reception-overbook.css
 assets/css/reception-patient-extras.css
 assets/css/reception-payer-kind.css
@@ -232,6 +233,7 @@ assets/js/indicator-reports.js
 assets/js/instinct-assistant.js
 assets/js/inventory-batch-dates.js
 assets/js/inventory-catalog-import.js
+assets/js/inventory-fixed-price.js
 assets/js/inventory-direct-invoice.js
 assets/js/inventory-look.js
 assets/js/inventory-patient-supplies.js
@@ -297,6 +299,7 @@ assets/js/reception-legacy-package.js
 assets/js/reception-look.js
 assets/js/reception-manual-time.js
 assets/js/reception-minicards.js
+assets/js/reception-no-meter.js
 assets/js/reception-overbook.js
 assets/js/reception-patient-documents.js
 assets/js/reception-patient-extras.js
@@ -384,3 +387,4 @@ assets/js/website-requests.js
 assets/js/weekly-plan.js
 assets/js/workflow.js
 assets/js/workforce-prices.js
+assets/js/business-day.js

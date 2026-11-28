@@ -20,7 +20,7 @@
   function num(v) { return Number(v || 0).toLocaleString('en-US', { maximumFractionDigits: 2 }); }
   function roles() { var a = w.SSMPDAuth && w.SSMPDAuth.currentAdmin; if (!a) return []; return w.SSMPDRoles && w.SSMPDRoles.rolesOf ? w.SSMPDRoles.rolesOf(a) : [a.role]; }
   function allowed() { var r = roles(); return ROLES.some(function (x) { return r.indexOf(x) !== -1; }); }
-  function cairoDay(dt) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(dt || new Date()); }
+  function cairoDay(dt) { if (!dt && window.SSMPDBusinessDay) return window.SSMPDBusinessDay.today(); /* «يوم العمل» 20261127340000 */ return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(dt || new Date()); }
   function shift(day, n) { var x = new Date(day + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); }
   function time(iso) { return new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso)); }
   function shortDate(iso) { return new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'numeric' }).format(new Date(iso)); }

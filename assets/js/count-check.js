@@ -86,10 +86,10 @@
     return rpc('clinic_finance_count_check', { p_action: 'attempts', p_payload: { case_ids: ids } }).then(function (rows) {
       (rows || []).forEach(function (r) {
         if (!r.attempts || !r.attempts.length) return; var cell = body.querySelector('[data-cs-bal="' + r.case_id + '"]'); if (!cell) return;
-        var tr = cell.closest('tr'); if (!tr || tr.querySelector('.cc-att')) return;
+        var tr = cell.closest('[data-cs-case]') || cell.closest('tr'); if (!tr || tr.querySelector('.cc-att')) return;
         var line = d.createElement('small'); line.className = 'cc-att';
         line.innerHTML = 'محاولات العد: ' + r.attempts.map(function (a, i) { return '<span class="' + (a.matched ? 'ok' : 'bad') + '">' + (i + 1) + ') <bdi dir="ltr">' + money(a.counted) + '</bdi> ' + esc(stamp(a.at)) + (a.matched ? ' — مطابق' : ' — مش مطابق') + '</span>'; }).join(' ← ');
-        (tr.lastElementChild || tr).appendChild(line);
+        (tr.querySelector('[data-cs-att]') || tr.lastElementChild || tr).appendChild(line);
       });
     }).catch(function () { return null; });
   }
