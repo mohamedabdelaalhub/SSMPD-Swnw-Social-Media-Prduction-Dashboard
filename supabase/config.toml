@@ -125,3 +125,7 @@ verify_jwt = false
 # Machine-to-machine: the new website server posts «اتصل بنا» / الوظايف here with its own X-Website-Request-Secret header;
 # no dashboard user JWT is involved.
 verify_jwt = false
+
+[functions.assistant-answer]
+# «اسأل المساعد» (phase 1): staff JWT checked by the gateway AND inside (staff_assistant_usage_take as the user).
+verify_jwt = true
