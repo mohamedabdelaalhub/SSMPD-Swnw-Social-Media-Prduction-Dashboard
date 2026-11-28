@@ -312,6 +312,7 @@ assets/js/reception-reminders.js
 assets/js/reception-same-patient.js
 assets/js/reception-service-later.js
 assets/js/reception-service-orders.js
+assets/js/collect-visit.js
 assets/js/reception-services.js
 assets/js/reception-shared.js
 assets/js/upload-box.js
