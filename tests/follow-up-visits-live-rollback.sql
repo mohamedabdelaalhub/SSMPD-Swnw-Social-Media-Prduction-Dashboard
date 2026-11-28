@@ -420,10 +420,18 @@ begin
   end if;
   if f is null then return; end if;
   select origin_visit_id into ov_id from clinic_reception.visit_follow_ups where id = f;
+  -- diagnostics (owner role) right before the follow-up booking: why could the book path not find his «متابعة»?
+  insert into _r select 'diag: follow_up_service now / provider active / f.provider = pr', clinic_reception.follow_up_service(w, pr) is not null,
+    coalesce(clinic_reception.follow_up_service(w, pr)::text, 'NULL') || ' | provider active=' || coalesce((select active::text from clinic_reception.providers where id = pr), '?')
+    || ' | f.provider=' || coalesce((select (provider_id = pr)::text from clinic_reception.visit_follow_ups where id = f), '?')
+    || ' | f.workspace=w ' || coalesce((select (workspace_id = w)::text from clinic_reception.visit_follow_ups where id = f), '?');
+  insert into _r select 'diag: «متابعة» rows', true, coalesce(string_agg(code || ' ' || name || ' dept=' || coalesce(department, '') || ' active=' || active
+    || ' kind=' || coalesce(clinic_reception.consult_kind(name), '-') || ' serves=' || clinic_reception.serves_service(pr, department, code)::text, ' ; '), 'none')
+    from clinic_reception.services where workspace_id = w and name like '%متابع%' and department like '%سنان%';
   -- as Mazen: sources + included booking + arrival
   perform set_config('request.jwt.claims', json_build_object('sub', mazen, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
   begin r := public.clinic_reception_follow_up(w, 'sources', jsonb_build_object('patient_id', pat));
-    insert into _r values ('Mazen: sources shows it (3 left)', (r->'follow_ups'->0->>'left')::int = 3, left((r->'follow_ups'->0)::text, 140));
+    insert into _r values ('Mazen: sources shows it (3 left)', (r->'follow_ups'->0->>'left')::int = 3, left((r->'follow_ups'->0)::text, 140) || ' has_service=' || coalesce(r->'follow_ups'->0->>'has_service', '?'));
   exception when others then insert into _r values ('Mazen: sources', false, sqlerrm); end;
   v := null;
   begin
