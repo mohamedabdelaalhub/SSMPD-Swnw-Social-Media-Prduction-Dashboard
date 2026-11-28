@@ -342,11 +342,16 @@ begin
             (p.id = '6e19d8ca-690f-471b-a673-74ab30a20bf3') desc, p.name limit 1;
   insert into _r values ('dental doctor', pr is not null, coalesce((select name || ' — ' || department from clinic_reception.providers where id = pr), 'NONE — no active dental doctor'));
   if pr is null then return; end if;
-  -- live has no «متابعة أسنان» service yet (the owner approves adding it separately): add one INSIDE this transaction (rolled back), in HIS department
+  -- live has no «متابعة أسنان» service yet (the owner approves adding it separately). The reception catalog is rebuilt from the
+  -- price list (public.pricing_services → clinic_reception.sync_catalog deactivates any service with no active, bookable price row),
+  -- so add it the OFFICIAL way, like «الحسابات ← التسعير والخدمات والباكجز ← الخدمات والتسعير ← متاحة للحجز»: a pricing row
+  -- (price 100, margin 0, no supplies, booking code + HIS department + 15 min), then sync. All rolled back.
   if clinic_reception.follow_up_service(w, pr) is null then
-    insert into clinic_reception.services(workspace_id, code, name, department, price, minutes)
-      select w, 'FU-ROLLBACK', 'متابعة أسنان', p.department, 100, 15 from clinic_reception.providers p where p.id = pr;
-    insert into _r values ('test «متابعة أسنان» 100 added in his department (rolled back)', clinic_reception.follow_up_service(w, pr) is not null, null);
+    insert into public.pricing_services(name, base_price, supplies_used, profit_margin_percent, active, created_by, booking_enabled, booking_code, booking_department, booking_minutes)
+      select 'متابعة أسنان', 100, '[]', 0, true, me, true, 'FU-ROLLBACK', p.department, 15 from clinic_reception.providers p where p.id = pr;
+    perform clinic_reception.sync_catalog(w);
+    insert into _r values ('test «متابعة أسنان» 100 added via the price list + sync_catalog (rolled back)', clinic_reception.follow_up_service(w, pr) is not null,
+      coalesce((select detail from clinic_reception.catalog_issues where workspace_id = w and name = 'متابعة أسنان' limit 1), null));
   end if;
   -- the origin service: one he has an active agreement on, else the dearest non-follow-up service he serves
   select s.id into svc from clinic_reception.services s
