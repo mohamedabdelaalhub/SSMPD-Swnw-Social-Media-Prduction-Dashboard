@@ -54,11 +54,18 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px so
    <label>رقم العملية<input placeholder="اكتب رقم العملية"></label>
    <div class="read bad" style="margin-top:2px">⚠️ المبلغ في الصورة <b>350</b> ≠ اللي بتحصّله <b>400</b> — راجع قبل الحفظ (تنبيه بس، مش منع).</div>
   </div>
+  <div class="card"><div class="mh"><h3>٥) فودافون كاش — مفيش رقم عملية</h3><button class="x" aria-label="إغلاق">✕</button></div>
+   <label>طريقة الدفع<select><option>فودافون كاش</option></select></label>
+   <div class="done"><span class="thumb"></span><div><b>✓ الصورة جاهزة</b><small>vf-sms.jpg</small></div><button class="btn" type="button">تغيير</button></div>
+   <label>رقم العملية<input class="filled" value="VF-01012345678-27-11"></label>
+   <div class="read ok">🔎 الإيصال ده مافيهوش رقم عملية، فعملنا مرجع من الصورة: <b dir="ltr">VF</b> + رقم الموبايل اللي حوّل <b dir="ltr">01012345678</b> + التاريخ <b dir="ltr">27-11</b>. راجعه قبل الحفظ.</div>
+   <div class="read wait">لو نفس المرجع اتسجل قبل كده (نفس الرقم حوّل مرتين في نفس اليوم) بيتزود لوحده <b dir="ltr">-2</b> ثم <b dir="ltr">-3</b>… → <b dir="ltr">VF-01012345678-27-11-2</b> — عمره ما بيتكرر.</div>
+  </div>
  </div>
  <div class="card"><h3>إزاي بيختار الرقم</h3>
   <table><thead><tr><th>نوع الإيصال</th><th>بيدوّر على</th><th>مثال</th></tr></thead><tbody>
    <tr><td>إنستا باي (سكرين شوت)</td><td>Reference / رقم المرجع / Transaction ID</td><td dir="ltr">458921736015</td></tr>
-   <tr><td>فودافون كاش / محافظ</td><td>رقم العملية / Transaction ID / رقم المعاملة</td><td dir="ltr">001234567890</td></tr>
+   <tr><td>فودافون كاش / محافظ</td><td>رقم العملية / Transaction ID لو موجود — <b>لو مش موجود</b> (المالك: «تحصيل فودافون كاش مالوش رقم عملية»): رقم الموبايل اللي حوّل + تاريخ التحويل → <span dir="ltr">VF-موبايل-يوم-شهر</span>، ولو اتكرر <span dir="ltr">-2</span>، <span dir="ltr">-3</span>…</td><td dir="ltr">VF-01012345678-27-11</td></tr>
    <tr><td>فيزا — إيصال الماكينة</td><td>RRN أولاً، وبعده Auth Code / Approval</td><td dir="ltr">RRN 331207458812</td></tr>
   </tbody></table>
   <p class="note">لو الرقم ده اتسجل قبل كده على تحصيل تاني، التنبيه الموجود دلوقتي «رقم العملية اتسجل قبل كده» بيظهر زي ما هو. القراية اقتراح بس — الموظف هو اللي بيحفظ، وكل تحصيل بيتسجّل باسمه زي النهارده.</p>
