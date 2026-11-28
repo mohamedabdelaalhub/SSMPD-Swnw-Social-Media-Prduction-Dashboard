@@ -1,6 +1,6 @@
 -- LIVE dry-run (owner 2026-11-28 «موافق على تصليح التحصيل», mockup collect-visit-split.html): «حصّل» on a visit with FIVE open
--- invoices now saves through collect_multi. As MAZEN (reception, auth sub f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb): a temporary
--- collection register + his own shift, one test patient with 5 test invoices (one visit), collect_multi CASH = the visit total
+-- invoices now saves through collect_multi. As MAZEN (reception, auth sub f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb), on HIS real register:
+-- his running shift if he has one, else a shift opened for him by the real clinic_finance_open_shift (rolled back), one test patient with 5 test invoices (one visit), collect_multi CASH = the visit total
 -- (one receipt, 5 allocations, no credit), replay; then a 2nd test patient: 3 invoices, 2 ticked, amount 1,000 → the extra 300
 -- becomes patient credit (the case the screen now warns about). No server change in this PR; nothing is kept (ROLLBACK).
 -- Guard first; summary table LAST.
@@ -18,14 +18,9 @@ declare u uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; me uuid; w uuid; freg 
 begin
   select id into me from public.admins where user_id = u;
   select id into w from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
-  -- setup as postgres: a temporary register (finance-linked) + 2 test patients + invoices
-  perform set_config('request.jwt.claims', json_build_object('sub', (select a.user_id from public.admins a where a.role = 'super_admin' and a.active and a.user_id is not null order by a.id limit 1), 'role', 'authenticated')::text, true);
-  execute 'set local role authenticated';
-  freg := public.clinic_finance_register(ref, 100000);
-  execute 'reset role';
-  insert into clinic_reception.registers(workspace_id, name, direction, finance_register_id) values (w, ref, 'receive', freg) returning id into rreg;
-  insert into clinic_reception.members(workspace_id, admin_id, capabilities) values (w, me, array['view', 'collect'])
-    on conflict (workspace_id, admin_id) do nothing;
+  -- setup as postgres: 2 test patients (+ invoices below); Mazen's register = the register of his latest finance shift
+  select f.register_id into freg from clinic_finance.shifts f where f.cashier_id = me order by f.opened_at desc limit 1;
+  insert into _r values ('Mazen has a real register', freg is not null, coalesce((select name from clinic_finance.registers where id = freg), '—'));
   insert into clinic_reception.patients(workspace_id, file_no, name, phone, created_by) values (w, ref, 'مريض اختبار تراجع', '', me) returning id into pat;
   insert into clinic_reception.patients(workspace_id, file_no, name, phone, created_by) values (w, ref || '-2', 'مريض اختبار تراجع 2', '', me) returning id into pat2;
   for i in 1..5 loop
@@ -37,12 +32,21 @@ begin
     ids2 := ids2 || x;
   end loop;
   tot := (select sum(a) from unnest(amts) a);
-  -- as Mazen
-  perform set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated')::text, true);
-  execute 'set local role authenticated';
+  -- Mazen's running reception shift (status open, not handed over), else open one for him with the real RPC (rolled back)
+  select s.id into sh from clinic_reception.shifts s where s.workspace_id = w and s.cashier_id = me and s.status = 'open' and (to_jsonb(s)->>'ended_at') is null order by s.opened_at desc limit 1;
   begin
-    sh := (public.clinic_reception_command(w, 'shift_open', jsonb_build_object('register_id', rreg), gen_random_uuid())->>'id')::uuid;
-    insert into _r values ('Mazen opens a test shift', sh is not null, sh::text);
+    if sh is not null then insert into _r values ('Mazen''s running shift', true, sh::text);
+    else
+      perform set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated')::text, true);
+      execute 'set local role authenticated';
+      x := public.clinic_finance_open_shift(freg, gen_random_uuid());
+      execute 'reset role';
+      perform clinic_reception.sync_native_links(w);
+      select id into sh from clinic_reception.shifts where workspace_id = w and finance_shift_id = x;
+      insert into _r values ('opened a shift for Mazen on his register (rolled back) + linked', sh is not null, coalesce(sh::text, 'finance shift ' || x));
+    end if;
+    perform set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated')::text, true);
+    execute 'set local role authenticated';
     r := public.clinic_reception_command(w, 'collect_multi', jsonb_build_object('patient_id', pat, 'method', 'cash', 'reference', ref, 'shift_id', sh,
            'amount', tot::text, 'invoice_ids', to_jsonb(ids), 'note', ''), k);
     r2 := public.clinic_reception_command(w, 'collect_multi', jsonb_build_object('patient_id', pat, 'method', 'cash', 'reference', ref, 'shift_id', sh,
