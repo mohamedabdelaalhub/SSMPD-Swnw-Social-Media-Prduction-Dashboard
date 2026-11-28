@@ -210,6 +210,7 @@ assets/js/finance-suppliers.js
 assets/js/finance-today.js
 assets/js/finance-treasury.js
 assets/js/fix-visit.js
+assets/js/reception-follow-up.js
 assets/js/home-charts.js
 assets/js/hr-actions.js
 assets/js/hr-attendance-core.js

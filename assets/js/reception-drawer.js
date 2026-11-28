@@ -42,6 +42,8 @@ var ACT={
   return openReception('appointments').then(function(){return pressWhenReady('[data-rse-spend]','صرف من مصروفات الوردية');});},
  payout:function(){var api=payoutApi();if(api)return Promise.resolve(api());return Promise.resolve(false);},
  fixvisit:function(){var api=fixVisitApi();if(api)return Promise.resolve(api());return Promise.resolve(false);},
+ /* «متابعة» (owner 2026-11-28, reception-follow-up.js): follow-up on a visit / package, included or with the fee */
+ followup:function(){var F=w.SSMPDFollowUp;if(F&&F.open)return Promise.resolve(F.open());return Promise.resolve(false);},
  advance:function(){gotoTab('booking_cash');return pressWhenReady('[data-fin-action="advance-receive"]','مقدم حجز جديد');},
  refund:function(){gotoTab('booking_cash');return pressWhenReady('[data-bcv-advances]','مقدمات الحجز',6000).then(function(){var s=d.querySelector('[data-bcv-advances]');if(s&&s.scrollIntoView)s.scrollIntoView({block:'start',behavior:'smooth'});});},
  peer:function(){var P=w.SSMPDPeerHandover;if(P&&P.openSend)return Promise.resolve(P.openSend());gotoTab('booking_cash');return pressWhenReady('[data-ft-peer]','سلّم كاش لزميل');},
@@ -100,10 +102,10 @@ function mountBar(host){var a=me();if(!host)return Promise.resolve();if(!eligibl
 /* «عايز تعمل كذا؟» — plain sentences that open the action directly */
 var WANT=[['collect','مريض عايز يدفع','كشف، خدمة، أو باقي فاتورة'],['expense','اشتريت حاجة للعيادة من الدرج','مياه، أدوات نظافة، صيانة، إكراميات…'],['advance','مريض بيحجز ودافع عربون','مقدم حجز'],
  ['refund','مريض عايز فلوسه ترجع','استرداد مقدم الحجز'],['payout','حد طالب فلوس من الدرج','دكتور أو مورد أو سلفة'],['peer','هسلّم كاش لزميل','والوردية تفضل مفتوحة'],
- ['end','خلصت ورديتي','العد والتسليم في خطوة واحدة'],['end','الدرج فاضي وعايز أقفل','بصفر وبسبب مكتوب'],['fixvisit','في غلط في زيارة أو حساب مريض','الخدمة، الحجز، الخصم، التحصيل اللي مش ظاهر'],['mydetail','عايز أشوف اللي حصّلته بالتفصيل','كل إيصال ومريض وخصم في ورديتي'],['open_shift','لسه ما فتحتش ورديتي','افتح وردية النهارده']];
+ ['end','خلصت ورديتي','العد والتسليم في خطوة واحدة'],['end','الدرج فاضي وعايز أقفل','بصفر وبسبب مكتوب'],['followup','مريض جاي متابعة','على زيارة أو باقة — مشمولة أو برسوم 100'],['fixvisit','في غلط في زيارة أو حساب مريض','الخدمة، الحجز، الخصم، التحصيل اللي مش ظاهر'],['mydetail','عايز أشوف اللي حصّلته بالتفصيل','كل إيصال ومريض وخصم في ورديتي'],['open_shift','لسه ما فتحتش ورديتي','افتح وردية النهارده']];
 function wantSheet(){var old=d.querySelector('[data-rd-want]');if(old)old.remove();
  var m=d.createElement('div');m.className='rd-sheet';m.setAttribute('data-rd-want','');m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.setAttribute('aria-label','عايز تعمل كذا؟');
- var rows=WANT.filter(function(x){return (x[0]!=='payout'||payoutApi())&&(x[0]!=='fixvisit'||fixVisitApi())&&(x[0]!=='mydetail'||myDetailApi());});
+ var rows=WANT.filter(function(x){return (x[0]!=='payout'||payoutApi())&&(x[0]!=='fixvisit'||fixVisitApi())&&(x[0]!=='followup'||(w.SSMPDFollowUp&&w.SSMPDFollowUp.open))&&(x[0]!=='mydetail'||myDetailApi());});
  m.innerHTML='<div class="rd-sheet-box"><div class="rd-sheet-h"><b>عايز تعمل كذا؟</b><button type="button" class="btn" data-rd-close aria-label="إغلاق">✕</button></div><input type="search" class="rd-sheet-q" placeholder="اكتب اللي عايزه… مثلاً: مصروف" aria-label="دوّر"><div class="rd-sheet-list">'+
   rows.map(function(x){return '<button type="button" data-rd-go="'+x[0]+'"><span>'+esc(x[1])+'<small>'+esc(x[2])+'</small></span><em>←</em></button>';}).join('')+'</div></div>';
  d.body.appendChild(m);var close=function(){m.remove();};

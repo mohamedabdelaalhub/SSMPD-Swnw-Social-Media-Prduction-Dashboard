@@ -40,6 +40,7 @@ jobs:
           node tests/supplies-billable-dom.cjs
           node tests/leads-edit-visible-dom.cjs
           node tests/collect-open-shift-only-dom.cjs
+          node tests/follow-up-visits-sql.cjs
           node tests/hide-supply-cost-sql.cjs
           node tests/hide-supply-cost-screens-dom.cjs
           node tests/collect-visit-split-sql.cjs
