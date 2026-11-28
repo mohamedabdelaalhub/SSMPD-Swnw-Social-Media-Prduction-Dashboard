@@ -301,7 +301,10 @@ function openSection(c,key,after){
 function collectDue(c,a){
  var inv=a&&a.due_invoices&&a.due_invoices[0];if(!inv)return;
  var known=((c.data||{}).invoices||[]).some(function(x){return x.id===inv.id;});
+ /* owner 2026-11-28 (collect-visit.js): «حصّل» collects every open invoice of the visit, not only the first */
+ if(known&&window.SSMPDCollectVisit)window.SSMPDCollectVisit.pending={fixed:inv.id,ids:a.due_invoices.map(function(x){return x.id;})};
  if(known&&base.act&&base.act('collect-invoice',inv.id,c))return;
+ if(window.SSMPDCollectVisit)window.SSMPDCollectVisit.pending=null;
  toast('افتح «التحصيل والمستلزمات» لتحصيل فاتورة '+(inv.invoice_no||''),'error');openSection(c,'operations');
 }
 function accountModal(c,id){

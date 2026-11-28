@@ -41,6 +41,7 @@ jobs:
           node tests/leads-edit-visible-dom.cjs
           node tests/collect-open-shift-only-dom.cjs
           node tests/follow-up-visits-sql.cjs
+          node tests/collect-visit-split-sql.cjs
           node tests/upload-unify-dom.cjs
           node tests/count-check-above-handover.cjs
           node tests/digital-team-navigation.cjs
