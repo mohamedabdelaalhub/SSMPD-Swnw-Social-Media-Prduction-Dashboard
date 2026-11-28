@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2124,
-    "labels": 1552,
-    "files": 176,
-    "groups": 1679
+    "definitions": 2136,
+    "labels": 1558,
+    "files": 177,
+    "groups": 1684
   },
   "fields": [
     {
@@ -12823,6 +12823,126 @@
       "tab": "reception_services",
       "article": "execute-all",
       "text_sha256": "0e93b365ad1eb4fae6240623194cfa71545562719314c308fa5bfce8413d12d6"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "دوّر على المريض",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "follow-up-visits",
+      "text_sha256": "329f1fec47ac6a1944e340afef0bfc0676156b5e08c0db175ec6aa2342ad0235"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "اكتب الاسم أو رقم الملف أو التليفون",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "follow-up-visits",
+      "text_sha256": "329f1fec47ac6a1944e340afef0bfc0676156b5e08c0db175ec6aa2342ad0235"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "المريض",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient",
+      "text_sha256": "34ae74f68692afd35d96b169b7ea58bda8c755399f80e852141385483719cffa"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "اليوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "الساعة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "مثلاً: الدكتور كان مسافر",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "follow-up-visits",
+      "text_sha256": "037cea3685e7b57a0bc02571aba381993e9c5a75a07736beca32c7509306fff7"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "مدّ كام يوم",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "follow-up-visits",
+      "text_sha256": "037cea3685e7b57a0bc02571aba381993e9c5a75a07736beca32c7509306fff7"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "السبب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "لحد",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "follow-up-visits",
+      "text_sha256": "a49c95ec101e83a6631e22c5ffc5060f69e38e06fc955c6bc92f99a5d2aed2fd"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "اسم الخدمة أو الكود أو القسم",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "follow-up-visits",
+      "text_sha256": "8bfa5a537a00a79bff916fa9b9cb1315260211cbad432f01e2b88c431ca44f77"
+    },
+    {
+      "file": "reception-follow-up.js",
+      "label": "دوّر على الخدمة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "follow-up-visits",
+      "text_sha256": "8bfa5a537a00a79bff916fa9b9cb1315260211cbad432f01e2b88c431ca44f77"
     },
     {
       "file": "reception-follow-ups.js",
