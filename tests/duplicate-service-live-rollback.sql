@@ -13,6 +13,7 @@ do $g$ begin
 end $g$;
 begin;
 create temp table _r(n serial, step text, ok boolean, detail text) on commit drop;
+grant select, insert on _r to authenticated; grant usage on sequence _r_n_seq to authenticated;   -- the steps run as Mazen (authenticated) write their rows here
 
 do $$ begin
   if to_regprocedure('public.clinic_reception_command(uuid,text,jsonb,uuid)') is null
