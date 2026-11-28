@@ -17,10 +17,11 @@ function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){retur
 function money(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م';}
 function r2(n){return Math.round(n*100)/100;}
 function client(){return w.SSMPDDb&&w.SSMPDDb.client;}
+function clr(i){i.value='';if(i.closest&&i.closest('[data-ub]'))i.dispatchEvent(new Event('change'));}
 function upload(ws,file){var c=client();if(!c||!c.storage)return Promise.reject(new Error('تعذر الاتصال'));
  return Promise.resolve(c.auth.getUser()).then(function(r){var u=r&&r.data&&r.data.user;if(!u)throw new Error('سجّل دخولك تاني');
   var ext=(String(file.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'jpg',
-      rnd=(w.crypto&&w.crypto.randomUUID)?w.crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2),path=u.id+'/'+ws+'/'+rnd+'.'+ext;
+      rnd=(w.crypto&&w.crypto.randomUUID)?w.crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2),path=u.id+'/'+ws+'/'+((w.SSMPDUploadBox&&w.SSMPDUploadBox.key(file))||rnd+'.'+ext);
   return Promise.resolve(c.storage.from('booking-discount-cards').upload(path,file,{upsert:false,contentType:file.type||undefined})).then(function(x){if(x&&x.error)throw x.error;return path;});});}
 /* fresh on every form (a contract can be activated / stopped any time); one call per service + day inside a form */
 function options(ws,service,day){var c=client();if(!c)return Promise.reject(new Error('تعذر الاتصال'));
@@ -41,7 +42,7 @@ function decorate(form,quiet){var sel=form&&form.elements&&form.elements.service
  if(lost&&!quiet){sel.value='';sel.dispatchEvent(new Event('change',{bubbles:true}));}
  sel.dispatchEvent(new Event('rx-svc-refresh'));}
 function seg(val){return '<div class="rpk-seg" role="radiogroup" aria-label="طريقة الدفع">'+KINDS.map(function(k){return '<label class="rpk-opt"><input type="radio" name="payer_kind" value="'+k[0]+'" required'+(k[0]===val?' checked':'')+'><span>'+esc(k[1])+'<small>'+esc(k[2])+'</small></span></label>';}).join('')+'</div>';}
-function fileRow(label,hidden,attr,optional){return '<div class="rbd-row"><span class="rbd-l">'+label+(optional?' <small class="rpk-opt-note">'+optional+'</small>':' <b class="rpk-req">*</b>')+'</span><input type="file" accept="image/*,application/pdf" capture="environment" '+attr+'><input type="hidden" name="'+hidden+'"'+(optional?'':' required')+'><small class="rbd-up" role="status"></small></div>';}
+function fileRow(label,hidden,attr,optional){return '<div class="rbd-row"><span class="rbd-l">'+label+(optional?' <small class="rpk-opt-note">'+optional+'</small>':' <b class="rpk-req">*</b>')+'</span>'+(w.SSMPDUploadBox?w.SSMPDUploadBox.html({accept:'image/*,application/pdf',attr:attr,kind:'payer',compact:true,live:false,take:'📷 صوّر',wrap:'data-ub-label="'+String(label).replace(/[<>"]/g,'')+'" data-ub-max="8388608"'}):'<input type="file" accept="image/*,application/pdf" capture="environment" '+attr+'>')+'<input type="hidden" name="'+hidden+'"'+(optional?'':' required')+'><small class="rbd-up" role="status"></small></div>';}
 /* ctx: {data, workspace, appointment, order, only} — only: limit the choices (after arrival on a contract visit) */
 function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.elements.service_id)return null;
  ctx=ctx||{};var data=ctx.data||{},ws=ctx.workspace,ap=ctx.appointment||null,cur=ap&&ap.payer_kind||'';
@@ -100,9 +101,9 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rpk]')||!form.ele
    entNote.textContent='دوّر على الخدمة تحت باسم سونو أو اسم '+nm+' أو كودها — اللي مش في قايمة أسعار '+nm+' بتظهر رمادي ومش بتتختار';decorate(form);})
   .catch(function(e){if(my!==entSeq)return;entKey='';entNote.textContent=(e&&e.message)||'تعذر تحميل قايمة أسعار الجهة';});}
  function syncUnion(){var other=uSel.value===OTHER;uOther.hidden=!other;E.payer_union_other.required=other;E.payer_union_other.disabled=uBox.disabled||!other;E.payer_union.value=other?'':uSel.value;}
- function wireFile(sel,hidden,msg){var f=box.querySelector(sel),h=E[hidden],up=f.parentNode.querySelector('.rbd-up');
-  f.addEventListener('change',function(ev){ev.stopPropagation();var x=f.files&&f.files[0];h.value='';if(!x)return;if(x.size>8*1024*1024){up.textContent='الصورة أكبر من ٨ ميجا — صوّرها تاني';f.value='';return;}
-   up.textContent='جاري رفع الصورة…';upload(ws,x).then(function(p){h.value=p;up.textContent='اترفعت ✓';}).catch(function(e){up.textContent='الرفع ما نجحش: '+((e&&e.message)||'حاول تاني');f.value='';});});
+ function wireFile(sel,hidden,msg){var f=box.querySelector(sel),h=E[hidden],up=(f.closest('.rbd-row')||f.parentNode).querySelector('.rbd-up');
+  f.addEventListener('change',function(ev){ev.stopPropagation();var x=f.files&&f.files[0];h.value='';if(!x)return;if(x.size>8*1024*1024){up.textContent='الصورة أكبر من ٨ ميجا — صوّرها تاني';clr(f);return;}
+   up.textContent='جاري رفع الصورة…';upload(ws,x).then(function(p){h.value=p;up.textContent='اترفعت ✓';}).catch(function(e){up.textContent='الرفع ما نجحش: '+((e&&e.message)||'حاول تاني');clr(f);});});
   h.addEventListener('invalid',function(){up.textContent=msg;});return up;}
  var cUp=wireFile('[data-rpk-cfile]','payer_proof_path','ارفع صورة الموافقة'),uUp=wireFile('[data-rpk-ufile]','payer_card_path','ارفع صورة الكارنيه');
  uSel.addEventListener('change',syncUnion);

@@ -65,7 +65,7 @@ function boardTable(rows){
   if(!rows.length)return '<p>لا توجد طلبات.</p>';
   return '<div class="rx-table"><table><thead><tr><th>المريض</th><th>التليفون</th><th>الخدمة</th><th>المزوّد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>'+rows.map(function(r){
     var acts=nextStatuses(r.status).map(function(s){return '<button type="button" class="btn" data-so-status="'+esc(s)+'" data-order="'+esc(r.order_id)+'">'+esc(STATUS[s]||s)+'</button>';}).join('');
-    if(r.status==='done')acts+='<input type="file" data-so-file="'+esc(r.order_id)+'" accept="application/pdf,image/jpeg,image/png"><button type="button" class="btn" data-so-upload="'+esc(r.order_id)+'">رفع التقرير</button>';
+    if(r.status==='done')acts+=(w.SSMPDUploadBox?w.SSMPDUploadBox.html({attr:'data-so-file="'+esc(r.order_id)+'"',accept:'application/pdf,image/jpeg,image/png',kind:'result',compact:true,take:'📷 صوّر التقرير',pick:'📄 اختار الملف',wrap:'data-ub-label="'+esc(r.service||'')+'"'+(r.file_no?' data-ub-file-no="'+esc(r.file_no)+'"':'')}):'<input type="file" data-so-file="'+esc(r.order_id)+'" accept="application/pdf,image/jpeg,image/png">')+'<button type="button" class="btn" data-so-upload="'+esc(r.order_id)+'">رفع التقرير</button>';
     if(r.status==='report_uploaded'||r.status==='patient_notified')acts+='<button type="button" class="btn" data-so-open="'+esc(r.order_id)+'">فتح التقرير</button>'+(r.status==='report_uploaded'?'<button type="button" class="btn" data-so-notify="'+esc(r.order_id)+'">إشعار المريض بالإيميل</button>':'');
     return '<tr><td>'+esc(r.patient_name)+'</td><td dir="ltr">'+esc(r.phone)+'</td><td>'+esc(r.service)+'</td><td>'+esc(r.provider)+'</td><td>'+esc(STATUS[r.status]||r.status)+'</td><td>'+acts+'</td></tr>';
   }).join('')+'</tbody></table></div>';
@@ -159,7 +159,7 @@ function board(c,all){
       var order=t.dataset.soUpload,input=root.querySelector('[data-so-file="'+order+'"]'),file=input&&input.files&&input.files[0];
       try{validateReportFile(file);}catch(err){note(err.message);return;}
       var rand=(w.crypto&&w.crypto.randomUUID?w.crypto.randomUUID():String(Date.now())).slice(0,8);
-      var path=reportPath(c.workspace,order,file.name,file.type,rand);
+      var ukey=w.SSMPDUploadBox&&w.SSMPDUploadBox.key(file),path=ukey?c.workspace+'/'+order+'/'+ukey:reportPath(c.workspace,order,file.name,file.type,rand);
       note('جاري رفع التقرير…');
       p=sha256Hex(file).then(function(sum){return db.serviceOrderReportUpload(c.workspace,order,path,file,sum);}).then(function(){note('تم رفع التقرير وظهر للمريض في ملفه. جاري إشعار المريض…');
         return db.serviceOrderNotify(c.workspace,order).then(function(r){note('تم رفع التقرير. '+notifyMessage(r));},function(){note('تم رفع التقرير. تعذر إشعار المريض — جرّب زر الإشعار');});});

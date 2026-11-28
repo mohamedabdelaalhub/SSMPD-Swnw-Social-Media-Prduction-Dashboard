@@ -89,7 +89,12 @@ function bind(form,n){var f=form&&(form.tagName==='FORM'?form:form.querySelector
   if(!setFile(input,file))oops('المتصفح ده مش بيدعم اللصق — استخدم «اختار صورة»');}
  box.querySelector('[data-pp-take]').onclick=function(){cam.click();};box.querySelector('[data-pp-pick]').onclick=function(){input.click();};
  cam.addEventListener('change',function(){var file=cam.files&&cam.files[0];cam.value='';take(file);});
- input.addEventListener('change',paint);
+ /* owner 2026-11-28 «تتسمي اوتوماتيك باسم مناسب» (upload-box.js): تحصيل_<file no>_<amount>_<method>_<dd-mm>_<HH-MM>; the name follows the form */
+ var UB=window.SSMPDUploadBox;if(UB){box.setAttribute('data-ub-kind','collect');if(n)box.setAttribute('data-ub-n',String(n));}
+ function quietSet(file){try{var dt=new DataTransfer();dt.items.add(file);input.files=dt.files;return true;}catch(_){return false;}}
+ function nameIt(){var file=input.files&&input.files[0];if(!UB||!file)return file;var nf=UB.named(box,file);return nf!==file&&quietSet(nf)?nf:file;}
+ input.addEventListener('change',function(){box.__ubAt=null;nameIt();paint();});
+ if(UB)['input','change'].forEach(function(t){f.addEventListener(t,function(e){if(e.target&&e.target.type==='file')return;var file=input.files&&input.files[0];if(!file||!UB.ours(file.name))return;var nf=nameIt(),sm=done.querySelector('small');if(nf&&sm)sm.textContent=nf.name+' · '+kb(nf.size||0)+' — هتترفع مع الحفظ';});});
  input.addEventListener('invalid',function(){oops('ارفع صورة إيصال الماكينة أو التحويل');});
  f.addEventListener('paste',function(e){if(box.hidden)return;var items=(e.clipboardData&&e.clipboardData.items)||[];for(var i=0;i<items.length;i++){if(items[i].kind==='file'){var file=items[i].getAsFile();if(file&&okFile(file)){e.preventDefault();take(file.name?file:new File([file],'screenshot.png',{type:file.type||'image/png'}));return;}}}});
  ['dragenter','dragover'].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.add('is-over');});});
@@ -106,7 +111,7 @@ async function upload(workspace,method,reference,file){
  if(file.type&&TYPES.indexOf(file.type)<0)throw new Error('ارفع صورة (JPG / PNG / WEBP) أو PDF');
  var ref=String(reference||'').trim();if(ref.length<3)throw new Error('اكتب رقم العملية من إيصال الماكينة أو رسالة التحويل');
  var me=window.SSMPDAuth&&window.SSMPDAuth.currentAdmin&&window.SSMPDAuth.currentAdmin.id;if(!me)throw new Error('سجّل الدخول من جديد');
- var client=window.SSMPDDb.client,path=workspace+'/'+me+'/'+(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2))+'.'+ext(file);
+ var client=window.SSMPDDb.client,path=workspace+'/'+me+'/'+((window.SSMPDUploadBox&&window.SSMPDUploadBox.key(file))||(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2))+'.'+ext(file));
  var up=await client.storage.from('payment-proofs').upload(path,file,{upsert:false,contentType:file.type||undefined});if(up&&up.error)throw new Error('تعذر رفع الصورة — جرّب تاني');
  var r=await client.rpc('clinic_reception_payment_proof',{p_workspace:workspace,p_reference:ref,p_path:path});if(r&&r.error)throw r.error;
  return ref;}
