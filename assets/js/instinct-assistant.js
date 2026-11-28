@@ -199,7 +199,7 @@
   }
   function pollBadge() { return rpc('instinct_context').then(function (c) { setBadge(c.unread); }).catch(function () {}); }
   function startBadge() {
-    if (badgeTimer) return;
+    if (badgeTimer || (w.SSMPD_CONFIG && w.SSMPD_CONFIG.flags && w.SSMPD_CONFIG.flags.legacyAssistantsOff === true)) return;
     var a = w.SSMPDAuth && w.SSMPDAuth.currentAdmin;
     if (document.body && w.SSMPDRoles && w.SSMPDRoles.isInstinctOnly) document.body.classList.toggle('ins-ai-only', !!a && w.SSMPDRoles.isInstinctOnly(a));
     if (!a || !w.SSMPDRoles || !w.SSMPDRoles.canSeeTab(a, 'instinct')) { setTimeout(startBadge, 1500); return; }

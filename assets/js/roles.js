@@ -131,6 +131,8 @@
 
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
+      /* Paused by owner order 2026-11-28 (flags.legacyAssistantsOff in config.js): set it to false to bring «مساعد إنستنكت» back. */
+      if (tab === "instinct" && (window.SSMPD_CONFIG&&window.SSMPD_CONFIG.flags&&window.SSMPD_CONFIG.flags.legacyAssistantsOff===true)) return false;
       if (Roles.isInstinctOnly(admin)) return tab === "instinct" && admin.active !== false;
       if(tab==='reception_services'&&Roles.isNursingDayOnly(admin))return true;
       if(tab==='human_resources')return admin.active!==false&&!!(admin.id||admin.role);
