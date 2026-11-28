@@ -79,3 +79,7 @@
 
 /* Catalog import is a local preview until explicit confirmation. */
 .ic-import .ic-modal{width:min(1120px,100%);max-width:1120px}.ic-tools{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:16px 0}.ic-tools>label{display:grid;gap:6px;flex:1;min-width:180px}.ic-tools :is(input,select){min-width:0;max-width:100%;padding:9px;border:1px solid #D5DEEE;border-radius:10px;background:#fff;font:inherit}.ic-scroll{overflow-x:auto;max-width:100%;border:1px solid #E4E9F2;border-radius:12px}.ic-scroll table{min-width:850px;background:#fff}.ic-scroll small{display:block;font-size:11px;color:#6B7788;margin-top:5px}.ic-scroll td{vertical-align:top}.ic-scroll .btn{font-size:12px;margin:3px}.ic-error{color:#B2321F}.ic-unit-extra{display:contents}.ic-wide{grid-column:1/-1;font-size:12px;color:#6B7788;line-height:1.9}.ic-import [role=status]{white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:600px){.ic-tools>label{width:100%;min-width:0;flex-basis:100%}.ic-tools input,.ic-tools select{font-size:16px}.ic-import .modal{padding:14px}}
+/* «سعر بيع ثابت» (inventory-fixed-price.js) */
+.ifp{grid-column:1/-1;display:grid;gap:6px}.ifp-seg{display:flex;gap:16px;flex-wrap:wrap;border:1px solid #D7DDEA;border-radius:12px;padding:8px 12px;margin:0}
+.ifp-seg legend{font-size:13px;color:#5B6676;padding:0 4px}.ifp-info{margin:0;font-size:13px;color:#2F7D5C;font-weight:700}
+.ifp-warn{margin:0;background:#FDECEA;border:1px solid #D0402A;color:#D0402A;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700}

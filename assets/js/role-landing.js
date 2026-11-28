@@ -15,7 +15,7 @@ function me(){return w.SSMPDAuth&&w.SSMPDAuth.currentAdmin;}
 function can(a,tab){var r=R();return !!(r&&a&&r.canSeeTab(a,tab));}
 function any(a,list){var r=R();return !!(r&&a&&r.hasAnyRole&&r.hasAnyRole(a,list));}
 function rpc(n,args){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c)return Promise.resolve(null);return Promise.resolve(c.rpc(n,args||{})).then(function(r){return !r||r.error?null:r.data;}).catch(function(){return null;});}
-function cairoDay(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+function cairoDay(){if(window.SSMPDBusinessDay)return window.SSMPDBusinessDay.today();/* «يوم العمل» 20261127340000 */return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
 function dateWords(){return new Intl.DateTimeFormat('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',weekday:'long',day:'numeric',month:'long'}).format(new Date());}
 function nursingOnly(a){var r=R();return !!(r&&r.isNursingDayOnly&&r.isNursingDayOnly(a));}
 
