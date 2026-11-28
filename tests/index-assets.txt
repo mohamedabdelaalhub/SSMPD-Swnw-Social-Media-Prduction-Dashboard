@@ -288,6 +288,7 @@ assets/js/reception-booking-discount.js
 assets/js/reception-booking-plus.js
 assets/js/reception-bridge.js
 assets/js/reception-collect-once.js
+assets/js/duplicate-service.js
 assets/js/reception-collect-review.js
 assets/js/reception-controls.js
 assets/js/reception-day-capacity.js
