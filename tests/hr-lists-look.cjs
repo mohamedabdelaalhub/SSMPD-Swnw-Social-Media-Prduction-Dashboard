@@ -1,6 +1,6 @@
 // Owner 2026-11-25 («طبق الكل», mockup docs/ui-references/mockups/hr-lists-mobile.html): HR «العهد» one primary action per row + «⋯» (loss/damage red, last),
 // coloured status chips, dates in words; «التأمينات» shows all by default with a pinned «إخطارات تأمين قرب ميعادها» banner and a red «إيقاف الاشتراك»;
-// «الموظفون» cards carry a status chip and people who left fold into «انتهت علاقتهم». Real browser, real CSS, HR manager, 1280/390. Same RPCs.
+// «الموظفون» cards carry a status chip and people who left fold into «انتهت خدمتهم». Real browser, real CSS, HR manager, 1280/390. Same RPCs.
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict'),{chromium}=require('playwright');
 const people=[{id:'p1',admin_id:'hr',full_name:'منى أحمد السيد',code:'EMP-1',kind:'employee',department:'الاستقبال',status:'active',revision:2},{id:'p2',admin_id:'a2',full_name:'هالة مصطفى',code:'EMP-2',kind:'employee',status:'on_leave',revision:2},
  {id:'p3',admin_id:null,full_name:'أحمد علي',code:'EMP-3',kind:'employee',status:'needs_setup',revision:1},{id:'p4',admin_id:null,full_name:'ياسمين خالد',code:'EMP-4',kind:'employee',status:'ended',revision:1}];
@@ -45,8 +45,8 @@ const ins={can_manage:true,can_view_all:true,today:'2026-11-25',people:[{id:'p1'
  if(process.env.HRL_QA)await page.screenshot({path:process.env.HRL_QA+'/hrl-ins-'+width+'.png',fullPage:true});
  // ---- people
  await page.click('[data-hr-group=people]');await page.click('[data-hr-open=people]');await page.waitForSelector('.wp-grid [data-wp="person"]:visible');
- const chips=await page.locator('.wp-grid [data-wp="person"] .hrl-chip').allInnerTexts();assert(chips.includes('يعمل')&&chips.includes('إجازة')&&chips.includes('ملف مبدئي'),'chips '+chips);
- const ended=page.locator('details.hrl-ended');assert.equal(await ended.count(),1);assert((await ended.locator('summary').innerText()).includes('انتهت علاقتهم (1)'));assert.equal(await ended.locator('[data-wp="person"]').isVisible(),false);
+ const chips=await page.locator('.wp-grid [data-wp="person"] .hrl-chip').allInnerTexts();assert(chips.includes('يعمل')&&chips.includes('إجازة')&&chips.includes('ملف ناقص'),'chips '+chips);
+ const ended=page.locator('details.hrl-ended');assert.equal(await ended.count(),1);assert((await ended.locator('summary').innerText()).includes('انتهت خدمتهم (1)'));assert.equal(await ended.locator('[data-wp="person"]').isVisible(),false);
  await ended.locator('summary').click();assert(await ended.locator('[data-wp="person"]').isVisible());
  if(process.env.HRL_QA)await page.screenshot({path:process.env.HRL_QA+'/hrl-people-'+width+'.png',fullPage:true});
  assert(!/[\u0660-\u0669]/.test(await page.locator('body').innerText())); // non-HR viewer: no due banner, no row actions (the server refuses hr_insurance_command for them)
@@ -54,4 +54,4 @@ const ins={can_manage:true,can_view_all:true,today:'2026-11-25',people:[{id:'p1'
  await page.evaluate(()=>{var b=document.querySelector('[data-hr-open=insurance]');b&&b.click();});await page.waitForSelector('[data-insurance-table] tbody tr');
  assert.equal(await page.locator('[data-insurance-due]').count(),0,'no banner for non-HR');assert.equal(await page.locator('[data-insurance-table] .hrl-danger').count(),0,'no stop for non-HR');
  assert.deepEqual(errors,[]);await page.close();}
- console.log('PASS hr lists look 1280/390: custody primary + ⋯ (red loss/damage), chips, dates in words, phone cards, primary runs the return flow; insurance all-by-default + due banner opens the form + red stop; people status chips + «انتهت علاقتهم» fold.');}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
+ console.log('PASS hr lists look 1280/390: custody primary + ⋯ (red loss/damage), chips, dates in words, phone cards, primary runs the return flow; insurance all-by-default + due banner opens the form + red stop; people status chips + «انتهت خدمتهم» fold.');}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

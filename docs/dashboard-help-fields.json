@@ -21855,13 +21855,13 @@
     },
     {
       "file": "workforce-prices.js",
-      "label": "شهر المتابعة",
+      "label": "الشهر المعروض",
       "name": "month",
       "kind": "helper",
       "forms": [],
       "tab": "human_resources",
       "article": "hr-my-file",
-      "text_sha256": "2d04e605e0b45fcad17459cdc4a5b14ae11032aaaf38eac1322071655fe1a18e"
+      "text_sha256": "dd9219eaf1e663b992ce8779541f06e930eb44826a922cddbbf87a90d88a63c0"
     },
     {
       "file": "workforce-prices.js",
@@ -21936,7 +21936,7 @@
     },
     {
       "file": "workforce-prices.js",
-      "label": "العلاقة بالمركز",
+      "label": "نوع التعاقد",
       "name": "kind",
       "kind": "helper",
       "forms": [
@@ -21945,7 +21945,7 @@
       ],
       "tab": "human_resources",
       "article": "hr-manage",
-      "text_sha256": "68006ec020d1d63da824a4895257d5bf0c6e1e4bf3a59be3b29aed42847fc285"
+      "text_sha256": "029bb921dd51d1bbe2d6f44a4ba3945418cb5a22dc09f36d55be069ed02974b5"
     },
     {
       "file": "workforce-prices.js",

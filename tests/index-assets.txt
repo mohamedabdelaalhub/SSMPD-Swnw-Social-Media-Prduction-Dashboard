@@ -44,6 +44,7 @@ assets/css/hr-lists-look.css
 assets/css/hr-look.css
 assets/css/hr-mission.css
 assets/css/hr-nav-groups.css
+assets/css/hr-people-list.css
 assets/css/hr-presence.css
 assets/css/hr-work-schedule.css
 assets/css/i18n.css
@@ -221,6 +222,7 @@ assets/js/hr-navigation.js
 assets/js/hr-offboarding.js
 assets/js/hr-overtime.js
 assets/js/hr-payroll-workspace.js
+assets/js/hr-people-list.js
 assets/js/hr-presence.js
 assets/js/hr-shift-swaps.js
 assets/js/hr-shifts.js

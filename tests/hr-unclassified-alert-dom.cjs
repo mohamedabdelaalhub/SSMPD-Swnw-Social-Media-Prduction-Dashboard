@@ -1,4 +1,4 @@
-// HR home «محتاج منك النهارده»: a «ملفات مش متصنفة» row (kind 'unclassified', not ended) whose «افتح» opens the people list already filtered to those files.
+// HR home «محتاج متابعتك»: a «ملفات مش متصنفة» row (kind 'unclassified', not ended) whose «افتح» opens the people list already filtered to those files.
 const fs = require('fs'), assert = require('node:assert/strict'), makeEnv = require('./helpers/att-hub-env.cjs');
 const mk = (id, name, kind, status) => ({ id, admin_id: null, full_name: name, code: 'EMP-' + id, kind, department: 'قسم', status, revision: 1, leave_balance: 30, phone: '' });
 const people = [mk('1', 'موظف عادي', 'employee', 'active'), mk('2', 'غير مصنف أول', 'unclassified', 'active'), mk('3', 'غير مصنف ثان', 'unclassified', 'needs_setup'), mk('4', 'غير مصنف منتهي', 'unclassified', 'ended'), mk('5', 'طبيب', 'doctor', 'active')];

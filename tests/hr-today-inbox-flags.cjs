@@ -1,4 +1,4 @@
-// «محتاج منك النهارده»: optional rows follow the server flags (is_hr / can_manage / can_review), not the role; a refused read
+// «محتاج متابعتك»: optional rows follow the server flags (is_hr / can_manage / can_review), not the role; a refused read
 // (hr_offboarding_workspace raises «ليس لديك صلاحية» for non-HR) shows nothing and never toasts.
 const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
 (async()=>{const dom=new JSDOM('<main></main>',{url:'https://t.invalid',runScripts:'outside-only'}),w=dom.window,d=w.document,toasts=[];w.SSMPDToast={show:m=>toasts.push(m)};
