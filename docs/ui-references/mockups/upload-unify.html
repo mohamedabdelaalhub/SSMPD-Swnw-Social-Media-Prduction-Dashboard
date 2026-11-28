@@ -31,7 +31,7 @@ h2.row{grid-column:1/-1;margin:8px 0 0;font-size:16px;color:#0F369D}
 .foot{display:flex;gap:8px;justify-content:flex-start}
 .tbl{grid-column:1/-1;background:#fff;border-radius:14px;padding:12px;overflow:auto}
 .tbl table{width:100%;border-collapse:collapse;font-size:13px}.tbl th,.tbl td{border-bottom:1px solid #E6EBF3;padding:8px;text-align:right;vertical-align:top}.tbl th{color:#0F369D}
-bdi{overflow-wrap:anywhere;word-break:break-all}.card,.tbl{min-width:0}.tbl td{overflow-wrap:anywhere}
+bdi{overflow-wrap:anywhere}.card,.tbl{min-width:0}.tbl td{overflow-wrap:anywhere}
 </style></head><body><div class="wrap">
 <p class="eyebrow">تصور بس — مفيش تنفيذ قبل موافقة المالك. الفكرة: كل خانة رفع «صورة إيصال / فاتورة / مستند» في الاستقبال تبقى بنفس شكل وطريقة خانة الصورة في «تسجيل تحصيل»: زرار <b>📷 صوّر</b> (يفتح الكاميرا على الموبايل) + <b>🖼 اختار صورة</b> + لصق سكرين شوت بـ Ctrl+V أو سحب وإفلات — وبعد الاختيار تظهر الصورة مصغّرة مع «✓ الصورة جاهزة» وزرار «تغيير». نفس القواعد: صور JPG/PNG/WEBP أو PDF لحد 10 ميجا. مفيش حاجة بتتشال: نفس الخانة ونفس الإجباري/الاختياري ونفس طريقة الحفظ — الشكل بس اللي بيتوحّد.</p>
 
@@ -89,12 +89,12 @@ bdi{overflow-wrap:anywhere;word-break:break-all}.card,.tbl{min-width:0}.tbl td{o
 <h2 class="row">٤) التسمية التلقائية — أي صورة تترفع أو تتلزق تتسمّى لوحدها</h2>
 <section class="card"><header><h3>تسجيل تحصيل — بعد اللصق</h3><span class="tag a">جديد</span><button class="x" aria-label="قفل">✕</button></header>
 <span class="lbl">صورة إيصال الماكينة أو التحويل</span>
-<div class="pp-done"><span class="th">🧾</span><div><b>✓ الصورة جاهزة</b><small><bdi>تحصيل_P-2026-000123_1400_فيزا_27-11_21-40.jpg</bdi> · 640 KB</small></div><button class="btn">تغيير</button></div>
+<div class="pp-done"><span class="th">🧾</span><div><b>✓ الصورة جاهزة</b><small><bdi dir="rtl">تحصيل_P-2026-000123_1400_فيزا_27-11_21-40.jpg</bdi><br>640 KB — هتترفع مع الحفظ</small></div><button class="btn">تغيير</button></div>
 <p class="note">بدل «image.png» أو «IMG_2041.jpg» يظهر الاسم الجديد على طول قبل الحفظ، وبنفس الاسم يتحمّل لما حد يدوس «عرض / تحميل» بعدين.</p>
 </section>
 <section class="card"><header><h3>شكل الاسم في كل مكان</h3><span class="tag a">جديد</span><button class="x" aria-label="قفل">✕</button></header>
 <div class="tbl" style="padding:0"><table><thead><tr><th>المكان</th><th>الاسم</th></tr></thead><tbody>
-<tr><td>تحصيل</td><td><bdi>تحصيل_رقم-الملف_المبلغ_الطريقة_اليوم-الشهر_الساعة-الدقيقة</bdi></td></tr>
+<tr><td>تحصيل</td><td><bdi>تحصيل_رقم-الملف_المبلغ_الطريقة_التاريخ_الوقت</bdi></td></tr>
 <tr><td>مقدم حجز</td><td><bdi>مقدم-حجز_رقم-الملف_المبلغ_الطريقة_التاريخ_الوقت</bdi></td></tr>
 <tr><td>مصروف وردية</td><td><bdi>مصروف-وردية_البند_المبلغ_التاريخ_الوقت</bdi></td></tr>
 <tr><td>إيصال طبيب ممضي</td><td><bdi>إيصال-طبيب_اسم-الطبيب_المبلغ_التاريخ_الوقت</bdi></td></tr>
