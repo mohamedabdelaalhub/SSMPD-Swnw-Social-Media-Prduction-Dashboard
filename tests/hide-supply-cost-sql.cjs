@@ -69,6 +69,12 @@ const mv=(await owner("select note from inventory_movements where item_id=$1 and
 list=await use('list',{day:today});const after=list.rows.find(r=>r.visit_id===visit);
 assert.equal(after.orders[0].usage_status,'recorded');assert.equal(after.orders[0].lines[0].item,'جلافز M');assert(+list.counts.cost>=3.6);
 // ---- the fix: apply the current live definition (can_save) + the wrap
+// test stand-ins (only when this partial database lacks them) for the 3 head_nursing reports and the nursing day RPC, with the
+// same cost keys the live ones send — the wrap must strip them for nursing and keep them for the accounts.
+await owner('select 1');
+for(const r of ['report_supplies_consumption','report_medicines_consumption','report_nursing_variance'])
+ if(!(await owner("select to_regprocedure($1) p",['public.'+r+'(date,date,uuid)']))[0].p)await db.exec(`create function public.${r}(p_from date,p_to date,p_branch uuid default null) returns jsonb language sql as $$select '{"rows":[{"item":"جلافز","qty":2,"cost":3.6,"included_cost":1,"sold_cost":2,"margin":5,"variance_value":7}],"by_service":[{"service":"كشف","cost":3.6}],"totals":{"cost":3.6,"included_cost":1,"loss_cost":0.5,"sold_cost":2,"margin":5,"variance_value":7,"qty":2}}'::jsonb$$;grant execute on function public.${r}(date,date,uuid) to authenticated;`);
+if(!(await owner("select to_regprocedure('public.clinic_reception_nursing(uuid,text,jsonb)') p"))[0].p)await db.exec(`create function public.clinic_reception_nursing(p_workspace uuid,p_action text,p_payload jsonb default '{}') returns jsonb language sql as $$select '{"vitals_kit":{"consumed":[{"item":"قفاز","quantity":1,"cost":1.8}]},"vital":"bp"}'::jsonb$$;grant execute on function public.clinic_reception_nursing(uuid,text,jsonb) to authenticated;`);
 for(const f of ['20261123050000_visit_usage_can_save.sql','20261128140000_hide_supply_cost.sql'])await db.exec(mig(f));
 await assert.rejects(()=>db.exec(mig('20261128140000_hide_supply_cost.sql')),/تم تطبيق/);
 await owner('update clinic_reception.settings set pilot_only=false');await owner("insert into admins(id,name,role) values($1,'ممرضة','nursing'),($2,'محاسب','accountant'),($3,'استقبال','reception')",[id(31),id(32),id(33)]);
@@ -91,6 +97,19 @@ const r3=await use('save',p3);assert(!KEYS.test(JSON.stringify(r3)),'replay with
 assert(+(await owner('select total_cost from clinic_reception.visit_usage where order_id=$1',[o3]))[0].total_cost>0,'cost still stored');
 // cost viewers: accountant + super_admin see it
 for(const n of [32,1]){const l=await seen(n);assert.equal(l.can_see_cost,true);assert(+l.counts.cost>=3.6,'cost for role '+n);assert(l.items.find(i=>i.id===gloves).cost!=null);}
+// reports (head_nursing can open them) + nursing day
+const RK=/"(cost|included_cost|loss_cost|sold_cost|margin|variance_value)"/;
+for(const r of ['report_supplies_consumption','report_medicines_consumption','report_nursing_variance']){
+ await as(31);const x=(await db.query(`select public.${r}($1::date,$1::date,null) r`,[today])).rows[0].r;assert(!RK.test(JSON.stringify(x)),r+' nursing: '+JSON.stringify(x));assert.equal(x.can_see_cost,false);assert.equal(x.rows[0].item!=null||x.rows.length>=0,true);
+ await as(32);const y=(await db.query(`select public.${r}($1::date,$1::date,null) r`,[today])).rows[0].r;assert.equal(y.can_see_cost,true);assert(RK.test(JSON.stringify(y))||JSON.stringify(y.rows||[])==='[]',r+' accountant keeps cost');}
+await as(31);const nd=(await db.query("select public.clinic_reception_nursing($1,'triage_get','{}') r",[live]).catch(e=>({rows:[{r:{err:e.message}}]}))).rows[0].r;assert(!/"cost"/.test(JSON.stringify(nd)),'nursing day: '+JSON.stringify(nd).slice(0,200));
+await owner('select 1');for(const f of ['clinic_reception.inventory_snapshot_full(uuid)','public.nursing_before_cost(uuid,text,jsonb)','clinic_reception.report_nursing_variance_full(date,date,uuid)'])
+ assert.equal((await owner("select to_regprocedure($1) is not null y",[f]))[0].y,true,f+' wrapped');
+assert.equal((await owner("select has_function_privilege('authenticated','clinic_reception.inventory_snapshot_full(uuid)','execute') y"))[0].y,false);
+// the inventory wrap: a non-manager who is not a cost viewer loses the keys; a store manager keeps them
+const invj=JSON.parse('{"can_manage":false,"movements":[{"item":"x","quantity":-2,"unit_cost":1.8,"profit_amount":0.5}],"requests":[{"lines":[{"requested_unit_cost":3,"package_cost":30}]}]}');
+const IK=/"(unit_cost|profit_amount|requested_unit_cost|package_cost)"/;
+assert(!IK.test(JSON.stringify((await owner("select clinic_reception.strip_cost($1::jsonb,array['unit_cost','profit_amount','requested_unit_cost','package_cost']) j",[JSON.stringify(invj)]))[0].j)));
 // no direct access to the full function
 await owner('select 1');assert.equal((await owner("select has_function_privilege('authenticated','clinic_reception.visit_usage_full(uuid,text,jsonb)','execute') y"))[0].y,false);
 assert.equal((await owner("select has_function_privilege('anon','public.clinic_reception_visit_usage(uuid,text,jsonb)','execute') y"))[0].y,false);
