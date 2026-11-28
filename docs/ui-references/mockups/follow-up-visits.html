@@ -23,7 +23,7 @@ h2.row{grid-column:1/-1;margin:6px 0 0;font-size:16px;color:#0F369D}
 .tcard .t{display:flex;justify-content:space-between;gap:8px;font-size:13px}
 .tbl{overflow:auto}.tbl table{width:100%;border-collapse:collapse;font-size:12.5px}.tbl th,.tbl td{border-bottom:1px solid #E6EBF3;padding:7px;text-align:right;vertical-align:top}.tbl th{color:#0F369D;white-space:nowrap}
 code{font-size:11.5px;direction:ltr;unicode-bidi:embed;background:#F1F4F8;border-radius:5px;padding:0 4px}
-.qs{grid-column:1/-1}
+.qs{grid-column:1/-1}.tbl td .btn{white-space:nowrap}@media(min-width:1080px){.wide2{grid-column:span 2}}
 </style></head><body><div class="wrap">
 <p class="eyebrow">تصور بس — مفيش تنفيذ قبل موافقة المالك (أسماء وأرقام تجريبية). المالك: «الاسنان بيبقى عندهم خدمات بتستدعي ان المريض يدفع فلوسه يحضر الزيارة وبعد كده يجي متابعات … المتابعة دي يا اما بتبقى برسوم يا اما بتبقى من ضمن الباكج … علشان الريسبشن لما يدوس متابعة يبقى مفهوم ومتسجل ده بيتابع على انهي زيارة ومع انهي طبيب ودفع ايه». <b>الموجود دلوقتي:</b> الباقات (زيارات محددة وصلاحية)، و«تذكيرات المتابعة» (تذكير بميعاد مش زيارة)، وخدمات اسمها «متابعة» بسعر عادي — بس <b>مفيش ربط بين المتابعة والزيارة الأصلية</b>، ولا عدد متابعات مشمولة، ولا رسوم متابعة.</p>
 
@@ -96,11 +96,40 @@ code{font-size:11.5px;direction:ltr;unicode-bidi:embed;background:#F1F4F8;border
 <p class="note">بيعتمد على الموجود: الباقات (العدد والصلاحية بتاعتها زي ما هي)، عقود الأطباء (النسبة)، قايمة الأسعار (رسوم المتابعة = خدمة «متابعة …» بسعرها)، و«تذكيرات المتابعة» (اقتراح حجز). مفيش حاجة موجودة بتتشال.</p>
 </section>
 
-<section class="card qs"><header><h3>أسئلة للمالك قبل التنفيذ</h3><button class="x" aria-label="قفل">✕</button></header>
-<p class="note">١) مين يحدد عدد المتابعات المشمولة ورسومها لكل خدمة: الحسابات ولا مدير المركز ولا الطبيب؟<br>
-٢) المتابعة المشمولة (بـ 0 ج): الطبيب ياخد عليها حاجة (مبلغ ثابت مثلاً) ولا صفر لأنه أخد نصيبه من الخدمة الأصلية؟<br>
-٣) لو الصلاحية خلصت بيوم أو اتنين: تتحسب برسوم على طول، ولا المدير يقدر يوافق يمدّها؟<br>
-٤) المتابعة لازم تكون مع نفس الطبيب، ولا أي طبيب في نفس القسم (زي ما في التصوّر)؟<br>
-٥) رسوم المتابعة واحدة لكل الأسنان (100) ولا تختلف حسب الخدمة؟</p>
+<section class="card"><header><h3>٦) لما الخدمة الأصلية تتنفّذ — المتابعات بتتفتح لوحدها</h3><span class="tag n">جديد</span><button class="x" aria-label="قفل">✕</button></header>
+<div class="tcard"><div class="t"><b>مريض تجريبي</b><span>خلّص 7:10 م</span></div><div class="t"><span>حشو عصب — د. تجريبي</span></div>
+<span class="chip free">اتفتحله 3 متابعات مشمولة — صالحة لحد 27/12</span></div>
+<div class="sum"><span>المتابعة الجاية المقترحة</span><b>بعد 7 أيام (04/12)</b></div>
+<div class="foot"><button class="btn btn-primary">احجز أول متابعة دلوقتي</button><button class="btn">ذكّرني أتصل بيه</button></div>
+<p class="note">«ذكّرني» بيعمل تذكير في «تذكيرات المتابعة» الموجودة مربوط بنفس الزيارة. مفيش حاجة بتتحجز لوحدها من غير الموظف.</p>
+</section>
+<section class="card wide2"><header><h3>٧) ملف المريض — تاب «المتابعات»</h3><span class="tag n">جديد</span><button class="x" aria-label="قفل">✕</button></header>
+<div class="tbl"><table><thead><tr><th>على</th><th>الطبيب</th><th>اتعمل</th><th>فاضل</th><th>لحد</th><th></th></tr></thead><tbody>
+<tr><td>زيارة 206 — حشو عصب</td><td>د. تجريبي</td><td>1</td><td>2 من 3</td><td>27/12</td><td><button class="btn">＋ متابعة</button></td></tr>
+<tr><td>زيارة 188 — خلع</td><td>د. تجريبي</td><td>1</td><td>0 من 1</td><td>16/11</td><td><button class="btn">＋ برسوم</button></td></tr>
+<tr><td>باقة تقويم 12</td><td>د. تجريبي 2</td><td>4</td><td>8 من 12</td><td>30/06/2027</td><td><button class="btn">＋ متابعة</button></td></tr>
+</tbody></table></div>
+<p class="note">تحت كل سطر تاريخ المتابعات اللي اتعملت (اليوم — الطبيب — مشمولة / برسوم / لم يحضر).</p>
+</section>
+<section class="card"><header><h3>٨) الصلاحية خلصت — طلب مدّ من المدير</h3><span class="tag n">جديد</span><button class="x" aria-label="قفل">✕</button></header>
+<span class="chip end">المتابعات المشمولة على زيارة 206 خلصت صلاحيتها يوم 27/12 (فاضل 2)</span>
+<div class="foot"><button class="btn">احسبها برسوم 100</button><button class="btn btn-primary">اطلب مدّ الصلاحية</button></div>
+<label class="f">مدّ لحد<input value="10/01/2027"></label><label class="f">السبب<input value="الدكتور كان مسافر والمريض ماقدرش يجي"></label>
+<p class="note">الطلب بيروح للمدير (زي طلبات الخصم)، ولحد ما يوافق المتابعة بتفضل «مستنية موافقة» ومينفعش تتحصّل بصفر.</p>
+</section>
+<section class="card"><header><h3>٩) شاشة الطبيب والفاتورة</h3><button class="x" aria-label="قفل">✕</button></header>
+<div class="tcard"><div class="t"><b>دوري — مريض تجريبي</b><span>6:30 م</span></div><span class="chip free">متابعة على زيارة 206 (حشو عصب 27/11) — 2 من 3</span>
+<p class="note">الطبيب بيشوف الزيارة الأصلية وملاحظاتها بدوسة.</p></div>
+<div class="sum"><span>الفاتورة</span><b>متابعة أسنان — على زيارة 206</b><span>السعر</span><b>0 ج.م (مشمولة)</b></div>
+<p class="note">لو برسوم: نفس الشكل والسعر 100، ونصيب الطبيب حسب عقده لخدمة «متابعة أسنان».</p>
+</section>
+<section class="card qs"><header><h3>أسئلة للمالك — ومعاها اقتراحي (هيتنفذ بالاقتراح لو مفيش رد غير كده)</h3><button class="x" aria-label="قفل">✕</button></header>
+<div class="tbl"><table><thead><tr><th>السؤال</th><th>اقتراحي</th></tr></thead><tbody>
+<tr><td>١) مين يحدد عدد المتابعات المشمولة ورسومها لكل خدمة؟</td><td>الحسابات أو مدير المركز من «إعدادات المتابعة» — الطبيب يقترح بس.</td></tr>
+<tr><td>٢) الطبيب ياخد حاجة على المتابعة المشمولة؟</td><td>صفر — نصيبه اتحسب في الخدمة الأصلية. اللي برسوم: حسب عقده.</td></tr>
+<tr><td>٣) الصلاحية خلصت بيوم أو اتنين؟</td><td>تتحسب برسوم لوحدها، والمدير يقدر يمدّها بطلب وسبب (الشاشة ٨).</td></tr>
+<tr><td>٤) نفس الطبيب ولا أي طبيب في القسم؟</td><td>نفس الطبيب افتراضي، ويتغيّر جوه نفس القسم بس (مع سطر «بدل د. فلان»).</td></tr>
+<tr><td>٥) رسوم المتابعة واحدة ولا حسب الخدمة؟</td><td>حسب الخدمة، والافتراضي 100 لكل الأسنان لحد ما الحسابات تغيّر.</td></tr>
+</tbody></table></div>
 </section>
 </div></body></html>
