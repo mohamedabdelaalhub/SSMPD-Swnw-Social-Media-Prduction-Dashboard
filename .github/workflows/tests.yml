@@ -44,6 +44,8 @@ jobs:
           node tests/hide-supply-cost-sql.cjs
           node tests/hide-supply-cost-screens-dom.cjs
           node tests/collect-visit-split-sql.cjs
+          node tests/duplicate-service-sql.cjs
+          node tests/duplicate-service-dom.cjs
           node tests/upload-unify-dom.cjs
           node tests/count-check-above-handover.cjs
           node tests/digital-team-navigation.cjs
