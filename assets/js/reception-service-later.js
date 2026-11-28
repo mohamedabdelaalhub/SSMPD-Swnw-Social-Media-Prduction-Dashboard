@@ -54,11 +54,13 @@ function take(payload){if(!payload)return payload;
  else delete payload.service_later;
  return payload;}
 
+/* the services «وصل» may choose for a «الخدمة تتحدد عند الحضور» booking (also used by «تشغيل اليوم», owner 2026-11-27) */
+function options(data,appt){if(!data||!appt)return [];var p=provider(data,appt.provider_id)||{},scopes=(data.provider_service_scopes||{})[p.id]||[];
+ return (data.services||[]).filter(function(s){return !s.placeholder&&!s._sl&&s.active!==false&&(serves(data,p,s.department)||scopes.indexOf(s.code)>=0)&&!restrictedOut(data,p,s);})
+  .sort(function(a,b){return String(a.name).localeCompare(String(b.name),'ar');});}
 function arrival(root,appt,ctx){var data=ctx&&ctx.data;if(!root||!appt||!appt.service_later||!data)return;
  var form=root.querySelector('form');if(!form||form.elements.service_id)return;
- var p=provider(data,appt.provider_id)||{},scopes=(data.provider_service_scopes||{})[p.id]||[];
- var list=(data.services||[]).filter(function(s){return !s.placeholder&&!s._sl&&s.active!==false&&(serves(data,p,s.department)||scopes.indexOf(s.code)>=0)&&!restrictedOut(data,p,s);})
-  .sort(function(a,b){return String(a.name).localeCompare(String(b.name),'ar');});
+ var p=provider(data,appt.provider_id)||{},list=options(data,appt);
  var box=document.createElement('div');box.className='rx-sl-arrive';box.setAttribute('data-wide','');
  box.innerHTML='<p class="rx-sl-warn">الحجز ده «'+LABEL+'». اختار الخدمة اللي المريض قررها علشان نكمّل الحضور.</p><label>الخدمة (إجباري)<select name="service_id" required><option value="">— اختار خدمة'+(p.department?' من قسم '+esc(p.department):'')+' —</option>'+list.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+' — '+esc(money(s.price))+'</option>';}).join('')+'</select></label><p class="rx-sl-err" data-sl-err>اختار الخدمة الأول</p>';
  var first=form.firstElementChild;form.insertBefore(box,first&&first.tagName==='P'?first.nextSibling:first);
@@ -68,5 +70,5 @@ function arrival(root,appt,ctx){var data=ctx&&ctx.data;if(!root||!appt||!appt.se
 
 function tag(a){return a&&a.service_later?'<span class="rx-later-tag">'+LABEL+'</span>':'';}
 
-w.SSMPDServiceLater={enhance:enhance,take:take,arrival:arrival,tag:tag,purge:purge,LABEL:LABEL};
+w.SSMPDServiceLater={enhance:enhance,take:take,arrival:arrival,options:options,tag:tag,purge:purge,LABEL:LABEL};
 })(window);

@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2116,
-    "labels": 1545,
-    "files": 174,
-    "groups": 1673
+    "definitions": 2124,
+    "labels": 1551,
+    "files": 176,
+    "groups": 1679
   },
   "fields": [
     {
@@ -625,6 +625,30 @@
       "tab": "production",
       "article": "design-guide",
       "text_sha256": "9c0b47ccbaf02e8e5b748971fa683e556ffce273ebe08e0d949b82eeb26f3134"
+    },
+    {
+      "file": "business-day.js",
+      "label": "ساعة القفل الجديدة",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "ساعة قفل اليوم"
+      ],
+      "tab": "production",
+      "article": "business-day",
+      "text_sha256": "bf3ba9d287a6d06a086718bf9264fd073f756fa46b78b28d6c3d6132f21ccc5a"
+    },
+    {
+      "file": "business-day.js",
+      "label": "السبب (إجباري)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "ساعة قفل اليوم"
+      ],
+      "tab": "production",
+      "article": "business-day",
+      "text_sha256": "49a73852f6856d3ab619624db463eeb88a81d1729d346870f95ff2db9b6f0509"
     },
     {
       "file": "carousel-content.js",
@@ -5182,6 +5206,26 @@
       "tab": "accounting",
       "article": "payroll",
       "text_sha256": "63bae1cb31e3da8fdbe7bbad1a910ab74efa25e9f910b257e1417c5f7f3e66aa"
+    },
+    {
+      "file": "finance-controls.js",
+      "label": "دوّر باسم الخزنة أو الموظف",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "accounting",
+      "article": "cash-case-settlement",
+      "text_sha256": "23758d0657a7f22360ea045e93722db57e19a70fcba91562e1b6b94ba6037686"
+    },
+    {
+      "file": "finance-controls.js",
+      "label": "دوّر باسم الخزنة أو الموظف…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "accounting",
+      "article": "cash-case-settlement",
+      "text_sha256": "23758d0657a7f22360ea045e93722db57e19a70fcba91562e1b6b94ba6037686"
     },
     {
       "file": "finance-controls.js",
@@ -12682,6 +12726,16 @@
     },
     {
       "file": "reception-execute-all.js",
+      "label": "صورة شاشة الجهاز (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "laser-no-meter",
+      "text_sha256": "5e011c9b2aeca7ec609ad80611864ec9391351e96833c1a9d2149704df927749"
+    },
+    {
+      "file": "reception-execute-all.js",
       "label": "دوّر في الخدمات",
       "name": "",
       "kind": "aria",
@@ -12939,6 +12993,26 @@
       "tab": "reception_services",
       "article": "reception-booking-manual-time",
       "text_sha256": "9354853a0c7a6fc124574638ea46afeacce3249322816b439faa8e7d384e00a3"
+    },
+    {
+      "file": "reception-no-meter.js",
+      "label": "دوّر في جلسات من غير عداد",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "laser-no-meter",
+      "text_sha256": "5fd5e84ef0a49619f754716823fb3a2b53bbdeac6ab6e35144ac0d377c073e0b"
+    },
+    {
+      "file": "reception-no-meter.js",
+      "label": "دوّر بالجهاز أو الموظف أو الخدمة أو رقم الملف",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "laser-no-meter",
+      "text_sha256": "5fd5e84ef0a49619f754716823fb3a2b53bbdeac6ab6e35144ac0d377c073e0b"
     },
     {
       "file": "reception-overbook.js",
@@ -21092,6 +21166,18 @@
       "tab": "reception_services",
       "article": "today-board",
       "text_sha256": "5b9d11709a5da94b3bda9e02f0817a1d20b930933f9aa9df6705fde8d7bb519c"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "الخدمة (إجباري)",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "وصل — اختار الخدمة الأول"
+      ],
+      "tab": "reception_services",
+      "article": "automatic-bookings",
+      "text_sha256": "4ef4ee4e4d38a2cf697ab5218f295d6cfd54cdb2284a38e0bee222899b6379c2"
     },
     {
       "file": "today-operations.js",

@@ -6,7 +6,7 @@
       on that month's invoices (shortage medicines excluded); the financial manager reviews it. RPC:
       clinic_finance_supplier_discount (20261122300000). Finance layer: wraps SSMPDFinanceControls for tab 'suppliers'. */
 (function(w,d){'use strict';
-var KINDS=[['supply','مستلزمات — سعر الشراء + نسبة'],['medicine','دواء عادي — بسعر الجمهور'],['shortage','دواء ناقص — سعر الشراء + نسبة']];
+var KINDS=[['supply','مستلزمات — سعر الشراء + نسبة'],['medicine','دواء عادي — بسعر الجمهور'],['shortage','دواء ناقص — سعر الشراء + نسبة'],['fixed','سعر بيع ثابت — بتكتبه بإيدك']];
 var STATUS={pending:'مستني مراجعة المدير المالي',approved:'اتراجع واتسجل',rejected:'مرفوض',missing:'لسه مستني الخصم'};
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function money(n){return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -19,14 +19,14 @@ function sheet(key,title,html,wire){var M=w.SSMPDMiniCards;if(!M){toast('تعذ�
 
 /* ---------- 1) item pricing ---------- */
 function pricing(onDone){var st={rows:[],q:'',kind:''};
- function preview(r,kind,m){var base=Number(r.purchase_price||0);if(!base)return '—';return money(kind==='medicine'?base:base*(1+Number(m||0)/100));}
+ function preview(r,kind,m){var base=Number(r.purchase_price||0);if(kind==='fixed'){var p=Number(m||0);if(!base)return money(p)+' (ثابت)';var mg=Math.round((p-base)/base*10000)/100;return money(p)+' · هامش فعلي '+mg+'%'+(p<base?' ⚠ أقل من التكلفة':'');}if(!base)return '—';return money(kind==='medicine'?base:base*(1+Number(m||0)/100));}
  function html(){var rows=st.rows.filter(function(r){return (!st.kind||r.pricing_kind===st.kind)&&(!st.q||String(r.name).indexOf(st.q)>=0);});
   return '<div class="mdp" data-mdp><div class="mdp-top"><input data-mdp-q placeholder="دوّر باسم الصنف" value="'+esc(st.q)+'" aria-label="بحث"><select data-mdp-kind aria-label="النوع"><option value="">كل الأنواع</option>'+KINDS.map(function(k){return '<option value="'+k[0]+'"'+(st.kind===k[0]?' selected':'')+'>'+esc(k[1])+'</option>';}).join('')+'</select><button type="button" class="btn" data-mdp-svc>استثناءات حسب الخدمة</button></div>'+
    '<p class="mdp-note">«يتحاسب على المريض؟»: أيوه = لما يتصرف مع خدمة بيتضاف على فاتورة المريض بسعر البيع. لأ = في سعر الخدمة وبيتخصم من المخزن بس. «استثناءات حسب الخدمة» بتغيّر ده لخدمة معيّنة.</p>'+
    '<p class="mdp-note">الدواء العادي بيتباع بسعر الجمهور اللي اتشرى بيه، ومفيش عليه نسبة. المستلزمات والدواء الناقص: سعر الشراء + النسبة (الافتراضي 35%). الدواء الناقص مش بيدخل في خصم آخر الشهر.</p>'+
-   '<div class="mdp-tw"><table class="mdp-t"><thead><tr><th>الصنف</th><th>نوع التسعير</th><th>يتحاسب على المريض؟</th><th>النسبة %</th><th>سعر الشراء</th><th>سعر البيع الجديد</th><th></th></tr></thead><tbody>'+
+   '<div class="mdp-tw"><table class="mdp-t"><thead><tr><th>الصنف</th><th>نوع التسعير</th><th>يتحاسب على المريض؟</th><th>النسبة % / السعر الثابت</th><th>سعر الشراء</th><th>سعر البيع الجديد</th><th></th></tr></thead><tbody>'+
    (rows.length?rows.map(function(r){return '<tr data-mdp-row="'+esc(r.id)+'"><td>'+esc(r.name)+'<small> — '+esc(r.unit)+'</small></td><td><select data-mdp-k aria-label="نوع التسعير">'+KINDS.map(function(k){return '<option value="'+k[0]+'"'+(r.pricing_kind===k[0]?' selected':'')+'>'+esc(k[1])+'</option>';}).join('')+'</select></td><td><select data-mdp-b aria-label="يتحاسب على المريض؟"><option value="false"'+(r.patient_billable?'':' selected')+'>لأ — في سعر الخدمة</option><option value="true"'+(r.patient_billable?' selected':'')+'>أيوه — على فاتورة المريض</option></select></td>'+
-    '<td><input data-mdp-m inputmode="decimal" value="'+(r.pricing_kind==='medicine'?0:Number(r.markup_percent))+'"'+(r.pricing_kind==='medicine'?' disabled':'')+' aria-label="النسبة"></td><td dir="ltr">'+(r.purchase_price==null?'لسه متشرّاش':money(r.purchase_price))+'</td><td dir="ltr" data-mdp-p>'+preview(r,r.pricing_kind,r.markup_percent)+'</td><td><button type="button" class="btn" data-mdp-save>حفظ</button></td></tr>';}).join(''):'<tr><td colspan="7">مفيش أصناف هنا.</td></tr>')+'</tbody></table></div></div>';}
+    '<td><input data-mdp-m inputmode="decimal" value="'+(r.pricing_kind==='medicine'?0:r.pricing_kind==='fixed'?Number(r.sale_price):Number(r.markup_percent))+'"'+(r.pricing_kind==='medicine'?' disabled':'')+' aria-label="'+(r.pricing_kind==='fixed'?'سعر البيع الثابت':'النسبة')+'"></td><td dir="ltr">'+(r.purchase_price==null?'لسه متشرّاش':money(r.purchase_price))+'</td><td dir="ltr" data-mdp-p>'+preview(r,r.pricing_kind,r.markup_percent)+'</td><td><button type="button" class="btn" data-mdp-save>حفظ</button></td></tr>';}).join(''):'<tr><td colspan="7">مفيش أصناف هنا.</td></tr>')+'</tbody></table></div></div>';}
  function draw(){var el=sheet('mdp','تسعير الأصناف',html(),wire);if(el){var q=el.querySelector('[data-mdp-q]');if(st.focus){q.focus();q.setSelectionRange(q.value.length,q.value.length);st.focus=false;}}}
  function row(id){return st.rows.filter(function(r){return r.id===id;})[0];}
  function wire(el){
@@ -38,11 +38,11 @@ function pricing(onDone){var st={rows:[],q:'',kind:''};
    call('inventory_set_patient_billable',{p_item:id,p_billable:val}).then(function(){var r=row(id);r.patient_billable=val;toast(val?'اتحفظ — هيتحاسب على المريض':'اتحفظ — في سعر الخدمة');sel.disabled=false;})
     .catch(function(x){sel.disabled=false;sel.value=String(!val);toast((x&&x.message)||'تعذر الحفظ','error');});});
   el.addEventListener('change',function(e){if(e.target.closest('[data-mdp-b]'))return;var tr=e.target.closest('[data-mdp-row]');if(!tr)return;var r=row(tr.getAttribute('data-mdp-row')),k=tr.querySelector('[data-mdp-k]').value,mi=tr.querySelector('[data-mdp-m]');
-   if(e.target.hasAttribute('data-mdp-k')){if(k==='medicine'){mi.value=0;mi.disabled=true;}else{mi.disabled=false;if(Number(mi.value)===0)mi.value=35;}}
+   if(e.target.hasAttribute('data-mdp-k')){if(k==='medicine'){mi.value=0;mi.disabled=true;}else if(k==='fixed'){mi.disabled=false;mi.value=Number(r.sale_price||0);mi.setAttribute('aria-label','سعر البيع الثابت');}else{mi.disabled=false;mi.setAttribute('aria-label','النسبة');if(Number(mi.value)===0||r.pricing_kind==='fixed'&&Number(mi.value)===Number(r.sale_price))mi.value=35;}}
    tr.querySelector('[data-mdp-p]').textContent=preview(r,k,mi.value);});
   el.addEventListener('click',function(e){var b=e.target.closest('[data-mdp-save]');if(!b)return;var tr=b.closest('[data-mdp-row]'),id=tr.getAttribute('data-mdp-row'),k=tr.querySelector('[data-mdp-k]').value,m=Number(tr.querySelector('[data-mdp-m]').value);
    if(k!=='medicine'&&!(m>=0))return toast('اكتب النسبة','error');b.disabled=true;
-   call('inventory_set_pricing_kind',{p_item:id,p_kind:k,p_markup:k==='medicine'?null:m}).then(function(res){var r=row(id);r.pricing_kind=res.pricing_kind;r.markup_percent=res.markup_percent;toast('اتحفظ — سعر البيع '+money(res.sale_price)+' ج');draw();if(onDone)onDone();})
+   (k==='fixed'?call('inventory_set_fixed_price',{p_item:id,p_price:m}):call('inventory_set_pricing_kind',{p_item:id,p_kind:k,p_markup:k==='medicine'?null:m})).then(function(res){var r=row(id);r.pricing_kind=res.pricing_kind;r.markup_percent=res.markup_percent;r.sale_price=res.sale_price;if(res.below_cost)toast('تنبيه: السعر الثابت أقل من التكلفة','error');toast('اتحفظ — سعر البيع '+money(res.sale_price)+' ج');draw();if(onDone)onDone();})
     .catch(function(x){b.disabled=false;toast((x&&x.message)||'تعذر الحفظ','error');});});}
  call('inventory_pricing_list').then(function(rows){st.rows=rows||[];draw();}).catch(function(x){toast((x&&x.message)||'تعذر فتح التسعير','error');});}
 
