@@ -17,6 +17,7 @@ var CSS='.fu-ov{position:fixed;inset:0;z-index:130;background:rgba(22,33,46,.45)
  '.fu-opt small{color:#5b6577}.fu-chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700}.fu-chip.free{background:#E8F4EE;color:#1f5d43}.fu-chip.fee{background:#FFF6E5;color:#8A5A00}.fu-chip.end{background:#FDECE8;color:#9b2c1c}'+
  '.fu-sum{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13px;background:#F6F8FC;border-radius:10px;padding:8px 10px}.fu-sum b{color:#0F369D}'+
  '.fu-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.fu-acts{display:flex;gap:8px;flex-wrap:wrap}.fu-note{font-size:12px;color:#5b6577;margin:0;line-height:1.7}.fu-err{color:#D0402A;font-size:13px;margin:0}'+
+ '.fu-tell{margin:0;border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.8;background:#E8F4EE;color:#1f5d43}.fu-tell.warn{background:#FFF6E5;color:#8A5A00}.fu-tell .btn{margin-top:6px}'+
  '.fu-tbl{overflow:auto}.fu-tbl table{width:100%;border-collapse:collapse;font-size:12.5px}.fu-tbl th,.fu-tbl td{border-bottom:1px solid #E6EBF3;padding:6px;text-align:right}.fu-tbl th{color:#0F369D}.fu-tbl input{width:70px}'+
  '.fu-pat{display:grid;gap:4px;max-height:220px;overflow:auto}.fu-pat button{text-align:right;border:1px solid #E3E8F2;background:#fff;border-radius:10px;padding:7px 10px;font:inherit;font-size:13px;cursor:pointer}'+
  '.journey-fu-chip{display:inline-block;margin:4px 0 0;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700}.journey-fu-chip.free{background:#E8F4EE;color:#1f5d43}.journey-fu-chip.fee{background:#FFF6E5;color:#8A5A00}'+
@@ -66,12 +67,25 @@ function sources(box,p,close){box.innerHTML='<p class="fu-note">بيدوّر ع�
      (o.cov==='included'?'<span class="fu-chip free">مشمولة — 0 ج</span>':'<span class="fu-chip fee">برسوم متابعة '+num(fee)+' ج</span>')+(o.expired?' <span class="fu-chip end">الصلاحية خلصت</span>':'')+(o.pending?' <span class="fu-chip end">طلب مدّ مستني موافقة</span>':'')+'</span>'+
      (o.expired&&!o.pending&&o.f&&+o.f.left>0?'<span class="fu-acts"><button type="button" class="btn" data-fu-ext="'+esc(o.follow_up_id)+'">اطلب مدّ الصلاحية</button></span>':'')+(o.ok?'':'<span class="fu-err">مفيش خدمة «متابعة» للطبيب ده — الحسابات تضيفها لقسمه.</span>')+'</label>';}).join('')+'</div>':'<p class="fu-note">المريض ده مالوش زيارات في آخر 4 شهور تتعمل عليها متابعة.</p>')+
    (pk.length?'<p class="fu-note">عنده باقة شغّالة ('+pk.map(function(x){return 'فاضل '+x.left+' من '+x.visits+' لحد '+dm(x.expires_on);}).join('، ')+') — زيارات الباقة بتتحجز من «حجز موعد» ← الباقة زي دلوقتي.</p>':'')+
-   (opts.length?'<div class="fu-sum" data-fu-sum></div><div class="fu-row2"><label class="fu-f">اليوم<input type="date" data-fu-day min="'+cairoDay()+'" value="'+cairoDay()+'"></label><label class="fu-f">الساعة<input type="time" data-fu-time step="300" value="18:00"></label></div>'+
+   (opts.length?'<div class="fu-sum" data-fu-sum></div><p class="fu-tell" data-fu-tell role="status"></p><div class="fu-row2"><label class="fu-f">اليوم<input type="date" data-fu-day min="'+cairoDay()+'" value="'+cairoDay()+'"></label><label class="fu-f">الساعة<input type="time" data-fu-time step="300" value="18:00"></label></div>'+
     '<p class="fu-err" data-fu-err role="alert" hidden></p><div class="fu-acts"><button type="button" class="btn btn-primary" data-fu-book>احجز المتابعة</button><button type="button" class="btn" data-fu-cancel>إلغاء</button></div>':'<div class="fu-acts"><button type="button" class="btn" data-fu-cancel>إغلاق</button></div>');
   function cur(){var r=box.querySelector('input[name="fu-src"]:checked');return r&&opts.filter(function(o){return o.key===r.value;})[0];}
-  function sum(){var o=cur(),el=box.querySelector('[data-fu-sum]');if(!o||!el)return;[].forEach.call(box.querySelectorAll('[data-fu-opt]'),function(l){l.classList.toggle('on',l.getAttribute('data-fu-opt')===o.key);});
-   el.innerHTML='<span>الطبيب</span><b>'+esc(o.provider)+' — نفس طبيب الزيارة</b><span>الخدمة</span><b>متابعة</b><span>التغطية</span><b>'+(o.cov==='included'?'مشمولة في زيارة '+esc(o.visit_no)+' (بعدها يفضل '+(Math.max(0,+o.f.left-1))+' من '+o.f.included+')':'برسوم متابعة')+'</b><span>المريض يدفع</span><b>'+(o.cov==='included'?'0':num(fee))+' ج.م</b>';}
+  /* owner 2026-11-28: «عايز صلاحية المتابعة تظهر للريسبشن وهو بيحجز … علشان يبلغ المريض … عشان يختار قبل ما يحجز»: the summary says
+     until when the free follow-up is valid and what happens after; a day AFTER the validity turns the booking into the fee before saving */
+  function sum(){var o=cur(),el=box.querySelector('[data-fu-sum]'),tell=box.querySelector('[data-fu-tell]');if(!o||!el)return;[].forEach.call(box.querySelectorAll('[data-fu-opt]'),function(l){l.classList.toggle('on',l.getAttribute('data-fu-opt')===o.key);});
+   var dayEl=box.querySelector('[data-fu-day]'),day=dayEl&&dayEl.value,f=o.f,until=f&&f.valid_until,free=!!(f&&!f.expired&&+f.left>0),late=free&&day&&until&&day>until,cov=free&&!late?'included':'fee';
+   el.innerHTML='<span>الطبيب</span><b>'+esc(o.provider)+' — نفس طبيب الزيارة</b><span>الخدمة</span><b>متابعة</b><span>التغطية</span><b>'+(cov==='included'?'مشمولة في زيارة '+esc(o.visit_no)+' (بعدها يفضل '+(Math.max(0,+f.left-1))+' من '+f.included+')':'برسوم متابعة')+'</b>'+
+    (free?'<span>المجانية سارية لحد</span><b>'+dm(until)+'</b>':'')+'<span>المريض يدفع</span><b>'+(cov==='included'?'0':num(fee))+' ج.م</b>';
+   if(tell){var msg='';
+    if(free&&!late)msg='<b>قول للمريض:</b> «متابعتك المجانية سارية لحد يوم '+dm(until)+' (فاضلك '+f.left+' من '+f.included+'). لو جيت بعد يوم '+dm(until)+' المتابعة هتبقى برسوم '+num(fee)+' جنيه.»';
+    else if(late)msg='<b>⚠ اليوم اللي اخترته بعد انتهاء الصلاحية ('+dm(until)+') — المتابعة هتبقى برسوم '+num(fee)+' جنيه.</b> قول للمريض، ولو عايزها مجانية احجز يوم '+dm(until)+' أو قبله. <button type="button" class="btn" data-fu-lastfree>احجز في آخر يوم مجاني ('+dm(until)+')</button>';
+    else if(f&&f.expired)msg='<b>قول للمريض:</b> «متابعتك المجانية خلصت صلاحيتها يوم '+dm(until)+'، والمتابعة دلوقتي برسوم '+num(fee)+' جنيه.» لو فيه سبب، اطلب مدّ الصلاحية (يوم لـ 3 أيام بموافقة الحسابات أو المدير).';
+    else if(f&&+f.left<=0)msg='<b>قول للمريض:</b> «المتابعات المجانية خلصت ('+f.included+' من '+f.included+')، والمتابعة دي برسوم '+num(fee)+' جنيه.»';
+    else msg='<b>قول للمريض:</b> «المتابعة دي برسوم '+num(fee)+' جنيه.»';
+    tell.className='fu-tell'+(late||cov==='fee'?' warn':'');tell.innerHTML=msg;
+    var lf=tell.querySelector('[data-fu-lastfree]');if(lf)lf.onclick=function(){dayEl.value=until;sum();};}}
   [].forEach.call(box.querySelectorAll('input[name="fu-src"]'),function(r){r.onchange=sum;});sum();
+  var dEl=box.querySelector('[data-fu-day]');if(dEl){dEl.addEventListener('change',sum);dEl.addEventListener('input',sum);}
   var cn=box.querySelector('[data-fu-cancel]');if(cn)cn.onclick=close;
   [].forEach.call(box.querySelectorAll('[data-fu-ext]'),function(b){b.onclick=function(e){e.preventDefault();extendForm(b.closest('.fu-opt'),b.getAttribute('data-fu-ext'),function(){sources(box,p,close);});};});
   var go=box.querySelector('[data-fu-book]');if(go){var token=uuid();go.onclick=function(){var o=cur(),err=box.querySelector('[data-fu-err]'),day=box.querySelector('[data-fu-day]').value,tm=box.querySelector('[data-fu-time]').value;

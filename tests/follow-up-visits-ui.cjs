@@ -40,6 +40,16 @@ for(const width of [1280,390])for(const role of ['reception','general_manager'])
  await p.waitForSelector('[data-fu-opt]');
  // fee option on a visit → summary 100 → book
  await p.locator('[data-fu-opt="v:v230"] input').check();assert.match(await p.textContent('[data-fu-sum]'),/برسوم متابعة[\s\S]*100 ج\.م/);
+ await p.locator('[data-fu-opt="f:f1"] input').check();
+ // owner 2026-11-28: the validity is told BEFORE booking; a day after it turns into the fee with a warning + «احجز في آخر يوم مجاني»
+ assert.match(await p.textContent('[data-fu-tell]'),/قول للمريض:[\s\S]*سارية لحد يوم 27\/12 \(فاضلك 2 من 3\)[\s\S]*بعد يوم 27\/12 المتابعة هتبقى برسوم 100 جنيه/);
+ assert.match(await p.textContent('[data-fu-sum]'),/المجانية سارية لحد27\/12/);
+ await p.fill('[data-fu-day]','2026-12-28');assert.match(await p.textContent('[data-fu-tell]'),/بعد انتهاء الصلاحية \(27\/12\) — المتابعة هتبقى برسوم 100/);assert.match(await p.textContent('[data-fu-sum]'),/برسوم متابعة[\s\S]*100 ج\.م/);
+ assert.equal(await p.locator('[data-fu-tell].warn').count(),1);
+ if(process.env.SHOT)await p.locator('[data-fu] .fu').screenshot({path:process.env.SHOT+'/follow-up-late-'+role+'-'+width+'.png'});
+ await p.locator('[data-fu-lastfree]').click();assert.equal(await p.inputValue('[data-fu-day]'),'2026-12-27');assert.match(await p.textContent('[data-fu-sum]'),/0 ج\.م/);
+ await p.locator('[data-fu-opt="f:f2"] input').check();assert.match(await p.textContent('[data-fu-tell]'),/خلصت صلاحيتها يوم 16\/11، والمتابعة دلوقتي برسوم 100/);
+ await p.locator('[data-fu-opt="f:f1"] input').check();
  await p.locator('[data-fu-opt="f:f1"] input').check();await p.fill('[data-fu-day]',day);await p.fill('[data-fu-time]','18:30');
  if(process.env.SHOT)await p.screenshot({path:process.env.SHOT+'/follow-up-book-'+role+'-'+width+'.png',fullPage:true});
  await p.locator('[data-fu-book]').click();await p.waitForSelector('[data-fu]',{state:'detached'});
