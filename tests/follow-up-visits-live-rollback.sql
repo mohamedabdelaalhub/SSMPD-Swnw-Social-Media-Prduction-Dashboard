@@ -330,7 +330,7 @@ grant all on _r to authenticated;
 do $t$
 declare mazen uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; boss uuid; me uuid; w uuid; pr uuid; svc uuid; fsvc uuid; pat uuid; r jsonb; ap uuid; v uuid; o clinic_reception.orders%rowtype;
   f uuid; slot timestamptz; i int; booked boolean; k_rate numeric; ref text := 'ROLLBACK-FU-' || left(gen_random_uuid()::text, 8);
-  procedure_as text; slots timestamptz[]; ov_id uuid; ext_id uuid;
+  procedure_as text; person uuid; slots timestamptz[]; ov_id uuid; ext_id uuid;
 begin
   select id into w from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
   select a.user_id into boss from public.admins a where a.role = 'super_admin' and a.active and a.user_id is not null order by a.id limit 1;
@@ -375,7 +375,10 @@ begin
   select ag.rate into k_rate from clinic_reception.doctor_agreements ag join clinic_reception.services s on s.code = ag.service_code and s.workspace_id = w
    where ag.provider_id = pr and ag.status = 'active' and current_date between ag.valid_from and ag.valid_to and clinic_reception.consult_kind(s.name) = 'K' limit 1;
   insert into _r values ('his «كشف» percent', k_rate is not null, coalesce(k_rate::text, 'no كشف agreement — the paid follow-up falls back to the «متابعة» agreement'));
-  insert into clinic_reception.patients(workspace_id, file_no, name, phone, created_by) values (w, ref, 'مريض اختبار تراجع', '', me) returning id into pat;
+  -- a test patient linked to a unified archive file (public.patients), like every real patient — arrival refuses otherwise
+  insert into public.patients(full_name, phone, created_by) values ('مريض اختبار تراجع متابعة', '010' || lpad((floor(random() * 1e8))::bigint::text, 8, '0'), me) returning id into person;
+  insert into clinic_reception.patients(workspace_id, patient_id, file_no, name, phone, created_by)
+    select w, id, coalesce(patient_code, ref), full_name, phone, me from public.patients where id = person returning id into pat;
   -- reads of clinic_reception.* happen as the owner role ONLY; the impersonated user (authenticated) just calls the public RPCs, like the browser
   select array_agg(gs order by gs) into slots from (select gs from clinic_reception.availability av,
       generate_series(greatest(av.starts_at, now() + interval '30 minutes'), av.ends_at - interval '30 minutes', interval '15 minutes') gs
@@ -429,7 +432,7 @@ begin
       begin r := public.clinic_reception_follow_up(w, 'book', jsonb_build_object('follow_up_id', f, 'starts_at', slot, 'token', gen_random_uuid())); booked := true; exit;
       exception when others then procedure_as := sqlerrm; end;
     end loop;
-    insert into _r values ('Mazen books an included follow-up (same doctor)', booked and r->>'coverage' = 'included', coalesce(left(r::text, 140), procedure_as));
+    insert into _r values ('Mazen books an included follow-up (same doctor)', booked and r->>'coverage' = 'included', case when booked then left(r::text, 140) else 'not booked: ' || coalesce(procedure_as, 'no slot tried') end);
     if booked then ap := (r->>'id')::uuid; v := (public.clinic_reception_command(w, 'arrive', jsonb_build_object('id', ap), gen_random_uuid())->>'id')::uuid; end if;
   exception when others then insert into _r values ('Mazen: included follow-up', false, left(sqlerrm, 160)); end;
   execute 'reset role';
@@ -453,7 +456,7 @@ begin
       begin r := public.clinic_reception_follow_up(w, 'book', jsonb_build_object('visit_id', ov_id, 'starts_at', slot, 'token', gen_random_uuid())); booked := true; exit;
       exception when others then procedure_as := sqlerrm; end;
     end loop;
-    insert into _r values ('Mazen books a PAID follow-up on the visit', booked and r->>'coverage' = 'fee', coalesce(left(r::text, 140), procedure_as));
+    insert into _r values ('Mazen books a PAID follow-up on the visit', booked and r->>'coverage' = 'fee', case when booked then left(r::text, 140) else 'not booked: ' || coalesce(procedure_as, 'no slot tried') end);
     if booked then ap := (r->>'id')::uuid; v := (public.clinic_reception_command(w, 'arrive', jsonb_build_object('id', ap), gen_random_uuid())->>'id')::uuid; end if;
   exception when others then insert into _r values ('Mazen: paid follow-up', false, left(sqlerrm, 160)); end;
   begin r := public.clinic_reception_follow_up(w, 'extend_request', jsonb_build_object('follow_up_id', f, 'days', 2, 'reason', 'اختبار تراجع — مد يومين'));
