@@ -102,36 +102,40 @@ grant execute on function public.clinic_reception_nursing(uuid, text, jsonb) to 
 $x$;
 end $o$;
 
-create temp table _r(who text, call text, found_user boolean, can_see boolean, has_cost boolean, err text) on commit drop;
+create temp table _r(who text, call text, user_name text, can_see boolean, has_cost boolean, err text) on commit drop;
 grant all on _r to authenticated;
+-- For each role, try the real users (named ones first, then every active one with that role, main or extra) until one is allowed;
+-- a role with no allowed user reports the last refusal.
 do $t$
-declare ws uuid; nurse uuid; head uuid; boss uuid; j jsonb; k text; u uuid; f text;
+declare ws uuid := 'dc6e99a1-0000-0000-0000-000000000000'; j jsonb; k text; f text; a record; done boolean; lasterr text; calls text[];
   d1 date := (now() at time zone 'Africa/Cairo')::date - 7; d2 date := (now() at time zone 'Africa/Cairo')::date - 1;
   ck text := '"(cost|total_cost|bom_cost|unit_cost|avg_cost|included_cost|loss_cost|sold_cost|margin|variance_value)"';
 begin
-  select id into ws from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
-  select a.user_id into nurse from public.admins a join clinic_reception.members m on m.admin_id = a.id and m.workspace_id = ws
-   where a.active and a.role = 'nursing' and 'view' = any(m.capabilities) and a.user_id is not null limit 1;
-  select a.user_id into head from public.admins a where a.active and a.role = 'head_nursing' and a.user_id is not null limit 1;
-  select a.user_id into boss from public.admins a where a.active and a.role = 'super_admin' and a.user_id is not null limit 1;
+  select id into ws from clinic_reception.workspaces where mode = 'live' and id::text like 'dc6e99a1%' limit 1;
+  if ws is null then select id into ws from clinic_reception.workspaces where mode = 'live' order by created_at limit 1; end if;
   foreach k in array array['nursing', 'head_nursing', 'super_admin'] loop
-    u := case k when 'nursing' then nurse when 'head_nursing' then head else boss end;
-    perform set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated')::text, true);
-    execute 'set local role authenticated';
-    begin
-      j := public.clinic_reception_visit_usage(ws, 'list', jsonb_build_object('day', d2::text));
-      insert into _r values (k, 'visit_usage list', u is not null, (j->>'can_see_cost')::boolean, j::text ~ ck, null);
-    exception when others then insert into _r values (k, 'visit_usage list', u is not null, null, null, sqlerrm); end;
-    foreach f in array array['report_supplies_consumption', 'report_medicines_consumption', 'report_nursing_variance'] loop
-      begin
-        execute format('select public.%I($1, $2, null)', f) into j using d1, d2;
-        insert into _r values (k, f, u is not null, (j->>'can_see_cost')::boolean, j::text ~ ck, null);
-      exception when others then insert into _r values (k, f, u is not null, null, null, left(sqlerrm, 120)); end;
+    foreach f in array array['visit_usage', 'report_supplies_consumption', 'report_medicines_consumption', 'report_nursing_variance'] loop
+      done := false; lasterr := null;
+      for a in select ad.user_id, ad.name from public.admins ad
+                where ad.active and ad.user_id is not null
+                  and (ad.role = k or exists (select 1 from public.admin_extra_roles r where r.admin_id = ad.id and r.role = k))
+                order by (ad.user_id in ('5a44711b-c34c-4ba5-8455-d3428baadb67', 'af35b972-f212-4441-ba7d-f5c7ec34adc4')) desc, ad.name loop
+        perform set_config('request.jwt.claims', json_build_object('sub', a.user_id, 'role', 'authenticated')::text, true);
+        execute 'set local role authenticated';
+        begin
+          if f = 'visit_usage' then j := public.clinic_reception_visit_usage(ws, 'list', jsonb_build_object('day', d2::text));
+          else execute format('select public.%I($1, $2, null)', f) into j using d1, d2; end if;
+          execute 'reset role';
+          insert into _r values (k, f, a.name, (j->>'can_see_cost')::boolean, j::text ~ ck, null); done := true;
+        exception when others then lasterr := left(sqlerrm, 120); execute 'reset role';
+        end;
+        exit when done;
+      end loop;
+      if not done then insert into _r values (k, f, null, null, null, coalesce(lasterr, 'no active user with this role')); end if;
     end loop;
-    execute 'reset role';
   end loop;
 end $t$;
-select who, call, found_user, can_see, has_cost, err,
+select who, call, user_name, can_see, has_cost, err,
        case when err is not null then null when who = 'super_admin' then can_see else (can_see = false and not has_cost) end as ok
   from _r order by who, call;
 rollback;
