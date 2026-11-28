@@ -1,0 +1,69 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>«حصّل» على الزيارة — التحصيل يتوزع على كل فواتير الزيارة — تصور</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:20px 12px;color:#16212E}
+.wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:stretch}
+.eyebrow{grid-column:1/-1;margin:0;font-size:13px;color:#4a5568;line-height:1.8;background:#fff;border-radius:12px;padding:10px 14px}
+.card{align-content:start;background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;box-shadow:0 12px 30px rgba(15,54,157,.08);min-width:0}
+.card>header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card h3{margin:0;font-size:14px;color:#0F369D}.x{border:1px solid #CBD5E1;background:#fff;border-radius:10px;width:32px;height:32px;font-size:15px;flex:none}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap}.tag.b{background:#FDECE8;color:#D0402A}.tag.a{background:#E8F4EE;color:#2F7D5C}
+.f{display:grid;gap:5px;font-size:13px}.f input,.f select{font:inherit;padding:9px 11px;border:1px solid #CBD5E1;border-radius:10px;min-width:0}
+.note{font-size:12px;color:#5b6577;margin:0;line-height:1.7}
+.pt{font-size:13px;background:#F6F8FC;border-radius:10px;padding:8px 10px;margin:0}
+.inv{display:grid;gap:6px;border:1px solid #E3E8F2;border-radius:12px;padding:10px}
+.inv b.h{font-size:13px}
+.inv label{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:13px}
+.inv label span.m{font-weight:700;direction:ltr}
+.inv .tot{display:flex;justify-content:space-between;border-top:1px dashed #CBD5E1;padding-top:6px;font-weight:700;color:#0F369D;font-size:13px}
+.bad{background:#FDECE8;color:#9b2c1c;border-radius:10px;padding:8px 10px;font-size:12.5px;margin:0;line-height:1.7}
+.warn{background:#FFF6E5;color:#8A5A00;border-radius:10px;padding:8px 10px;font-size:12.5px;margin:0;line-height:1.7}
+.ok{background:#E8F4EE;color:#1f5d43;border-radius:10px;padding:8px 10px;font-size:12.5px;margin:0;line-height:1.7}
+.foot{display:flex;gap:8px;flex-wrap:wrap}.btn-primary{background:#0F369D;color:#fff;border-color:#0F369D}.btn-orange{background:#F15A22;color:#fff;border-color:#F15A22}
+.chip{display:inline-block;background:#0F369D;color:#fff;border-radius:12px;padding:8px 14px;font-weight:700;font-size:13px}
+.dlg{border:2px solid #F15A22}
+</style></head><body><div class="wrap">
+<p class="eyebrow">تصور بس — مفيش تنفيذ قبل موافقة المالك (أسماء وأرقام تجريبية). <b>اللي حصل مع أمينة:</b> زرار «حصّل» على كارت الزيارة كان مكتوب عليه إجمالي الزيارة كله، بس نافذة التحصيل كانت بتفتح على <b>أول فاتورة بس</b>. فالمبلغ كله اتسجّل على الفاتورة الأولى، والزيادة راحت «رصيد للمريض»، والفواتير التانية فضلت مفتوحة. <b>التصليح في الشاشة بس (مفيش تغيير في السيرفر):</b> «حصّل» يفتح كل فواتير الزيارة المفتوحة متعلّمة، والمبلغ يتوزع عليها، وأي زيادة تظهر صريحة ويتسأل عنها قبل الحفظ.</p>
+
+<section class="card"><header><h3>تسجيل تحصيل</h3><span class="tag b">دلوقتي (الغلطة)</span><button class="x" aria-label="قفل">✕</button></header>
+<p class="note">الكارت: <span class="chip">حصّل 1,400</span></p>
+<p class="pt">ملف P-2026-000777 — مريضة تجريبية · <b>كشف باطنة — باقي 400</b></p>
+<label class="f">المبلغ<input value="1400" dir="ltr"></label>
+<label class="f">طريقة السداد<select><option>نقدي</option></select></label>
+<p class="bad">بعد الحفظ: 400 على «كشف باطنة» و<b>1,000 رصيد للمريض</b> — وفاتورتين «أشعة» و«تحاليل» لسه باين عليهم باقي 1,000.</p>
+</section>
+
+<section class="card"><header><h3>تسجيل تحصيل — الزيارة كلها</h3><span class="tag a">بعد التصليح</span><button class="x" aria-label="قفل">✕</button></header>
+<p class="note">نفس الزرار: <span class="chip">حصّل 1,400</span></p>
+<p class="pt">ملف P-2026-000777 — مريضة تجريبية · زيارة النهارده</p>
+<div class="inv"><b class="h">فواتير الزيارة اللي هتتحصّل</b>
+<label><input type="checkbox" checked> كشف باطنة <span class="m">400</span></label>
+<label><input type="checkbox" checked> أشعة سونار <span class="m">600</span></label>
+<label><input type="checkbox" checked> تحاليل <span class="m">400</span></label>
+<div class="tot"><span>الإجمالي</span><span dir="ltr">1,400</span></div></div>
+<label class="f">المبلغ<input value="1400" dir="ltr"></label>
+<p class="ok">هيتوزع: كشف باطنة 400 · أشعة سونار 600 · تحاليل 400 — <b>إيصال واحد</b> ورقم عملية واحد.</p>
+<p class="note">لو المريضة هتدفع جزء بس: شيل العلامة من الفاتورة اللي مش هتتدفع دلوقتي، أو اكتب مبلغ أقل — بيتوزع على الفواتير بالترتيب.</p>
+<div class="foot"><button class="btn btn-primary">سجّل التحصيل</button><button class="btn">إلغاء</button></div>
+</section>
+
+<section class="card"><header><h3>لو المبلغ أكبر من المتعلّم</h3><span class="tag a">بعد التصليح</span><button class="x" aria-label="قفل">✕</button></header>
+<div class="inv"><b class="h">فواتير الزيارة اللي هتتحصّل</b>
+<label><input type="checkbox" checked> كشف باطنة <span class="m">400</span></label>
+<label><input type="checkbox"> أشعة سونار <span class="m">600</span></label>
+<label><input type="checkbox"> تحاليل <span class="m">400</span></label>
+<div class="tot"><span>الإجمالي</span><span dir="ltr">400</span></div></div>
+<label class="f">المبلغ<input value="1400" dir="ltr"></label>
+<p class="warn">⚠ المبلغ أكبر من الفواتير المتعلّمة بـ <b>1,000</b> — الزيادة دي هتبقى <b>رصيد للمريض</b>.</p>
+<div class="dlg" style="display:grid;gap:8px;border-radius:12px;padding:10px;background:#fff"><b>قبل الحفظ:</b><p class="note" style="color:#16212E">فيه فواتير تانية مفتوحة للزيارة دي (أشعة سونار 600 · تحاليل 400). تحب تحصّلهم بالفلوس دي بدل ما تبقى رصيد؟</p>
+<div class="foot"><button class="btn btn-primary">ضيفهم للتحصيل</button><button class="btn btn-orange">لا — خليها رصيد للمريض</button><button class="btn">رجوع</button></div></div>
+<p class="note">الرصيد للمريض مش بيتلغي — بس مش هيحصل بالغلط تاني. المراجعة المالية بتشوف التحصيل بفواتيره زي دلوقتي.</p>
+</section>
+
+<section class="card" style="grid-column:1/-1"><header><h3>ملخص</h3><button class="x" aria-label="قفل">✕</button></header>
+<p class="note">• «حصّل» على الكارت (في «حركات اليوم» وفي المواعيد) بيفتح «تسجيل تحصيل» وفيه <b>كل فواتير الزيارة المفتوحة متعلّمة</b>، والمبلغ = اللي مكتوب على الزرار.<br>
+• التحصيل بيتسجل بنفس طريقة «الدفعة دي لأكتر من فاتورة» الموجودة دلوقتي (إيصال واحد يتوزع على الفواتير) — مفيش أي تغيير في الحسابات ولا في السيرفر.<br>
+• لو المبلغ أكبر من الفواتير المتعلّمة: سطر برتقاني بالزيادة، ولو فيه فواتير مفتوحة مش متعلّمة بيسأل قبل الحفظ.<br>
+• فلوس أمينة اللي اتسجلت رصيد بالغلط: تصليحها (نقل الرصيد للفواتير المفتوحة) بيتعمل مع الحسابات لوحده — مش جزء من التعديل ده.<br>
+• مفيش حاجة بتتشال: «تحصيل فاتورة» لوحدها من جدول الفواتير فضلت زي ما هي.</p></section>
+</div></body></html>
