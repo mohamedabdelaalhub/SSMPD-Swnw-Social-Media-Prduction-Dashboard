@@ -1,7 +1,7 @@
 // Owner 2026-11-25 («طبق الكل», mockup docs/ui-references/mockups/hr-navigation-home.html): HR sections in 5 groups (one row of groups + the
 // group's sections), and one home «محتاج متابعتك» that lists everything waiting (leave/permission requests, manual attendance, files,
 // overtime, end-of-service sheets, shift swaps, insurance notices) with «افتح» to the right section; the old review tables stay under it.
-// «الشهر» only shows where it is used. Real browser, real CSS, HR manager, 1280/390. Display only: same read RPCs, no writes.
+// «الشهر المعروض» only shows where it is used. Real browser, real CSS, HR manager, 1280/390. Display only: same read RPCs, no writes.
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict'),{chromium}=require('playwright');
 const mk=(id,name,o)=>Object.assign({id,admin_id:null,full_name:name,code:'EMP-'+id,kind:'employee',department:'الاستقبال',status:'active',revision:1,leave_balance:21},o);
 const people=[mk('p1','منى أحمد السيد',{admin_id:'a1'}),mk('p2','كريم محمود',{admin_id:'a2'}),mk('p3','أحمد علي',{status:'needs_setup'}),mk('p4','محمد عادل',{kind:'unclassified'})];
