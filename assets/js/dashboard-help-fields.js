@@ -22245,6 +22245,75 @@
       "reviewed": true
     },
     {
+      "title": "التوضيح",
+      "labels": [
+        "التوضيح",
+        "اكتب التوضيح…"
+      ],
+      "text": "التوضيح اللي المالك طلبه على طلبك. بيرجّع الطلب للمالك يراجعه تاني.",
+      "article": "staff-assistant",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الشاشة اللي أنا فيها تتبعت كسياق",
+      "labels": [
+        "الشاشة اللي أنا فيها تتبعت كسياق"
+      ],
+      "text": "لو شغّالة المساعد بيعرف إنت فاتح أنهي شاشة وبيشوف أسماء الأزرار بس، علشان يرد بخطوات أدق.",
+      "article": "staff-assistant",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "إخفاء أسماء المرضى وتليفوناتهم (رقم الملف بس)",
+      "labels": [
+        "إخفاء أسماء المرضى وتليفوناتهم (رقم الملف بس)"
+      ],
+      "text": "بتخفي أسماء المرضى وأرقام التليفونات من اللي بيتبعت للمساعد أو بيتحفظ في الطلب، ويفضل رقم الملف بس.",
+      "article": "staff-assistant",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "سؤالك",
+      "labels": [
+        "سؤالك",
+        "اكتب سؤالك أو الصق صورة الشاشة…",
+        "إرفاق صورة"
+      ],
+      "text": "اكتب سؤالك أو الصق صورة الشاشة. الصورة بتتحفظ مع الطلب بس ومش بتتبعت للمساعد.",
+      "article": "staff-assistant",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة المالك على الطلب",
+      "labels": [
+        "ملاحظة المالك على الطلب",
+        "اكتب السبب أو السؤال…"
+      ],
+      "text": "للمالك: السبب لو رفضت الطلب، أو السؤال لو محتاج توضيح. إجباري، والموظف بيشوفه.",
+      "article": "staff-assistant",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الصورة",
       "labels": [
         "الصورة"
@@ -24622,9 +24691,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2124,
-    "labels": 1552,
-    "files": 176,
-    "groups": 1679
+    "definitions": 2133,
+    "labels": 1560,
+    "files": 177,
+    "groups": 1684
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
