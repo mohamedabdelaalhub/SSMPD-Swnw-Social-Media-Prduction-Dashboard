@@ -5,6 +5,9 @@
    =========================================================== */
 window.SSMPD_CONFIG = {
 
+  // إيقاف مؤقت بأمر المالك 2026-11-28: «مساعد إنستنكت» و«مساعد الموظف» القديم. غيّر القيمة لـ false يرجعوا.
+  flags: { legacyAssistantsOff: true },
+
   updateNoticeTrial: true,
 
   centerName: "مركز عيادات سونو التخصصية — فرع حدائق الأهرام",
@@ -117,7 +120,7 @@ window.SSMPD_CONFIG = {
     loadOnce("__SWNWHRAccountLinkingFix","assets/js/hr-account-linking-fix.js?v=hr-account-link-20261102-1","hr-account-linking-fix");
     loadOnce("SWNJourneySandbox","assets/js/today-operations-sandbox.js?v=journey-sandbox-20261031-1","journey-sandbox");
     loadOnce("__SWNWTodayOperationsV1","assets/js/today-operations.js?v=collect-visit-20261128-1","today-operations");
-    loadOnce("__SWNWTodayOperationsConsistency","assets/js/today-operations-consistency.js?v=supplies-20261125-1","today-operations-consistency");
+    loadOnce("__SWNWTodayOperationsConsistency","assets/js/today-operations-consistency.js?v=dup-service-20261128-1","today-operations-consistency");
     loadOnce("__SWNWTodayOperationsDisplayV1","assets/js/today-operations-display.js?v=today-simplify-20261122-1","today-operations-display");
     loadOnce("__SWNWTodayOperationsUnifiedV1","assets/js/today-operations-unified.js?v=today-board-20261107-1","today-operations-unified");
     loadOnce("__SWNWTodayOperationsFinalizeV1","assets/js/today-operations-finalize.js?v=doctor-assistant-20261120-1","today-operations-finalize");
