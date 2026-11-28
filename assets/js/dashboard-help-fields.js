@@ -22245,6 +22245,20 @@
       "reviewed": true
     },
     {
+      "title": "التوضيح",
+      "labels": [
+        "التوضيح",
+        "اكتب التوضيح…"
+      ],
+      "text": "التوضيح اللي المالك طلبه على طلبك. بيرجّع الطلب للمالك يراجعه تاني.",
+      "article": "staff-assistant",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الشاشة اللي أنا فيها تتبعت كسياق",
       "labels": [
         "الشاشة اللي أنا فيها تتبعت كسياق"
@@ -22278,6 +22292,20 @@
         "إرفاق صورة"
       ],
       "text": "اكتب سؤالك أو الصق صورة الشاشة. الصورة بتتحفظ مع الطلب بس ومش بتتبعت للمساعد.",
+      "article": "staff-assistant",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة المالك على الطلب",
+      "labels": [
+        "ملاحظة المالك على الطلب",
+        "اكتب السبب أو السؤال…"
+      ],
+      "text": "للمالك: السبب لو رفضت الطلب، أو السؤال لو محتاج توضيح. إجباري، والموظف بيشوفه.",
       "article": "staff-assistant",
       "tabs": [
         "production"
@@ -24663,9 +24691,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2129,
-    "labels": 1556,
+    "definitions": 2133,
+    "labels": 1560,
     "files": 177,
-    "groups": 1682
+    "groups": 1684
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

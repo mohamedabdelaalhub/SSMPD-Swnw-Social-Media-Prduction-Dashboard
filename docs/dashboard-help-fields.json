@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 2129,
-    "labels": 1556,
+    "definitions": 2133,
+    "labels": 1560,
     "files": 177,
-    "groups": 1682
+    "groups": 1684
   },
   "fields": [
     {
@@ -20453,6 +20453,26 @@
     },
     {
       "file": "staff-assistant.js",
+      "label": "التوضيح",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "staff-assistant",
+      "text_sha256": "a987c288d78dd90ce7b3c520f238e0825c582e4d18b98f0cd0ddfa41100c14a8"
+    },
+    {
+      "file": "staff-assistant.js",
+      "label": "اكتب التوضيح…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "staff-assistant",
+      "text_sha256": "a987c288d78dd90ce7b3c520f238e0825c582e4d18b98f0cd0ddfa41100c14a8"
+    },
+    {
+      "file": "staff-assistant.js",
       "label": "الشاشة اللي أنا فيها تتبعت كسياق",
       "name": "",
       "kind": "label",
@@ -20500,6 +20520,26 @@
       "tab": "production",
       "article": "staff-assistant",
       "text_sha256": "793affce488df1cfd749f068fd559d8b375b99ba8ee954184fd8f842d638dbc6"
+    },
+    {
+      "file": "staff-assistant.js",
+      "label": "ملاحظة المالك على الطلب",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "staff-assistant",
+      "text_sha256": "4a599a3cc93fa276bfcd01f2c2f05052fd7a279483fd9819ab0f9133079cd866"
+    },
+    {
+      "file": "staff-assistant.js",
+      "label": "اكتب السبب أو السؤال…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "staff-assistant",
+      "text_sha256": "4a599a3cc93fa276bfcd01f2c2f05052fd7a279483fd9819ab0f9133079cd866"
     },
     {
       "file": "staff-profile.js",
