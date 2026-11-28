@@ -12,7 +12,9 @@ alter function clinic_reception.journey_request_service_before_dup(uuid, uuid, u
 alter function public.journey_request_service_before_dup(uuid, uuid, uuid, uuid) rename to clinic_reception_journey_request_service;
 revoke all on function public.clinic_reception_journey_request_service(uuid, uuid, uuid, uuid) from public, anon;
 grant execute on function public.clinic_reception_journey_request_service(uuid, uuid, uuid, uuid) to authenticated;
+drop function if exists public.clinic_reception_duplicate_service_check(uuid, jsonb);
 drop function if exists clinic_reception.dup_service_refuse(jsonb, boolean);
+drop function if exists clinic_reception.dup_service_message(jsonb, boolean);
 drop function if exists clinic_reception.dup_service_find(uuid, uuid, uuid, uuid, date);
 drop function if exists clinic_reception.dup_service_clock(timestamptz);
 drop function if exists clinic_reception.dup_service_day(timestamptz);

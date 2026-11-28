@@ -1,5 +1,6 @@
 // 20261128180000 «تنبيه الخدمة المكررة» (owner 2026-11-28): the real reception screen + the real server functions (PGlite), as a
-// RECEPTION member (admin 3). The guard does not depend on the workspace mode; this DOM harness boots the trial workspace (a
+// RECEPTION member (admin 3). «أثناء التسجيل» (owner 2026-11-28): the window opens the MOMENT the service is chosen, before «حفظ».
+// The guard does not depend on the workspace mode; this DOM harness boots the trial workspace (a
 // live one needs the full finance bridge) — the LIVE path is proven by the hub dry-run as Mazen (tests/duplicate-service-live-rollback.sql). «+ إضافة خدمة» of a service already on the visit → the server refuses
 // (hint duplicate_service) → duplicate-service.js shows «الخدمة دي موجودة بالفعل» with the server's message:
 //   «لا، تراجع» → nothing saved, the form says «تراجعت — الخدمة ما اتضافتش تاني»;  ✕ and Esc → the same;
@@ -35,7 +36,7 @@ w.SSMPDAuth={currentAdmin:{id:id(3),role:'reception'}};w.SSMPDRoles={canSeeTab:(
 // the shared client exactly like db.js: rpc → {data,error}; receptionCommand = handle(client.rpc(...))
 const client={rpc:(name,args)=>{calls.push([name,JSON.parse(JSON.stringify(args))]);return rpc(name,args).then(data=>({data,error:null}),e=>({data:null,error:{message:e.message,hint:e.hint,details:e.detail,code:e.code}}));}};
 const handle=p=>Promise.resolve(p).then(r=>{if(r.error){const x=new Error(r.error.message);x.hint=r.error.hint;throw x;}return r.data;});
-w.SSMPDDb={client,receptionWorkspaces:()=>rpc('clinic_reception_workspaces'),receptionBootstrap:()=>rpc('clinic_reception_bootstrap'),receptionSnapshot:(p_workspace,p_from,p_to)=>rpc('clinic_reception_snapshot',{p_workspace,p_from,p_to}),receptionReport:(p_workspace,p_from,p_to)=>rpc('clinic_reception_report',{p_workspace,p_from,p_to}),
+w.SSMPDDb={client,receptionWorkspaces:()=>handle(client.rpc('clinic_reception_workspaces',{})),receptionBootstrap:()=>handle(client.rpc('clinic_reception_bootstrap',{})),receptionSnapshot:(p_workspace,p_from,p_to)=>handle(client.rpc('clinic_reception_snapshot',{p_workspace,p_from,p_to})),receptionReport:(p_workspace,p_from,p_to)=>handle(client.rpc('clinic_reception_report',{p_workspace,p_from,p_to})),
  receptionCommand:(p_workspace,p_action,p_payload,p_token)=>handle(client.rpc('clinic_reception_command',{p_workspace,p_action,p_payload,p_token}))};
 for(const file of ['reception-controls','reception-services','reception-look','reception-workspace','duplicate-service'])w.eval(fs.readFileSync('assets/js/'+file+'.js','utf8'));
 assert.equal(w.SSMPDDupService.wrap(),true,'client wrapped');
@@ -47,23 +48,29 @@ w.SSMPDReception.render(q('#root'));await wait(()=>q('[data-rx-section]'),'secti
 const openAdd=async()=>{for(let i=0;i<3&&q(".rx-modal");i++){const x=q(".rx-modal .modal-close")||q(".rx-modal [data-rx-cancel]");if(!x)break;x.click();await new Promise(r=>setTimeout(r,30));}assert(!q(".rx-modal"),"no window left open: "+(q(".rx-modal")&&q(".rx-modal").textContent.slice(0,120)));if(!q('[data-rx-action="visit-detail"][data-id="'+visit+'"]')){if(q('[data-rx-action="back"]')&&!q('[data-rx-section="visits"]'))click('[data-rx-action="back"]');await wait(()=>q('[data-rx-section="visits"]'),'visits tab');click('[data-rx-section="visits"]');}
  await wait(()=>q('[data-rx-action="visit-detail"][data-id="'+visit+'"]'),'visit row');click('[data-rx-action="visit-detail"][data-id="'+visit+'"]');
  await wait(()=>q('[data-rx-action="order_add"][data-id="'+visit+'"]'),'order_add button');click('[data-rx-action="order_add"][data-id="'+visit+'"]');await wait(()=>q('.rx-modal [name="service_id"]'),'order_add form');};
-const addSame=async()=>{await openAdd();set('service_id',S('INJ'));set('provider_id',provider);set('quantity','1');click('.rx-modal [type="submit"]');await wait(()=>q('[data-dup-service]'),'dup window');};
+const pick=async()=>{await openAdd();set('provider_id',provider);set('quantity','1');set('service_id',S('INJ'));await wait(()=>q('[data-dup-service]'),'dup window at choose');};
 assert.deepEqual(await orders(),['INJ']);
-// 1) same service → the window with the server's message; «لا، تراجع» → nothing saved, the form says so
-await addSame();
+// 1) choosing the same service → the window opens right away (before «حفظ»), with the server's message; nothing is sent to save
+const saves=()=>calls.filter(c=>c[0]==='clinic_reception_command'&&c[1].p_action==='order_add').length;const s0=saves();
+await pick();
 assert.match(q('[data-dup-msg]').textContent,/^الخدمة دي \(حقنة عضل\) موجودة بالفعل على الزيارة دي — اتضافت الساعة \d{1,2}:\d{2} [صم].*\. عايز تضيفها تاني فعلاً؟$/);
 assert.equal(q('[data-dup-yes]').textContent,'أيوه، ضيفها تاني');assert.equal(q('[data-dup-no]').textContent,'لا، تراجع');assert(q('[data-dup-x]'),'✕ (rule 10)');
-click('[data-dup-no]');await wait(()=>!q('[data-dup-service]'));await wait(()=>(q('.rx-modal')||w.document.body).textContent.includes('تراجعت — الخدمة ما اتضافتش تاني'),'back message');
-assert.deepEqual(await orders(),['INJ'],'nothing saved');
-if(q('.rx-modal .modal-close'))click('.rx-modal .modal-close');
-// 2) ✕ and Esc → the same (nothing saved)
-await addSame();click('[data-dup-x]');await wait(()=>!q('[data-dup-service]'));if(q('.rx-modal .modal-close'))click('.rx-modal .modal-close');
-await addSame();w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await wait(()=>!q('[data-dup-service]'));if(q('.rx-modal .modal-close'))click('.rx-modal .modal-close');
+assert.equal(saves(),s0,'nothing sent before the answer');assert(calls.some(c=>c[0]==='clinic_reception_duplicate_service_check'&&c[1].p_payload.visit_id===visit),'checked the visit at choose');
+// «لا، تراجع» → the choice is cleared, the form stays open, nothing saved
+click('[data-dup-no]');await wait(()=>!q('[data-dup-service]'));assert.equal(q('.rx-modal [name="service_id"]').value,'','choice cleared');assert(q('.rx-modal'),'form stays');
 assert.deepEqual(await orders(),['INJ']);
-// 3) «أيوه، ضيفها تاني» → resent once with confirm_duplicate → saved, the form closes
-const before=calls.filter(c=>c[1].p_payload&&c[1].p_payload.confirm_duplicate===true).length;
-await addSame();click('[data-dup-yes]');await wait(()=>!q('[data-dup-service]')&&!q('.rx-modal'),'saved');
-assert.deepEqual(await orders(),['INJ','INJ']);assert.equal(calls.filter(c=>c[1].p_payload&&c[1].p_payload.confirm_duplicate===true).length,before+1,'resent once');
+// ✕ and Esc → the same
+set('service_id',S('INJ'));await wait(()=>q('[data-dup-service]'));click('[data-dup-x]');await wait(()=>!q('[data-dup-service]'));assert.equal(q('.rx-modal [name="service_id"]').value,'');
+set('service_id',S('INJ'));await wait(()=>q('[data-dup-service]'));w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await wait(()=>!q('[data-dup-service]'));assert.equal(q('.rx-modal [name="service_id"]').value,'');
+assert.equal(saves(),s0);
+// 2) «أيوه، ضيفها تاني» at choose → «حفظ» saves it confirmed, with NO second window
+set('service_id',S('INJ'));await wait(()=>q('[data-dup-service]'));click('[data-dup-yes]');await wait(()=>!q('[data-dup-service]'));assert.equal(q('.rx-modal [name="service_id"]').value,S('INJ'),'choice kept');
+click('.rx-modal [type="submit"]');await wait(()=>!q('.rx-modal'),'saved');assert(!q('[data-dup-service]'),'no second window');
+assert.deepEqual(await orders(),['INJ','INJ']);const last=calls.filter(c=>c[1].p_action==='order_add').pop();assert.equal(last[1].p_payload.confirm_duplicate,true,'sent confirmed');
+// 3) safety net: a save that was not checked at choose (e.g. another screen) still gets the window after «حفظ»
+w.SSMPDDupService.setWorkspace(null);await openAdd();set('provider_id',provider);set('quantity','1');set('service_id',S('INJ'));await new Promise(r=>setTimeout(r,60));assert(!q('[data-dup-service]'),'no check without a workspace');
+w.SSMPDDupService.setWorkspace(ws);click('.rx-modal [type="submit"]');await wait(()=>q('[data-dup-service]'),'window after save');click('[data-dup-no]');
+await wait(()=>(q('.rx-modal')||w.document.body).textContent.includes('تراجعت — الخدمة ما اتضافتش تاني'),'back message');assert.deepEqual(await orders(),['INJ','INJ']);
 // 4) another service → no window
 await openAdd();set('service_id',S('ECG'));set('provider_id',provider);set('quantity','1');click('.rx-modal [type="submit"]');await wait(()=>!q('.rx-modal'),'ECG saved');assert(!q('[data-dup-service]'));
 assert.deepEqual(await orders(),['INJ','INJ','ECG']);
@@ -73,5 +80,5 @@ const real=client.rpc;let n=0;const seen=[];
 w.SSMPDDb.client.__dupServiceWrapped=false;const c2={rpc:(name,args)=>{seen.push(name);return Promise.resolve(name==='clinic_reception_journey_request_service'?fakeDup:{data:{order_id:'x'},error:null});}};w.SSMPDDb.client=c2;w.SSMPDDupService.wrap();
 const pr=c2.rpc('clinic_reception_journey_request_service',{p_workspace:ws,p_appointment:app,p_service:S('ECG'),p_token:randomUUID()});await wait(()=>q('[data-dup-service]'));click('[data-dup-yes]');const jr=await pr;
 assert.deepEqual(seen,['clinic_reception_journey_request_service','clinic_reception_journey_request_service_again']);assert.equal(jr.data.order_id,'x');
-assert.deepEqual(errors,[]);await db.close();console.log('PASS duplicate service UI (reception member, real server functions): «+ إضافة خدمة» of the same service → «الخدمة دي موجودة بالفعل» with the server message; «لا، تراجع» / ✕ / Esc → nothing saved; «أيوه، ضيفها تاني» → resent once → saved; another service → no window; journey request → «again» RPC.');
+assert.deepEqual(errors,[]);await db.close();console.log('PASS duplicate service UI (reception member, real server functions): choosing the same service in «+ إضافة خدمة» opens «الخدمة دي موجودة بالفعل» at once (before «حفظ»); «لا، تراجع» / ✕ / Esc clear the choice, nothing saved; «أيوه، ضيفها تاني» → «حفظ» saves it confirmed with no second window; the window after «حفظ» stays as a safety net; another service → no window; journey request → «again» RPC.');
 })().catch(e=>{console.error(e);process.exit(1);});

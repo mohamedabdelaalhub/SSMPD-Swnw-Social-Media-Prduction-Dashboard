@@ -2,7 +2,7 @@
 -- Run the WHOLE file as postgres, BEFORE the apply. ONE transaction, ends with ROLLBACK — no booking, no visit, no order kept.
 -- Applies the migration inside the txn, then acts as Mazen (reception, auth sub f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb) on the LIVE
 -- reception workspace with a rolled-back test patient (linked archive file) and a real doctor + a real service he serves today:
---   book (ok) · same token replay (same answer) · same service again today (refused, hint duplicate_service, the owner's message)
+--   check at choose (read-only) · book (ok) · same token replay (same answer) · same service again today (refused, hint duplicate_service, the owner's message)
 --   · confirm_duplicate (saved) · arrive · «+ إضافة خدمة» same service on the visit (refused) · confirm (saved) · another service (ok)
 --   · journey «طلب خدمة» same service (refused) · «again» RPC (saved) · Mazen can execute the «again» RPC · rollback body restores.
 -- Reads of clinic_reception.* happen as postgres only; the impersonated user calls the public RPCs only (like the browser).
@@ -69,17 +69,51 @@ begin
   return null;
 end $$;
 
-create function clinic_reception.dup_service_refuse(d jsonb, p_booking boolean) returns void language plpgsql set search_path = pg_catalog as $$
-begin
-  raise exception '%', 'الخدمة دي (' || (d->>'service') || ') ' ||
+create function clinic_reception.dup_service_message(d jsonb, p_booking boolean) returns text language sql immutable set search_path = pg_catalog as $$
+  select 'الخدمة دي (' || (d->>'service') || ') ' ||
       case d->>'where'
         when 'visit' then 'موجودة بالفعل على الزيارة دي — اتضافت الساعة ' || (d->>'at')
         when 'today' then 'موجودة بالفعل للمريض ده النهارده (زيارة ' || coalesce(d->>'visit_no', '') || ') — اتضافت الساعة ' || (d->>'at')
         else 'محجوزة بالفعل للمريض ده النهارده الساعة ' || (d->>'at') end ||
       case when coalesce(d->>'by', '') <> '' then ' بواسطة ' || (d->>'by') else '' end ||
       '. عايز ' || case when p_booking then 'تحجزها' else 'تضيفها' end || ' تاني فعلاً؟'
-    using errcode = 'P0001', hint = 'duplicate_service', detail = d::text;
+$$;
+
+create function clinic_reception.dup_service_refuse(d jsonb, p_booking boolean) returns void language plpgsql set search_path = pg_catalog as $$
+begin
+  raise exception '%', clinic_reception.dup_service_message(d, p_booking) using errcode = 'P0001', hint = 'duplicate_service', detail = d::text;
 end $$;
+
+-- «أثناء التسجيل» (owner 2026-11-28: «يطلع له تنبيه … قبل ما يضيف اصلا عشان نقضي على التكرار من بابه»): the screens ask this read-only
+-- check the moment a service is chosen (before «حفظ»). payload: service_id + one of visit_id / appointment_id / patient_id (+ day or
+-- starts_at for a booking). Returns {duplicate:false} or {duplicate:true, message, booking, …detail}. Saves nothing.
+create function public.clinic_reception_duplicate_service_check(p_workspace uuid, p_payload jsonb)
+returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public as $$
+declare me uuid := public.my_admin_id(); v_patient uuid; v_visit uuid; v_service uuid; v_day date; d jsonb; booking boolean := true;
+begin
+  if me is null or not exists (select 1 from clinic_reception.workspaces where id = p_workspace) then raise exception 'غير مسموح'; end if;
+  if not (public.has_role('super_admin') or exists (select 1 from clinic_reception.members m where m.workspace_id = p_workspace and m.admin_id = me)
+          or exists (select 1 from clinic_reception.workspaces x where x.id = p_workspace and x.owner_id = me)) then raise exception 'غير مسموح'; end if;
+  v_service := nullif(p_payload->>'service_id', '')::uuid;
+  if nullif(p_payload->>'visit_id', '') is not null then
+    select v.id, v.patient_id, clinic_reception.dup_service_day(v.opened_at) into v_visit, v_patient, v_day
+      from clinic_reception.visits v where v.id = (p_payload->>'visit_id')::uuid and v.workspace_id = p_workspace;
+    booking := false;
+  elsif nullif(p_payload->>'appointment_id', '') is not null then
+    select v.id, v.patient_id, clinic_reception.dup_service_day(v.opened_at) into v_visit, v_patient, v_day
+      from clinic_reception.visits v where v.appointment_id = (p_payload->>'appointment_id')::uuid and v.workspace_id = p_workspace and v.status = 'open';
+    booking := false;
+  else
+    v_patient := nullif(p_payload->>'patient_id', '')::uuid;
+    v_day := coalesce(nullif(p_payload->>'day', '')::date, clinic_reception.dup_service_day(coalesce(nullif(p_payload->>'starts_at', '')::timestamptz, now())));
+  end if;
+  if v_service is null or v_patient is null or v_day is null then return jsonb_build_object('duplicate', false); end if;
+  d := clinic_reception.dup_service_find(p_workspace, v_patient, v_visit, v_service, v_day);
+  if d is null then return jsonb_build_object('duplicate', false); end if;
+  return d || jsonb_build_object('duplicate', true, 'booking', booking, 'message', clinic_reception.dup_service_message(d, booking));
+end $$;
+revoke all on function public.clinic_reception_duplicate_service_check(uuid, jsonb) from public, anon;
+grant execute on function public.clinic_reception_duplicate_service_check(uuid, jsonb) to authenticated;
 
 alter function public.clinic_reception_command(uuid, text, jsonb, uuid) rename to command_before_dup_service;
 alter function public.command_before_dup_service(uuid, text, jsonb, uuid) set schema clinic_reception;
@@ -158,7 +192,8 @@ do $$ declare r record; pair text[]; begin
   execute 'revoke all on function clinic_reception.journey_request_service_before_dup(uuid,uuid,uuid,uuid) from public, anon, authenticated';
 end $$;
 revoke all on function clinic_reception.dup_service_day(timestamptz), clinic_reception.dup_service_clock(timestamptz),
-  clinic_reception.dup_service_find(uuid, uuid, uuid, uuid, date), clinic_reception.dup_service_refuse(jsonb, boolean)
+  clinic_reception.dup_service_find(uuid, uuid, uuid, uuid, date), clinic_reception.dup_service_refuse(jsonb, boolean),
+  clinic_reception.dup_service_message(jsonb, boolean)
   from public, anon, authenticated;
 
 do $t$
@@ -219,6 +254,12 @@ begin
     insert into _r(step, ok, detail) values ('Mazen: arrive', v is not null, null);
   exception when others then insert into _r(step, ok, detail) values ('Mazen: arrive', false, left(sqlerrm, 160)); end;
   if v is not null then
+    -- 5b) «أثناء التسجيل»: the check the screen calls the moment the service is chosen (Mazen) → duplicate + the message, saves nothing
+    begin r2 := public.clinic_reception_duplicate_service_check(w, jsonb_build_object('visit_id', v, 'service_id', svc));
+      insert into _r(step, ok, detail) values ('check at choose (Mazen) → duplicate + message', (r2->>'duplicate')::boolean and r2->>'message' like 'الخدمة دي (%) موجودة بالفعل على الزيارة دي%', left(r2->>'message', 200));
+      r2 := public.clinic_reception_duplicate_service_check(w, jsonb_build_object('visit_id', v, 'service_id', svc2));
+      insert into _r(step, ok, detail) values ('check at choose, another service → no warning', not (r2->>'duplicate')::boolean, null);
+    exception when others then insert into _r(step, ok, detail) values ('check at choose (Mazen)', false, left(sqlerrm, 160)); end;
     -- 6) «+ إضافة خدمة» same service on the visit → refused
     begin perform public.clinic_reception_command(w, 'order_add', jsonb_build_object('visit_id', v, 'service_id', svc, 'provider_id', pr, 'quantity', 1), gen_random_uuid());
       insert into _r(step, ok, detail) values ('«+ إضافة خدمة» same service → refused', false, 'NOT refused');
@@ -261,7 +302,9 @@ alter function clinic_reception.journey_request_service_before_dup(uuid, uuid, u
 alter function public.journey_request_service_before_dup(uuid, uuid, uuid, uuid) rename to clinic_reception_journey_request_service;
 revoke all on function public.clinic_reception_journey_request_service(uuid, uuid, uuid, uuid) from public, anon;
 grant execute on function public.clinic_reception_journey_request_service(uuid, uuid, uuid, uuid) to authenticated;
+drop function if exists public.clinic_reception_duplicate_service_check(uuid, jsonb);
 drop function if exists clinic_reception.dup_service_refuse(jsonb, boolean);
+drop function if exists clinic_reception.dup_service_message(jsonb, boolean);
 drop function if exists clinic_reception.dup_service_find(uuid, uuid, uuid, uuid, date);
 drop function if exists clinic_reception.dup_service_clock(timestamptz);
 drop function if exists clinic_reception.dup_service_day(timestamptz);

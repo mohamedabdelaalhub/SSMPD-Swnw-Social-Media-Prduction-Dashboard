@@ -51,6 +51,14 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  // cancelled orders do not count: cancel every XR then add XR again → fine
  await q("update clinic_reception.orders set status='cancelled' where visit_id=$1 and service_id=$2",[v,S('XR')],3);
  await cmd('order_add',{visit_id:v,service_id:S('XR'),provider_id:provider,quantity:1});
+ // «أثناء التسجيل»: the read-only check the screens call the moment a service is chosen (reception user), saves nothing
+ const chk=p=>rpc('clinic_reception_duplicate_service_check',{p_workspace:w,p_payload:p});const before=+(await q('select count(*) n from clinic_reception.orders',[],3))[0].n;
+ let c1=await chk({visit_id:v,service_id:S('INJ')});assert.equal(c1.duplicate,true);assert.equal(c1.booking,false);assert.match(c1.message,/^الخدمة دي \(حقنة عضل\) موجودة بالفعل على الزيارة دي — اتضافت الساعة .+ عايز تضيفها تاني فعلاً؟$/);
+ c1=await chk({appointment_id:b1.id,service_id:S('INJ')});assert.equal(c1.duplicate,true);
+ c1=await chk({patient_id:A,day:date,service_id:S('ECG')});assert.equal(c1.duplicate,true);assert.equal(c1.booking,true);assert.match(c1.message,/عايز تحجزها تاني فعلاً؟$/);
+ assert.equal((await chk({patient_id:B,day:tomorrow,service_id:S('XR')})).duplicate,false);assert.equal((await chk({visit_id:v})).duplicate,false);
+ assert.equal(+(await q('select count(*) n from clinic_reception.orders',[],3))[0].n,before,'the check saves nothing');
+ await db.exec('reset role');assert.equal((await db.query("select has_function_privilege('anon','public.clinic_reception_duplicate_service_check(uuid,jsonb)','execute') x")).rows[0].x,false);await as(3);
  // journey «طلب خدمة» on the same visit → refused; the «again» RPC adds it
  await refused(rpc('clinic_reception_journey_request_service',{p_workspace:w,p_appointment:b1.id,p_service:S('INJ'),p_token:randomUUID()}),/موجودة بالفعل على الزيارة دي/,'visit');
  const jr=await rpc('clinic_reception_journey_request_service_again',{p_workspace:w,p_appointment:b1.id,p_service:S('INJ'),p_token:randomUUID()});assert(jr.order_id,'again adds it');
@@ -66,5 +74,5 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  await db.exec(fs.readFileSync('supabase/rollbacks/20261128180000_duplicate_service_warn.rollback.sql','utf8'));
  assert.equal((await db.query("select to_regprocedure('clinic_reception.command_before_dup_service(uuid,text,jsonb,uuid)') p")).rows[0].p,null);
  await as(3);await cmd('book',{patient_id:A,provider_id:provider,service_id:S('INJ'),starts_at:date+'T11:00:00Z'});   // no guard after rollback
- await db.close();console.log('PASS duplicate service: booking / walk-in / «+ إضافة خدمة» / journey request refused with the owner\'s message, confirm or «again» adds it, cancelled / other service / other day / other patient pass, replay = first answer, closed inner functions, rollback.');
+ await db.close();console.log('PASS duplicate service: the read-only check at choose (visit / appointment / patient+day, saves nothing); booking / walk-in / «+ إضافة خدمة» / journey request refused with the owner\'s message, confirm or «again» adds it, cancelled / other service / other day / other patient pass, replay = first answer, closed inner functions, rollback.');
 })().catch(e=>{console.error(e);process.exit(1);});
