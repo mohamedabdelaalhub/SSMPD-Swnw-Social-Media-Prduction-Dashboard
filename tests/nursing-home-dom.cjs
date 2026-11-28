@@ -24,10 +24,10 @@ function mk(opts){opts=opts||{};const d=new JSDOM('<body><div id="h"></div><butt
  w.SSMPDDb={client:{rpc}};w.SSMPDRenderPatients={openPatientById:id=>{w.__opened=id;}};
  w.SSMPDReceptionModules={sections:()=>[['journey','x','y']],panel:()=>'<p>j</p>'};return {w,calls};}
 (async()=>{
- for(const kind of ['store','nostore','plain']){
+ for(const kind of ['store','keeper','nostore','plain']){
   const {w}=mk({roles:kind==='store'?['head_nursing']:['nursing']});const q=s=>w.document.querySelector(s),qa=s=>[...w.document.querySelectorAll(s)];
   const tabOk=kind!=='plain',went=[],selected=[];let navClicks=0,snaps=0;
-  w.SSMPDAuth.currentAdmin.id='u-'+kind;const base=w.SSMPDDb.client.rpc;w.SSMPDDb.client.rpc=async(n,a)=>{if(n==='inventory_workspace_snapshot'){snaps++;return {data:{location_id:'loc-dental',can_receive:kind==='store',can_manage:false,me:'u-'+kind,staff:[]},error:null};}return base(n,a);};
+  w.SSMPDAuth.currentAdmin.id='u-'+kind;const base=w.SSMPDDb.client.rpc;w.SSMPDDb.client.rpc=async(n,a)=>{if(n==='inventory_workspace_snapshot'){snaps++;return {data:{location_id:'loc-dental',can_receive:kind==='store'||kind==='keeper',can_manage:kind==='keeper',me:'u-'+kind,staff:[]},error:null};}return base(n,a);};
   w.SSMPDRoles={hasAnyRole:(a,l)=>(a.roles||[]).some(r=>l.includes(r)),canSeeTab:(a,t)=>t==='inventory'?tabOk:true,canModuleAction:(a,m,act)=>m==='inventory'?tabOk&&act==='create':true};
   w.SSMPDPerformerSupplies={mount(){},mountKit(){}};if(tabOk){w.SSMPDRenderInventory={go:v=>{went.push(v);}};w.SSMPDInventoryWorkspace={select:id=>{selected.push(id);}};}
   w.document.querySelector('[data-goto="patients"]').setAttribute('data-goto','inventory');w.document.querySelector('[data-goto=inventory]').onclick=()=>{navClicks++;};
@@ -37,17 +37,19 @@ function mk(opts){opts=opts||{};const d=new JSDOM('<body><div id="h"></div><butt
   w.document.getElementById('h').dispatchEvent(new w.Event('x'));
   await sleep(150);
   const acts=qa('.nh [data-act]').map(b=>b.dataset.act);
-  if(kind==='store'){
+  if(kind==='store'||kind==='keeper'){
    assert.equal(snaps,1,'one snapshot call (cached)');
-   assert.deepEqual(acts,['visit','issue','pack','patient','kit','request','transfer','count','balance','moves','vitals'],'storekeeper sees every button: '+acts);
+   assert.deepEqual(acts,kind==='store'?['visit','issue','pack','patient','kit','request','transfer','count','balance','moves','vitals']:['visit','issue','pack','patient','waste','request','transfer','count','balance','moves','vitals'],'buttons for '+kind+': '+acts);
+   assert.equal(acts.includes('waste'),kind==='keeper','«تسجيل هالك» only when the snapshot says can_manage (storekeeper/manager of the store)');
    assert.deepEqual(qa('.nh-grp h4').map(h=>h.textContent),['الصرف والاستهلاك','المخزن والتوريد','المريض']);
    assert(!/تكلفة|سعر/.test(q('.nh').textContent),'no price/cost text in the panel');
    // each inventory button opens the matching view through the inventory nav
-   const map={issue:'usage',pack:'usage',patient:'usage',request:'requests',transfer:'transfers',count:'counts',balance:'balances',moves:'movements'};
+   const map={issue:'usage',pack:'usage',patient:'usage',...(kind==='keeper'?{waste:'items'}:{}),request:'requests',transfer:'transfers',count:'counts',balance:'balances',moves:'movements'};
    for(const [a,v] of Object.entries(map)){went.length=0;selected.length=0;navClicks=0;q('.nh [data-act="'+a+'"]').click();await sleep(120);assert.equal(navClicks,1,a+' opens the inventory tab');assert.deepEqual(went,[v],a+' lands on '+v);assert.deepEqual(selected,['loc-dental'],a+' opens on the user\'s own store');}
    // «فتحت عبوة جديدة» pre-fills quantity 1 and the purpose once the usage form appears
    const f=w.document.createElement('form');f.setAttribute('data-w-usage','');f.innerHTML='<select name="item"></select><input name="quantity"><input name="note">';w.document.body.appendChild(f);
    went.length=0;q('.nh [data-act="pack"]').click();await sleep(500);assert.equal(f.querySelector('[name=quantity]').value,'1');assert(f.querySelector('[name=note]').value.startsWith('فتح عبوة جديدة'),'purpose written: '+f.querySelector('[name=note]').value);
+   if(kind==='keeper'){const wb=w.document.createElement('button');wb.setAttribute('data-writeoff','');let wc=0;wb.onclick=()=>{wc++;};w.document.body.appendChild(wb);q('.nh [data-act="waste"]').click();await sleep(500);assert.equal(wc,1,'«تسجيل هالك» opens the existing write-off modal');}
    const pb=w.document.createElement('button');pb.setAttribute('data-w-usage-patient','');let pc=0;pb.onclick=()=>{pc++;};w.document.body.appendChild(pb);q('.nh [data-act="patient"]').click();await sleep(500);assert.equal(pc,1,'extra-supply flow opened');
   } else {
    assert(!acts.some(a=>['issue','pack','patient','request','transfer','count','balance','moves'].includes(a)),kind+' has no inventory buttons: '+acts);
@@ -60,5 +62,5 @@ function mk(opts){opts=opts||{};const d=new JSDOM('<body><div id="h"></div><butt
   w.close();
  }
  const idx=fs.readFileSync('index.html','utf8'),cfg=fs.readFileSync('config.js','utf8');assert(/nursing-home\.css\?v=/.test(idx),'css loaded in index.html');assert(/loadOnce\("__SWNWNursingHomeV1","assets\/js\/nursing-home\.js\?v=/.test(cfg)&&cfg.indexOf('nursing-home.js')<cfg.indexOf('nursing-day-ops.js'),'js loaded by config.js before nursing-day-ops');
- console.log('PASS nursing home launcher: groups per role (storekeeper with a store row sees all 11; a nurse with the inventory tab but no store row, or without the tab, sees none of the inventory ones), inventory views opened directly, «فتحت عبوة جديدة» pre-filled, original buttons kept, no price text.');
+ console.log('PASS nursing home launcher: groups per role (a store keeper (can_manage) sees all 12 incl. «تسجيل هالك», a receiver 11; a nurse with the inventory tab but no store row, or without the tab, sees none of the inventory ones), inventory views opened directly, «فتحت عبوة جديدة» pre-filled, original buttons kept, no price text.');
 })().catch(e=>{console.error(e);process.exit(1);});
