@@ -1,5 +1,5 @@
 /* «شغل اليوم — التمريض» launcher — Sonu Glass (docs/SONU-GLASS-STYLE.md), mockup nursing-home.html. */
-.nh{display:grid;gap:16px;margin-top:16px}
+.nh{display:grid;gap:16px;margin-top:16px}.nh:empty{display:none}
 .nh-grp{background:var(--glass-fill,rgba(255,255,255,.66));border:1px solid var(--glass-line,rgba(15,54,157,.10));border-radius:16px;box-shadow:var(--glass-shadow,0 10px 30px rgba(15,54,157,.09)),inset 0 1px 0 var(--glass-edge,rgba(255,255,255,.85));padding:14px 16px;display:grid;gap:12px}
 .nh-gh{display:flex;justify-content:space-between;align-items:center;gap:8px}.nh-gh h4{margin:0;font-size:16px}.nh-gh small{color:#5b6b82}
 .nh-btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
