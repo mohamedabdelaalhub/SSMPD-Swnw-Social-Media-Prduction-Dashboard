@@ -1,0 +1,42 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: شاشة التمريض وأمين المخزن — كل الأزرار قدامه</title>
+<style>@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+*{box-sizing:border-box}
+:root{--glass-fill:rgba(255,255,255,.66);--glass-edge:rgba(255,255,255,.85);--glass-line:rgba(15,54,157,.10);--glass-shadow:0 10px 30px rgba(15,54,157,.09);--ui-hero:linear-gradient(120deg,#0F369D,#1c4fc7)}
+body{margin:0;padding:16px;background:#F4F7FD;background-image:radial-gradient(900px 520px at 92% -6%,rgba(28,79,199,.10),transparent 60%),radial-gradient(700px 460px at 4% 8%,rgba(241,90,34,.06),transparent 60%);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;font-size:14px}
+.wrap{max-width:1040px;margin:auto;display:grid;gap:16px;min-width:0}.wrap>*{min-width:0}
+.hero{background:var(--ui-hero);background-image:radial-gradient(120% 160% at 88% -30%,rgba(255,255,255,.26),transparent 55%),var(--ui-hero);color:#fff;border:1px solid #ffffff20;border-radius:18px;padding:20px 22px;box-shadow:0 8px 24px #0f369d20;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hero h2{margin:0;font-size:20px}.hero small{display:block;color:#E3EBFF;font-size:13px;margin-top:2px}.hero .who{background:#ffffff18;border:1px solid #ffffff45;border-radius:12px;padding:8px 14px;font-size:13px}
+.glass{background:var(--glass-fill);border:1px solid var(--glass-line);border-radius:16px;box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-edge)}
+.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.tile{padding:16px;display:grid;grid-template-columns:44px 1fr;gap:4px 12px;align-items:center;text-align:start;font:inherit;color:inherit;cursor:pointer}
+.ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;grid-row:span 2;font-size:20px;font-weight:800}.i1{background:#EAF0FF;color:#0F369D}.i2{background:#FFF1E8;color:#F15A22}.i3{background:#E6F3EC;color:#2F7D5C}.i4{background:#EEE9FB;color:#5B3FB5}
+.tile small{color:#5b6b82;font-size:13px}.tile b{font-size:30px;font-weight:800;line-height:1.1}.n1{color:#0F369D}.n2{color:#F15A22}.n3{color:#2F7D5C}.n4{color:#5B3FB5}
+.grp{padding:14px 16px;display:grid;gap:12px}.gh{display:flex;justify-content:space-between;align-items:center}.gh h4{margin:0;font-size:16px}.gh small{color:#5b6b82}
+.btns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.act{display:grid;grid-template-columns:44px 1fr;gap:2px 12px;align-items:center;text-align:start;border:1px solid #D5DEEE;background:#fff;border-radius:14px;padding:12px;min-height:72px;font:inherit;color:#16212E;cursor:pointer}
+.act .ico{width:44px;height:44px;border-radius:12px;grid-row:span 2;font-size:18px}.act b{font-size:15px;line-height:1.5}.act small{color:#5b6b82;font-size:12px;line-height:1.5}
+.act.pri{border-color:#0F369D;background:#F5F8FF}.act .bd{justify-self:start;background:#F15A22;color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:1px 8px;margin-inline-start:6px}
+.nurse .storegrp{display:none}.v{display:none}.nurse .v{display:block}
+.note{font-size:12px;color:#8a4b00;background:#FFF3E0;border-radius:8px;padding:8px 12px;line-height:1.8}
+@media(max-width:760px){body{padding:10px}.hero{padding:16px}.sum{grid-template-columns:1fr 1fr;gap:16px}.tile{padding:10px;grid-template-columns:1fr}.tile>.ico{display:none}.tile b{font-size:24px}.btns{grid-template-columns:1fr;gap:12px}}
+</style>
+<div class="wrap" id="app">
+<div class="hero"><div><h2>شغل اليوم — تمريض الأسنان</h2><small>مخزني: مخزن الأسنان · حدائق الأهرام</small></div><span class="who">هدى أمينة · رئيسي أسنان</span></div>
+<div class="sum"><button class="tile glass"><span class="ico i2">!</span><small>زيارات محتاجة تسجيل مستلزمات</small><b class="n2">3</b></button><button class="tile glass"><span class="ico i2">◷</span><small>استهلاك أمس ناقص</small><b class="n2">2</b></button><button class="tile glass storegrp"><span class="ico i4">⇄</span><small>تحويلات مستنية استلام</small><b class="n4">1</b></button><button class="tile glass storegrp"><span class="ico i1">▤</span><small>أصناف قربت تخلص</small><b class="n1">4</b></button></div>
+<div class="grp glass"><div class="gh"><h4>الصرف والاستهلاك</h4><small>اللي بتعمله كل يوم</small></div><div class="btns">
+<button class="act pri"><span class="ico i1">＋</span><b>استهلاك الزيارة <span class="bd">3</span></b><small>سجّل المستلزمات اللي اتصرفت على زيارة المريض</small></button>
+<button class="act pri"><span class="ico i2">◷</span><b>استهلاك أمس <span class="bd">2</span></b><small>كمّل اللي ناقص من إمبارح</small></button>
+<button class="act pri storegrp"><span class="ico i3">↗</span><b>صرف داخلي من مخزني</b><small>صرف صنف من مخزن الأسنان لاستخدام داخلي</small></button>
+<button class="act"><span class="ico i1">✚</span><b>صرف مستلزم إضافي لمريض</b><small>مستلزم زيادة على الخدمة</small></button>
+<button class="act"><span class="ico i4">♥</span><b>طقم الفيتلة</b><small>مستلزمات قياس العلامات الحيوية</small></button>
+<button class="act storegrp"><span class="ico i2">✕</span><b>تسجيل هالك</b><small>صنف اتلف أو انتهت صلاحيته</small></button></div></div>
+<div class="grp glass storegrp"><div class="gh"><h4>المخزن والتوريد</h4><small>مخزن الأسنان</small></div><div class="btns">
+<button class="act"><span class="ico i1">▦</span><b>طلب توريد</b><small>اطلب أصناف ناقصة من المشتريات</small></button>
+<button class="act"><span class="ico i4">⇄</span><b>تحويل / استلام من مخزن <span class="bd">1</span></b><small>حوّل لمخزن تاني أو استلم تحويل واصل</small></button>
+<button class="act"><span class="ico i3">✓</span><b>جرد</b><small>عدّ الأصناف وسجّل الفرق</small></button>
+<button class="act"><span class="ico i1">▤</span><b>رصيد مخزني</b><small>الكمية المتاحة والصلاحيات (من غير أسعار)</small></button>
+<button class="act"><span class="ico i1">≡</span><b>سجل الحركات</b><small>كل الصرف والاستلام</small></button></div></div>
+<div class="grp glass"><div class="gh"><h4>المريض</h4><small>قبل الدكتور</small></div><div class="btns"><button class="act pri"><span class="ico i3">♥</span><b>العلامات الحيوية</b><small>قياس وتسجيل وإبلاغ الدكتور</small></button></div></div>
+<div class="note">تصور بدون كود. كل زرار بيفتح نافذته على طول، ومفيش شجرة أقسام ولا «افتح مخزن / افتح صرف». الزرار ما يظهرش غير لو السيرفر هيقبله للدور ده (القاعدة 9): ممرضة من غير مخزن تشوف «الصرف والاستهلاك» (بدون «صرف داخلي» و«هالك») و«المريض» بس، وأمين المخزن يشوف الكل. ومفيش أي سعر تكلفة في الشاشة (#969). الأرقام والأزرار الحالية كلها موجودة (لا شيء يُحذف).</div>
+</div>
+<script>if(location.hash==='#nurse')document.getElementById('app').classList.add('nurse')</script>
