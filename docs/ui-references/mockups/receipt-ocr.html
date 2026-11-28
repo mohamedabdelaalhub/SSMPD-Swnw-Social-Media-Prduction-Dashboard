@@ -34,10 +34,10 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px so
    <label>رقم العملية<input placeholder="هيتكتب لوحده — أو اكتبه"></label>
   </div>
   <div class="card"><div class="mh"><h3>٢) اتقرا ✓</h3><button class="x" aria-label="إغلاق">✕</button></div>
-   <label>طريقة الدفع<select><option>إنستا باي</option></select></label>
-   <div class="done"><span class="thumb"></span><div><b>✓ الصورة جاهزة</b><small>screenshot-instapay.jpg</small></div><button class="btn" type="button">تغيير</button></div>
+   <label>طريقة الدفع<select><option>فيزا (ماكينة)</option></select></label>
+   <div class="done"><span class="thumb"></span><div><b>✓ الصورة جاهزة</b><small>pos-slip-2.jpg</small></div><button class="btn" type="button">تغيير</button></div>
    <label>رقم العملية<input class="filled" value="458921736015"></label>
-   <div class="read ok">🔎 اتقرا من الصورة: «Reference No. 458921736015» — راجعه قبل الحفظ. المبلغ في الصورة <b>400</b> = المبلغ اللي بتحصّله ✓</div>
+   <div class="read ok">🔎 اتقرا من الصورة: «RRN 458921736015» — راجعه قبل الحفظ. المبلغ في الصورة <b>400</b> = المبلغ اللي بتحصّله ✓</div>
    <div><button class="btn pri" type="button">حفظ التحصيل</button> <button class="btn" type="button">تراجع</button></div>
   </div>
   <div class="card"><div class="mh"><h3>٣) لقيت أكتر من رقم</h3><button class="x" aria-label="إغلاق">✕</button></div>
@@ -61,12 +61,20 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-top:1px so
    <div class="read ok">🔎 الإيصال ده مافيهوش رقم عملية، فعملنا مرجع من الصورة: <b dir="ltr">VF</b> + رقم الموبايل اللي حوّل <b dir="ltr">01012345678</b> + التاريخ <b dir="ltr">27-11</b>. راجعه قبل الحفظ.</div>
    <div class="read wait">لو نفس المرجع اتسجل قبل كده (نفس الرقم حوّل مرتين في نفس اليوم) بيتزود لوحده <b dir="ltr">-2</b> ثم <b dir="ltr">-3</b>… → <b dir="ltr">VF-01012345678-27-11-2</b> — عمره ما بيتكرر.</div>
   </div>
+  <div class="card"><div class="mh"><h3>٦) آخر حل — مفيش رقم عملية ولا موبايل</h3><button class="x" aria-label="إغلاق">✕</button></div>
+   <label>طريقة الدفع<select><option>إنستا باي</option></select></label>
+   <div class="done"><span class="thumb"></span><div><b>✓ الصورة جاهزة</b><small>screenshot-instapay.jpg</small></div><button class="btn" type="button">تغيير</button></div>
+   <label>رقم العملية<input class="filled" value="IP-1234-27-11"></label>
+   <div class="read ok">🔎 الصورة مافيهاش رقم عملية ولا رقم موبايل (المالك: «انستا باي مافيهوش رقم عملية ولا رقم موبايل»)، فعملنا مرجع: <b dir="ltr">IP</b> (حرف الطريقة) + رقم ملف المريض <b dir="ltr">1234</b> + التاريخ <b dir="ltr">27-11</b>. راجعه قبل الحفظ.</div>
+   <div class="read wait">حرف الطريقة: <b dir="ltr">IP</b> إنستا باي · <b dir="ltr">VF</b> فودافون كاش · <b dir="ltr">CC</b> فيزا · <b dir="ltr">BK</b> تحويل بنكي. لو المرجع اتسجل قبل كده بيتزود <b dir="ltr">-2</b>، <b dir="ltr">-3</b>… لوحده.</div>
+  </div>
  </div>
  <div class="card"><h3>إزاي بيختار الرقم</h3>
   <table><thead><tr><th>نوع الإيصال</th><th>بيدوّر على</th><th>مثال</th></tr></thead><tbody>
-   <tr><td>إنستا باي (سكرين شوت)</td><td>Reference / رقم المرجع / Transaction ID</td><td dir="ltr">458921736015</td></tr>
+   <tr><td>إنستا باي (سكرين شوت)</td><td>Reference / رقم المرجع لو موجود — غالباً مش موجود (المالك)، فبيروح لآخر حل</td><td dir="ltr">IP-1234-27-11</td></tr>
    <tr><td>فودافون كاش / محافظ</td><td>رقم العملية / Transaction ID لو موجود — <b>لو مش موجود</b> (المالك: «تحصيل فودافون كاش مالوش رقم عملية»): رقم الموبايل اللي حوّل + تاريخ التحويل → <span dir="ltr">VF-موبايل-يوم-شهر</span>، ولو اتكرر <span dir="ltr">-2</span>، <span dir="ltr">-3</span>…</td><td dir="ltr">VF-01012345678-27-11</td></tr>
    <tr><td>فيزا — إيصال الماكينة</td><td>RRN أولاً، وبعده Auth Code / Approval</td><td dir="ltr">RRN 331207458812</td></tr>
+   <tr><td><b>آخر حل — أي طريقة</b></td><td>مفيش رقم عملية ولا موبايل في الصورة → حرف الطريقة + رقم ملف المريض + التاريخ، ومن غير تكرار (-2، -3…)</td><td dir="ltr">IP-1234-27-11</td></tr>
   </tbody></table>
   <p class="note">لو الرقم ده اتسجل قبل كده على تحصيل تاني، التنبيه الموجود دلوقتي «رقم العملية اتسجل قبل كده» بيظهر زي ما هو. القراية اقتراح بس — الموظف هو اللي بيحفظ، وكل تحصيل بيتسجّل باسمه زي النهارده.</p>
  </div>
