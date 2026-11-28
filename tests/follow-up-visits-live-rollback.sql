@@ -330,7 +330,7 @@ grant all on _r to authenticated;
 do $t$
 declare mazen uuid := 'f0891d2c-44b5-4dd8-80e0-8035f2e4b5eb'; boss uuid; me uuid; w uuid; pr uuid; svc uuid; fsvc uuid; pat uuid; r jsonb; ap uuid; v uuid; o clinic_reception.orders%rowtype;
   f uuid; slot timestamptz; i int; booked boolean; k_rate numeric; ref text := 'ROLLBACK-FU-' || left(gen_random_uuid()::text, 8);
-  procedure_as text;
+  procedure_as text; slots timestamptz[]; ov_id uuid; ext_id uuid;
 begin
   select id into w from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
   select a.user_id into boss from public.admins a where a.role = 'super_admin' and a.active and a.user_id is not null order by a.id limit 1;
@@ -376,26 +376,35 @@ begin
    where ag.provider_id = pr and ag.status = 'active' and current_date between ag.valid_from and ag.valid_to and clinic_reception.consult_kind(s.name) = 'K' limit 1;
   insert into _r values ('his «كشف» percent', k_rate is not null, coalesce(k_rate::text, 'no كشف agreement — the paid follow-up falls back to the «متابعة» agreement'));
   insert into clinic_reception.patients(workspace_id, file_no, name, phone, created_by) values (w, ref, 'مريض اختبار تراجع', '', me) returning id into pat;
+  -- reads of clinic_reception.* happen as the owner role ONLY; the impersonated user (authenticated) just calls the public RPCs, like the browser
+  select array_agg(gs order by gs) into slots from (select gs from clinic_reception.availability av,
+      generate_series(greatest(av.starts_at, now() + interval '30 minutes'), av.ends_at - interval '30 minutes', interval '15 minutes') gs
+     where av.provider_id = pr and av.ends_at > now() order by gs limit 120) x;
+  insert into _r values ('free slots for him', coalesce(array_length(slots, 1), 0) > 0, coalesce(array_length(slots, 1), 0)::text);
   -- rule as super admin
   perform set_config('request.jwt.claims', json_build_object('sub', boss, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
   begin r := public.clinic_reception_follow_up(w, 'rules_set', jsonb_build_object('service_id', svc, 'included_count', 3, 'valid_days', 30)); insert into _r values ('rules_set by super admin', true, null);
   exception when others then insert into _r values ('rules_set by super admin', false, sqlerrm); end;
-  -- origin: real book → arrive → execute (super admin)
+  -- origin: real book → arrive (super admin)
   begin
     booked := false;
-    for slot in select gs from clinic_reception.availability av, generate_series(greatest(av.starts_at, now() + interval '30 minutes'), av.ends_at - interval '30 minutes', interval '15 minutes') gs
-                 where av.provider_id = pr and av.ends_at > now() order by gs limit 40 loop
+    foreach slot in array coalesce(slots, '{}') loop
       begin r := public.clinic_reception_command(w, 'book', jsonb_build_object('patient_id', pat, 'provider_id', pr, 'service_id', svc, 'starts_at', slot, 'payer_kind', 'cash'), gen_random_uuid()); booked := true; exit;
-      exception when others then null; end;
+      exception when others then procedure_as := sqlerrm; end;
     end loop;
-    if not booked then raise exception 'no free slot for the doctor'; end if;
+    if not booked then raise exception 'no free slot for the doctor: %', procedure_as; end if;
     ap := (r->>'id')::uuid; v := (public.clinic_reception_command(w, 'arrive', jsonb_build_object('id', ap), gen_random_uuid())->>'id')::uuid;
-    select * into o from clinic_reception.orders where visit_id = v order by created_at limit 1;
-    perform public.clinic_reception_command(w, 'execute', jsonb_build_object('id', o.id), gen_random_uuid());
+  exception when others then insert into _r values ('origin book/arrive via real commands', false, left(sqlerrm, 160)); v := null; end;
+  execute 'reset role';
+  o := null; if v is not null then select * into o from clinic_reception.orders where visit_id = v order by created_at limit 1; end if;
+  if o.id is not null then
+    perform set_config('request.jwt.claims', json_build_object('sub', boss, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
+    begin perform public.clinic_reception_command(w, 'execute', jsonb_build_object('id', o.id), gen_random_uuid());
+    exception when others then insert into _r values ('origin execute via real command', false, left(sqlerrm, 160)); end;
+    execute 'reset role';
     select id into f from clinic_reception.visit_follow_ups where origin_order_id = o.id;
     insert into _r values ('origin service executed → 3 follow-ups opened (same doctor)', f is not null, coalesce((select included || ' until ' || expires_on from clinic_reception.visit_follow_ups where id = f), 'none'));
-  exception when others then insert into _r values ('origin via real commands', false, left(sqlerrm, 160)); end;
-  execute 'reset role';
+  end if;
   if f is null then   -- the live execute refused (see the row above): build the origin directly so the follow-up part can still be proven
     insert into clinic_reception.appointments(workspace_id, patient_id, provider_id, service_id, starts_at, ends_at, status, created_by)
       values (w, pat, pr, svc, now() - interval '1 hour', now() - interval '45 minutes', 'completed', me) returning id into ap;
@@ -407,54 +416,67 @@ begin
     insert into _r values ('fallback origin (direct rows) → trigger opened the follow-ups', f is not null, null);
   end if;
   if f is null then return; end if;
-  -- as Mazen
+  select origin_visit_id into ov_id from clinic_reception.visit_follow_ups where id = f;
+  -- as Mazen: sources + included booking + arrival
   perform set_config('request.jwt.claims', json_build_object('sub', mazen, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
   begin r := public.clinic_reception_follow_up(w, 'sources', jsonb_build_object('patient_id', pat));
     insert into _r values ('Mazen: sources shows it (3 left)', (r->'follow_ups'->0->>'left')::int = 3, left((r->'follow_ups'->0)::text, 140));
   exception when others then insert into _r values ('Mazen: sources', false, sqlerrm); end;
+  v := null;
   begin
     booked := false;
-    for slot in select gs from clinic_reception.availability av, generate_series(greatest(av.starts_at, now() + interval '30 minutes'), av.ends_at - interval '30 minutes', interval '15 minutes') gs
-                 where av.provider_id = pr and av.ends_at > now() order by gs limit 60 loop
+    foreach slot in array coalesce(slots, '{}') loop
       begin r := public.clinic_reception_follow_up(w, 'book', jsonb_build_object('follow_up_id', f, 'starts_at', slot, 'token', gen_random_uuid())); booked := true; exit;
       exception when others then procedure_as := sqlerrm; end;
     end loop;
     insert into _r values ('Mazen books an included follow-up (same doctor)', booked and r->>'coverage' = 'included', coalesce(left(r::text, 140), procedure_as));
-    ap := (r->>'id')::uuid; v := (public.clinic_reception_command(w, 'arrive', jsonb_build_object('id', ap), gen_random_uuid())->>'id')::uuid;
-    select * into o from clinic_reception.orders where visit_id = v order by created_at limit 1;
-    insert into _r values ('arrival → included order price 0', o.price = 0 and o.snapshot ? 'follow_up', o.price::text);
+    if booked then ap := (r->>'id')::uuid; v := (public.clinic_reception_command(w, 'arrive', jsonb_build_object('id', ap), gen_random_uuid())->>'id')::uuid; end if;
   exception when others then insert into _r values ('Mazen: included follow-up', false, left(sqlerrm, 160)); end;
   execute 'reset role';
-  perform set_config('request.jwt.claims', json_build_object('sub', boss, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
-  begin perform public.clinic_reception_command(w, 'execute', jsonb_build_object('id', o.id), gen_random_uuid());
-    insert into _r values ('execute included → doctor fee 0', (select doctor_fee = 0 from clinic_reception.orders where id = o.id), (select doctor_fee::text from clinic_reception.orders where id = o.id));
-  exception when others then insert into _r values ('execute included follow-up', false, left(sqlerrm, 160)); end;
-  execute 'reset role';
+  o := null; if v is not null then select * into o from clinic_reception.orders where visit_id = v order by created_at limit 1; end if;
+  insert into _r values ('arrival → included order price 0', o.price = 0 and o.snapshot ? 'follow_up', coalesce(o.price::text, 'no order'));
+  if o.id is not null then
+    perform set_config('request.jwt.claims', json_build_object('sub', boss, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
+    begin perform public.clinic_reception_command(w, 'execute', jsonb_build_object('id', o.id), gen_random_uuid());
+    exception when others then insert into _r values ('execute included follow-up', false, left(sqlerrm, 160)); end;
+    execute 'reset role';
+    insert into _r values ('execute included → doctor fee 0', (select status = 'completed' and doctor_fee = 0 from clinic_reception.orders where id = o.id),
+      (select status || ' / ' || doctor_fee from clinic_reception.orders where id = o.id));
+  end if;
+  -- as Mazen: paid follow-up on the visit + extension request
   perform set_config('request.jwt.claims', json_build_object('sub', mazen, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
+  v := null;
   begin
     booked := false;
-    for slot in select gs from clinic_reception.availability av, generate_series(greatest(av.starts_at, now() + interval '30 minutes'), av.ends_at - interval '30 minutes', interval '15 minutes') gs
-                 where av.provider_id = pr and av.ends_at > now() order by gs desc limit 60 loop
-      begin r := public.clinic_reception_follow_up(w, 'book', jsonb_build_object('visit_id', (select origin_visit_id from clinic_reception.visit_follow_ups where id = f), 'starts_at', slot, 'token', gen_random_uuid())); booked := true; exit;
+    foreach slot in array coalesce(slots, '{}') loop
+      continue when slot <= coalesce((r->>'starts_at')::timestamptz, '-infinity') + interval '30 minutes' and slot >= coalesce((r->>'starts_at')::timestamptz, 'infinity') - interval '30 minutes';
+      begin r := public.clinic_reception_follow_up(w, 'book', jsonb_build_object('visit_id', ov_id, 'starts_at', slot, 'token', gen_random_uuid())); booked := true; exit;
       exception when others then procedure_as := sqlerrm; end;
     end loop;
     insert into _r values ('Mazen books a PAID follow-up on the visit', booked and r->>'coverage' = 'fee', coalesce(left(r::text, 140), procedure_as));
-    ap := (r->>'id')::uuid; v := (public.clinic_reception_command(w, 'arrive', jsonb_build_object('id', ap), gen_random_uuid())->>'id')::uuid;
-    select * into o from clinic_reception.orders where visit_id = v order by created_at limit 1;
-    insert into _r values ('arrival → paid order price 100', o.price = 100, o.price::text);
-    r := public.clinic_reception_follow_up(w, 'extend_request', jsonb_build_object('follow_up_id', f, 'days', 2, 'reason', 'اختبار تراجع — مد يومين'));
+    if booked then ap := (r->>'id')::uuid; v := (public.clinic_reception_command(w, 'arrive', jsonb_build_object('id', ap), gen_random_uuid())->>'id')::uuid; end if;
+  exception when others then insert into _r values ('Mazen: paid follow-up', false, left(sqlerrm, 160)); end;
+  begin r := public.clinic_reception_follow_up(w, 'extend_request', jsonb_build_object('follow_up_id', f, 'days', 2, 'reason', 'اختبار تراجع — مد يومين'));
     insert into _r values ('Mazen: «طلب مدّ» 2 days', r->>'status' = 'pending', null);
-  exception when others then insert into _r values ('Mazen: paid follow-up / extension', false, left(sqlerrm, 160)); end;
+  exception when others then insert into _r values ('Mazen: extension request', false, left(sqlerrm, 160)); end;
   execute 'reset role';
+  o := null; if v is not null then select * into o from clinic_reception.orders where visit_id = v order by created_at limit 1; end if;
+  insert into _r values ('arrival → paid order price 100', o.price = 100, coalesce(o.price::text, 'no order'));
+  select id into ext_id from clinic_reception.follow_up_extensions where follow_up_id = f and status = 'pending' limit 1;
   perform set_config('request.jwt.claims', json_build_object('sub', boss, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
-  begin perform public.clinic_reception_command(w, 'execute', jsonb_build_object('id', o.id), gen_random_uuid());
-    insert into _r values ('execute paid → doctor fee = his «كشف» % of 100', (select doctor_fee from clinic_reception.orders where id = o.id) = round(100 * coalesce(k_rate, 0) / 100, 2) or k_rate is null,
-      (select doctor_fee::text from clinic_reception.orders where id = o.id) || ' (expected ' || coalesce(round(100 * k_rate / 100, 2)::text, '?') || ')');
-  exception when others then insert into _r values ('execute paid follow-up', false, left(sqlerrm, 160)); end;
-  begin r := public.clinic_reception_follow_up(w, 'extend_review', jsonb_build_object('id', (select id from clinic_reception.follow_up_extensions where follow_up_id = f and status = 'pending'), 'approve', true));
-    insert into _r values ('super admin approves the extension (another person)', (select extended_until is not null from clinic_reception.visit_follow_ups where id = f), null);
+  if o.id is not null then
+    begin perform public.clinic_reception_command(w, 'execute', jsonb_build_object('id', o.id), gen_random_uuid());
+    exception when others then insert into _r values ('execute paid follow-up', false, left(sqlerrm, 160)); end;
+  end if;
+  begin r := public.clinic_reception_follow_up(w, 'extend_review', jsonb_build_object('id', ext_id, 'approve', true));
   exception when others then insert into _r values ('extension approval', false, left(sqlerrm, 160)); end;
   execute 'reset role';
+  if o.id is not null then
+    insert into _r values ('execute paid → doctor fee = his «كشف» % of 100 (else the «متابعة» agreement)',
+      (select status = 'completed' and (k_rate is null or doctor_fee = round(100 * k_rate / 100, 2)) from clinic_reception.orders where id = o.id),
+      (select status || ' / ' || doctor_fee from clinic_reception.orders where id = o.id) || ' (expected ' || coalesce(round(100 * k_rate / 100, 2)::text, '?') || ')');
+  end if;
+  insert into _r values ('super admin approves the extension (another person)', (select extended_until is not null from clinic_reception.visit_follow_ups where id = f), null);
   insert into _r values ('ledgers balanced', not exists (select 1 from clinic_reception.journal_lines group by entry_id having sum(debit - credit) <> 0), null);
 end $t$;
 select * from _r;
