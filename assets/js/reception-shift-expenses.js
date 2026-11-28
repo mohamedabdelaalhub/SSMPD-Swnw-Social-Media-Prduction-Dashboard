@@ -13,7 +13,7 @@ function rpc(a,p){var c=client();if(!c)return Promise.reject(new Error('تعذر
 function toast(m,k){if(w.SSMPDToast&&w.SSMPDToast.show)w.SSMPDToast.show(m,k||'success');}
 async function upload(file){var c=client();if(!c||!c.storage)throw new Error('تعذر رفع الإيصال');if(!file||!file.size)throw new Error('صوّر الإيصال الأول');if(file.size>8*1024*1024)throw new Error('الصورة أكبر من ٨ ميجا');
  var u=c.auth&&c.auth.getUser?await c.auth.getUser():null,uid=u&&u.data&&u.data.user&&u.data.user.id;if(!uid)throw new Error('سجل الدخول تاني');
- var ext=(String(file.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'jpg',path=uid+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
+ var ext=(String(file.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'jpg',path=uid+'/'+((w.SSMPDUploadBox&&w.SSMPDUploadBox.key(file))||Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext);
  var r=await c.storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type||undefined});if(r&&r.error)throw r.error;return path;}
 /* ---------- reception card ---------- */
 function cardHtml(s){var left=Math.max(0,(+s.allowance||0)-(+s.spent||0));
@@ -26,7 +26,8 @@ function spendModal(c,s,done){var left=Math.max(0,(+s.allowance||0)-(+s.spent||0
   '<fieldset class="rse-items" data-wide><legend>البند</legend>'+(s.items||[]).map(function(it,i){return '<label class="rse-chip"><input type="radio" name="item" value="'+esc(it.key)+'"'+(i===0?' required':'')+'> '+esc(it.label)+'</label>';}).join('')+'</fieldset>'+
   c.field('amount','المبلغ (جنيه)','number','','required min="1" max="'+lim+'" step="0.01" inputmode="decimal"')+c.field('vendor','اشتريت من مين / المورد','text','','maxlength="120"')+
   '<label data-wide>السبب / التفاصيل<input name="reason" required minlength="3" maxlength="300" placeholder="مثلاً: ٢ كرتونة مناديل + صابون للحمام"></label>'+
-  '<label data-wide class="rse-up" data-rse-up>📷 صورة الفاتورة أو الإيصال (إجباري)<input type="file" name="receipt" accept="image/*,application/pdf" capture="environment" required></label>'+
+  (w.SSMPDUploadBox?w.SSMPDUploadBox.html({name:'receipt',req:true,accept:'image/*,application/pdf',kind:'expense',label:'صورة الفاتورة أو الإيصال (إجباري)',take:'📷 صوّر الفاتورة',wrap:'data-wide data-rse-up data-ub-max="8388608" data-ub-need="صوّر الفاتورة أو الإيصال الأول"'}):
+  '<label data-wide class="rse-up" data-rse-up>📷 صورة الفاتورة أو الإيصال (إجباري)<input type="file" name="receipt" accept="image/*,application/pdf" capture="environment" required></label>')+
   '<p class="rse-note" data-wide data-rse-noreceipt hidden>البند ده من غير إيصال — اكتب في السبب لمين وليه (٥ حروف على الأقل)، والحسابات بتراجعه.</p>'+
   '<p class="rse-note" data-wide>المبلغ بيتخصم من نقدية ورديتك على طول، والحسابات بتراجعه بالإيصال. لو المبلغ أكبر من المسموح، اطلبه من الحسابات.</p>';
  var m=c.modal('صرف من مصروفات الوردية',body,async function(v,key){var amt=+v.amount;if(!(amt>0))throw new Error('اكتب المبلغ');if(amt>lim)throw new Error('المبلغ أكبر من المسموح ('+money(lim)+' جنيه) — اطلبه من الحسابات');
@@ -35,8 +36,10 @@ function spendModal(c,s,done){var left=Math.max(0,(+s.allowance||0)-(+s.spent||0
    var path=nr?'':await upload(v.receipt);return rpc('spend',{shift_id:s.shift_id,item:v.item,amount:amt,vendor:v.vendor||'',reason:v.reason,receipt_path:path,token:key});},function(r){toast('اتصرف '+money(r&&r.amount)+' جنيه من مصروفات الوردية');if(done)done();});
  /* «إكراميات» (no_receipt): no photo field; the reason is the evidence */
  var f=(m&&m.querySelector&&m.querySelector('form'))||d.querySelector('.rx-modal form');
+ /* upload-box.js names the photo مصروف-وردية_<item>_<amount>_<dd-mm>_<HH-MM> (owner 2026-11-28) */
+ var ub=f&&f.querySelector('[data-rse-up][data-ub]');if(ub){ub.__ubMeta=function(){var k=(f.querySelector('input[name=item]:checked')||{}).value,it=(s.items||[]).filter(function(x){return x.key===k;})[0];return {label:it?it.label:'',fileNo:''};};if(w.SSMPDUploadBox)w.SSMPDUploadBox.bind(ub);}
  if(f&&f.querySelector('[data-rse-up]')){var sync=function(){var k=(f.querySelector('input[name=item]:checked')||{}).value,it=(s.items||[]).filter(function(x){return x.key===k;})[0],nr=!!(it&&it.no_receipt);
-   var up=f.querySelector('[data-rse-up]'),inp=up.querySelector('input');up.hidden=nr;up.style.display=nr?'none':'';inp.required=!nr;inp.disabled=nr;f.querySelector('[data-rse-noreceipt]').hidden=!nr;};
+   var up=f.querySelector('[data-rse-up]'),inp=up.querySelector('input[name=receipt]')||up.querySelector('input');up.hidden=nr;up.style.display=nr?'none':'';inp.required=!nr;inp.disabled=nr;f.querySelector('[data-rse-noreceipt]').hidden=!nr;};
   f.addEventListener('change',sync);sync();}
  return m;}
 function decorate(c,section){if(!c||!c.host||!c.data||!c.data.workspace||c.data.workspace.mode!=='live')return;if(section&&section!=='operations'&&section!=='appointments')return;

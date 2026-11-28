@@ -123,7 +123,7 @@
       if (done.length) html += '<h3 class="dp-h">الصرف اللي اتعمل</h3><ul class="dp-list">' + done.map(function (p) {
         return '<li><div><b>' + money(p.gross) + "</b> · " + esc(when(p.reviewed_at)) + (p.handed_at ? ' · <span class="dp-ok">اتسلّم</span>' : ' · <span class="dp-warn">لسه ما اتسلّمش</span>') + "</div><div class=\"dp-row-actions\">" +
           '<button type="button" class="btn btn-sm" data-dp-print="' + esc(p.id) + '">طباعة الإيصال</button>' +
-          (p.handed_at ? (p.receipt_path ? '<button type="button" class="btn btn-sm" data-dp-view="' + esc(p.receipt_path) + '">عرض الإيصال الممضي</button>' : '<label class="btn btn-sm dp-upload">رفع الإيصال الممضي (اختياري)<input type="file" accept="image/*,application/pdf" data-dp-upload="' + esc(p.id) + '" hidden></label>') : "") + "</div></li>";
+          (p.handed_at ? (p.receipt_path ? '<button type="button" class="btn btn-sm" data-dp-view="' + esc(p.receipt_path) + '">عرض الإيصال الممضي</button>' : (w.SSMPDUploadBox ? '<button type="button" class="btn btn-sm dp-upload" data-dp-upbox="' + esc(p.id) + '">رفع الإيصال الممضي (اختياري)</button>' : '<label class="btn btn-sm dp-upload">رفع الإيصال الممضي (اختياري)<input type="file" accept="image/*,application/pdf" data-dp-upload="' + esc(p.id) + '" hidden></label>')) : "") + "</div></li>";
       }).join("") + "</ul>";
       m.body.innerHTML = html;
       var by = function (sel, fn) { m.body.querySelectorAll(sel).forEach(function (b) { b.onclick = function () { fn(b); }; }); };
@@ -159,16 +159,35 @@
       by("[data-dp-view]", function (b) { viewReceipt(b.getAttribute("data-dp-view")); });
       by("[data-dp-approvals]", function () { m.close(); approvals(); });
       m.body.querySelectorAll("[data-dp-upload]").forEach(function (inp) { inp.onchange = function () { upload(inp.getAttribute("data-dp-upload"), inp.files && inp.files[0]).then(load); }; });
+      by("[data-dp-upbox]", function (b) { var p = (r.payouts || []).find(function (x) { return x.id === b.getAttribute("data-dp-upbox"); }); if (p) upBox(p, r, load); });
     }
     load();
   }
+  /* owner 2026-11-28 (mockup upload-unify.html): «رفع الإيصال الممضي» opens a small window with the same photo box as «تسجيل تحصيل»
+     (📷 صوّر / 🖼 اختار صورة / لصق); the photo is named إيصال-طبيب_<doctor>_<amount>_<dd-mm>_<HH-MM>. Still optional. */
+  function upBox(p, r, after) {
+    var UB = w.SSMPDUploadBox, m = overlay("رفع الإيصال الممضي");
+    m.body.innerHTML = '<form class="dp-upform" data-dp-upform novalidate><p class="dp-note">' + esc(r.name || p.doctor_name || "") + " — " + money(p.gross) + " (اختياري)</p>" +
+      UB.html({ kind: "doctor", accept: "image/*,application/pdf", label: "صورة إيصال الطبيب الممضي", take: "📷 صوّر الإيصال", attr: "data-dp-upfile", wrap: 'data-ub-need="صوّر الإيصال الأول"' }) +
+      '<p class="dp-error" data-dp-uperr role="alert" hidden></p><div class="dp-actions"><button type="submit" class="btn btn-primary" data-dp-upgo>ارفع الإيصال</button><button type="button" class="btn" data-dp-upcancel>إلغاء</button></div></form>';
+    var box = m.body.querySelector("[data-ub]"), form = m.body.querySelector("form"), go = form.querySelector("[data-dp-upgo]"), err = form.querySelector("[data-dp-uperr]");
+    box.__ubMeta = function () { return { label: r.name || p.doctor_name || "", amount: p.gross, fileNo: "" }; }; UB.bind(box);
+    form.querySelector("[data-dp-upcancel]").onclick = m.close;
+    form.addEventListener("submit", function (e) {
+      e.preventDefault(); var file = box.querySelector("[data-dp-upfile]").files[0];
+      if (!file) { err.textContent = "صوّر الإيصال أو اختار صورته الأول"; err.hidden = false; return; }
+      err.hidden = true; go.disabled = true; go.textContent = "جاري الرفع…";
+      upload(p.id, file).then(function (ok) { if (ok) { m.close(); if (after) after(); } else { go.disabled = false; go.textContent = "ارفع الإيصال"; } });
+    });
+    return m;
+  }
   function upload(id, file) {
-    if (!file) return Promise.resolve();
-    if (file.size > 10 * 1024 * 1024) { toast("الملف أكبر من 10 ميجا", true); return Promise.resolve(); }
-    var ext = (/\.([a-z0-9]{2,5})$/i.exec(file.name || "") || [, "jpg"])[1].toLowerCase(), path = id + "/receipt-" + Date.now() + "." + ext, c = db();
+    if (!file) return Promise.resolve(false);
+    if (file.size > 10 * 1024 * 1024) { toast("الملف أكبر من 10 ميجا", true); return Promise.resolve(false); }
+    var ext = (/\.([a-z0-9]{2,5})$/i.exec(file.name || "") || [, "jpg"])[1].toLowerCase(), path = id + "/" + ((w.SSMPDUploadBox && w.SSMPDUploadBox.key(file)) || "receipt-" + Date.now() + "." + ext), c = db();
     return Promise.resolve(c.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type || undefined })).then(function (r) {
       if (r && r.error) throw Error(r.error.message); return rpc("receipt", { id: id, path: path });
-    }).then(function () { toast("اترفع الإيصال"); }).catch(function (e) { toast("تعذر رفع الإيصال: " + e.message, true); });
+    }).then(function () { toast("اترفع الإيصال"); return true; }).catch(function (e) { toast("تعذر رفع الإيصال: " + e.message, true); return false; });
   }
   function viewReceipt(path) {
     var c = db(); Promise.resolve(c.storage.from(BUCKET).createSignedUrl(path, 120)).then(function (r) { if (r.error) throw Error(r.error.message); w.open(r.data.signedUrl, "_blank", "noopener"); }).catch(function (e) { toast(e.message, true); });
