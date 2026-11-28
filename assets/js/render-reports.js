@@ -654,8 +654,13 @@
       default: return v == null || v === "" ? "—" : String(v);
     }
   }
+  /* owner 2026-11-28 «سعر التكلفة يظهر فقط للمحاسب والمدير المالي، المالك، السوبر ادمن» (20261128140000): the supplies / medicines /
+     nursing-variance reports come WITHOUT cost for anyone else (can_see_cost:false) → those columns, tiles and the per-service cost table go. */
+  var COST_KEYS = { cost: 1, included_cost: 1, sold_cost: 1, margin: 1, variance_value: 1, loss_cost: 1 };
+  var COST_TILES = { "تكلفة اللي خرج": 1, "داخل في الخدمات": 1, "هالك وفروق جرد": 1, "أكتر إجراء تكلفة": 1, "أدوية داخل الخدمات (تكلفة)": 1, "تكلفة المباع": 1, "ربح البيع": 1, "قيمة الفرق": 1 };
+  function noCost(d) { return !!(d && d.can_see_cost === false); }
   function buildTable(code, d) {
-    var def = DEFS[code], cols = def.cols, head = cols.map(function (c) { return c.l; }), rows, foot = null;
+    var def = DEFS[code], cols = noCost(d) ? def.cols.filter(function (c) { return !COST_KEYS[c.k]; }) : def.cols, head = cols.map(function (c) { return c.l; }), rows, foot = null;
     if (code === "daily_flash") {
       rows = def.flatten(d);
       return { head: head, rows: rows, foot: null, cols: cols, raw: rows.length };
@@ -817,7 +822,7 @@
     if (!d) return "";
     var t = state.table = buildTable(code, d), h = '<div class="rc-printable"><div class="rc-print-head"><b>' + esc(meta.title) + "</b><span>الفرع: " + esc(branchName()) + " — الفترة: " + periodText(code) + "</span></div>";
     h += noticesHtml(d);
-    h += tilesHtml(def.tiles(d));
+    h += tilesHtml(noCost(d) ? def.tiles(d).filter(function (x) { return !COST_TILES[x.l]; }) : def.tiles(d));
     if (code === "revenue_by_doctor") h += chartHtml(d);
     if (code === "doctor_dues") h += linesHtml(d);
     var empty = code !== "daily_flash" && !t.raw;
@@ -825,7 +830,7 @@
     h += empty ? '<div class="rc-empty">' + EMPTY + "</div>" : tableHtml(code, t);
     if (code === "doctor_dues" && !empty) h += '<p class="rc-hint no-print">دوس على اسم دكتور علشان تشوف كشف حسابه.</p>';
     h += "</div>";
-    if (def.extraHtml) h += def.extraHtml(d);
+    if (def.extraHtml && !(noCost(d) && code === "supplies_consumption")) h += def.extraHtml(d);
     return h + "</div>";
   }
 
