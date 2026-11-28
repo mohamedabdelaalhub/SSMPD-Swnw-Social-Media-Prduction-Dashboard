@@ -2,7 +2,7 @@
   "coverage": {
     "version": "20261117-1",
     "definitions": 2124,
-    "labels": 1551,
+    "labels": 1552,
     "files": 176,
     "groups": 1679
   },
@@ -21855,7 +21855,7 @@
     },
     {
       "file": "workforce-prices.js",
-      "label": "الشهر",
+      "label": "الشهر المعروض",
       "name": "month",
       "kind": "helper",
       "forms": [],
