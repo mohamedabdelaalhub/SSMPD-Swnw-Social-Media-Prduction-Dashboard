@@ -2,7 +2,7 @@
 -- a contract prices each GROUP of services from a SOURCE (the Sono center price, or a reference list such as نقابة الأطباء
 -- 2024) plus or minus a percent, with fixed-price exceptions on the contract's own list taking priority.
 --
---  1. clinic_prices.service_groups — the 12 groups (outpatient: كشف، معمل، أشعة، عيادات، طوارئ، أسنان؛ inpatient: إقامة،
+--  1. clinic_prices.service_groups — the 13 groups (outpatient: كشف، معمل، أشعة، عيادات، طوارئ، أسنان، علاج طبيعي؛ inpatient: إقامة،
 --     رعاية مركزة، رعاية متوسطة، رعاية قلب، حضانات، عمليات). Inpatient groups exist but are not used yet (owner: later).
 --  2. clinic_prices.service_group_categories (catalog category → group) and clinic_prices.service_group_services
 --     (one service → group, wins over its category; e.g. the consultation services). clinic_prices.service_group(service).
@@ -33,8 +33,9 @@ create table if not exists clinic_prices.service_groups(
 insert into clinic_prices.service_groups(code, name_ar, scope, sort) values
   ('consult','الكشف','outpatient',1), ('lab','المعمل','outpatient',2), ('radiology','الأشعة','outpatient',3),
   ('clinics','العيادات والإجراءات','outpatient',4), ('emergency','الطوارئ','outpatient',5), ('dental','الأسنان','outpatient',6),
-  ('ward','الإقامة الداخلية','inpatient',7), ('icu','الرعاية المركزة','inpatient',8), ('imc','الرعاية المتوسطة','inpatient',9),
-  ('ccu','رعاية القلب','inpatient',10), ('nicu','الحضانات','inpatient',11), ('surgery','العمليات','inpatient',12)
+  ('physio','العلاج الطبيعي','outpatient',7),
+  ('ward','الإقامة الداخلية','inpatient',8), ('icu','الرعاية المركزة','inpatient',9), ('imc','الرعاية المتوسطة','inpatient',10),
+  ('ccu','رعاية القلب','inpatient',11), ('nicu','الحضانات','inpatient',12), ('surgery','العمليات','inpatient',13)
 on conflict (code) do nothing;
 
 create table if not exists clinic_prices.service_group_categories(
