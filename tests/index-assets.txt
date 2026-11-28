@@ -60,6 +60,7 @@ assets/css/legal-docs.css
 assets/css/masa-archive.css
 assets/css/medicines-pricing.css
 assets/css/month-end-accounts.css
+assets/css/nursing-home.css
 assets/css/nutrition.css
 assets/css/ops-panels.css
 assets/css/org-legal.css
