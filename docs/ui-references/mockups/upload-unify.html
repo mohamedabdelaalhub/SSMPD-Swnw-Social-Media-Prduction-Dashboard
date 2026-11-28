@@ -1,0 +1,96 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>توحيد خانة رفع الصور في الاستقبال — تصور</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:20px 12px;color:#16212E}
+.wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start}
+.eyebrow{grid-column:1/-1;margin:0;font-size:13px;color:#4a5568;line-height:1.8;background:#fff;border-radius:12px;padding:10px 14px}
+h2.row{grid-column:1/-1;margin:8px 0 0;font-size:16px;color:#0F369D}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:10px;box-shadow:0 12px 30px rgba(15,54,157,.08)}
+.card>header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card h3{margin:0;font-size:14px;color:#0F369D}.x{border:1px solid #CBD5E1;background:#fff;border-radius:10px;width:32px;height:32px;font-size:15px}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px}.tag.b{background:#FDECE8;color:#D0402A}.tag.a{background:#E8F4EE;color:#2F7D5C}
+.f{display:grid;gap:5px;font-size:13px}.f input{font:inherit;padding:9px 11px;border:1px solid #CBD5E1;border-radius:10px;min-width:0}
+.note{font-size:12px;color:#5b6577;margin:0;line-height:1.7}
+.lbl{font-size:13px;font-weight:700}
+/* before: native input + global drop card */
+.native{font-size:12px;border:1px solid #CBD5E1;border-radius:8px;padding:6px;background:#fafbfd}
+.fdp-card{display:grid;gap:10px;padding:12px;border:1px solid #E6EBF3;border-radius:16px;background:#fff;box-shadow:0 6px 20px rgba(15,54,157,.06);font-size:13px}
+.fdp-head{display:flex;align-items:center;gap:10px}.fdp-ic{width:38px;height:38px;border-radius:11px;background:#EAF0FF;color:#0F369D;display:grid;place-items:center;font-size:17px}
+.fdp-head b{display:block;font-size:14px}.fdp-head small{color:#667085;font-size:12px}
+.fdp-drop{border:2px dashed #C9D6F2;border-radius:14px;background:#F7FAFF;padding:16px 12px;display:grid;justify-items:center;gap:8px;text-align:center}
+.fdp-btn{min-height:40px;border:0;border-radius:12px;background:#0F369D;color:#fff;font:inherit;font-weight:700;padding:0 18px}
+.smallbtn{justify-self:start;border:1px solid #CBD5E1;border-radius:10px;background:#fff;padding:6px 12px;font-size:12px}
+/* after: payment-proof (.pp) look */
+.pp-drop{border:2px dashed #9fb2db;border-radius:14px;padding:12px;display:grid;gap:8px;justify-items:center;text-align:center;background:#F7F9FD}
+.pp-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.pp-or{font-size:12px;color:#5b6577;margin:0}.pp-kbd{display:inline-block;border:1px solid #c7d0e6;border-bottom-width:2px;border-radius:5px;padding:0 5px;font-size:11px;direction:ltr;background:#fff}
+.pp-done{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;border:1px solid #cfe5da;background:#F1F8F4;border-radius:12px;padding:8px}
+.pp-done .th{width:64px;height:64px;border-radius:8px;background:linear-gradient(135deg,#dfe6f3,#c9d3e6);display:grid;place-items:center;font-size:22px}
+.pp-done b{color:#2F7D5C;font-size:13px}.pp-done small{display:block;color:#5b6577;font-size:12px}
+.btn-primary{background:#0F369D;color:#fff;border-color:#0F369D}
+.foot{display:flex;gap:8px;justify-content:flex-start}
+.tbl{grid-column:1/-1;background:#fff;border-radius:14px;padding:12px;overflow:auto}
+.tbl table{width:100%;border-collapse:collapse;font-size:13px}.tbl th,.tbl td{border-bottom:1px solid #E6EBF3;padding:8px;text-align:right;vertical-align:top}.tbl th{color:#0F369D}
+</style></head><body><div class="wrap">
+<p class="eyebrow">تصور بس — مفيش تنفيذ قبل موافقة المالك. الفكرة: كل خانة رفع «صورة إيصال / فاتورة / مستند» في الاستقبال تبقى بنفس شكل وطريقة خانة الصورة في «تسجيل تحصيل»: زرار <b>📷 صوّر</b> (يفتح الكاميرا على الموبايل) + <b>🖼 اختار صورة</b> + لصق سكرين شوت بـ Ctrl+V أو سحب وإفلات — وبعد الاختيار تظهر الصورة مصغّرة مع «✓ الصورة جاهزة» وزرار «تغيير». نفس القواعد: صور JPG/PNG/WEBP أو PDF لحد 10 ميجا. مفيش حاجة بتتشال: نفس الخانة ونفس الإجباري/الاختياري ونفس طريقة الحفظ — الشكل بس اللي بيتوحّد.</p>
+
+<h2 class="row">١) صرف من مصروفات الوردية — «صورة الفاتورة أو الإيصال (إجباري)»</h2>
+<section class="card"><header><h3>صرف من مصروفات الوردية</h3><span class="tag b">دلوقتي</span><button class="x" aria-label="قفل">✕</button></header>
+<label class="f">المبلغ (جنيه)<input value="150"></label>
+<label class="f">السبب / التفاصيل<input value="2 كرتونة مناديل + صابون للحمام"></label>
+<span class="lbl">📷 صورة الفاتورة أو الإيصال (إجباري)</span>
+<div class="native">Choose File &nbsp; No file chosen</div>
+<div class="fdp-card"><div class="fdp-head"><span class="fdp-ic">⇪</span><span><b>ارفع ملف</b><small>صورة أو PDF</small></span></div>
+<div class="fdp-drop"><button class="fdp-btn">⬆ ارفع ملف</button><p class="note">اختار ملف أو اسحبه هنا، أو الصقه Ctrl+V</p></div></div>
+<p class="note">المشكلة: خانتين لنفس الصورة (زرار المتصفح الإنجليزي + كارت رفع كبير تحته)، ومفيش زرار كاميرا واضح، والشكل مختلف عن التحصيل.</p>
+</section>
+<section class="card"><header><h3>صرف من مصروفات الوردية</h3><span class="tag a">بعد التوحيد</span><button class="x" aria-label="قفل">✕</button></header>
+<label class="f">المبلغ (جنيه)<input value="150"></label>
+<label class="f">السبب / التفاصيل<input value="2 كرتونة مناديل + صابون للحمام"></label>
+<span class="lbl">صورة الفاتورة أو الإيصال (إجباري)</span>
+<div class="pp-drop"><div class="pp-btns"><button class="btn btn-primary">📷 صوّر الفاتورة</button><button class="btn">🖼 اختار صورة</button></div>
+<p class="pp-or">أو الصق سكرين شوت هنا بـ <span class="pp-kbd">Ctrl</span>+<span class="pp-kbd">V</span> — أو اسحب الصورة وسيبها هنا</p></div>
+<p class="note">لو البند «من غير إيصال» الخانة دي بتستخبى زي دلوقتي بالظبط.</p>
+<div class="foot"><button class="btn btn-primary">سجّل الصرف</button><button class="btn">إلغاء</button></div>
+</section>
+<section class="card"><header><h3>بعد ما يصوّر</h3><span class="tag a">بعد التوحيد</span><button class="x" aria-label="قفل">✕</button></header>
+<span class="lbl">صورة الفاتورة أو الإيصال (إجباري)</span>
+<div class="pp-done"><span class="th">🧾</span><div><b>✓ الصورة جاهزة</b><small>IMG_2041.jpg · 820 KB — هتترفع مع الحفظ</small></div><button class="btn">تغيير</button></div>
+<p class="note">نفس اللي بيحصل في التحصيل: صورة مصغّرة + زرار تغيير. لو الصورة أكبر من 10 ميجا أو مش صورة/PDF تظهر رسالة حمرا بالعربي.</p>
+</section>
+
+<h2 class="row">٢) صرف أطباء — «رفع الإيصال الممضي (اختياري)» بعد التسليم</h2>
+<section class="card"><header><h3>صرف أطباء — د. (اسم تجريبي)</h3><span class="tag b">دلوقتي</span><button class="x" aria-label="قفل">✕</button></header>
+<p class="note">اتسلّم 1,200 ج.م — 3:40 م</p>
+<button class="smallbtn">رفع الإيصال الممضي (اختياري)</button>
+<p class="note">دلوقتي: زرار صغير بيفتح ملفات الجهاز على طول ويرفع فوراً — من غير كاميرا ولا لصق ولا معاينة قبل الرفع.</p>
+</section>
+<section class="card"><header><h3>رفع الإيصال الممضي</h3><span class="tag a">بعد التوحيد</span><button class="x" aria-label="قفل">✕</button></header>
+<p class="note">نفس الزرار في القايمة بيفتح نافذة صغيرة دي:</p>
+<div class="pp-drop"><div class="pp-btns"><button class="btn btn-primary">📷 صوّر الإيصال</button><button class="btn">🖼 اختار صورة</button></div>
+<p class="pp-or">أو الصق سكرين شوت بـ <span class="pp-kbd">Ctrl</span>+<span class="pp-kbd">V</span> — أو اسحب الصورة هنا</p></div>
+<div class="foot"><button class="btn btn-primary">ارفع الإيصال</button><button class="btn">إلغاء</button></div>
+<p class="note">لسه اختياري زي ما هو، و«عرض الإيصال الممضي» يفضل زي ما هو بعد الرفع.</p>
+</section>
+
+<h2 class="row">٣) إثبات الخصم / طريقة الدفع — صورة الكارنيه، مستند إثبات القرابة، مستند الجهة</h2>
+<section class="card"><header><h3>خصم — كارت العيلة</h3><span class="tag b">دلوقتي</span><button class="x" aria-label="قفل">✕</button></header>
+<span class="lbl">مستند إثبات القرابة (إجباري)</span><div class="native">Choose File &nbsp; No file chosen</div>
+<div class="fdp-card"><div class="fdp-drop"><button class="fdp-btn">⬆ ارفع ملف</button><p class="note">اختار ملف أو اسحبه هنا، أو الصقه Ctrl+V</p></div></div>
+</section>
+<section class="card"><header><h3>خصم — كارت العيلة</h3><span class="tag a">بعد التوحيد</span><button class="x" aria-label="قفل">✕</button></header>
+<span class="lbl">مستند إثبات القرابة (إجباري)</span>
+<div class="pp-drop"><div class="pp-btns"><button class="btn btn-primary">📷 صوّر المستند</button><button class="btn">🖼 اختار صورة</button></div>
+<p class="pp-or">أو الصق بـ <span class="pp-kbd">Ctrl</span>+<span class="pp-kbd">V</span> — أو اسحب الصورة هنا</p></div>
+<p class="note">نفس الشيء لـ«صورة الكارنيه» و«مستند الإثبات» في نقابات/نوادي وتأمين/تعاقد.</p>
+</section>
+
+<div class="tbl"><table><thead><tr><th>المكان في الاستقبال</th><th>دلوقتي</th><th>المقترح</th></tr></thead><tbody>
+<tr><td>تسجيل تحصيل / مقدم حجز</td><td>الشكل الجديد (📷 + 🖼 + لصق)</td><td>المرجع — من غير تغيير</td></tr>
+<tr><td>صرف من مصروفات الوردية</td><td>زرار متصفح + كارت رفع كبير</td><td>نفس شكل التحصيل</td></tr>
+<tr><td>صرف أطباء: الإيصال الممضي</td><td>زرار صغير بيرفع فوراً</td><td>نافذة صغيرة بنفس الشكل + «ارفع الإيصال»</td></tr>
+<tr><td>إثبات الخصم / طريقة الدفع (كارنيه، قرابة، مستند الجهة)</td><td>زرار متصفح + كارت رفع</td><td>نفس شكل التحصيل</td></tr>
+<tr><td>مستندات المريض (أكتر من ملف)</td><td>كارت رفع + اختيار النوع</td><td>اقتراح: يفضل كارت ملفات متعددة، بس نضيف له زرار 📷 صوّر وزرار المتصفح الإنجليزي المكرر يستخبى (الرفع نفسه زي ما هو)</td></tr>
+<tr><td>طلبات الخدمات: رفع النتيجة PDF</td><td>زرار متصفح + رفع</td><td>اقتراح: نفس الفكرة (📷 + 🖼 + لصق) وبعدها «ارفع»</td></tr>
+</tbody></table></div>
+</div></body></html>
