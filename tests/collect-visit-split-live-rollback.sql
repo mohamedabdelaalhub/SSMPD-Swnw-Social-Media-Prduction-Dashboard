@@ -47,18 +47,24 @@ begin
     end if;
     perform set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated')::text, true);
     execute 'set local role authenticated';
+  exception when others then insert into _r values ('ERROR opening / finding Mazen''s shift', false, sqlerrm);
+  end;
+  -- each step in its own block (savepoint) so one refusal does not erase the others
+  begin
     r := public.clinic_reception_command(w, 'collect_multi', jsonb_build_object('patient_id', pat, 'method', 'cash', 'reference', ref, 'shift_id', sh,
            'amount', tot::text, 'invoice_ids', to_jsonb(ids), 'note', ''), k);
+    insert into _r values ('collect_multi 5 invoices (= «حصّل» total ' || tot || ')', r is not null, left(r::text, 120));
+  exception when others then insert into _r values ('collect_multi 5 invoices', false, sqlerrm); end;
+  begin
     r2 := public.clinic_reception_command(w, 'collect_multi', jsonb_build_object('patient_id', pat, 'method', 'cash', 'reference', ref, 'shift_id', sh,
            'amount', tot::text, 'invoice_ids', to_jsonb(ids), 'note', ''), k);
-    insert into _r values ('collect_multi 5 invoices (= «حصّل» total ' || tot || ')', r is not null, left(r::text, 120));
-    insert into _r values ('replay returns the same receipt', r2 = r, null);
-    -- 2nd patient: 2 of 3 ticked, amount 1000 → 300 credit
+    insert into _r values ('same token again → same receipt (no 2nd payment)', r2 = r, left(r2::text, 80));
+  exception when others then insert into _r values ('same token again → refused by the duplicate guard (no 2nd payment)', sqlerrm like '%نفس المبلغ%', left(sqlerrm, 120)); end;
+  begin
     r := public.clinic_reception_command(w, 'collect_multi', jsonb_build_object('patient_id', pat2, 'method', 'cash', 'reference', ref || '-2', 'shift_id', sh,
            'amount', '1000', 'invoice_ids', to_jsonb(ids2[1:2]), 'note', ''), gen_random_uuid());
     insert into _r values ('collect_multi 2 of 3 + extra (the warned case)', r is not null, left(r::text, 120));
-  exception when others then insert into _r values ('ERROR as Mazen', false, sqlerrm);
-  end;
+  exception when others then insert into _r values ('collect_multi 2 of 3 + extra', false, sqlerrm); end;
   execute 'reset role';
   select * into pay from clinic_reception.payments where workspace_id = w and reference = ref;
   select count(*) into n from clinic_reception.allocations where payment_id = pay.id;
