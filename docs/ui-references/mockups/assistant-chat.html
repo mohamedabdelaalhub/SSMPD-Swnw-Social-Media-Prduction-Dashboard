@@ -1,0 +1,84 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: «اسأل المساعد» + طلبات الموظفين</title>
+<style>@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+*{box-sizing:border-box}
+:root{--glass-fill:rgba(255,255,255,.66);--glass-edge:rgba(255,255,255,.85);--glass-line:rgba(15,54,157,.10);--glass-shadow:0 10px 30px rgba(15,54,157,.09);--ui-hero:linear-gradient(120deg,#0F369D,#1c4fc7)}
+body{margin:0;background:#F4F7FD;background-image:radial-gradient(900px 520px at 92% -6%,rgba(28,79,199,.10),transparent 60%),radial-gradient(700px 460px at 4% 8%,rgba(241,90,34,.06),transparent 60%);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;font-size:14px;min-height:100vh}
+.page{display:none}body.p-emp #emp,body.p-own #own{display:block}
+.btn{border:1px solid #D5DEEE;background:#fff;border-radius:12px;padding:0 14px;min-height:44px;font:inherit;color:#16212E;cursor:pointer}.pri{background:#0F369D;color:#fff;border-color:#0F369D;font-weight:700}.ghost{background:transparent}
+.glass{background:var(--glass-fill);border:1px solid var(--glass-line);border-radius:16px;box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-edge)}
+.hero{background:var(--ui-hero);background-image:radial-gradient(120% 160% at 88% -30%,rgba(255,255,255,.26),transparent 55%),var(--ui-hero);color:#fff;border:1px solid #ffffff20;border-radius:18px;padding:20px 22px;box-shadow:0 8px 24px #0f369d20}
+.hero h2{margin:0;font-size:20px}.hero small{display:block;color:#E3EBFF;margin-top:2px}
+.chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}.c-blue{background:#EAF0FF;color:#0F369D}.c-or{background:#FFF1E8;color:#C2410C}.c-gr{background:#E6F3EC;color:#2F7D5C}.c-pu{background:#EEE9FB;color:#5B3FB5}.c-gy{background:#EEF0F4;color:#5b6b82}
+/* ===== employee page: faux screen + side panel ===== */
+#emp{position:relative;min-height:900px;padding:16px}
+.faux{max-width:760px;margin:0 0 0 auto;margin-inline-end:0;display:grid;gap:16px;opacity:.55}.faux .fg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.faux .fc{height:92px;border-radius:16px}.faux .fl{height:150px;border-radius:16px}
+.fab{position:fixed;inset-inline-start:20px;bottom:20px;z-index:5;display:flex;align-items:center;gap:8px;background:#0F369D;color:#fff;border:0;border-radius:999px;min-height:48px;padding:0 18px;font:inherit;font-weight:700;box-shadow:0 10px 28px rgba(15,54,157,.35)}
+.panel{position:fixed;inset-block:12px;inset-inline-start:12px;width:430px;max-width:calc(100vw - 24px);z-index:6;display:flex;flex-direction:column;background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(15,54,157,.28);overflow:hidden}
+.ph{background:var(--ui-hero);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px}.ph h3{margin:0;font-size:16px;flex:1}.ph small{display:block;font-weight:400;color:#E3EBFF;font-size:12px}
+.ph .x{width:44px;height:44px;border-radius:12px;border:1px solid #ffffff45;background:#ffffff18;color:#fff;font-size:20px;cursor:pointer;flex:none}
+.msgs{flex:1;overflow:auto;padding:14px;display:grid;gap:12px;align-content:start;background:#F8FAFE}
+.m{max-width:92%;border-radius:16px;padding:10px 12px;line-height:1.8}.me{justify-self:start;background:#0F369D;color:#fff;border-end-start-radius:4px}.bot{justify-self:end;background:#fff;border:1px solid #E4E9F2;border-end-end-radius:4px}
+.me .ctx{display:inline-flex;gap:6px;align-items:center;background:#ffffff22;border-radius:999px;padding:2px 10px;font-size:12px;margin-bottom:6px}
+.steps{margin:6px 0;padding:0;list-style:none;display:grid;gap:6px;counter-reset:s}.steps li{counter-increment:s;display:grid;grid-template-columns:26px 1fr;gap:8px}.steps li:before{content:counter(s);width:26px;height:26px;border-radius:50%;background:#EAF0FF;color:#0F369D;font-weight:800;display:grid;place-items:center}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.src{font-size:12px;color:#5b6b82;margin-top:6px}.safe{font-size:12px;color:#5b6b82;border-top:1px dashed #D5DEEE;margin-top:8px;padding-top:6px}
+.shot{width:100%;height:90px;border-radius:10px;background:linear-gradient(135deg,#dfe7f7,#f3f6fc);border:1px solid #ffffff55;display:grid;place-items:center;color:#5b6b82;font-size:12px;margin:4px 0}
+.req{border:1px solid #D5DEEE;border-radius:14px;padding:10px 12px;display:grid;gap:6px;margin-top:8px;background:#FBFCFE}.req .rh{display:flex;justify-content:space-between;align-items:center;gap:8px}.req small{color:#5b6b82}
+.tl{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:#5b6b82}.tl i{font-style:normal;padding:1px 8px;border-radius:999px;background:#EEF0F4}.tl i.on{background:#FFF1E8;color:#C2410C;font-weight:700}
+.done{border:1px solid #BFE0CE;background:#F1FAF5;border-radius:14px;padding:10px 12px}
+.comp{border-top:1px solid #E4E9F2;padding:10px 12px;display:grid;gap:8px;background:#fff}.comp .row{display:flex;gap:8px;align-items:center}.comp input{flex:1;min-height:44px;border:1px solid #D5DEEE;border-radius:12px;padding:0 12px;font:inherit}
+.tool{min-height:44px;min-width:44px;border:1px solid #D5DEEE;background:#fff;border-radius:12px;font-size:18px;cursor:pointer}
+.ctxchip{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ctxchip label{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:#3B4658;border:1px solid #D5DEEE;border-radius:999px;padding:4px 10px;background:#F8FAFE}
+.priv{font-size:12px;color:#2F7D5C}
+/* ===== owner page ===== */
+#own{padding:16px}.wrap{max-width:1040px;margin:auto;display:grid;gap:16px;min-width:0}.wrap>*{min-width:0}
+.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.tile{padding:16px;display:grid;grid-template-columns:44px 1fr;gap:4px 12px;align-items:center}.tile .ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;grid-row:span 2;font-size:20px;font-weight:800}.tile small{color:#5b6b82;font-size:13px}.tile b{font-size:30px;line-height:1.1}
+.rep{padding:14px 16px;display:grid;gap:6px}.rep h4{margin:0;font-size:16px}.rep p{margin:0;line-height:1.9}
+.rq{padding:14px 16px;display:grid;gap:10px}.rqh{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.rqh b{font-size:15px}
+.rqb{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:12px}.rqb .shot{height:100px;margin:0}
+.sug{border:1px solid #D5DEEE;border-radius:12px;padding:10px 12px;background:#F8FAFE;line-height:1.9}.sug b{color:#0F369D}
+.eff{display:flex;gap:8px;flex-wrap:wrap}.act{display:flex;gap:8px;flex-wrap:wrap}.act .btn{min-width:110px}
+.note{font-size:12px;color:#8a4b00;background:#FFF3E0;border-radius:8px;padding:8px 12px;line-height:1.8}
+@media(max-width:760px){.sum{grid-template-columns:1fr 1fr}.tile{grid-template-columns:1fr}.tile .ico{display:none}.rqb{grid-template-columns:1fr}.panel{inset:0;width:auto;max-width:none;border-radius:0}.fab{display:none}.faux{display:none}#emp{padding:0}}
+</style>
+<body class="p-emp">
+<!-- ============ employee: side chat panel ============ -->
+<div id="emp" class="page">
+ <div class="faux"><div class="hero"><h2>الاستقبال والخدمات</h2><small>مازن أحمد علي</small></div><div class="fg"><div class="fc glass"></div><div class="fc glass"></div><div class="fc glass"></div></div><div class="fl glass"></div><div class="fl glass"></div></div>
+ <button class="fab" aria-label="اسأل المساعد">✦ اسأل المساعد</button>
+ <section class="panel" role="dialog" aria-label="اسأل المساعد">
+  <div class="ph"><button class="x" aria-label="إغلاق">✕</button><h3>اسأل المساعد<small>بيشرحلك ويفتحلك طلب لو الحاجة محتاجة تعديل</small></h3></div>
+  <div class="msgs">
+   <div class="m me"><span class="ctx">📍 الشاشة: شغل اليوم — التمريض</span><br>إزاي أسجّل صرف من مخزني؟</div>
+   <div class="m bot"><b>تمام، دي الخطوات:</b>
+    <ol class="steps"><li>من «شغل اليوم — التمريض» دوس <b>«صرف داخلي من مخزني»</b>.</li><li>اختار الصنف واكتب الكمية.</li><li>اكتب الغرض (مثلًا: استخدام داخلي) ودوس <b>«تسجيل الصرف»</b>.</li></ol>
+    <div class="btnrow"><button class="btn pri">ودّيني هناك ←</button></div>
+    <div class="src">المصدر: دليل الشرح — «شغل اليوم — التمريض»</div>
+    <div class="safe">أنا بشرح بس. مش بعدّل بيانات ومش بحرّك فلوس.</div></div>
+   <div class="m me"><div class="shot">📷 صورة الشاشة (اسم المريض مخفي)</div>الكرومو بيقول الرصيد مش كفاية</div>
+   <div class="m bot">ده محتاج تعديل من الإدارة، فتحت لك <b>طلب رقم 41</b>.
+    <div class="req"><div class="rh"><b>طلب 41</b><span class="chip c-or">مستني المالك</span></div><small>المشكلة: «الكرومو بيقول الرصيد مش كفاية» عند صرف داخلي</small><small>الشاشة: شغل اليوم — التمريض ← صرف داخلي</small><div class="tl"><i class="on">اتفتح</i><i>اتوافق</i><i>بيتنفذ</i><i>نزل</i></div></div></div>
+   <div class="m bot done"><b>✓ طلب 38 اتعمل</b><br>الحاجة اللي طلبتها نزلت. اعملها كده: دوس <b>«فتحت عبوة جديدة»</b> بدل «صرف داخلي» لما تفتح عبوة جديدة.
+    <div class="btnrow"><button class="btn">ودّيني هناك ←</button></div></div>
+  </div>
+  <div class="comp">
+   <div class="ctxchip"><label><input type="checkbox" checked> الشاشة اللي أنا فيها تتبعت كسياق</label><span class="priv">✓ أسماء المرضى وتليفوناتهم بتتخفى (رقم الملف بس)</span></div>
+   <div class="row"><button class="tool" aria-label="لزق صورة شاشة">📎</button><input placeholder="اكتب سؤالك أو الصق صورة الشاشة…" aria-label="سؤالك"><button class="btn pri">إرسال</button></div>
+  </div>
+ </section>
+</div>
+<!-- ============ owner: staff requests ============ -->
+<div id="own" class="page"><div class="wrap">
+ <div class="hero"><h2>طلبات الموظفين</h2><small>للمالك (سوبر أدمن) · بتتجمع من «اسأل المساعد»</small></div>
+ <div class="sum"><div class="tile glass"><span class="ico" style="background:#EAF0FF;color:#0F369D">●</span><small>جديدة النهارده</small><b style="color:#0F369D">6</b></div><div class="tile glass"><span class="ico" style="background:#FFF1E8;color:#F15A22">!</span><small>مستنية قرارك</small><b style="color:#F15A22">3</b></div><div class="tile glass"><span class="ico" style="background:#EEE9FB;color:#5B3FB5">⚙</span><small>بيتنفذ</small><b style="color:#5B3FB5">2</b></div><div class="tile glass"><span class="ico" style="background:#E6F3EC;color:#2F7D5C">✓</span><small>نزلت</small><b style="color:#2F7D5C">11</b></div></div>
+ <section class="glass rep"><h4>تقرير النهارده</h4><p>6 طلبات: 2 مشكلة بيانات، 3 تحسينات في الشاشات، 1 سؤال اتجاوب. أكتر شاشة بتتسأل عنها: «شغل اليوم — التمريض» (3 طلبات).</p></section>
+ <section class="glass rq"><div class="rqh"><b>طلب 41</b><span class="chip c-or">مستني قرارك</span><span class="chip c-gy">هدى · تمريض الأسنان</span><span class="chip c-blue">شغل اليوم — التمريض</span></div>
+  <div class="rqb"><div>«الكرومو بيقول الرصيد مش كفاية» وهي بتصرف داخلي.<div class="sug" style="margin-top:8px"><b>اقتراح الحل:</b> الصنف بيتصرف بالعبوة ورصيده بالحتة. نعلّمه «بيتصرف بالعبوة» في الكتالوج ويظهر في «فتحت عبوة جديدة».<div class="eff" style="margin-top:6px"><span class="chip c-gr">هيأثّر على: شاشة التمريض والكتالوج بس</span><span class="chip c-gr">لا يغيّر فلوس</span></div></div></div><div class="shot">📷 صورة هدى</div></div>
+  <div class="act"><button class="btn pri">موافق</button><button class="btn">لأ</button><button class="btn ghost">محتاج توضيح</button></div></section>
+ <section class="glass rq"><div class="rqh"><b>طلب 40</b><span class="chip c-or">مستني قرارك</span><span class="chip c-gy">هالة · الاستقبال</span><span class="chip c-blue">تحصيل الزيارة</span></div>
+  <div class="rqb"><div>«الحقنة اتسجّلت مرتين أعمل إيه؟»<div class="sug" style="margin-top:8px"><b>اقتراح الحل:</b> ده تصحيح بيانات: الحسابات تلغي السطر المكرر بإذن عكسي. المساعد مش بيعدّل. نبعتها للحسابات بدل تغيير في الكود.<div class="eff" style="margin-top:6px"><span class="chip c-or">تحتاج الحسابات</span><span class="chip c-gr">مفيش تغيير في الكود</span></div></div></div><div class="shot">📷 صورة هالة</div></div>
+  <div class="act"><button class="btn pri">موافق</button><button class="btn">لأ</button><button class="btn ghost">محتاج توضيح</button></div></section>
+ <section class="glass rq"><div class="rqh"><b>طلب 39</b><span class="chip c-pu">بيتنفذ</span><span class="chip c-gy">شهد · تمريض</span><span class="chip c-blue">العلامات الحيوية</span></div>
+  <div class="rqb"><div>«زرار العلامات الحيوية مش واضح هو لأنهي مريض».<div class="sug" style="margin-top:8px"><b>اتوافق عليه:</b> نكتب اسم المريض على الزرار. جاري التنفيذ.</div></div><div class="shot">📷 صورة شهد</div></div></section>
+ <div class="note">تصور بدون كود وبدون اتصال بأي API. المساعد بيشرح ويفتح طلبات بس: مش بيعدّل بيانات ومش بيحرّك فلوس. صور الشاشة بتتخفى منها أسماء المرضى وتليفوناتهم قبل الإرسال (رقم الملف بس). شاشة «طلبات الموظفين» للسوبر أدمن بس، والقرار «موافق / لأ / محتاج توضيح» بيده هو. لما التصليح ينزل بيوصل إشعار للموظف في نفس الشات.</div>
+</div></div>
+<script>var h=location.hash;document.body.className=h==='#own'?'p-own':'p-emp';</script>
