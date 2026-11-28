@@ -5,6 +5,9 @@ const fs=require('fs'),path=require('path'),assert=require('node:assert/strict')
 const M=path.join(__dirname,'..','supabase','migrations','20261128020000_payment_reference_free.sql'),R=path.join(__dirname,'..','supabase','rollbacks','20261128020000_payment_reference_free.rollback.sql');
 (async()=>{const {db,rpc,as,id}=await boot(['reception_services_packages']);await db.exec('reset role');
  const MIG=fs.readFileSync(M,'utf8');assert(MIG.indexOf("raise exception 'تم تطبيق هذا الملف من قبل'")<MIG.indexOf('\nbegin;'));
+ // the live dry-run file: body = migration, runs here and rolls back
+ {const LIVE=fs.readFileSync(path.join(__dirname,'payment-reference-free-live-rollback.sql'),'utf8'),i=LIVE.indexOf('<<<\n',LIVE.indexOf('-- >>> BEGIN migration body'))+4,j=LIVE.indexOf('\n-- >>> END migration body <<<');
+  assert.equal(LIVE.slice(i,j),MIG.split('\n').filter(l=>l!=='begin;'&&l!=='commit;').join('\n').replace(/\n+$/,''),'live body = migration');globalThis.__LIVE=LIVE;}
  await db.exec(MIG);
  const ws=(await db.query('select id from clinic_reception.workspaces limit 1')).rows[0]?.id||(await rpc('clinic_reception_bootstrap'));await db.exec('reset role');
  let pat=(await db.query('select id from clinic_reception.patients where workspace_id=$1 limit 1',[ws])).rows[0];
@@ -22,6 +25,10 @@ const M=path.join(__dirname,'..','supabase','migrations','20261128020000_payment
  await db.exec('reset role');await db.query("select set_config('test.admin','',false)");await db.exec('set role authenticated');
  await assert.rejects(()=>db.query("select public.clinic_reception_reference_free('pos','CC-1-27-11')"),/سجّل دخولك الأول/);
  await db.exec('reset role');await assert.rejects(()=>db.exec(MIG),/تم تطبيق هذا الملف من قبل/);
+ await db.exec(require('fs').readFileSync(R,'utf8'));
+ {const res=await db.exec(globalThis.__LIVE),sum=res[res.length-2].rows;if(process.env.SHOW_LIVE)console.log(sum);assert(sum.length>=3);assert.deepEqual(sum.filter(r=>!r.ok),[],'live dry-run ok');}
+ assert.equal((await db.query("select to_regprocedure('public.clinic_reception_reference_free(text,text)') t")).rows[0].t,null,'live rolled back');
+ await db.exec(MIG);
  await db.exec(fs.readFileSync(R,'utf8'));assert.equal((await db.query("select to_regprocedure('public.clinic_reception_reference_free(text,text)') t")).rows[0].t,null);
  await db.close();console.log('PASS reference_free: base / -2 / -3, bank+instapay one group, other groups free, bad input + anonymous refused, second run refused, rollback');
 })().catch(e=>{console.error(e);process.exit(1);});
