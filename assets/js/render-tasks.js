@@ -222,7 +222,9 @@
       if(kids.length){var ordered=sortTasks(kids,"manual"),current=ordered.find(function(x){return !closed(x);}),finished=ordered.filter(function(x){return x.status==="done";});h+='<section class="tv-sec tw-stages"><h3>مراحل المهمة <small>'+finished.length+' من '+kids.length+' معتمدة</small></h3>'+stageStepper(ordered)+(current?'<p>المرحلة الحالية حسب ترتيب المدير: '+esc(current.title)+'</p>':'<p>كل المراحل معتمدة.</p>')+ordered.filter(function(x){return !closed(x);}).map(function(x,i){return '<div class="tw-stage'+(x===current?' current':'')+'"><span>'+ (ordered.indexOf(x)+1) +'</span>'+taskRow(x,null,{})+'</div>';}).join("")+(finished.length?'<details><summary>المراحل المنتهية ('+finished.length+')</summary>'+finished.map(function(x){return taskRow(x,null,{});}).join("")+'</details>':'')+'</section>';}
       h+=work.html(t,kids);
       h+='<div class="tv-tools"><button type="button" class="tv-tool" data-action="checklist" data-id="'+t.id+'"><span>☑ القائمة الصغيرة</span>'+(cc&&cc.total?'<b>'+cc.done+'/'+cc.total+'</b>':"")+'</button><button type="button" class="tv-tool" data-action="history" data-id="'+t.id+'"><span>💬 التعليقات والسجل</span></button></div>';
-      var pa=t.assignee_id===admin.id&&t.status!=="review"?"":actionsHtml(t,admin,may),ma=moreActionsHtml(t,admin,may);
+      // المهمة المسندة لي: زرار «ابدأ/كمّل» ملوش لازمة هنا (أنا جوه المهمة)، بس أزرار المدير (اعتماد مباشر/اعتماد وإكمال) لازم تفضل ظاهرة (#406)
+      var pa=actionsHtml(t,admin,may),ma=moreActionsHtml(t,admin,may);
+      if(t.assignee_id===admin.id&&t.status!=="review")pa=pa.replace(/<button[^>]*data-action="open-task"[^>]*>[^<]*<\/button>/,"");
       // أدوات الإدارة (تعديل/حذف/ترتيب) تحت عادي، والإجراء الأساسي (اعتماد/إرجاع/كمّل) شريط ثابت تحت الشاشة
       if(ma)h+='<div class="tv-d-actions tv-d-more"><div class="tv-more">'+ma+'</div></div>';
       if(pa)h+='<div class="tv-d-actions tv-d-main"><div class="tv-primary">'+pa+'</div></div>';
