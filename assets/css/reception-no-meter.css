@@ -1,0 +1,5 @@
+/* «جلسات ليزر من غير قراية عداد» (owner 2026-11-27, help 346) */
+.rnm-card{margin:10px 0;border:1px solid #F7C9B3;background:#FFF8F4;border-radius:14px;padding:12px 14px;display:grid;gap:8px}
+.rnm-h{display:flex;align-items:center;justify-content:space-between;gap:8px}.rnm-h h3{margin:0;font-size:15px;color:#B4400F}.rnm-h small{color:#667085;font-weight:400;font-size:12px}
+.rnm-x{min-width:36px}.rnm-note{margin:0;font-size:12.5px;color:#475467}.rnm-none{color:#98A2B3;font-size:12px}
+.rnm-q{font:inherit;font-size:14px;padding:8px 12px;border:1px solid #F7C9B3;border-radius:10px;width:100%;box-sizing:border-box;background:#fff}

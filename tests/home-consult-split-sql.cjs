@@ -97,7 +97,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   await owner("insert into clinic_reception.members(workspace_id,admin_id,capabilities) values($1,$2,$3)",[tw2,id(4),['view','book']]);
   const bp=async(n,k)=>(await owner("insert into clinic_reception.providers(workspace_id,name,doctor_key,department,branch) values($1,$2,$3,'خدمات الكشف','حدائق الأهرام') returning id",[tw2,n,k]))[0].id;
   const bD=await bp('د. منزلي ت','DOC-T'),bD2=await bp('د. تاني ت','DOC-T2');
-  const day0=(await owner("select ((current_date+1)::timestamp at time zone 'Africa/Cairo') t"))[0].t;const at=h=>new Date(new Date(day0).getTime()+h*3600000).toISOString();
+  /* the day after tomorrow in CAIRO (was UTC current_date+1: after midnight Cairo that is the same Cairo day as the now()+N-hours visits above → nurse_overlap) */const day0=(await owner("select ((((now() at time zone 'Africa/Cairo')::date)+2)::timestamp at time zone 'Africa/Cairo') t"))[0].t;const at=h=>new Date(new Date(day0).getTime()+h*3600000).toISOString();
   for(const p of [bD,bD2])await owner("insert into clinic_reception.availability(workspace_id,provider_id,starts_at,ends_at) values($1,$2,$3,$4)",[tw2,p,at(8),at(22)]);
   const bs=async(code,name)=>(await owner("insert into clinic_reception.services(workspace_id,code,name,department,price,minutes) values($1,$2,$3,'خدمات الكشف',1500,15) returning id",[tw2,code,name]))[0].id;
   const bHC=await bs('SVC-0001396','كشف منزلي (شامل الانتقال)'),bK=await bs('K-1','كشف باطنة');
@@ -128,7 +128,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   // moving off the split service clears travel
   await cmd('reschedule',{id:r2.id,patient_id:bpat,provider_id:bD,service_id:bK,starts_at:at(16)});a2=await ap(r2.id);assert.equal(Number(a2.m),15);assert.equal(a2.travel_minutes,null);
   // snapshot exposes the split service to the booking form
-  await as(4);const snap=(await db.query("select public.clinic_reception_snapshot($1,current_date,current_date+2) s",[tw2])).rows[0].s;await db.exec('reset role');
+  await as(4);const snap=(await db.query("select public.clinic_reception_snapshot($1,(now() at time zone 'Africa/Cairo')::date,(now() at time zone 'Africa/Cairo')::date+3) s",[tw2])).rows[0].s;await db.exec('reset role');
   assert.deepEqual(snap.home_visit_split,[{service_id:bHC,code:'SVC-0001396',travel_minutes:60}]);assert.ok(Array.isArray(snap.appointments));
   assert.equal(snap.appointments.find(a=>a.id===r3.id).travel_minutes,30,'appointments carry travel_minutes');
   // 8) no grants to the app roles
