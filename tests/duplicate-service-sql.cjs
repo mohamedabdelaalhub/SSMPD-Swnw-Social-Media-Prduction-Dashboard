@@ -26,6 +26,12 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
     insert into clinic_reception.journey_events(workspace_id,idempotency_key,metadata) values(p_workspace,'service-request:'||p_token::text,jsonb_build_object('order_id',o)) returning id into e;
     return jsonb_build_object('order_id',o,'event_id',e);end $f$;
    revoke all on function public.clinic_reception_journey_request_service(uuid,uuid,uuid,uuid) from public,anon;grant execute on function public.clinic_reception_journey_request_service(uuid,uuid,uuid,uuid) to authenticated;`);}
+ // live also has the older «same patient same day» question (20261120140000, hint same_patient_same_day, skipped by same_day_ok):
+ // apply it here (with a stand-in for the automatic-bookings table it reads) so «أيوه، احجزها تاني» is proven to answer both at once
+ await db.exec("alter table public.admins add column if not exists name text");
+ await db.exec("create table if not exists clinic_reception.appointment_extras(appointment_id uuid,note text)");
+ await db.exec("create table if not exists clinic_reception.external_bookings(id uuid primary key default gen_random_uuid(),reception_patient_id uuid,provider_id uuid,starts_at timestamptz,state text)");
+ await db.exec(fs.readFileSync('supabase/migrations/'+fs.readdirSync('supabase/migrations').find(n=>n.endsWith('_reception_same_patient_guard.sql')),'utf8'));
  const M=fs.readFileSync('supabase/migrations/20261128180000_duplicate_service_warn.sql','utf8');await db.exec(M);await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback').catch(()=>{});
  const pat=async n=>(await db.query("insert into clinic_reception.patients(workspace_id,file_no,name,phone,created_by) values($1,$2,$3,'01000000000',$4) returning id",[w,'D'+n,'مريض '+n,id(1)])).rows[0].id;
  const A=await pat(1),B=await pat(2);
@@ -34,10 +40,12 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  await as(3);const k=randomUUID();const b1=await cmd('book',{patient_id:A,provider_id:provider,service_id:S('INJ'),starts_at:date+'T08:00:00Z'},k);
  const b1r=await cmd('book',{patient_id:A,provider_id:provider,service_id:S('INJ'),starts_at:date+'T08:00:00Z'},k);assert.equal(b1r.id,b1.id,'replayed token = first answer, no warning');
  await refused(cmd('book',{patient_id:A,provider_id:provider,service_id:S('INJ'),starts_at:date+'T09:00:00Z'}),/^الخدمة دي \(حقنة عضل\) محجوزة بالفعل للمريض ده النهارده الساعة \d{1,2}:\d{2} [صم]( بواسطة .+)?\. عايز تحجزها تاني فعلاً؟$/,'booking');
- await cmd('book',{patient_id:A,provider_id:provider,service_id:S('ECG'),starts_at:date+'T09:00:00Z'});   // another service → fine
+ // another service the same day → NOT this warning; the older «same patient same day» question asks (unchanged), same_day_ok passes
+ {let e=null;try{await cmd('book',{patient_id:A,provider_id:provider,service_id:S('ECG'),starts_at:date+'T09:00:00Z'});}catch(x){e=x;}assert(e&&e.hint==='same_patient_same_day','older question for another service: '+(e&&e.hint));}
+ await cmd('book',{patient_id:A,provider_id:provider,service_id:S('ECG'),starts_at:date+'T09:00:00Z',same_day_ok:true});
  await cmd('book',{patient_id:A,provider_id:provider,service_id:S('INJ'),starts_at:tomorrow+'T09:00:00Z'});   // another day → fine
  await cmd('book',{patient_id:B,provider_id:provider,service_id:S('INJ'),starts_at:date+'T09:15:00Z'});   // another patient → fine
- const b2=await cmd('book',{patient_id:A,provider_id:provider,service_id:S('INJ'),starts_at:date+'T10:00:00Z',confirm_duplicate:true});assert(b2.id,'confirmed second booking saved');
+ const b2=await cmd('book',{patient_id:A,provider_id:provider,service_id:S('INJ'),starts_at:date+'T10:00:00Z',confirm_duplicate:true});assert(b2.id,'confirmed second booking saved');   // «أيوه، احجزها تاني» answers the older same-day question too (one window)
  await cmd('cancel',{id:b2.id,reason:'اختبار'}).catch(()=>q("update clinic_reception.appointments set status='cancelled' where id=$1",[b2.id],3));
  // visit: arrive → «+ إضافة خدمة» of the same service on the same visit
  const v=(await cmd('arrive',{id:b1.id})).id;
@@ -73,6 +81,6 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
  // rollback restores the previous functions
  await db.exec(fs.readFileSync('supabase/rollbacks/20261128180000_duplicate_service_warn.rollback.sql','utf8'));
  assert.equal((await db.query("select to_regprocedure('clinic_reception.command_before_dup_service(uuid,text,jsonb,uuid)') p")).rows[0].p,null);
- await as(3);await cmd('book',{patient_id:A,provider_id:provider,service_id:S('INJ'),starts_at:date+'T11:00:00Z'});   // no guard after rollback
+ await as(3);await cmd('book',{patient_id:A,provider_id:provider,service_id:S('INJ'),starts_at:date+'T11:00:00Z',same_day_ok:true});   // no duplicate-service guard after rollback (the older same-day question is answered)
  await db.close();console.log('PASS duplicate service: the read-only check at choose (visit / appointment / patient+day, saves nothing); booking / walk-in / «+ إضافة خدمة» / journey request refused with the owner\'s message, confirm or «again» adds it, cancelled / other service / other day / other patient pass, replay = first answer, closed inner functions, rollback.');
 })().catch(e=>{console.error(e);process.exit(1);});

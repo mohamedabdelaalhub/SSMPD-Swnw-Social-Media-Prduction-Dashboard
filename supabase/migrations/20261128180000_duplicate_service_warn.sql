@@ -7,7 +7,8 @@
 --     · on the same patient's visits of today's business day (an order), or
 --     · booked for the same patient on the same business day (an appointment that is not cancelled / no-show),
 --   the command is refused with hint 'duplicate_service' (detail = json: service, code, at, by, where, visit_no) unless
---   payload.confirm_duplicate = true. A replayed token is never refused (it returns the first answer as before).
+--   payload.confirm_duplicate = true (on book / walk_in it also sets same_day_ok, so the older «same patient same day» question of
+--   20261120140000 is not asked a second time). A replayed token is never refused: it returns the stored first answer (clinic_reception.commands.response).
 --   public.clinic_reception_journey_request_service (service request from «تشغيل اليوم»): same check, same hint;
 --   the confirmed retry is public.clinic_reception_journey_request_service_again (same arguments, same access check inside).
 --   public.clinic_reception_duplicate_service_check: read-only check the screens call the MOMENT a service is chosen (before «حفظ»).
@@ -124,14 +125,19 @@ create function public.clinic_reception_command(p_workspace uuid, p_action text,
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
 declare me uuid := public.my_admin_id(); v_patient uuid; v_visit uuid; v_service uuid; v_day date; d jsonb;
 begin
-  if p_action not in ('order_add', 'book', 'walk_in') or jsonb_typeof(p_payload) is distinct from 'object'
-     or coalesce((p_payload->>'confirm_duplicate')::boolean, false) then
+  if p_action not in ('order_add', 'book', 'walk_in') or jsonb_typeof(p_payload) is distinct from 'object' then
     return clinic_reception.command_before_dup_service(p_workspace, p_action, p_payload, p_token);
   end if;
-  -- a replayed token returns the stored answer, never a duplicate warning
-  if me is not null and p_token is not null
-     and exists (select 1 from clinic_reception.commands c where c.workspace_id = p_workspace and c.actor_id = me and c.token = p_token) then
+  if coalesce((p_payload->>'confirm_duplicate')::boolean, false) then
+    -- one answer is enough: «أيوه، احجزها تاني» also answers the older «نفس المريض في نفس اليوم» question (20261120140000)
+    if p_action in ('book', 'walk_in') then p_payload := p_payload || jsonb_build_object('same_day_ok', true); end if;
     return clinic_reception.command_before_dup_service(p_workspace, p_action, p_payload, p_token);
+  end if;
+  -- a replayed token returns the stored first answer straight away — no guard (this one, or the older «same patient same day» one,
+  -- which would otherwise see the booking the first call made) can refuse a network retry / double click
+  if me is not null and p_token is not null then
+    select c.response into d from clinic_reception.commands c where c.workspace_id = p_workspace and c.actor_id = me and c.token = p_token;
+    if found then return d; end if;
   end if;
   begin
     v_service := nullif(p_payload->>'service_id', '')::uuid;
