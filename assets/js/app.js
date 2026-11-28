@@ -282,6 +282,7 @@
 
     function doLogout() {
       if(window.SSMPDDashboardHelp)window.SSMPDDashboardHelp.dispose();
+      if(window.SSMPDStaffAssistant)window.SSMPDStaffAssistant.dispose();
       if(window.SSMPDPersonalHome)window.SSMPDPersonalHome.stop();
       try { sessionStorage.removeItem(ACTIVE_TAB_KEY); } catch (e) {}
       if(window.SSMPDNavState)window.SSMPDNavState.clear();

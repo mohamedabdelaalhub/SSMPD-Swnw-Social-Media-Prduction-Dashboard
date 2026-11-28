@@ -101,6 +101,7 @@ assets/css/scroll-top.css
 assets/css/select-search.css
 assets/css/service-mapping-review.css
 assets/css/service-select-search.css
+assets/css/staff-assistant.css
 assets/css/staff-kpi.css
 assets/css/staff-profile.css
 assets/css/styles.css
@@ -363,6 +364,7 @@ assets/js/service-mapping-review.js
 assets/js/service-orders-rules.js
 assets/js/service-search-picker.js
 assets/js/service-select-search.js
+assets/js/staff-assistant.js
 assets/js/staff-profile.js
 assets/js/studio-storyboard.js
 assets/js/summary-v2.js
