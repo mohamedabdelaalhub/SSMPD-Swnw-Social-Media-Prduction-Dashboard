@@ -60,6 +60,7 @@ assets/css/legal-docs.css
 assets/css/masa-archive.css
 assets/css/medicines-pricing.css
 assets/css/month-end-accounts.css
+assets/css/nursing-home.css
 assets/css/nutrition.css
 assets/css/ops-panels.css
 assets/css/org-legal.css
@@ -127,6 +128,7 @@ assets/js/auto-booking-requests.js
 assets/js/back-nav.js
 assets/js/before-after-content.js
 assets/js/booking-cash-view.js
+assets/js/business-day.js
 assets/js/business-intelligence-automation.js
 assets/js/business-intelligence-strategy.js
 assets/js/business-intelligence.js
@@ -134,6 +136,7 @@ assets/js/carousel-content.js
 assets/js/center-master-review.js
 assets/js/child-assessment-forms.js
 assets/js/claude-controls.js
+assets/js/collect-visit.js
 assets/js/comment-lessons.js
 assets/js/comments.js
 assets/js/content-ai.js
@@ -235,8 +238,8 @@ assets/js/indicator-reports.js
 assets/js/instinct-assistant.js
 assets/js/inventory-batch-dates.js
 assets/js/inventory-catalog-import.js
-assets/js/inventory-fixed-price.js
 assets/js/inventory-direct-invoice.js
+assets/js/inventory-fixed-price.js
 assets/js/inventory-look.js
 assets/js/inventory-patient-supplies.js
 assets/js/inventory-supplies.js
@@ -312,10 +315,8 @@ assets/js/reception-reminders.js
 assets/js/reception-same-patient.js
 assets/js/reception-service-later.js
 assets/js/reception-service-orders.js
-assets/js/collect-visit.js
 assets/js/reception-services.js
 assets/js/reception-shared.js
-assets/js/upload-box.js
 assets/js/reception-shift-expenses.js
 assets/js/reception-shift-guard.js
 assets/js/reception-shift-reminder.js
@@ -382,6 +383,7 @@ assets/js/turnstile-gate.js
 assets/js/ui-motion.js
 assets/js/ui-titles.js
 assets/js/update-notice.js
+assets/js/upload-box.js
 assets/js/usage-heatmap.js
 assets/js/video-storyboard.js
 assets/js/video-studio.js
@@ -390,4 +392,3 @@ assets/js/website-requests.js
 assets/js/weekly-plan.js
 assets/js/workflow.js
 assets/js/workforce-prices.js
-assets/js/business-day.js
