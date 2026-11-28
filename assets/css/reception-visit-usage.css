@@ -4,7 +4,7 @@
 .rvu-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .rvu-date{display:flex;gap:8px;align-items:center}.rvu-date input{font:inherit;padding:8px 12px;border:1px solid #CBD5E1;border-radius:10px}
 .rvu-tabs{display:flex;gap:6px;flex-wrap:wrap}.rvu-tab{font:inherit;font-size:12px;padding:6px 12px;border-radius:999px;border:0;background:#EEF1F6;color:#3B4658;cursor:pointer}.rvu-tab.on{background:#16212E;color:#fff}
-.rvu-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.rvu-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.rvu-kpis.is-3{grid-template-columns:repeat(3,1fr)}
 .rvu-kpi{border-radius:14px;border:1px solid #E3E9F4;padding:12px 16px;display:grid;gap:4px}.rvu-kpi small{font-size:12px;color:#8a93a3}.rvu-kpi b{font-size:22px;font-variant-numeric:tabular-nums}
 .rvu-kpi b.ok{color:#2F7D5C}.rvu-kpi b.bad{color:#D0402A}.rvu-kpi.hero{background:linear-gradient(135deg,#0F369D,#2a55c9);color:#fff;border-color:transparent}.rvu-kpi.hero small{color:#dbe4fb}
 .rvu-cols{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
