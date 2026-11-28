@@ -16,7 +16,7 @@
   function row() {
     return '<div class="rxd-row" data-rxd-row><select data-rxd-type aria-label="نوع المستند"><option value="">اختار نوع المستند</option>' +
       TYPES.map(function (t) { return '<option value="' + t[0] + '">' + esc(t[2]) + '</option>'; }).join("") +
-      '</select><input type="file" data-rxd-file accept="image/*,application/pdf" aria-label="الملف"><button type="button" class="btn ghost sm" data-rxd-remove aria-label="شيل المستند ده">×</button></div>';
+      '</select>' + (w.SSMPDUploadBox ? w.SSMPDUploadBox.html({ attr: 'data-rxd-file aria-label="الملف"', accept: "image/*,application/pdf", kind: "document", compact: true, take: "📷 صوّر المستند", pick: "🖼 اختار ملف", wrap: 'data-ub-max="15728640"' }) : '<input type="file" data-rxd-file accept="image/*,application/pdf" aria-label="الملف">') + '<button type="button" class="btn ghost sm" data-rxd-remove aria-label="شيل المستند ده">×</button></div>';
   }
   // No name attributes: the booking form's FormData never picks these up.
   function markup(open) {
@@ -26,10 +26,13 @@
   }
   function wire(scope) {
     var box = scope.querySelector("[data-rxd]"); if (!box || box.dataset.wired) return; box.dataset.wired = "1";
+    /* upload-box.js (owner 2026-11-28): the photo is named مستند_<file no>_<document type>_<dd-mm>_<HH-MM> — the type follows the picker */
+    box.addEventListener("change", function (e) { var sel = e.target.closest && e.target.closest("[data-rxd-type]"); if (!sel) return; var ub = sel.closest("[data-rxd-row]").querySelector("[data-ub]"), ty = TYPES.filter(function (x) { return x[0] === sel.value; })[0];
+      if (ub) ub.setAttribute("data-ub-label", ty ? ty[2].split(/ أو |\(/)[0].replace(/^صورة /, "").trim() : ""); });
     box.addEventListener("click", function (e) {
       if (e.target.closest("[data-rxd-add]")) { e.preventDefault(); box.querySelector("[data-rxd-rows]").insertAdjacentHTML("beforeend", row()); return; }
       var rm = e.target.closest("[data-rxd-remove]");
-      if (rm) { e.preventDefault(); var rows = box.querySelectorAll("[data-rxd-row]"); if (rows.length > 1) rm.closest("[data-rxd-row]").remove(); else { var r = rows[0]; r.querySelector("[data-rxd-type]").value = ""; r.querySelector("[data-rxd-file]").value = ""; } }
+      if (rm) { e.preventDefault(); var rows = box.querySelectorAll("[data-rxd-row]"); if (rows.length > 1) rm.closest("[data-rxd-row]").remove(); else { var r = rows[0]; r.querySelector("[data-rxd-type]").value = ""; var fi = r.querySelector("[data-rxd-file]"); fi.value = ""; if (fi.closest("[data-ub]")) fi.dispatchEvent(new Event("change")); } }
     });
   }
   // Rows with a file. Throws a clear message when a file has no type, or is too big.

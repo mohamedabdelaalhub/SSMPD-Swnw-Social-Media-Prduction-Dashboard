@@ -309,6 +309,7 @@ assets/js/reception-service-later.js
 assets/js/reception-service-orders.js
 assets/js/reception-services.js
 assets/js/reception-shared.js
+assets/js/upload-box.js
 assets/js/reception-shift-expenses.js
 assets/js/reception-shift-guard.js
 assets/js/reception-shift-reminder.js

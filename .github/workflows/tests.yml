@@ -40,6 +40,7 @@ jobs:
           node tests/supplies-billable-dom.cjs
           node tests/leads-edit-visible-dom.cjs
           node tests/collect-open-shift-only-dom.cjs
+          node tests/upload-unify-dom.cjs
           node tests/count-check-above-handover.cjs
           node tests/digital-team-navigation.cjs
           node tests/patient360-navigation.cjs
