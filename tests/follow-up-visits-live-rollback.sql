@@ -335,20 +335,33 @@ begin
   select id into w from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
   select a.user_id into boss from public.admins a where a.role = 'super_admin' and a.active and a.user_id is not null order by a.id limit 1;
   select id into me from public.admins where user_id = mazen;
-  -- live has no «متابعة أسنان» service yet (the owner approves adding it separately): add one INSIDE this transaction (rolled back)
-  if not exists (select 1 from clinic_reception.services s where s.workspace_id = w and s.active and s.department like '%سنان%' and clinic_reception.consult_kind(s.name) = 'F') then
-    insert into clinic_reception.services(workspace_id, code, name, department, price, minutes)
-      select w, 'FU-ROLLBACK', 'متابعة أسنان', s.department, 100, 15 from clinic_reception.services s where s.workspace_id = w and s.active and s.department like '%سنان%' limit 1;
-    insert into _r values ('test «متابعة أسنان» 100 added inside the transaction (rolled back)', found, null);
-  end if;
-  -- a dental doctor with a «متابعة» service and an active agreement on another (non-follow-up) service
-  select p.id, s.id into pr, svc from clinic_reception.providers p
-    join clinic_reception.doctor_agreements ag on ag.provider_id = p.id and ag.workspace_id = w and ag.status = 'active' and current_date between ag.valid_from and ag.valid_to
-    join clinic_reception.services s on s.workspace_id = w and s.code = ag.service_code and s.active and coalesce(clinic_reception.consult_kind(s.name), '') <> 'F'
-   where p.workspace_id = w and p.active and p.department like '%سنان%' and clinic_reception.follow_up_service(w, p.id) is not null
-   order by s.price desc limit 1;
-  insert into _r values ('dental doctor with a «متابعة» service + agreement', pr is not null, coalesce((select name from clinic_reception.providers where id = pr), 'NONE — add a «متابعة» service to dental first'));
+  -- a real dental doctor: one with an active agreement first, else the hub's example (د.معتز الهجين), else any active dental doctor
+  select p.id into pr from clinic_reception.providers p
+   where p.workspace_id = w and p.active and p.department like '%سنان%'
+   order by exists (select 1 from clinic_reception.doctor_agreements ag where ag.provider_id = p.id and ag.status = 'active' and current_date between ag.valid_from and ag.valid_to) desc,
+            (p.id = '6e19d8ca-690f-471b-a673-74ab30a20bf3') desc, p.name limit 1;
+  insert into _r values ('dental doctor', pr is not null, coalesce((select name || ' — ' || department from clinic_reception.providers where id = pr), 'NONE — no active dental doctor'));
   if pr is null then return; end if;
+  -- live has no «متابعة أسنان» service yet (the owner approves adding it separately): add one INSIDE this transaction (rolled back), in HIS department
+  if clinic_reception.follow_up_service(w, pr) is null then
+    insert into clinic_reception.services(workspace_id, code, name, department, price, minutes)
+      select w, 'FU-ROLLBACK', 'متابعة أسنان', p.department, 100, 15 from clinic_reception.providers p where p.id = pr;
+    insert into _r values ('test «متابعة أسنان» 100 added in his department (rolled back)', clinic_reception.follow_up_service(w, pr) is not null, null);
+  end if;
+  -- the origin service: one he has an active agreement on, else the dearest non-follow-up service he serves
+  select s.id into svc from clinic_reception.services s
+   where s.workspace_id = w and s.active and coalesce(clinic_reception.consult_kind(s.name), '') <> 'F' and s.price > 0
+     and clinic_reception.serves_service(pr, s.department, s.code)
+   order by exists (select 1 from clinic_reception.doctor_agreements ag where ag.provider_id = pr and ag.service_code = s.code and ag.status = 'active' and current_date between ag.valid_from and ag.valid_to) desc,
+            s.price desc limit 1;
+  insert into _r values ('origin service he serves', svc is not null, coalesce((select name || ' — ' || price from clinic_reception.services where id = svc), 'NONE'));
+  if svc is null then return; end if;
+  if not exists (select 1 from clinic_reception.doctor_agreements ag join clinic_reception.services s on s.id = svc
+                  where ag.provider_id = pr and ag.service_code = s.code and ag.status = 'active' and current_date between ag.valid_from and ag.valid_to) then
+    insert into clinic_reception.doctor_agreements(workspace_id, provider_id, service_code, rate, valid_from, valid_to, reference, status, created_by)
+      select w, pr, s.code, 30, current_date - 1, current_date + 30, 'ROLLBACK-FU', 'active', me from clinic_reception.services s where s.id = svc;
+    insert into _r values ('no agreement on the origin service — a test one (30) was added (rolled back)', true, null);
+  end if;
   fsvc := clinic_reception.follow_up_service(w, pr);
   -- the follow-up needs an agreement to be executed: his «كشف» agreement, else one on the «متابعة» service; add a test one if neither exists
   if not exists (select 1 from clinic_reception.doctor_agreements ag join clinic_reception.services s on s.code = ag.service_code and s.workspace_id = w
